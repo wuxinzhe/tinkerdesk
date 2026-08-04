@@ -3,6 +3,10 @@ import { join } from 'path'
 import { detectDesktopTools } from './tool-detector'
 import { registerToolHandlers } from './ipc-handlers'
 import { registerToolCenterHandlers } from './tool-center'
+import { registerModelIpcHandlers } from './model-ipc'
+import { initDatabase, closeDatabase } from './db/database'
+import { bootstrap } from './bootstrap'
+import { registerAgentController } from './agent-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -39,10 +43,18 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // 初始化本地数据库（SQLite，custom_models 等表）
+  initDatabase()
+
+  // ── Agent 会话（本地 AgentLoop）：组装依赖 + 注册 IPC ──
+  const desk = bootstrap([], [])
+  registerAgentController(desk.agentLoop)
+
   // 注册 IPC handlers
   ipcMain.handle('detect-tools', () => detectDesktopTools())
   registerToolHandlers()
   registerToolCenterHandlers()
+  registerModelIpcHandlers()
 
   // ── 窗口控制 IPC ──
   ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
@@ -62,6 +74,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    closeDatabase()
     app.quit()
   }
 })

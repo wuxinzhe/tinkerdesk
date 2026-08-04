@@ -45,6 +45,40 @@ const api = {
     const handler = (_event: any, data: any) => callback(data)
     ipcRenderer.on('update:progress', handler)
     return () => ipcRenderer.removeListener('update:progress', handler)
+  },
+
+  // ── Agent 会话（本地 AgentLoop controller）──
+  agent: {
+    // 发送消息（onUserMessage），流式 token 通过 onToken 回调
+    chat: (req: any, onToken?: (evt: any) => void) => {
+      if (onToken) {
+        const handler = (_event: any, evt: any) => onToken(evt)
+        ipcRenderer.on('agent:token', handler)
+        return ipcRenderer.invoke('agent:chat', req).finally(() => {
+          ipcRenderer.removeListener('agent:token', handler)
+        })
+      }
+      return ipcRenderer.invoke('agent:chat', req)
+    },
+    // 工具结果回调（UI/扩展工具异步返回）
+    toolResult: (sessionId: string, toolCallId: string, result: string) =>
+      ipcRenderer.invoke('agent:toolResult', {sessionId, toolCallId, result}),
+    // 审批响应（用户同意/拒绝）
+    approval: (sessionId: string, toolCallId: string, approved: boolean) =>
+      ipcRenderer.invoke('agent:approval', {sessionId, toolCallId, approved}),
+    // 撤回消息
+    revoke: (sessionId: string, messageId: string) =>
+      ipcRenderer.invoke('agent:revoke', {sessionId, messageId}),
+    // 中断对话（stop）
+    interrupt: (sessionId: string) => ipcRenderer.invoke('agent:interrupt', sessionId),
+    // 清理会话
+    clearAll: (sessionId: string) => ipcRenderer.invoke('agent:clearAll', sessionId),
+    // 监听审批请求（渲染层弹审批卡片）
+    onApprovalRequest: (callback: (payload: any) => void) => {
+      const handler = (_event: any, payload: any) => callback(payload)
+      ipcRenderer.on('agent:approvalRequest', handler)
+      return () => ipcRenderer.removeListener('agent:approvalRequest', handler)
+    }
   }
 }
 

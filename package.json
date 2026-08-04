@@ -11,6 +11,7 @@
     "preview:desktop": "electron-vite preview"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@stomp/stompjs": "^7.3.0",
     "axios": "^1.18.1",
     "cheerio": "^1.2.0",
@@ -19,6 +20,7 @@
     "marked": "^18.0.5",
     "naive-ui": "^2.41.0",
     "node-cron": "^4.5.0",
+    "openai": "^7.4.0",
     "pinia": "^3.0.2",
     "say": "^0.16.0",
     "sql.js": "^1.14.1",
@@ -29,7 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.14.1",
     "@vitejs/plugin-vue": "^5.2.3",
-    "electron": "^33.4.0",
+    "electron": "^35.7.5",
     "electron-builder": "^25.1.8",
     "electron-vite": "^5.0.0",
     "typescript": "^5.8.3",

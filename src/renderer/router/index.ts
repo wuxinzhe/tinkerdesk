@@ -21,11 +21,6 @@
  *   （default 在移动端全屏渲染，level2 在桌面端中列，level3 在桌面端右列）
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { tokenManager } from '@/services/security/token-manager'
-
-function hasToken(): boolean {
-  return tokenManager.hasAccessToken()
-}
 
 /** 模块级标志：页面刷新后自动重置，确保走完整初始化流程 */
 let appInitialized = false
@@ -290,16 +285,6 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach((to, _from) => {
-  // 需要登录的页面 → 无 token 则回到 splash
-  if (to.meta.requiresAuth && !hasToken()) {
-    return { name: 'splash' }
-  }
-
-  // 已登录用户访问 login/register → 跳 splash（走初始化流程）
-  if (hasToken() && (to.name === 'login' || to.name === 'register')) {
-    return { name: 'splash' }
-  }
-
   // 刷新后强制走 splash → workspace 的完整初始化流程
   if (to.meta.requiresAuth && !appInitialized) {
     // 排除 bootstrap 页面自身，防止循环

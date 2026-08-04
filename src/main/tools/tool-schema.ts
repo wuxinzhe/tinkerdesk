@@ -1,0 +1,65 @@
+/**
+ * tool-schema.ts — 工具 Schema 类
+ *
+ * 对应 showing-agent ToolSchema：OpenAI function calling 中的 tool 对象。
+ */
+import type {ToolFunction} from './types'
+
+/** 工具 Schema 定义（本地工具版，无服务端/客户端区分） */
+export class ToolSchema {
+  /** 工具类型，固定为 "function" */
+  readonly type = 'function'
+  /** 工具函数定义（名称、描述、参数） */
+  readonly function: ToolFunction
+  /** 展示用 emoji 图标，默认 ⚡ */
+  emoji = '⚡'
+
+  constructor(name: string, description: string, parameters: Record<string, unknown> | null) {
+    this.function = {name, description, parameters}
+  }
+
+  /** 工具名称（序列化时作为顶层字段） */
+  get name(): string {
+    return this.function.name
+  }
+
+  /** 工具描述（序列化时作为顶层字段） */
+  get description(): string {
+    return this.function.description
+  }
+
+  /** 参数 Schema（序列化时作为顶层字段） */
+  get parameters(): Record<string, unknown> | null {
+    return this.function.parameters
+  }
+
+  setEmoji(emoji: string | null | undefined): void {
+    if (emoji && emoji.trim() !== '') {
+      this.emoji = emoji
+    }
+  }
+
+  /** 序列化为 OpenAI function calling 格式（传给 LLM） */
+  toFunctionCallingFormat(): Record<string, unknown> {
+    return {
+      type: 'function',
+      function: {
+        name: this.function.name,
+        description: this.function.description,
+        parameters: this.function.parameters ?? {},
+      },
+    }
+  }
+
+  /** 从 JSON 对象创建 ToolSchema（客户端注册格式） */
+  static fromJson(json: Record<string, unknown>): ToolSchema {
+    const name = String(json.name ?? '')
+    const description = String(json.description ?? '')
+    const parameters = (json.parameters as Record<string, unknown> | null) ?? null
+    const schema = new ToolSchema(name, description, parameters)
+    if (json.emoji !== undefined) {
+      schema.setEmoji(String(json.emoji))
+    }
+    return schema
+  }
+}

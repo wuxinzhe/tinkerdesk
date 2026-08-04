@@ -1,0 +1,310 @@
+/**
+ * message-repository.ts — messages 表仓库
+ *
+ * 复刻 showing-agent MessageRepository：
+ * 消息 CRUD、条件查询、分页、会话历史加载。
+ * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
+ */
+import {getDatabase} from './database'
+
+/** 消息实体（对应 MessageEntity） */
+export interface MessageEntity {
+  id?: number
+  sessionId: string
+  conversationId: string | null
+  profile: string
+  role: string
+  content: string
+  reasoningContent: string
+  toolCall: string | null
+  toolCallId: string
+  toolName: string
+  finishReason: string
+  interactionStatus: string
+  messageType: string
+  deleted: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+/** 查询条件（findByConditions 参数） */
+export interface MessageQuery {
+  messageType?: string
+  messageTypes?: string[]
+  excludeMessageTypes?: string[]
+  conversationId?: string
+  sessionId?: string
+  profile?: string
+  sortDesc?: boolean
+}
+
+/** 会话消息查询条件（findMessagesBySession 参数） */
+export interface SessionMessageQuery {
+  sessionId: string
+  profile: string
+  sortOrder?: 'ASC' | 'DESC'
+  limit?: number
+  roles?: string[]
+}
+
+// ── 列清单 ──
+const COLS = 'id, session_id, conversation_id, profile, role, content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason, interaction_status, message_type, deleted, created_at, updated_at'
+
+/** 行 → 实体（强类型校验） */
+function toEntity(row: Record<string, unknown>): MessageEntity {
+  return {
+    id: row.id as number,
+    sessionId: row.session_id as string,
+    conversationId: row.conversation_id as string | null,
+    profile: row.profile as string,
+    role: row.role as string,
+    content: row.content as string,
+    reasoningContent: row.reasoning_content as string,
+    toolCall: row.tool_call as string | null,
+    toolCallId: row.tool_call_id as string,
+    toolName: row.tool_name as string,
+    finishReason: row.finish_reason as string,
+    interactionStatus: row.interaction_status as string,
+    messageType: row.message_type as string,
+    deleted: (row.deleted as number) === 1,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  }
+}
+
+/** 消息仓库 */
+export class MessageRepository {
+  /** 插入消息（返回新 id） */
+  save(entity: MessageEntity): number {
+    const db = getDatabase()
+    const result = db
+      .prepare(
+        `INSERT INTO messages (session_id, conversation_id, profile, role,
+            content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
+            interaction_status, message_type, deleted)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        entity.sessionId,
+        entity.conversationId,
+        entity.profile,
+        entity.role,
+        entity.content,
+        entity.reasoningContent ?? '',
+        entity.toolCall,
+        entity.toolCallId ?? '',
+        entity.toolName ?? '',
+        entity.finishReason ?? 'complete',
+        entity.interactionStatus ?? '',
+        entity.messageType ?? '',
+        entity.deleted ? 1 : 0
+      )
+    return Number(result.lastInsertRowid)
+  }
+
+  /** 批量插入消息 */
+  saveAll(entities: MessageEntity[]): number {
+    const db = getDatabase()
+    const stmt = db.prepare(
+      `INSERT INTO messages (session_id, conversation_id, profile, role,
+          content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
+          interaction_status, message_type, deleted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    let count = 0
+    for (const e of entities) {
+      stmt.run(
+        e.sessionId,
+        e.conversationId,
+        e.profile,
+        e.role,
+        e.content,
+        e.reasoningContent ?? '',
+        e.toolCall,
+        e.toolCallId ?? '',
+        e.toolName ?? '',
+        e.finishReason ?? 'complete',
+        e.interactionStatus ?? '',
+        e.messageType ?? '',
+        e.deleted ? 1 : 0
+      )
+      count++
+    }
+    return count
+  }
+
+  /** 查询已完成对话的历史消息（用于 LLM 上下文恢复） */
+  findBySessionCompleted(sessionId: string, profile: string, status: string): MessageEntity[] {
+    const db = getDatabase()
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE m.session_id = ? AND m.profile = ?
+           AND c.status = ? AND m.deleted = 0
+         ORDER BY m.created_at ASC, m.id ASC
+         LIMIT 2000`
+      )
+      .all(sessionId, profile, status) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 按对话 ID 列表批量加载消息（用于压缩加载旧对话） */
+  findByConversationIds(convIds: string[], sessionId: string, profile: string): MessageEntity[] {
+    if (convIds.length === 0) {
+      return []
+    }
+    const db = getDatabase()
+    const placeholders = convIds.map(() => '?').join(',')
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE m.conversation_id IN (${placeholders})
+           AND c.session_id = ? AND m.profile = ? AND m.deleted = 0
+         ORDER BY m.created_at ASC, m.id ASC
+         LIMIT 2000`
+      )
+      .all(...convIds, sessionId, profile) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 通用动态条件查询 */
+  findByConditions(query: MessageQuery): MessageEntity[] {
+    const db = getDatabase()
+    const where: string[] = ['deleted = 0']
+    const params: Array<string | number> = []
+
+    if (query.messageType) {
+      where.push('message_type = ?')
+      params.push(query.messageType)
+    }
+    if (query.messageTypes && query.messageTypes.length > 0) {
+      where.push(`message_type IN (${query.messageTypes.map(() => '?').join(',')})`)
+      params.push(...query.messageTypes)
+    }
+    if (query.excludeMessageTypes && query.excludeMessageTypes.length > 0) {
+      where.push(`message_type NOT IN (${query.excludeMessageTypes.map(() => '?').join(',')})`)
+      params.push(...query.excludeMessageTypes)
+    }
+    if (query.conversationId) {
+      where.push('conversation_id = ?')
+      params.push(query.conversationId)
+    }
+    if (query.sessionId) {
+      where.push('session_id = ?')
+      params.push(query.sessionId)
+    }
+    if (query.profile) {
+      where.push('profile = ?')
+      params.push(query.profile)
+    }
+
+    const order = query.sortDesc ? 'DESC' : 'ASC'
+    const rows = db
+      .prepare(`SELECT ${COLS} FROM messages WHERE ${where.join(' AND ')} ORDER BY created_at ${order}, id ASC LIMIT 2000`)
+      .all(...params) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 会话消息查询（支持角色过滤、排序、分页） */
+  findMessagesBySession(query: SessionMessageQuery): MessageEntity[] {
+    const db = getDatabase()
+    const where: string[] = ['m.session_id = ?', 'm.profile = ?', 'm.deleted = 0']
+    const params: Array<string | number> = [query.sessionId, query.profile]
+
+    if (query.roles && query.roles.length > 0) {
+      where.push(`m.role IN (${query.roles.map(() => '?').join(',')})`)
+      params.push(...query.roles)
+    }
+
+    const order = query.sortOrder === 'DESC' ? 'DESC' : 'ASC'
+    let sql = `SELECT ${COLS} FROM messages m WHERE ${where.join(' AND ')} ORDER BY m.id ${order}`
+    if (query.limit && query.limit > 0) {
+      sql += ' LIMIT ?'
+      params.push(query.limit)
+    }
+    const rows = db.prepare(sql).all(...params) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 按 ID 范围查找消息窗口（滚动浏览） */
+  findWindowByIdRange(sessionId: string, lower: number, upper: number, profile: string): MessageEntity[] {
+    const db = getDatabase()
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM messages m
+         WHERE m.session_id = ? AND m.id >= ? AND m.id <= ? AND m.profile = ? AND m.deleted = 0
+         ORDER BY m.id ASC`
+      )
+      .all(sessionId, lower, upper, profile) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 统计指定消息前后符合条件的消息数量 */
+  countRelative(scope: 'before' | 'after', sessionId: string, messageId: number, profile: string, roles?: string[]): number {
+    const db = getDatabase()
+    const op = scope === 'before' ? '<' : '>'
+    const params: Array<string | number> = [sessionId, profile, messageId]
+    let sql = `SELECT COUNT(*) as cnt FROM messages m
+               WHERE m.session_id = ? AND m.profile = ? AND m.deleted = 0 AND m.id ${op} ?`
+    if (roles && roles.length > 0) {
+      sql += ` AND m.role IN (${roles.map(() => '?').join(',')})`
+      params.push(...roles)
+    }
+    const row = db.prepare(sql).get(...params) as {cnt: number}
+    return row.cnt
+  }
+
+  /** 更新交互状态（批准/拒绝工具调用） */
+  updateApprovalStatus(toolCallId: string, status: string, content: string, profile: string, sessionId: string): number {
+    const db = getDatabase()
+    const result = db
+      .prepare(
+        `UPDATE messages SET interaction_status = ?, content = ?, updated_at = datetime('now')
+         WHERE role = 'approval' AND tool_call_id = ?
+           AND profile = ? AND session_id = ?`
+      )
+      .run(status, content, toolCallId, profile, sessionId)
+    return Number(result.changes)
+  }
+
+  /** 标记待交互消息为超时 */
+  updateApprovalStatusTimedOut(toolCallId: string, profile: string, sessionId: string): number {
+    const db = getDatabase()
+    const result = db
+      .prepare(
+        `UPDATE messages SET interaction_status = 'timed_out', content = '⏳ 已过期', updated_at = datetime('now')
+         WHERE role = 'approval' AND tool_call_id = ? AND interaction_status = 'pending'
+           AND profile = ? AND session_id = ?`
+      )
+      .run(toolCallId, profile, sessionId)
+    return Number(result.changes)
+  }
+
+  /** 按对话 ID 列表软删除消息 */
+  markDeletedByConversations(convIds: string[], profile: string, sessionId: string): number {
+    if (convIds.length === 0) {
+      return 0
+    }
+    const db = getDatabase()
+    const placeholders = convIds.map(() => '?').join(',')
+    const result = db
+      .prepare(
+        `UPDATE messages SET deleted = 1
+         WHERE conversation_id IN (${placeholders})
+           AND profile = ? AND session_id = ?`
+      )
+      .run(...convIds, profile, sessionId)
+    return Number(result.changes)
+  }
+
+  /** 根据消息 ID 查找所属会话 ID */
+  findSessionIdByMessageId(messageId: number, profile: string): string | null {
+    const db = getDatabase()
+    const row = db
+      .prepare(`SELECT m.session_id FROM messages m WHERE m.id = ? AND m.profile = ?`)
+      .get(messageId, profile) as {session_id: string} | undefined
+    return row?.session_id ?? null
+  }
+}

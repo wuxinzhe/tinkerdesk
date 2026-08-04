@@ -36,33 +36,25 @@
 <script setup lang="ts">
 import { FullScreenCenterLayout, LogoBrand, SaSpinner } from '@/renderer/components'
 import { markAppInitialized } from '@/renderer/router'
-import { useChatStore } from '@/renderer/stores/chat-store'
-import { initBackend } from '@/services/backend'
-import { authApi } from '@/api/auth-api'
-import { toolRegistry } from '@/services/registry/tool-registry'
 import { getToolCenterApi } from '@/api/tool-center-api'
-import { tokenManager } from '@/services/security/token-manager'
-import { useAuthStore } from '@/stores/auth-store'
+import { toolRegistry } from '@/services/registry/tool-registry'
 import { useToolsStore } from '@/stores/tools-store'
 import { NButton } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-type StepKey = 'network' | 'auth' | 'registering' | 'env' | 'loading' | 'ready'
+type StepKey = 'network' | 'registering' | 'loading' | 'ready'
 
-const STEP_ORDER: StepKey[] = ['network', 'auth', 'registering', 'env', 'loading', 'ready']
+const STEP_ORDER: StepKey[] = ['network', 'registering', 'loading', 'ready']
 
 const steps = [
-  { key: 'network' as StepKey, label: '正在检查网络...' },
-  { key: 'auth' as StepKey, label: '正在验证身份...' },
+  { key: 'network' as StepKey, label: '正在检查环境...' },
   { key: 'registering' as StepKey, label: '正在注册工具...' },
-  { key: 'env' as StepKey, label: '正在注册环境信息...' },
   { key: 'loading' as StepKey, label: '正在加载配置...' },
   { key: 'ready' as StepKey, label: '准备就绪' },
 ]
 
 const router = useRouter()
-const authStore = useAuthStore()
 
 const currentStep = ref<StepKey>('network')
 const step = ref<'running' | 'error' | 'done'>('running')
@@ -89,48 +81,17 @@ async function start() {
   retryCount = 0
 
   try {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
-
-    // ── Step 0: 检查网络 ──
+    // ── Step 0: 环境检查（本地工具可用性探测） ──
     currentStep.value = 'network'
-    if (baseUrl) {
-      const ok = await checkNetwork(baseUrl)
-      if (!ok) {
-        throw new Error('无法连接到服务器，请检查网络连接后重试')
-      }
-    }
-    // ── Step 1: 验证身份 ──
-    currentStep.value = 'auth'
-    const authed = await verifyAuth()
-    if (!authed) {
-      tokenManager.clear()
-      router.replace({ name: 'login' })
-      return
-    }
-    // ── Step 2: 工具注册 ──
+    await checkEnvironment()
+
+    // ── Step 1: 工具注册（本地 ToolCenter，不连 WebSocket） ──
     currentStep.value = 'registering'
     await registerTools()
 
-    // ── Step 3: 注册环境信息 ──
-    currentStep.value = 'env'
-    await registerEnvironment()
-
-    // ── Step 4: 加载配置 ──
+    // ── Step 2: 加载配置 ──
     currentStep.value = 'loading'
-    await loadConfiguration(baseUrl)
-
-    // ── Step 5: 检查初始化（服务端确认） ──
-    let initialized = false
-    try {
-      const status = await authApi.getInitStatus()
-      initialized = status.initialized
-    } catch {
-      initialized = false
-    }
-    if (!initialized) {
-      router.replace({ name: 'init-account' })
-      return
-    }
+    await loadConfiguration()
 
     // ── 完成 ──
     currentStep.value = 'ready'
@@ -159,73 +120,32 @@ async function start() {
   }
 }
 
-// ── 网络检测 ──
+// ── 环境检查（本地探测，不依赖后端） ──
 
-async function checkNetwork(baseUrl: string): Promise<boolean> {
+async function checkEnvironment(): Promise<void> {
+  // 本地应用：探测 ToolCenter 是否可用（桌面端 IPC，Web 端返回空）
+  const toolCenterApi = getToolCenterApi()
   try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 5000)
-    await fetch(baseUrl + '/', {
-      method: 'GET',
-      signal: controller.signal
-    })
-    clearTimeout(timer)
-    return true
+    await toolCenterApi.initialize()
   } catch {
-    return false
+    // 桌面端 ToolCenter 不可用不阻塞启动，工具注册步骤会降级
   }
 }
 
-// ── 身份验证 ──
-
-async function verifyAuth(): Promise<boolean> {
-  tokenManager.loadFromStorage()
-
-  if (!tokenManager.hasRefreshToken()) return false
-
-  try {
-    const result = await authStore.refresh()
-    return result !== null
-  } catch {
-    return false
-  }
-}
-
-// ── 工具注册 ──
+// ── 工具注册（本地元数据，不连接 WebSocket） ──
 
 async function registerTools(): Promise<void> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
-  const token = tokenManager.getToken()
-  if (!token) throw new Error('未登录')
-
-  // 1. 创建并连接后端（STOMP WebSocket）
-  const backend = await initBackend()
-
-  // 注册重连失败回调（3次重连失败后显示错误提示）
-  backend.setOnReconnectFailed?.((error: string) => {
-    step.value = 'error'
-    errorText.value = error
-  })
-
-  // 将后端注入 chat-store
-  const chatStore = useChatStore()
-  chatStore.setBackend(backend)
-
-  const wsBase = baseUrl.replace(/^http/, 'ws')
-  const url = `${wsBase}/ws/stomp?token=${encodeURIComponent(token)}`
-  await backend.connect(url)
-
-  // 2. 从 ToolCenter 获取本地工具元数据（桌面端走 IPC，Web 端返回空）
+  // 1. 从 ToolCenter 获取本地工具元数据（桌面端走 IPC，Web 端返回空）
   const toolCenterApi = getToolCenterApi()
   const toolCenterState = await toolCenterApi.initialize()
   if (toolCenterState.allAvailable.length > 0) {
     toolRegistry.setDesktopTools(toolCenterState.allAvailable)
   }
 
-  // 3. 获取可用工具定义（getAvailableDefinitions 内部已通过 checkAvailability 过滤）
+  // 2. 获取可用工具定义（getAvailableDefinitions 内部已通过 checkAvailability 过滤）
   const definitions = toolRegistry.getAvailableDefinitions()
 
-  // 4. 注册到本地工具中心
+  // 3. 注入本地工具 store（渲染层展示用）
   const toolsStore = useToolsStore()
   toolsStore.setDesktopTools(
     definitions.map(d => ({
@@ -237,26 +157,11 @@ async function registerTools(): Promise<void> {
       schema: d.schema
     }))
   )
-
-  // 5. 注册到服务端（通过 STOMP → /app/tools/register）
-  backend.registerTools(definitions, [])
 }
 
-// ── 环境注册 ──
+// ── 加载配置（暂为桩） ──
 
-async function registerEnvironment(): Promise<void> {
-  const toolCenterApi = getToolCenterApi()
-  const env = await toolCenterApi.collectEnv()
-  if (!env.os) return // web 环境跳过
-  const chatStore = useChatStore()
-  const backend = chatStore.getBackend()
-  if (!backend) return
-  backend.send({ type: 'env_register', ...env })
-}
-
-// ── 加载配置（暂为桩）──
-
-async function loadConfiguration(_baseUrl: string): Promise<void> {
+async function loadConfiguration(): Promise<void> {
   await new Promise(r => setTimeout(r, 300))
 }
 
@@ -268,8 +173,6 @@ function skipToWorkspace() {
 }
 
 onMounted(() => {
-  // 检查是否有 token，没有则停留在当前页
-  // verifyAuth 会处理 refresh（有 refresh_token 就续期，没有就去 login）
   start()
 })
 </script>
