@@ -1,0 +1,81 @@
+<template>
+  <L3PageLayout class="settings-detail">
+    <div class="settings-detail__body">
+      <!-- 模型设置 -->
+      <CustomModelSettingsView v-if="section === 'model'" />
+
+      <!-- MCP 工具设置 -->
+      <McpSettingsView v-else-if="section === 'mcp'" />
+
+      <!-- 账户设置 -->
+      <div v-else-if="section === 'account'" class="settings-page">
+        <p class="settings-page__placeholder">账户设置 — 即将推出</p>
+      </div>
+
+      <!-- 主题设置 -->
+      <div v-else-if="section === 'theme'" class="settings-page">
+        <p class="settings-page__placeholder">主题设置 — 即将推出</p>
+      </div>
+
+      <!-- 占位 -->
+      <div v-else class="settings-placeholder">
+        <div class="settings-placeholder__inner">
+          <div class="settings-placeholder__icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+          </div>
+          <p class="settings-placeholder__text">选择一个设置项</p>
+        </div>
+      </div>
+    </div>
+  </L3PageLayout>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { L3PageLayout } from '@/renderer/components'
+import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
+import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
+
+const route = useRoute()
+
+const section = computed(() => route.params.section as string || '')
+
+</script>
+
+<style scoped>
+.settings-page {
+  padding: 24px;
+  width: 100%;
+}
+.settings-page__placeholder {
+  font-size: 13px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  text-align: center;
+  margin-top: 40px;
+}
+
+.settings-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.settings-placeholder__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+}
+.settings-placeholder__icon-wrap {
+  opacity: 0.4;
+}
+.settings-placeholder__text {
+  font-size: 13px;
+  margin: 0;
+}
+</style>

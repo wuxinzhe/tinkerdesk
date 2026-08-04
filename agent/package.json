@@ -1,0 +1,39 @@
+{
+  "name": "showing-agent-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev:web": "vite --config vite.config.web.ts",
+    "build:web": "vite build --config vite.config.web.ts",
+    "dev:desktop": "electron-vite dev -- --remote-debugging-port=9222 --inspect=5858",
+    "build:desktop": "electron-vite build",
+    "preview:desktop": "electron-vite preview"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "axios": "^1.18.1",
+    "cheerio": "^1.2.0",
+    "electron-updater": "^6.8.9",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.5",
+    "naive-ui": "^2.41.0",
+    "node-cron": "^4.5.0",
+    "pinia": "^3.0.2",
+    "say": "^0.16.0",
+    "sql.js": "^1.14.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "electron": "^33.4.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^5.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "vue-tsc": "^2.2.8"
+  }
+}

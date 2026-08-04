@@ -1,0 +1,185 @@
+/* ============================================================
+   Showing Ai — Global Design Variables
+   Apple HIG 风格 CSS 变量，与 core-principles.md 保持同步
+   ============================================================ */
+
+:root {
+  /* ── Brand ── */
+  --sa-accent: #007aff;
+  --sa-accent-hover: #0066d6;
+  --sa-accent-active: #004d99;
+  --sa-destructive: #ff3b30;
+  --sa-success: #34c759;
+  --sa-warning: #ff9500;
+
+  /* ── Text ── */
+  --sa-text-primary: #1d1d1f;
+  --sa-text-secondary: #86868b;
+  --sa-text-tertiary: #aeaeb2;
+  --sa-text-quaternary: #c7c7cc;
+  --sa-text-link: #007aff;
+
+  /* ── Backgrounds ── */
+  --sa-bg-primary: #ffffff;
+  --sa-bg-secondary: #f5f5f7;
+  --sa-bg-tertiary: #fafafa;
+  --sa-bg-glass: rgba(255, 255, 255, 0.72);
+  --sa-bg-bubble-assistant: #ececed;
+
+  /* ── Border ── */
+  --sa-border: #e8e8ed;
+  --sa-border-focus: #007aff;
+  --sa-border-error: #ff3b30;
+
+  /* ── Overlay ── */
+  --sa-overlay: rgba(0, 0, 0, 0.65);
+
+  /* ── Shadows ── */
+  --sa-shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  --sa-shadow-error: 0 0 0 3px rgba(255, 59, 48, 0.15);
+
+  /* ── Radii ── */
+  --sa-radius-sm: 6px;
+  --sa-radius-md: 8px;
+  --sa-radius-lg: 12px;
+
+  /* ── Font ── */
+  --sa-font-stack: 'HarmonyOS Sans SC', -apple-system, BlinkMacSystemFont,
+    'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --sa-font-mono: 'SF Mono', 'SFMono-Regular', 'Menlo', 'Consolas', 'HarmonyOS Sans SC', monospace;
+
+  /* ── Font sizes ── */
+  --sa-fs-hero: 28px;
+  --sa-fs-title: 20px;
+  --sa-fs-subtitle: 15px;
+  --sa-fs-body: 13px;
+  --sa-fs-caption: 11px;
+
+  /* ── Spacing (8pt grid) ── */
+  --sa-space-1: 4px;
+  --sa-space-2: 8px;
+  --sa-space-3: 12px;
+  --sa-space-4: 16px;
+  --sa-space-5: 20px;
+  --sa-space-6: 24px;
+  --sa-space-7: 32px;
+  --sa-space-8: 40px;
+
+  /* ── Duration ── */
+  --sa-duration-fast: 100ms;
+  --sa-duration-normal: 200ms;
+  --sa-duration-slow: 300ms;
+
+  /* ── z-index layers ── */
+  --sa-z-lock-screen: 9999;
+
+  /* ── Scrollbar ── */
+  --sa-scrollbar-size: 6px;
+  --sa-scrollbar-track: #f5f5f7;
+  --sa-scrollbar-thumb: #e8e8ed;
+  --sa-scrollbar-thumb-hover: #c7c7cc;
+}
+
+/* ── Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--sa-font-stack);
+  font-size: var(--sa-fs-body);
+  color: var(--sa-text-primary);
+  background: var(--sa-bg-primary);
+  line-height: 1.55;
+}
+
+/* ── Hide scrollbar globally — scroll still works ── */
+::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
+}
+
+/* ── Utility classes ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Page transition ── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+/* ── Spinner animation ── */
+@keyframes sa-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════
+   Mobile responsive utilities
+   ══════════════════════════════════════ */
+
+/** 在手机模式（≤767px）下隐藏元素 */
+@media (max-width: 767px) {
+  .mobile-hide { display: none !important; }
+}
+
+/** 在桌面模式（≥768px）下隐藏元素 */
+@media (min-width: 768px) {
+  .desktop-hide { display: none !important; }
+}

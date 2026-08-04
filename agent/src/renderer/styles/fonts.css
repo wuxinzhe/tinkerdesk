@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════
+   HarmonyOS Sans — 华为鸿蒙字体
+   可免费商用（SIL Open Font License）
+   来源: https://github.com/IKKI2000/harmonyos-fonts
+   ═══════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Light.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'HarmonyOS Sans SC';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
+}

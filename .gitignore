@@ -1,0 +1,18 @@
+# Node
+node_modules/
+dist/
+out/
+*.log
+
+# 音频/视频素材（本地生成，不传 git）
+ch01/audio/
+*.wav
+*.mp3
+*.mp4
+
+# Remotion 项目
+ch01/remotion/
+
+# 环境变量
+.env
+.env.local

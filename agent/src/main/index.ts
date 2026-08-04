@@ -1,0 +1,67 @@
+import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { join } from 'path'
+import { detectDesktopTools } from './tool-detector'
+import { registerToolHandlers } from './ipc-handlers'
+import { registerToolCenterHandlers } from './tool-center'
+import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
+
+let mainWindow: BrowserWindow | null = null
+
+function createWindow() {
+  Menu.setApplicationMenu(null)
+
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 320,
+    minHeight:720,
+    frame: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
+    }
+  })
+
+  if (process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+    // 开发模式自动打开 DevTools
+    mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+
+  // 支持 F12 切换 DevTools（开发模式）
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.key === 'F12' && process.env.ELECTRON_RENDERER_URL) {
+      mainWindow?.webContents.toggleDevTools()
+    }
+  })
+}
+
+app.whenReady().then(() => {
+  // 注册 IPC handlers
+  ipcMain.handle('detect-tools', () => detectDesktopTools())
+  registerToolHandlers()
+  registerToolCenterHandlers()
+
+  // ── 窗口控制 IPC ──
+  ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
+  ipcMain.handle('window:maximize', () => {
+    if (mainWindow?.isMaximized()) { mainWindow.unmaximize() } else { mainWindow?.maximize() }
+  })
+  ipcMain.handle('window:close', () => { mainWindow?.close() })
+  ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+
+  // 自动更新初始化
+  initUpdater()
+  registerUpdaterHandlers()
+
+  createWindow()
+  checkForUpdatesOnStartup()
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
