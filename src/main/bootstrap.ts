@@ -6,27 +6,67 @@
  *
  * 本地业务无 controller：渲染进程通过 IPC（agent-controller.ts）调用 agentLoop。
  */
-import { ConversationRepository } from './db/conversation-repository'
-import { CustomModelRepository } from './db/custom-model-repository'
-import { initDatabase } from './db/database'
-import { MessageRepository } from './db/message-repository'
-import { ProviderRepository } from './db/providers-repository'
-import { SessionRepository } from './db/session-repository'
+import {app} from 'electron'
+import { ConversationRepository } from './repository/conversation-repository'
+import { CustomModelRepository } from './repository/custom-model-repository'
+import { initDatabase } from './repository/database'
+import { MessageRepository } from './repository/message-repository'
+import { ProviderRepository } from './repository/providers-repository'
+import { SessionRepository } from './repository/session-repository'
 
 import { CompactionService } from './service/compaction-service'
 import { CompressionCooldownStore } from './service/compression-cooldown-store'
 import { ConversationService } from './service/conversation-service'
+import { MemoryStore } from './service/memory-store'
 import { MessageService } from './service/message-service'
 import { SessionService } from './service/session-service'
 
 import type { IDynamicPromptModule } from './prompt'
-import { PromptManager, PromptModuleBuilder } from './prompt'
+import {
+  AgentModePromptModule,
+  GoogleOperationalModule,
+  MemoryGuidanceModule,
+  MemorySnapshotModule,
+  OpenAIExecutionModule,
+  PromptManager,
+  PromptModuleBuilder,
+  PromptRenderer,
+  RuntimeEnvironmentModule,
+  SessionSearchModule,
+  SkillsIndexModule,
+  SoulPromptModule,
+  SystemContextModule,
+  TaskCompletionModule,
+  ToolEnforcementModule,
+  UserProfileModule,
+} from './prompt'
 
 import type { ModelConfig } from './llm'
 import { AnthropicClient, apiModeFromString, createModelConfig, LlmClientManager, LlmOperationManager, LlmRouter, OpenAIClient } from './llm'
 
 import type { AgentToolRegistration } from './tools'
-import { ToolManager } from './tools'
+import {
+  ClarifyTool,
+  CLARIFY_TOOL_NAME,
+  MemoryTool,
+  MEMORY_TOOL_NAME,
+  SessionSearchTool,
+  SESSION_SEARCH_TOOL_NAME,
+  SkillManageTool,
+  SKILL_MANAGE_TOOL_NAME,
+  SkillsListTool,
+  SKILLS_LIST_TOOL_NAME,
+  SkillViewTool,
+  SKILL_VIEW_TOOL_NAME,
+  TodoTool,
+  TODO_TOOL_NAME,
+  ToolManager,
+} from './tools'
+import {TodoService} from './service/todo-service'
+import {PrivateSkillService} from './service/private-skill-service'
+import {PrivateSkillRepository} from './repository/private-skill-repository'
+import {PrivateSkillFileRepository} from './repository/private-skill-file-repository'
+import {PrivateSkillRelatedRepository} from './repository/private-skill-related-repository'
 
 import { AgentLoop } from './loop/agent-loop'
 
@@ -37,6 +77,7 @@ export interface TinkerDesk {
   conversationService: ConversationService
   sessionService: SessionService
   compactionService: CompactionService
+  memoryStore: MemoryStore
   promptManager: PromptManager
   promptModuleBuilder: PromptModuleBuilder
   toolManager: ToolManager
@@ -65,19 +106,55 @@ export function bootstrap(
   // ── Service 层 ──
   const messageService = new MessageService(messageRepo, conversationRepo)
   const conversationService = new ConversationService(conversationRepo)
-  const sessionService = new SessionService(sessionRepo)
+  const sessionService = new SessionService(sessionRepo, messageRepo)
   const cooldownStore = new CompressionCooldownStore()
   const compactionService = new CompactionService(llmRouter, messageService, conversationService, cooldownStore)
 
-  // ── Prompt ──
-  const promptManager = new PromptManager(promptModules)
+  // ── Prompt（预设模块 + 调用方自定义模块） ──
+  const renderer = new PromptRenderer()
+
+  // 预设模块：注入技能查询/记忆读取依赖（对接 PrivateSkillService / MemoryStore）
+  const presetModules: IDynamicPromptModule[] = [
+    new AgentModePromptModule(renderer),
+    new SystemContextModule(renderer),
+    new RuntimeEnvironmentModule(renderer),
+    new ToolEnforcementModule(renderer),
+    new TaskCompletionModule(renderer),
+    new OpenAIExecutionModule(renderer),
+    new GoogleOperationalModule(renderer),
+    new MemoryGuidanceModule(renderer),
+    new SessionSearchModule(renderer),
+    new UserProfileModule(renderer),
+    new SoulPromptModule(renderer),
+  ]
+
+  // 条件模块（依赖技能/记忆数据源；未注入时提供空实现）
+  const memoryStore = new MemoryStore(app.getPath('userData'))
+  const allModules: IDynamicPromptModule[] = [
+    ...presetModules,
+    ...promptModules,
+    new SkillsIndexModule(renderer, () => []),
+    new MemorySnapshotModule(renderer, (profile) => memoryStore.readAll(MemoryStore.TARGET_MEMORY, profile)),
+  ]
+  const promptManager = new PromptManager(allModules)
   const staticModuleRepo = {
     findByProfile: (_profile: string) => [] as Array<{ id: string; content: string; enabled: boolean; sortOrder: number }>,
   }
   const promptModuleBuilder = new PromptModuleBuilder(promptManager, sessionRepo, staticModuleRepo)
 
-  // ── Tools ──
-  const toolManager = new ToolManager(toolRegistrations)
+  // ── Tools（内建工具 + 调用方自定义工具） ──
+  const todoService = new TodoService(app.getPath('userData'))
+  const privateSkillService = new PrivateSkillService(new PrivateSkillRepository(), new PrivateSkillFileRepository(), new PrivateSkillRelatedRepository())
+  const builtinTools: AgentToolRegistration[] = [
+    {meta: {name: MEMORY_TOOL_NAME, emoji: '🧠'}, tool: new MemoryTool(renderer, memoryStore)},
+    {meta: {name: TODO_TOOL_NAME, emoji: '✅'}, tool: new TodoTool(renderer, todoService)},
+    {meta: {name: CLARIFY_TOOL_NAME, emoji: '❓'}, tool: new ClarifyTool(renderer, messageService)},
+    {meta: {name: SKILL_VIEW_TOOL_NAME, emoji: '📄'}, tool: new SkillViewTool(renderer, privateSkillService)},
+    {meta: {name: SKILLS_LIST_TOOL_NAME, emoji: '📚'}, tool: new SkillsListTool(renderer, privateSkillService)},
+    {meta: {name: SKILL_MANAGE_TOOL_NAME, emoji: '🛠️'}, tool: new SkillManageTool(renderer, privateSkillService, new PrivateSkillFileRepository())},
+    {meta: {name: SESSION_SEARCH_TOOL_NAME, emoji: '🔍'}, tool: new SessionSearchTool(renderer, sessionService)},
+  ]
+  const toolManager = new ToolManager([...builtinTools, ...toolRegistrations])
 
   // ── 模型配置解析（custom_models + providers → ModelConfig[]） ──
   const resolveModelConfigs = (scene: string): ModelConfig[] => {
@@ -113,6 +190,7 @@ export function bootstrap(
     conversationService,
     sessionService,
     compactionService,
+    memoryStore,
     promptManager,
     promptModuleBuilder,
     toolManager,

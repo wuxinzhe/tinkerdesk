@@ -9,15 +9,19 @@
  * 本地桌面应用：所有工具统一为本地工具（在 Electron 主进程执行），
  * 无服务端/客户端区分，无 Redis。
  */
-import type {AgentToolRegistration, IAgentTool, ToolExecutionContext} from './types'
+import type {AgentToolRegistration, IAgentTool, ToolExecutionContext, ToolType} from './types'
+import {TOOL_TYPE_SERVER} from './types'
 import {ToolResult} from './tool-result'
 import {ToolSchema} from './tool-schema'
 import type {ToolCall} from '../../defines/models/message'
 
-/** 工具管理器（本地工具版） */
+/** 工具管理器（本地工具版，含工具类型分类） */
 export class ToolManager {
   /** 本地工具池：toolName → IAgentTool */
   private readonly tools = new Map<string, IAgentTool>()
+
+  /** 工具类型：toolName → toolType（server = 服务端执行；client = 客户端工具） */
+  private readonly toolTypes = new Map<string, ToolType>()
 
   /** 禁用工具集合：profile → Set<toolName> */
   private readonly disabledTools = new Map<string, Set<string>>()
@@ -38,6 +42,8 @@ export class ToolManager {
       }
       this.tools.set(toolName, reg.tool)
       this.toolEmojis.set(toolName, reg.meta.emoji ?? '⚡')
+      // 工具类型分类（默认 server，注册时可覆盖）
+      this.toolTypes.set(toolName, reg.meta.toolType ?? TOOL_TYPE_SERVER)
 
       // 工具类自身可覆写 emoji（通过 schema.setEmoji）
       const schema = reg.tool.getSchema()
@@ -91,6 +97,63 @@ export class ToolManager {
   getToolSchema(toolName: string): ToolSchema | null {
     const tool = this.tools.get(toolName)
     return tool ? tool.getSchema() : null
+  }
+
+  /** 获取工具类型（server / desktop / web / ...） */
+  getToolType(toolName: string): ToolType | null {
+    return this.toolTypes.get(toolName) ?? null
+  }
+
+  /** 获取全部工具类型映射（toolName → toolType） */
+  getAllToolTypes(): Record<string, ToolType> {
+    return Object.fromEntries(this.toolTypes)
+  }
+
+  /**
+   * 获取客户端工具 Schema（toolType = client，注册到服务端用）。
+   * 云端模式时，这些工具需要向 showing-agent 服务端注册，
+   * 服务端 AgentLoop 调用时派发回本地执行。
+   */
+  getClientToolSchemas(profile: string): ToolSchema[] {
+    const disabled = this.getDisabledSet(profile)
+    const result: ToolSchema[] = []
+    for (const [name, tool] of this.tools) {
+      if (this.toolTypes.get(name) === TOOL_TYPE_SERVER) continue
+      if (disabled.has(name)) continue
+      result.push(tool.getSchema())
+    }
+    return result
+  }
+
+  /**
+   * 获取服务端工具 Schema（toolType = server，本地 AgentLoop 直接执行）。
+   */
+  getServerToolSchemas(profile: string): ToolSchema[] {
+    const disabled = this.getDisabledSet(profile)
+    const result: ToolSchema[] = []
+    for (const [name, tool] of this.tools) {
+      if (this.toolTypes.get(name) !== TOOL_TYPE_SERVER) continue
+      if (disabled.has(name)) continue
+      result.push(tool.getSchema())
+    }
+    return result
+  }
+
+  /**
+   * 将客户端工具注册到服务端（云端模式预留）。
+   * 将来接入 showing-agent 时：把 getClientToolSchemas 通过 agent-api remote
+   * 通道注册到服务端，服务端 AgentLoop 就能调用本地客户端工具。
+   */
+  async registerClientToolsToServer(profile: string): Promise<boolean> {
+    const clientSchemas = this.getClientToolSchemas(profile)
+    if (clientSchemas.length === 0) {
+      return true
+    }
+    // TODO(remote): 通过 agent-api remote 通道向服务端注册
+    // const api = getAgentApi()
+    // await api.registerTools(clientSchemas.map(s => s.toFunctionCallingFormat()))
+    console.warn(`registerClientToolsToServer: ${clientSchemas.length} 个客户端工具待注册（云端模式未启用，跳过）`)
+    return false
   }
 
   // ════════════════════════════════════════════════════════════

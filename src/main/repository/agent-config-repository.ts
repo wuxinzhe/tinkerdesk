@@ -6,29 +6,9 @@
  * 本地单用户：主键从 (user_id, profile) 简化为 profile。
  */
 import {getDatabase} from './database'
+import type {AgentConfigEntity} from './types'
 
 /** Agent 配置实体（对应 AgentConfigEntity，NULL = 使用全局默认值） */
-export interface AgentConfigEntity {
-  profile: string
-  maxIterations: number | null
-  toolExecutionTimeout: number | null
-  maxConversations: number | null
-  memoryMaxChars: number | null
-  userMaxChars: number | null
-  thresholdPercent: number | null
-  tailRatio: number | null
-  agentSoulPrompt: string | null
-  warningsEnabled: number | null
-  hardStopEnabled: number | null
-  exactFailureWarnAfter: number | null
-  sameToolFailureWarnAfter: number | null
-  noProgressWarnAfter: number | null
-  exactFailureBlockAfter: number | null
-  sameToolFailureHaltAfter: number | null
-  noProgressBlockAfter: number | null
-  createdAt?: string
-  updatedAt?: string
-}
 
 const COLS = 'profile, max_iterations, tool_execution_timeout, max_conversations, memory_max_chars, user_max_chars, threshold_percent, tail_ratio, agent_soul_prompt, warnings_enabled, hard_stop_enabled, exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after, exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after, created_at, updated_at'
 

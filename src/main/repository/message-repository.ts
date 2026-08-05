@@ -6,46 +6,13 @@
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
 import {getDatabase} from './database'
+import type {MessageEntity, MessageQuery, SessionMessageQuery} from './types'
 
 /** 消息实体（对应 MessageEntity） */
-export interface MessageEntity {
-  id?: number
-  sessionId: string
-  conversationId: string | null
-  profile: string
-  role: string
-  content: string
-  reasoningContent: string
-  toolCall: string | null
-  toolCallId: string
-  toolName: string
-  finishReason: string
-  interactionStatus: string
-  messageType: string
-  deleted: boolean
-  createdAt?: string
-  updatedAt?: string
-}
 
 /** 查询条件（findByConditions 参数） */
-export interface MessageQuery {
-  messageType?: string
-  messageTypes?: string[]
-  excludeMessageTypes?: string[]
-  conversationId?: string
-  sessionId?: string
-  profile?: string
-  sortDesc?: boolean
-}
 
 /** 会话消息查询条件（findMessagesBySession 参数） */
-export interface SessionMessageQuery {
-  sessionId: string
-  profile: string
-  sortOrder?: 'ASC' | 'DESC'
-  limit?: number
-  roles?: string[]
-}
 
 // ── 列清单 ──
 const COLS = 'id, session_id, conversation_id, profile, role, content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason, interaction_status, message_type, deleted, created_at, updated_at'
@@ -212,7 +179,6 @@ export class MessageRepository {
     const db = getDatabase()
     const where: string[] = ['m.session_id = ?', 'm.profile = ?', 'm.deleted = 0']
     const params: Array<string | number> = [query.sessionId, query.profile]
-
     if (query.roles && query.roles.length > 0) {
       where.push(`m.role IN (${query.roles.map(() => '?').join(',')})`)
       params.push(...query.roles)
@@ -225,6 +191,19 @@ export class MessageRepository {
       params.push(query.limit)
     }
     const rows = db.prepare(sql).all(...params) as Record<string, unknown>[]
+    return rows.map(toEntity)
+  }
+
+  /** 列出会话全部消息（READ/SCROLL 模式用，不按 profile 过滤） */
+  listAllBySession(sessionId: string, limit = 10000): MessageEntity[] {
+    const db = getDatabase()
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM messages m
+        WHERE m.session_id = ? AND m.deleted = 0
+        ORDER BY m.id ASC LIMIT ?`
+      )
+      .all(sessionId, limit) as Record<string, unknown>[]
     return rows.map(toEntity)
   }
 

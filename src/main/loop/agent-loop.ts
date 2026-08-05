@@ -1,13 +1,16 @@
 /**
- * agent-loop.ts — 线程模型 AgentLoop（完整接入 + 事件接口）
+ * agent-loop.ts — 线程模型 AgentLoop（三级上下文版）
  *
  * 本地客户端用 JS 的 async/await 线程模型，状态保存在函数调用栈里。
- * 完整链路：
- *   会话加载/创建 → 对话周期开始 → 上下文加载（历史+暂存）
- *   → 提示词构建（system） → LLM 流式调用 → 工具执行 → 结果回填 → 循环
- *   → 完成 → 消息落库（flush） → 会话 token 统计
+ * 上下文管理对齐 showing-agent：SessionContext → ConversationContext → ToolContext
+ * 三级继承，所有配置/环境在对话开始前一次性加载，贯穿整个周期。
  *
- * 对外事件（对齐状态机版 ConversationEngine / showing-agent IConversationEngine）：
+ * 完整链路：
+ *   构建 SessionContext（配置加载）→ 会话加载/创建 → startCycle（ConversationContext）
+ *   → 上下文加载（摘要+历史+暂存）→ 提示词构建（system） → LLM 流式调用
+ *   → 工具执行（ToolContext）→ 结果回填 → 循环 → 完成 → 落库 → 压缩检查
+ *
+ * 对外事件（对齐 showing-agent IConversationEngine）：
  *   chat          — 用户消息入口（onUserMessage）
  *   onToolResult  — 工具结果回调（外部工具异步返回时挂起恢复）
  *   onApproval    — 审批响应回调（同意/拒绝）
@@ -15,13 +18,12 @@
  *   interrupt     — 中断当前对话（stop）
  *   clearAll      — 清理会话状态
  */
-import { randomUUID } from 'crypto'
 import type { ToolCall } from '../../defines/models/message'
 import type { ToolSchema } from '../../defines/tools/base-tool'
-import { SCENE_SUMMARY } from '../llm/llm-operation'
+import { SCENE_SUMMARY } from '../llm/types'
 import { RES_REASONING, RES_TEXT, RES_TOOL_CALLS } from '../llm/llm-response'
 import type { LlmRouter } from '../llm/llm-router'
-import type { ApiMessage, LlmResponse, LlmRouterContext, ModelConfig, TokenCallback } from '../llm/types'
+import type { ApiMessage, LlmResponse, LlmRouterContext, ModelConfig, ChunkCallback } from '../llm/types'
 import type { PromptModuleBuilder } from '../prompt/prompt-module-builder'
 import type { PromptContext } from '../prompt/types'
 import type { CompactionService } from '../service/compaction-service'
@@ -30,14 +32,11 @@ import type { MessageService } from '../service/message-service'
 import { MessageFactory } from '../service/message-service'
 import type { SessionService } from '../service/session-service'
 import type { ToolManager } from '../tools/tool-manager'
-import type { ToolExecutionContext } from '../tools/types'
-import {
-  SCENE_CHAT,
-  CONV_IN_PROGRESS,
-  CONV_COMPLETED,
-  CONV_COMPRESSED,
-} from './types'
-import type { ThreadSession, AgentLoopOptions, AgentLoopResult } from './types'
+import { SCENE_CHAT, CONV_COMPLETED, CONV_COMPRESSED, RES_INTERRUPTED } from './types'
+import type { AgentLoopOptions, AgentLoopResult } from './types'
+import type { ConversationContext, SessionContext, ToolContext } from './context'
+import { startCycle, createToolContext, defaultAgentConfig } from './context'
+import type { AgentConfig, ClientEnv } from './context'
 
 /** 线程模型 AgentLoop */
 export class AgentLoop {
@@ -69,9 +68,9 @@ export class AgentLoop {
   }
 
   /** LlmRouterContext（getModelConfigs 按场景返回） */
-  private createRouterContext(): LlmRouterContext {
+  private createRouterContext(modelConfigs: Map<string, ModelConfig[]>): LlmRouterContext {
     return {
-      getModelConfigs: (scene: string) => this.resolveModelConfigs(scene),
+      getModelConfigs: (scene: string) => modelConfigs.get(scene) ?? [],
     }
   }
 
@@ -83,82 +82,99 @@ export class AgentLoop {
   }
 
   /** 构建 PromptContext（供提示词模块使用） */
-  private buildPromptContext(sessionId: string, profile: string): PromptContext {
+  private buildPromptContext(ctx: SessionContext): PromptContext {
+    const cycle = ctx as ConversationContext
+    const mainModel = cycle.getMainModelConfig?.()
     return {
-      sessionId,
-      profile,
-      toolNames: this.toolManager.getAvailableToolNames(profile),
+      sessionId: ctx.sessionId,
+      profile: ctx.profile,
+      toolNames: this.toolManager.getAvailableToolNames(ctx.profile),
+      clientEnv: ctx.clientEnv,
+      modelName: mainModel?.modelName,
     }
   }
 
-  // ══════════════════════════════════════════════════════════════
-  // 对外事件（对齐 showing-agent IConversationEngine）
-  // ══════════════════════════════════════════════════════════════
-
   /**
    * 用户消息入口（onUserMessage）：单轮对话完整链路。
-   * 流式 token 通过 session.onToken 回调，返回最终 AgentLoopResult。
+   * 入参最小化：sessionId?（不传自动创建）+ profile + 回调；配置在内部一次性加载。
    */
-  async chat(session: ThreadSession, userMessage: string): Promise<AgentLoopResult> {
+  async chat(options: {
+    sessionId?: string
+    profile: string
+    connectId?: string
+    yolo?: boolean
+    onToken?: ChunkCallback
+    onToolStart?: (toolName: string) => void
+    onApprovalRequest?: (toolCall: ToolCall, reason?: string) => Promise<boolean>
+  }, userMessage: string): Promise<AgentLoopResult> {
+    const profile = options.profile
+
     // ── 1. 会话：存在则加载，不存在则创建 ──
-    let sessionId = session.sessionId
+    let sessionId = options.sessionId
     if (!sessionId) {
-      const created = this.sessionService.create(session.profile)
+      const created = this.sessionService.create(profile)
       sessionId = created.id
     }
+    // 会话 ID 此时必存在（创建或传入）
+    sessionId = sessionId as string
     const sessionEntity = this.sessionService.findById(sessionId)
     if (!sessionEntity) {
       throw new Error(`会话不存在: ${sessionId}`)
+    }
+
+    // ── 2. 构建 SessionContext（配置一次性加载：AgentConfig + clientEnv） ──
+    const sessionCtx: SessionContext = {
+      sessionId,
+      profile,
+      connectId: options.connectId ?? 'local',
+      yolo: options.yolo ?? false,
+      agentConfig: this.loadAgentConfig(profile),
+      clientEnv: this.loadClientEnv(),
+      onToken: options.onToken,
+      onToolStart: options.onToolStart,
+      onApprovalRequest: options.onApprovalRequest,
     }
 
     // 注册中断控制
     const abort = new AbortController()
     this.abortControllers.set(sessionId, abort)
 
-    // ── 2. 对话周期：创建 IN_PROGRESS 对话 ──
-    const convId = randomUUID()
-    this.conversationService.save({
-      id: convId,
-      sessionId,
-      status: CONV_IN_PROGRESS,
-      messageCount: 0,
-      estimatedTokens: 0,
-      totalTokens: 0,
-      cacheReadTokens: 0,
-      cacheWriteTokens: 0,
-      startedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      completedAt: null,
-    })
+    // ── 3. 对话周期：创建 IN_PROGRESS 对话 + 构建 ConversationContext ──
+    const conv = this.conversationService.startConversation(sessionId)
+    const convId = conv.id
+    const toolNames = this.toolManager.getAvailableToolNames(profile)
+    const allConfigs = this.resolveAllConfigs(profile)
+    const cycle = startCycle(sessionCtx, convId, toolNames, allConfigs)
 
-    // ── 3. 用户消息入暂存 ──
-    this.messageService.saveTempMessage(MessageFactory.buildUserMessage(convId, sessionId, session.profile, userMessage))
+    // ── 4. 用户消息入暂存 ──
+    this.messageService.saveTempMessage(MessageFactory.buildUserMessage(convId, sessionId, profile, userMessage))
 
-    // ── 4. 上下文加载（历史 + 当前暂存）→ 转 ApiMessage ──
-    const history = this.messageService.loadContextMessages(sessionId, convId, session.profile)
+    // ── 5. 上下文加载（摘要 + 历史 + 暂存）→ 转 ApiMessage ──
+    const history = this.messageService.loadContextMessages(sessionId, convId, profile)
 
-    // ── 5. 提示词构建（system 消息） ──
-    const systemPrompt = this.promptModuleBuilder.buildSystemPrompt(this.buildPromptContext(sessionId, session.profile))
+    // ── 6. 提示词构建（system 消息） ──
+    const systemPrompt = this.promptModuleBuilder.buildSystemPrompt(this.buildPromptContext(cycle))
     const messages: ApiMessage[] = []
     if (systemPrompt) {
       messages.push({ role: 'system', content: systemPrompt })
     }
     messages.push(...history)
 
-    const ctx = this.createRouterContext()
-    const tools = this.getToolSchemas(session.profile)
+    const ctx = this.createRouterContext(allConfigs)
+    const tools = this.getToolSchemas(profile)
 
     try {
-      // ── 6. while-loop：LLM 调用 ↔ 工具执行 ──
+      // ── 7. while-loop：LLM 调用 ↔ 工具执行 ──
       while (!abort.signal.aborted) {
-        const response = await this.llmRouter.chat(SCENE_CHAT, ctx, messages, tools, session.onToken ?? (() => { }))
+        const response = await this.llmRouter.chat(SCENE_CHAT, ctx, messages, tools, cycle.onToken ?? (() => { }))
 
         switch (response.resType) {
           case RES_TEXT:
             // 完成：助手消息持久化 + 返回
-            this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, session.profile, response.text))
+            this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, profile, response.text))
             // 主动压缩检查（阈值 + 冷却控制）
-            await this.checkCompaction(session, sessionId, session.profile, response)
-            return this.finishCycle(session, sessionId, convId, response)
+            await this.checkCompaction(cycle, response)
+            return this.finishCycle(cycle, response)
 
           case RES_TOOL_CALLS:
             // 工具调用：保存工具调用消息 + 逐个执行 + 结果回填
@@ -166,16 +182,16 @@ export class AgentLoop {
               MessageFactory.buildAssistantToolCall(
                 convId,
                 sessionId,
-                session.profile,
+                profile,
                 response.reasoningContent ?? '',
                 Object.fromEntries(response.toolCalls.map((tc) => [tc.id, { name: tc.name, arguments: tc.arguments }]))
               )
             )
             for (const tc of response.toolCalls) {
-              session.onToolStart?.(tc.name)
-              const result = await this.executeToolCall(session, sessionId, convId, tc)
+              cycle.onToolStart?.(tc.name)
+              const result = await this.executeToolCall(cycle, tc)
               // 工具结果持久化 + 回填 LLM 上下文
-              this.messageService.saveTempMessage(MessageFactory.buildToolResult(convId, sessionId, session.profile, tc.id, result))
+              this.messageService.saveTempMessage(MessageFactory.buildToolResult(convId, sessionId, profile, tc.id, result))
               messages.push({
                 role: 'tool',
                 content: result,
@@ -188,18 +204,18 @@ export class AgentLoop {
 
           case RES_REASONING:
             // 纯推理（thinking prefilling）→ 保存推理内容，继续
-            this.messageService.saveTempMessage(MessageFactory.buildAssistantThinking(convId, sessionId, session.profile, response.reasoningContent ?? ''))
+            this.messageService.saveTempMessage(MessageFactory.buildAssistantThinking(convId, sessionId, profile, response.reasoningContent ?? ''))
             break
 
           default:
             // 错误/空响应 → 结束周期返回
-            return this.finishCycle(session, sessionId, convId, response)
+            return this.finishCycle(cycle, response)
         }
       }
 
       // 中断触发
-      return this.finishCycle(session, sessionId, convId, {
-        resType: 'INTERRUPTED',
+      return this.finishCycle(cycle, {
+        resType: RES_INTERRUPTED,
         text: '',
         toolCalls: [],
         errorMessage: '对话已被用户中断',
@@ -293,18 +309,42 @@ export class AgentLoop {
   // 内部方法
   // ══════════════════════════════════════════════════════════════
 
+  /** 加载 Agent 配置（对话开始前一次性加载，避免周期内反复读 DB） */
+  private loadAgentConfig(profile: string): AgentConfig {
+    // TODO: 从 agent_configs 表读取（AgentConfigRepository），未配置时用默认值
+    return defaultAgentConfig()
+  }
+
+  /** 加载客户端环境（对话开始前探测，周期内不变） */
+  private loadClientEnv(): ClientEnv {
+    return {
+      os: process.platform,
+      clientType: 'desktop',
+      shell: 'bash',
+      homeDir: process.env.HOME ?? '',
+      pathFormat: 'unix',
+    }
+  }
+
+  /** 解析全部场景的模型配置（对话开始前一次性加载） */
+  private resolveAllConfigs(profile: string): Map<string, ModelConfig[]> {
+    const map = new Map<string, ModelConfig[]>()
+    map.set(SCENE_CHAT, this.resolveModelConfigs(SCENE_CHAT))
+    map.set(SCENE_SUMMARY, this.resolveModelConfigs(SCENE_SUMMARY))
+    return map
+  }
+
   /** 主动压缩检查：LLM 调用接近上下文上限时触发压缩（阈值 + 冷却控制） */
-  private async checkCompaction(session: ThreadSession, sessionId: string, profile: string, response: LlmResponse): Promise<void> {
+  private async checkCompaction(cycle: ConversationContext, response: LlmResponse): Promise<void> {
     try {
-      const mainConfig = this.resolveModelConfigs(SCENE_CHAT)[0]
+      const mainConfig = cycle.getMainModelConfig()
       if (!mainConfig || response.promptTokens === undefined) {
         return
       }
-      const threshold = session.agentConfig?.thresholdPercent ?? 0.5
-      if (this.compactionService.shouldCompact(sessionId, profile, mainConfig, threshold, response.promptTokens)) {
-        const compressConfig = this.resolveModelConfigs(SCENE_SUMMARY)[0] ?? mainConfig
-        const tailRatio = session.agentConfig?.tailRatio ?? 0.2
-        await this.compactionService.compact(sessionId, profile, mainConfig.contextLimit, tailRatio, compressConfig)
+      const threshold = cycle.agentConfig.thresholdPercent
+      if (this.compactionService.shouldCompact(cycle.sessionId, cycle.profile, mainConfig, threshold, response.promptTokens)) {
+        const compressConfig = cycle.getConfigByScene(SCENE_SUMMARY) ?? mainConfig
+        await this.compactionService.compact(cycle.sessionId, cycle.profile, mainConfig.contextLimit, cycle.agentConfig.tailRatio, compressConfig)
       }
     } catch (e) {
       console.warn(`主动压缩检查异常（不影响主流程）: ${(e as Error).message}`)
@@ -312,7 +352,8 @@ export class AgentLoop {
   }
 
   /** 周期结束：对话标记完成 + 消息落库 + token 统计 */
-  private finishCycle(session: ThreadSession, sessionId: string, convId: string, response: LlmResponse): AgentLoopResult {
+  private finishCycle(cycle: ConversationContext, response: LlmResponse): AgentLoopResult {
+    const { sessionId, conversationId: convId, profile } = cycle
     // 对话完成
     this.conversationService.updateStatus(convId, sessionId, CONV_COMPLETED)
     // 暂存消息落库
@@ -331,31 +372,18 @@ export class AgentLoop {
   }
 
   /** 执行单个工具调用（本地直接 await；需要审批时挂起等待） */
-  private async executeToolCall(session: ThreadSession, sessionId: string, convId: string, toolCall: ToolCall): Promise<string> {
+  private async executeToolCall(cycle: ConversationContext, toolCall: ToolCall): Promise<string> {
+    const toolCtx = createToolContext(cycle, toolCall)
+
     // ── 审批检查：需要审批（非 yolo 且配置了审批回调）时挂起 ──
-    if (!session.yolo && session.onApprovalRequest) {
-      const approved = await this.requestApproval(session, sessionId, toolCall)
+    if (!toolCtx.yolo && cycle.onApprovalRequest) {
+      const approved = await this.requestApproval(cycle, toolCall)
       if (!approved) {
         return '用户拒绝执行'
       }
     }
 
-    const execCtx: ToolExecutionContext = {
-      sessionId,
-      conversationId: convId,
-      profile: session.profile,
-      connectId: session.connectId,
-      yolo: session.yolo,
-      toolCall,
-      sendAction: (_eventType, _payload) => {
-        // 本地执行，无客户端派发
-      },
-      sendMessage: (_eventType, _payload) => {
-        // 本地执行，无客户端派发
-      },
-    }
-
-    const result = await this.toolManager.execute(execCtx)
+    const result = await this.toolManager.execute(this.toToolExecContext(toolCtx))
     if (result.async) {
       // 异步工具：挂起等待外部回调（UI 工具等通过 onToolResult 恢复）
       return this.waitToolResult(toolCall.id)
@@ -363,12 +391,30 @@ export class AgentLoop {
     return result.result
   }
 
+  /** ToolContext → 工具执行上下文（tools 层格式） */
+  private toToolExecContext(ctx: ToolContext): import('../tools/types').ToolExecutionContext {
+    return {
+      sessionId: ctx.sessionId,
+      conversationId: ctx.conversationId,
+      profile: ctx.profile,
+      connectId: ctx.session.connectId,
+      yolo: ctx.yolo,
+      toolCall: ctx.toolCall,
+      sendAction: (_eventType, _payload) => {
+        // 本地执行，无客户端派发
+      },
+      sendMessage: (_eventType, _payload) => {
+        // 本地执行，无客户端派发
+      },
+    }
+  }
+
   /** 审批请求：注册挂起等待 → 调 onApprovalRequest 回调 → 等 onApproval 恢复 */
-  private requestApproval(session: ThreadSession, sessionId: string, toolCall: ToolCall): Promise<boolean> {
+  private requestApproval(cycle: ConversationContext, toolCall: ToolCall): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       this.approvalWaiters.set(toolCall.id, { resolve })
       // 通知 UI 弹审批卡片
-      const approvedPromise = session.onApprovalRequest?.(toolCall)
+      const approvedPromise = cycle.onApprovalRequest?.(toolCall)
       if (approvedPromise === undefined) {
         // 未配置审批回调 → 默认允许
         this.approvalWaiters.delete(toolCall.id)

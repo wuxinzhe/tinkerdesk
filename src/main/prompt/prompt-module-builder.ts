@@ -8,7 +8,8 @@
  */
 import type {IDynamicPromptModule, PromptContext, PromptModuleEntry} from './types'
 import type {PromptManager} from './prompt-manager'
-import type {SessionRepository} from '../db/session-repository'
+import type {SessionRepository} from '../repository/session-repository'
+import {nowDb, nowIso, nowTs, todayDate} from '../utils/time'
 
 /** 静态模块（用户自定义，存 SQLite） */
 export interface StaticPromptModule {
@@ -82,7 +83,7 @@ export class PromptModuleBuilder {
     const map: Record<string, unknown> = {
       profile: ctx.profile,
       sessionId: ctx.sessionId,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayDate(),
     }
     const env = ctx.clientEnv
     if (env) {

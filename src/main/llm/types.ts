@@ -1,12 +1,18 @@
 /**
  * types.ts — LLM 模块统一类型定义
  *
- * 集中存放 llm 包下所有类型（接口/枚举/回调），实现文件只从本文件 import。
+ * 集中存放 llm 包下所有类型（接口/枚举/回调）+ 场景常量，
+ * 实现文件只从本文件 import。
  * 对应 showing-agent core/llm 包的 ApiMessage / ApiMode / ModelConfig /
- * LlmResponse / StreamingChunk / OperationDecision / ILlmClient / ILlmOperation。
+ * LlmResponse / LlmChunk / OperationDecision / ILlmClient / ILlmOperation。
  */
 import type {ToolCall} from '../../defines/models/message'
 import type {ToolSchema} from '../../defines/tools/base-tool'
+
+/** 场景常量（对应 showing-agent ChatOperation / SummaryOperation / TitleOperation） */
+export const SCENE_CHAT = 'chat'
+export const SCENE_SUMMARY = 'summary'
+export const SCENE_TITLE = 'title'
 
 // ── ApiMessage（api-message.ts） ──────────────────────────────────
 
@@ -72,10 +78,10 @@ export interface LlmResponse {
   retryAfterSeconds?: number
 }
 
-// ── StreamingChunk + TokenCallback（streaming-chunk.ts） ──────────
+// ── LlmChunk + ChunkCallback（streaming-chunk.ts） ────────────────
 
 /** 流式 SSE chunk 的 token 封装（三种内容各自独立，接收方检查非空字段分别路由） */
-export interface StreamingChunk {
+export interface LlmChunk {
   /** 文本内容增量（delta.content），无文本时为空字符串 */
   text: string
   /** 推理内容增量（delta.reasoning_content），无推理时为空字符串 */
@@ -89,7 +95,7 @@ export interface StreamingChunk {
 }
 
 /** 流式 token 回调类型（每个 SSE chunk 到达时调用一次） */
-export type TokenCallback = (chunk: StreamingChunk) => void
+export type ChunkCallback = (chunk: LlmChunk) => void
 
 // ── OperationDecision（operation-decision.ts） ────────────────────
 
@@ -112,7 +118,7 @@ export interface LlmClient {
   callNonStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[]): Promise<LlmResponse>
 
   /** 流式调用 LLM API（每 chunk 通过 tokenCallback 传出） */
-  callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], tokenCallback: TokenCallback): Promise<LlmResponse>
+  callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], tokenCallback: ChunkCallback): Promise<LlmResponse>
 }
 
 // ── LlmOperation（llm-operation.ts） ──────────────────────────────

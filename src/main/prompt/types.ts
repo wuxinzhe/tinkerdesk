@@ -20,6 +20,10 @@ export interface PromptContext {
   }
   /** 可用工具名列表 */
   toolNames?: string[]
+  /** 主模型名（system-context 模块用） */
+  modelName?: string
+  /** 灵魂提示词模板（soul-prompt 模块用） */
+  agentSoulPrompt?: string
   /** 其他自定义上下文（模块自取） */
   [key: string]: unknown
 }

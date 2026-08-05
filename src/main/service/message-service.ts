@@ -6,9 +6,9 @@
  * - loadContextMessages：合并历史 + 当前暂存，供 LLM 上下文构建
  * - 审批状态更新、对话删除、摘要保存
  */
-import {MessageRepository} from '../db/message-repository'
-import type {MessageEntity} from '../db/message-repository'
-import {ConversationRepository} from '../db/conversation-repository'
+import {MessageRepository} from '../repository/message-repository'
+import type {MessageEntity} from '../repository/types'
+import {ConversationRepository} from '../repository/conversation-repository'
 import type {ApiMessage} from '../llm/types'
 
 /** 消息类型常量（对齐 showing-agent MessageConstants） */
@@ -173,14 +173,20 @@ export class MessageService {
 
   /** 合并历史 + 当前暂存，按时间排序，转为 ApiMessage（LLM 上下文） */
   loadContextMessages(sessionId: string, convId: string, profile: string): ApiMessage[] {
-    // 历史（已完成对话）
+    // 源1：已完成对话的历史消息（COMPLETED 状态，压缩过的 COMPRESSED 对话不在此列）
     const history = this.messageRepo.findBySessionCompleted(sessionId, profile, 'COMPLETED')
-    // 当前暂存
+    // 源2：系统摘要（压缩信息，在压缩对话之前，扮演替补历史上下文）
+    const summary = this.loadLatestSummaryContent(sessionId, profile)
+    // 源3：当前进行中对话的暂存消息（尚未 flush 的数据）
     const current = this.tempMessages.get(convId) ?? []
 
-    const all: MessageEntity[] = [...history, ...current]
-    all.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0))
+    if (summary) {
+      // 合并：summary 最前（最旧）→ 历史中间 → 暂存最后（最新）
+      return [summary, ...history.map(entityToApiMessage), ...current.map(entityToApiMessage)]
+    }
 
+    const all = [...history, ...current]
+    all.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0))
     return all.map(entityToApiMessage)
   }
 
@@ -220,10 +226,10 @@ export class MessageService {
   }
 
   /** 获取最新的摘要消息（压缩 + 摘要模块共用入口） */
-  loadLatestSummaryContent(sessionId: string): ApiMessage | null {
+  loadLatestSummaryContent(sessionId: string, profile: string): ApiMessage | null {
     const msgs = this.messageRepo.findMessagesBySession({
       sessionId,
-      profile: '',
+      profile,
       sortOrder: 'DESC',
       limit: 1,
       roles: ['system'],

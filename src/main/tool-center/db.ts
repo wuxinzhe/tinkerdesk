@@ -11,6 +11,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import type { CheckedTool, McpServerConfig } from '@/defines/tools/center-types'
+import {nowDb, nowIso, nowTs, todayDate} from '../utils/time'
 
 const DB_FILENAME = 'tool-center.db'
 
@@ -86,7 +87,7 @@ export function saveToolRegistry(tools: CheckedTool[]): void {
   const stmt = db.prepare(
     'INSERT INTO tool_registry (id, source, available, reason, schema_json, checked_at) VALUES (?, ?, ?, ?, ?, ?)'
   )
-  const now = new Date().toISOString()
+  const now = nowIso()
   for (const t of tools) {
     stmt.run([t.id, t.source, t.available ? 1 : 0, t.reason ?? null, JSON.stringify(t.schema), now])
   }
@@ -128,7 +129,7 @@ export function saveMcpServers(servers: McpServerConfig[]): void {
   const stmt = db.prepare(
     'INSERT INTO mcp_servers (name, transport, command, args_json, url, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
   )
-  const now = new Date().toISOString()
+  const now = nowIso()
   for (const s of servers) {
     stmt.run([s.name, s.transport, s.command ?? null, JSON.stringify(s.args ?? []), s.url ?? null, s.enabled ? 1 : 0, now, now])
   }
@@ -162,7 +163,7 @@ export function addMcpServer(server: McpServerConfig): void {
   const db = _db
   if (!db) return
 
-  const now = new Date().toISOString()
+  const now = nowIso()
   db.run(
     'INSERT OR REPLACE INTO mcp_servers (name, transport, command, args_json, url, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_servers WHERE name=?), ?), ?)',
     [server.name, server.transport, server.command ?? null, JSON.stringify(server.args ?? []), server.url ?? null, server.enabled ? 1 : 0, server.name, now, now]

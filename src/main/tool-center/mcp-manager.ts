@@ -13,6 +13,7 @@
  */
 import { spawn, type ChildProcess } from 'child_process'
 import type { McpServerConfig, McpServerState, McpDiscoveredTool } from '@/defines/tools/center-types'
+import {nowDb, nowIso, nowTs, todayDate} from '../utils/time'
 
 // ── JSON-RPC 工具类型 ──
 
@@ -224,7 +225,7 @@ export class McpManager {
       this.transports.set(config.name, transport)
 
       state.connected = true
-      state.lastCheck = new Date().toISOString()
+      state.lastCheck = nowIso()
       state.tools = discovered
     } catch (err: any) {
       state.error = err.message

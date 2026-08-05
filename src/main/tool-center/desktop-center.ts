@@ -13,6 +13,7 @@ import { checkAllBuiltinTools, resetBuiltinCache } from './builtin-checker'
 import { mcpManager } from './mcp-manager'
 import { initDatabase, saveToolRegistry, loadToolRegistry, loadMcpServers, saveMcpServers } from './db'
 import type { CheckedTool, McpServerConfig, McpServerState, RegisteredTool, ToolCenterState } from '@/defines/tools/center-types'
+import {nowDb, nowIso, nowTs, todayDate} from '../utils/time'
 
 export class DesktopToolCenter {
   private _builtin: CheckedTool[] = []
@@ -79,7 +80,7 @@ export class DesktopToolCenter {
         })))
     ]
 
-    return { builtin, mcpServers, allAvailable, updatedAt: new Date().toISOString() }
+    return { builtin, mcpServers, allAvailable, updatedAt: nowIso() }
   }
 
   /** 获取 built-in 工具列表 */

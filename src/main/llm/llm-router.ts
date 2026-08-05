@@ -2,7 +2,7 @@ import type { ToolSchema } from '../../defines/tools/base-tool'
 import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
 import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, errorResponse, isSuccess } from './llm-response'
-import type { ApiMessage, CallFn, LlmResponse, LlmRouterContext, ModelConfig, OperationContext, TokenCallback } from './types'
+import type { ApiMessage, CallFn, ChunkCallback, LlmResponse, LlmRouterContext, OperationContext } from './types'
 
 /**
  * llm-router.ts — LLM 调用路由器
@@ -21,11 +21,10 @@ export class LlmRouter {
    * 流式调用 LLM，支持模型回退。
    * 每个 chunk 通过 tokenCallback 实时转发，最终返回完整 LlmResponse。
    */
-  async chat(scene: string, ctx: LlmRouterContext, messages: ApiMessage[], tools: ToolSchema[], tokenCallback: TokenCallback): Promise<LlmResponse> {
+  async chat(scene: string, ctx: LlmRouterContext, messages: ApiMessage[], tools: ToolSchema[], onToken: ChunkCallback): Promise<LlmResponse> {
     return this.caller(scene, ctx, messages, tools, async (config, input) => {
       const client = this.clientManager.getClient(config)
-      //todo 
-      return client.callStreaming(config, input, tools, tokenCallback)
+      return client.callStreaming(config, input, tools, onToken)
     })
   }
 

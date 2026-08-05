@@ -1,0 +1,23 @@
+{
+  "name": "server_showing_clarify",
+  "description": "Ask the user for clarification when you need more information or they need to choose from multiple options. Presents a structured question with answer choices for the user to pick from.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "question": {
+        "type": "string",
+        "description": "The clarification question to present to the user"
+      },
+      "choices": {
+        "type": "array",
+        "description": "Answer choices for the user to pick from",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": ["question"]
+  },
+  "toolType": "server",
+  "emoji": "❓"
+}

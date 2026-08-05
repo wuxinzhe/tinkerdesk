@@ -21,7 +21,7 @@ export {
   ERROR_RATE_LIMITED, ERROR_AUTH_FAILED, ERROR_CONTEXT_OVERFLOW,
   ERROR_SERVER_ERROR, ERROR_NETWORK_ERROR, ERROR_INVALID_REQUEST, ERROR_ALL_MODELS_FAILED,
 } from './llm-response'
-export {emptyChunk, textChunk, reasoningChunk, toolArgsChunk, finishChunk} from './streaming-chunk'
+export {emptyChunk, textChunk, reasoningChunk, toolArgsChunk, finishChunk} from './llm-chunk'
 export {operationSuccess, operationFatal, operationRetryable} from './operation-decision'
 
 // 类型（全部集中在 types.ts）
@@ -30,7 +30,7 @@ export type {
   ApiMode,
   ModelConfig, ReasoningCapability,
   LlmResponse,
-  StreamingChunk, TokenCallback,
+  LlmChunk, ChunkCallback,
   OperationDecision, Verdict,
   LlmClient,
   LlmOperation, OperationContext,
@@ -38,6 +38,9 @@ export type {
   CallFn,
 } from './types'
 
-// 接口 re-export（保持 ./llm-client / ./llm-operation 路径语义）
+// 场景常量（集中在 types.ts）
+export {SCENE_CHAT, SCENE_SUMMARY, SCENE_TITLE} from './types'
+
+// 接口别名（ILlmClient / ILlmOperation 语义保留）
 export type {LlmClient as ILlmClient} from './types'
 export type {LlmOperation as ILlmOperation} from './types'

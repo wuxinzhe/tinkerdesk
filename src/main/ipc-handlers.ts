@@ -10,6 +10,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { allDesktopTools } from '../tools/desktop/manifest'
 import type { BaseTool } from '../tools/desktop/index'
+import {nowDb, nowIso, nowTs, todayDate} from './utils/time'
 
 /** 工具链路日志：主进程 console + 转发到所有 renderer（CDP 控制台可见） */
 function logTool(line: string): void {
@@ -69,15 +70,15 @@ function summarizeResult(result: { ok: boolean; data?: string; error?: string })
 export function registerToolHandlers(): void {
   for (const tool of allDesktopTools) {
     ipcMain.handle(`tool:${tool.id}`, async (_event, params: unknown) => {
-      const start = Date.now()
+      const start = nowTs()
       //logTool(`[tool] => ${tool.id} params=${summarizeParams(params)}`)
       try {
         const result = await tool.execute(params)
-        const ms = Date.now() - start
+        const ms = nowTs() - start
         //logTool(`[tool] <= ${tool.id} ok=${result.ok} ms=${ms} ${summarizeResult(result)}`)
         return result
       } catch (err: any) {
-        const ms = Date.now() - start
+        const ms = nowTs() - start
         const msg = err instanceof Error ? err.message : String(err)
         //logTool(`[tool] <= ${tool.id} THREW ms=${ms} error=${msg}`)
         return { ok: false, error: msg }

@@ -6,26 +6,11 @@
  * 本地单用户：主键从 (user_id, profile) 简化为 profile。
  */
 import {getDatabase} from './database'
+import type {AgentEntity, AgentModeInfoDTO} from './types'
 
 /** Agent 实体（对应 AgentEntity） */
-export interface AgentEntity {
-  profile: string
-  displayName: string
-  description: string
-  avatar: string
-  isDefault: boolean
-  isActive: boolean
-  agentModeId: string
-  agentModeVersion: string
-  createdAt: string
-  deletedAt: string | null
-}
 
 /** Agent 模式信息 DTO（对应 AgentModeInfoDTO） */
-export interface AgentModeInfoDTO {
-  agentModeId: string
-  agentModeVersion: string
-}
 
 const COLS = 'profile, display_name, description, avatar, is_default, is_active, agent_mode_id, agent_mode_version, created_at, deleted_at'
 

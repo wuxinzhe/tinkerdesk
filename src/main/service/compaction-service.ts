@@ -14,7 +14,8 @@ import type {ConversationService} from './conversation-service'
 import type {CompressionCooldownStore} from './compression-cooldown-store'
 import type {ApiMessage, ModelConfig} from '../llm/types'
 import {CONV_COMPRESSED} from '../loop/types'
-import {SCENE_SUMMARY} from '../llm/llm-operation'
+import {SCENE_SUMMARY} from '../llm/types'
+import {RES_TEXT} from '../llm/llm-response'
 
 /** 压缩服务 */
 export class CompactionService {
@@ -84,7 +85,7 @@ export class CompactionService {
     }
 
     // ── 加载旧摘要 + 需压缩的消息 → LLM 汇总 ──
-    const existingSummary = this.messageService.loadLatestSummaryContent(sessionId)
+    const existingSummary = this.messageService.loadLatestSummaryContent(sessionId, profile)
     const oldMessages = this.messageService.loadConversationsMessages(compressConvIds, sessionId, profile)
     const merMessages: ApiMessage[] = existingSummary ? [existingSummary, ...oldMessages] : oldMessages
 
@@ -132,7 +133,7 @@ export class CompactionService {
       const response = await this.llmRouter.execute(SCENE_SUMMARY, {
         getModelConfigs: () => configs,
       }, messages, [])
-      if (response.resType === 'RES_TEXT') {
+      if (response.resType === RES_TEXT) {
         return response.text
       }
       console.warn(`压缩摘要响应异常 resType=${response.resType} error=${response.errorMessage}`)

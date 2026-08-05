@@ -52,12 +52,24 @@ export interface IAgentTool {
   execute(ctx: ToolExecutionContext): Promise<ToolResult>
 }
 
+// ── 工具类型常量（对齐 showing-agent ToolConstants 核心两种） ─────
+
+/** 服务端工具：由 AgentLoop 所在端（云端或本地）执行 */
+export const TOOL_TYPE_SERVER = 'server'
+/** 客户端工具：注册到服务端，云端 AgentLoop 调用时派发回本地执行 */
+export const TOOL_TYPE_CLIENT = 'client'
+
+/** 工具类型：server = 服务端 AgentLoop 执行；client = 客户端工具（注册到服务端） */
+export type ToolType = typeof TOOL_TYPE_SERVER | typeof TOOL_TYPE_CLIENT
+
 // ── 工具注册元信息（对应 Java @AgentTool 注解） ────────────────────
 
 /** 工具元信息 */
 export interface AgentToolMeta {
   /** 工具名（全局唯一，不区分大小写） */
   name: string
+  /** 工具类型：server = 服务端执行；desktop/web/... = 客户端工具（注册到服务端） */
+  toolType?: ToolType
   /** 展示用 emoji（可选） */
   emoji?: string
 }

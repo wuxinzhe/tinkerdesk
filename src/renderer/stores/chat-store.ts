@@ -222,7 +222,7 @@ export const useChatStore = defineStore('chat', () => {
 
   /**
    * 处理 agent_response_token 事件。
-   * StreamingChunk 中可能同时包含 text / reasoning / toolCallArgs 三种内容，
+   * LlmChunk 中可能同时包含 text / reasoning / toolCallArgs 三种内容，
    * 各自独立字段，前端检查非空分别路由到对应缓冲区。
    */
   function handleTokenEvent(payload: AgentResponseTokenPayload): void {

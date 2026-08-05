@@ -155,6 +155,141 @@ function createTables(database: DatabaseSync): void {
       PRIMARY KEY (profile),
       FOREIGN KEY (profile) REFERENCES agents(profile) ON DELETE CASCADE
     );
+
+    -- ── skill_categories（复刻 showing-agent，去 user_id 无关） ──
+    CREATE TABLE IF NOT EXISTS skill_categories (
+      id           TEXT PRIMARY KEY,
+      name         TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      description  TEXT NOT NULL DEFAULT '',
+      icon         TEXT NOT NULL DEFAULT '',
+      sort_order   INTEGER NOT NULL DEFAULT 0,
+      is_active    INTEGER NOT NULL DEFAULT 1,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_skill_categories_active ON skill_categories(is_active, sort_order, name);
+
+    -- ── private_skills（复刻 showing-agent，去 user_id，UNIQUE(profile, name)） ──
+    CREATE TABLE IF NOT EXISTS private_skills (
+      id                    TEXT PRIMARY KEY,
+      name                  TEXT NOT NULL,
+      display_name          TEXT NOT NULL,
+      description           TEXT NOT NULL DEFAULT '',
+      category              TEXT NOT NULL DEFAULT '',
+      version               TEXT NOT NULL DEFAULT '',
+      author                TEXT NOT NULL DEFAULT '',
+      license               TEXT NOT NULL DEFAULT '',
+      platforms             TEXT NOT NULL DEFAULT '',
+      tags                  TEXT NOT NULL DEFAULT '',
+      dependencies          TEXT NOT NULL DEFAULT '',
+      requires_toolsets     TEXT NOT NULL DEFAULT '',
+      requires_tools        TEXT NOT NULL DEFAULT '',
+      fallback_for_toolsets TEXT NOT NULL DEFAULT '',
+      fallback_for_tools    TEXT NOT NULL DEFAULT '',
+      triggers              TEXT NOT NULL DEFAULT '',
+      trigger_conditions    TEXT NOT NULL DEFAULT '',
+      config                TEXT NOT NULL DEFAULT '[]',
+      env_vars              TEXT NOT NULL DEFAULT '',
+      commands              TEXT NOT NULL DEFAULT '',
+      envs                  TEXT,
+      api_key               TEXT,
+      body                  TEXT NOT NULL DEFAULT '',
+      is_deleted            INTEGER NOT NULL DEFAULT 0,
+      deleted_at            TEXT,
+      profile               TEXT NOT NULL DEFAULT 'default',
+      official_skill_id     TEXT,
+      created_at            TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at            TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (profile, name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_private_skills_profile ON private_skills(profile);
+
+    -- ── private_skill_files ──
+    CREATE TABLE IF NOT EXISTS private_skill_files (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      skill_id   TEXT NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
+      file_type  TEXT NOT NULL,
+      content    TEXT NOT NULL,
+      language   TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(skill_id, file_type, sort_order)
+    );
+    CREATE INDEX IF NOT EXISTS idx_private_skill_files_skill ON private_skill_files(skill_id);
+
+    -- ── private_skill_related ──
+    CREATE TABLE IF NOT EXISTS private_skill_related (
+      id               TEXT PRIMARY KEY,
+      skill_id         TEXT NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
+      related_skill_id TEXT NOT NULL,
+      relation_type    TEXT NOT NULL DEFAULT 'related',
+      created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(skill_id, related_skill_id, relation_type)
+    );
+    CREATE INDEX IF NOT EXISTS idx_private_skill_related_skill ON private_skill_related(skill_id);
+
+    -- ── user_url_whitelist（去 user_id） ──
+    CREATE TABLE IF NOT EXISTS user_url_whitelist (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile     TEXT NOT NULL,
+      url_pattern TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      enabled     INTEGER NOT NULL DEFAULT 1,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_url_whitelist_profile ON user_url_whitelist(profile);
+
+    -- ── user_path_whitelist（去 user_id） ──
+    CREATE TABLE IF NOT EXISTS user_path_whitelist (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile      TEXT NOT NULL,
+      path_pattern TEXT NOT NULL,
+      description  TEXT DEFAULT '',
+      enabled      INTEGER NOT NULL DEFAULT 1,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_path_whitelist_profile ON user_path_whitelist(profile);
+
+    -- ── user_disabled_tools（去 user_id，PK(profile, tool_name)） ──
+    CREATE TABLE IF NOT EXISTS user_disabled_tools (
+      profile   TEXT NOT NULL,
+      tool_name TEXT NOT NULL,
+      PRIMARY KEY (profile, tool_name)
+    );
+
+    -- ── prompt_modules（去 user_id/User 前缀，UNIQUE(profile, name)） ──
+    CREATE TABLE IF NOT EXISTS prompt_modules (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      profile    TEXT NOT NULL DEFAULT 'default',
+      name       TEXT NOT NULL,
+      content    TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      enabled    INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (profile, name)
+    );
+    CREATE INDEX IF NOT EXISTS idx_upm_profile ON prompt_modules(profile);
+
+    -- ── scenes（复刻 showing-agent） ──
+    CREATE TABLE IF NOT EXISTS scenes (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- ── user_scene_models（去 user_id，PK(profile, scene_id, priority)） ──
+    CREATE TABLE IF NOT EXISTS user_scene_models (
+      profile   TEXT NOT NULL DEFAULT 'default',
+      scene_id  TEXT NOT NULL REFERENCES scenes(id),
+      model_id  TEXT NOT NULL REFERENCES custom_models(id) ON DELETE CASCADE,
+      priority  INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (profile, scene_id, priority)
+    );
   `);
 }
 

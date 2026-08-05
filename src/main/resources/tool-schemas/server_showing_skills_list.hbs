@@ -1,0 +1,15 @@
+{
+  "name": "server_showing_skills_list",
+  "description": "List available skills (name + description). Use skill_view(name) to load full content.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "category": { "type": "string", "description": "Optional category filter to narrow results" },
+      "show_disabled": { "type": "boolean", "description": "When true, includes soft-deleted (disabled) skills marked as [disabled].", "default": false },
+      "os": { "type": "string", "description": "Optional client OS filter (ios, android, macos, windows, linux). Auto-detected from the user's User-Agent if not provided." },
+      "type": { "type": "string", "description": "Optional client type filter (web, desktop-app, mobile-web, miniprogram). Auto-detected from the user's User-Agent if not provided." }
+    }
+  },
+  "toolType": "server",
+  "emoji": "📚"
+}

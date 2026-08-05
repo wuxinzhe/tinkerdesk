@@ -1,0 +1,37 @@
+/**
+ * memory-snapshot-module.ts — 记忆快照模块
+ *
+ * 复刻 showing-agent MemorySnapshotModule：
+ * memory 工具可用时，读取持久记忆条目并注入上下文。
+ */
+import type {PromptContext} from '../types'
+import {HandlebarsPresetModule} from './preset-module'
+import type {PromptRenderer} from '../renderer'
+
+/** 记忆快照模块 */
+export class MemorySnapshotModule extends HandlebarsPresetModule {
+  readonly id = 'memory-snapshot'
+
+  constructor(
+    renderer: PromptRenderer,
+    private readonly readAll: (profile: string) => string[]
+  ) {
+    super(renderer)
+  }
+
+  override shouldLoad(ctx: PromptContext): boolean {
+    return ctx.toolNames?.includes('showing_memory') ?? false
+  }
+
+  override loadPrompt(ctx: PromptContext): string | null {
+    try {
+      const entries = this.readAll(ctx.profile)
+      if (entries.length === 0) {
+        return null
+      }
+      return entries.join('\n---\n')
+    } catch {
+      return null
+    }
+  }
+}

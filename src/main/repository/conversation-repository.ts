@@ -5,29 +5,11 @@
  * 对话 CRUD、状态变更、压缩选择。
  */
 import {getDatabase} from './database'
+import type {ConversationEntity, ConversationStatusUpdate} from './types'
 
 /** 对话实体（对应 ConversationEntity） */
-export interface ConversationEntity {
-  id: string
-  sessionId: string
-  status: string
-  messageCount: number
-  estimatedTokens: number
-  totalTokens: number
-  cacheReadTokens: number
-  cacheWriteTokens: number
-  startedAt: string
-  completedAt: string | null
-}
 
 /** 更新状态参数 */
-export interface ConversationStatusUpdate {
-  messageCount?: number
-  estimatedTokens?: number
-  totalTokens?: number
-  cacheReadTokens?: number
-  cacheWriteTokens?: number
-}
 
 const COLS = 'id, session_id, status, message_count, estimated_tokens, total_tokens, cache_read_tokens, cache_write_tokens, started_at, completed_at'
 
@@ -74,8 +56,8 @@ export class ConversationRepository {
       entity.totalTokens,
       entity.cacheReadTokens,
       entity.cacheWriteTokens,
-      entity.startedAt,
-      entity.completedAt
+      entity.startedAt ?? new Date().toISOString().slice(0, 19).replace('T', ' '),
+      entity.completedAt ?? null
     )
   }
 

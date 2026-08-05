@@ -6,37 +6,11 @@
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
 import {getDatabase} from './database'
+import type {SessionEntity, SessionSummaryDTO} from './types'
 
 /** 会话实体（对应 SessionEntity） */
-export interface SessionEntity {
-  id: string
-  profile: string
-  source: string
-  systemPrompt: string
-  parentSessionId: string | null
-  title: string
-  inputTokens: number
-  outputTokens: number
-  cacheReadTokens: number
-  cacheWriteTokens: number
-  estimatedCostUsd: number
-  messageCount: number
-  toolCallCount: number
-  rewindCount: number
-  startedAt: string
-  archived: boolean
-  yolo: boolean
-}
 
 /** 会话摘要 DTO（对应 SessionSummaryDTO） */
-export interface SessionSummaryDTO {
-  sessionId: string
-  title: string
-  preview: string
-  source: string
-  lastActivity: string
-  messageCount: number
-}
 
 const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo'
 
@@ -160,11 +134,24 @@ export class SessionRepository {
     const row = db
       .prepare(
         `SELECT ${COLS} FROM sessions
-         WHERE LOWER(title) LIKE LOWER(?) AND profile = ? AND archived = 0
-         ORDER BY started_at DESC LIMIT 1`
+        WHERE LOWER(title) LIKE LOWER(?) AND profile = ? AND archived = 0
+        ORDER BY started_at DESC LIMIT 1`
       )
       .get(`%${query}%`, profile) as Record<string, unknown> | undefined
     return row ? toEntity(row) : null
+  }
+
+  /** 根据标题模糊搜索全部匹配会话（DISCOVER 模式） */
+  findByTitleLikeAll(query: string, profile: string, limit: number): SessionEntity[] {
+    const db = getDatabase()
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM sessions
+        WHERE LOWER(title) LIKE LOWER(?) AND profile = ? AND archived = 0
+        ORDER BY started_at DESC LIMIT ?`
+      )
+      .all(`%${query}%`, profile, limit) as Array<Record<string, unknown>>
+    return rows.map(toEntity)
   }
 
   /** 浏览会话摘要列表（对话历史界面） */

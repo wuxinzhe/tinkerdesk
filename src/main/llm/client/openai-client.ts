@@ -15,8 +15,8 @@ import {
   RES_TEXT,
 } from '../llm-response'
 import type {LlmResponse} from '../types'
-import type {TokenCallback} from '../types'
-import {finishChunk} from '../streaming-chunk'
+import type {ChunkCallback} from '../types'
+import {finishChunk} from '../llm-chunk'
 import type {ToolCall} from '../../../defines/models/message'
 
 /**
@@ -116,7 +116,7 @@ export class OpenAIClient implements LlmClient {
   }
 
   /** 流式调用 */
-  async callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], tokenCallback: TokenCallback): Promise<LlmResponse> {
+  async callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], tokenCallback: ChunkCallback): Promise<LlmResponse> {
     const client = new OpenAI({apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000})
     try {
       const stream = await client.chat.completions.create({

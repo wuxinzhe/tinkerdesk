@@ -3,14 +3,16 @@
  *
  * 对应 showing-agent ToolSchema：OpenAI function calling 中的 tool 对象。
  */
-import type {ToolFunction} from './types'
+import type {ToolFunction, ToolType} from './types'
 
-/** 工具 Schema 定义（本地工具版，无服务端/客户端区分） */
+/** 工具 Schema 定义（含工具类型分类，对齐 showing-agent ToolSchema） */
 export class ToolSchema {
   /** 工具类型，固定为 "function" */
   readonly type = 'function'
   /** 工具函数定义（名称、描述、参数） */
   readonly function: ToolFunction
+  /** 工具类型分类：server = 服务端执行；client = 客户端工具（注册到服务端） */
+  toolType: ToolType = 'server'
   /** 展示用 emoji 图标，默认 ⚡ */
   emoji = '⚡'
 
@@ -59,6 +61,10 @@ export class ToolSchema {
     const schema = new ToolSchema(name, description, parameters)
     if (json.emoji !== undefined) {
       schema.setEmoji(String(json.emoji))
+    }
+    // 工具类型分类（模板里已有 toolType 字段，如 "server"）
+    if (json.toolType !== undefined) {
+      schema.toolType = json.toolType as ToolType
     }
     return schema
   }

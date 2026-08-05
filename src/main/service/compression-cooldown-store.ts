@@ -6,6 +6,7 @@
  * - 无效压缩检测（ineffective）：连续多次无可压缩内容时停止触发
  * - fallback 连续抑制（fallback）：连续多次用静态占位符时停止主动压缩
  */
+import {nowTs} from '../utils/time'
 
 /** 冷却阶梯（秒）：首次 / 第 2 次 / 第 3 次及以上 */
 const COOLDOWN_LADDER_BASE = 60
@@ -41,7 +42,7 @@ export class CompressionCooldownStore {
     if (!entry) {
       return false
     }
-    if (entry.expiresAt <= Date.now()) {
+    if (entry.expiresAt <= nowTs()) {
       this.cooldowns.delete(sessionId)
       return false
     }
@@ -53,7 +54,7 @@ export class CompressionCooldownStore {
     const current = this.cooldowns.get(sessionId)?.failCount ?? 0
     const failCount = current + 1
     const ttl = cooldownFor(failCount)
-    this.cooldowns.set(sessionId, {failCount, expiresAt: Date.now() + ttl * 1000})
+    this.cooldowns.set(sessionId, {failCount, expiresAt: nowTs() + ttl * 1000})
   }
 
   /** 压缩成功后清除冷却 */

@@ -3,12 +3,36 @@
  *
  * 复刻 showing-agent IConversationService（本地单用户版）。
  */
-import {ConversationRepository} from '../db/conversation-repository'
-import type {ConversationEntity, ConversationStatusUpdate} from '../db/conversation-repository'
+import {randomUUID} from 'crypto'
+import {ConversationRepository} from '../repository/conversation-repository'
+import type {ConversationEntity, ConversationStatusUpdate} from '../repository/types'
+import {nowDb} from '../utils/time'
+import {CONV_IN_PROGRESS} from '../loop/types'
 
 /** 对话服务 */
 export class ConversationService {
   constructor(private readonly conversationRepo: ConversationRepository) {}
+
+  /**
+   * 新建对话周期：生成 convId + 默认字段 + 落库，返回实体。
+   * 大部分字段为默认值，仅 sessionId 为入参。
+   */
+  startConversation(sessionId: string): ConversationEntity {
+    const entity: ConversationEntity = {
+      id: randomUUID(),
+      sessionId,
+      status: CONV_IN_PROGRESS,
+      messageCount: 0,
+      estimatedTokens: 0,
+      totalTokens: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      startedAt: nowDb(),
+      completedAt: null,
+    }
+    this.conversationRepo.save(entity)
+    return entity
+  }
 
   /** 按 ID 查找对话 */
   findById(id: string): ConversationEntity | null {

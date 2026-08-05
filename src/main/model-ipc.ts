@@ -4,8 +4,8 @@
  * 参考 showing-agent ModelController 的接口语义，去掉 user_id/profile 维度（本地单用户）
  */
 import {ipcMain} from 'electron'
-import {CustomModelRepository} from './db/custom-model-repository'
-import type {CreateCustomModelInput, UpdateCustomModelInput} from './db/types'
+import {CustomModelRepository} from './repository/custom-model-repository'
+import type {CreateCustomModelInput, UpdateCustomModelInput} from './repository/types'
 
 /** 本地单用户 profile（repository 不再提供默认值，调用方显式传入） */
 const PROFILE = 'default'

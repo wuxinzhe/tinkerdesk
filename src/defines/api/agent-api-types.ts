@@ -51,7 +51,7 @@ export interface AgentMessageVO {
   updatedAt?: string
 }
 
-/** 流式 token 事件（本地/远端同源，对应 StreamingChunk） */
+/** 流式 token 事件（本地/远端同源，对应 LlmChunk） */
 export interface AgentStreamEvent {
   /** 文本增量 */
   text?: string
