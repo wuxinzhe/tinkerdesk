@@ -28,9 +28,9 @@ const pluginManager = new PluginManager()
 function createWindow() {
   Menu.setApplicationMenu(null)
 
-  // 麦克风权限：语音输入是应用固有功能，直接允许（本地应用）
+  // 麦克风权限：语音输入是应用固有功能，直接允许（本地应用；media 覆盖音视频采集）
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    callback(permission === 'media' || permission === 'microphone' || permission === 'audio-capture')
+    callback(permission === 'media')
   })
 
   mainWindow = new BrowserWindow({
