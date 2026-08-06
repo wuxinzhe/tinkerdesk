@@ -233,6 +233,7 @@ export class PluginManager {
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
+    console.log(`[plugin:event] ${pluginId}:${event}`, JSON.stringify(data)?.slice(0, 80))
     this.emitTarget?.send('plugin:event', { pluginId, event, data })
   }
 

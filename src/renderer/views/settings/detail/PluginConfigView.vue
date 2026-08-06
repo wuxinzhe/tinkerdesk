@@ -23,7 +23,7 @@ const loading = ref(true)
 
 /** 模型状态/进度 */
 const modelsStatus = ref<Record<string, boolean>>({})
-const modelProgress = ref<Record<string, { phase: string; percent: number }>>({})
+const modelProgress = ref<Record<string, { phase: string; percent: number; hint?: string }>>({})
 const downloading = ref(false)
 
 const statusText = computed(() => {
@@ -69,7 +69,7 @@ async function refreshModelsStatus(): Promise<void> {
   }
 }
 
-/** 下载缺失模型（进度经 models:progress 事件更新） */
+/** 下载缺失模型（进度经 models:progress 事件更新；完成停留 1.5s 再清除） */
 async function downloadModels(): Promise<void> {
   if (downloading.value) return
   downloading.value = true
@@ -77,6 +77,10 @@ async function downloadModels(): Promise<void> {
     await pluginsApi.invokePlugin(pluginId.value, 'models:download')
     await refreshModelsStatus()
     await rerunCheck()
+    // 完成反馈：进度条停留 1.5s 显示 100%
+    setTimeout(() => {
+      modelProgress.value = {}
+    }, 1500)
   } finally {
     downloading.value = false
   }
@@ -126,8 +130,8 @@ onMounted(() => {
   load()
   offEvent = onPluginEvent(({ pluginId: pid, event, data }) => {
     if (pid !== pluginId.value || event !== 'models:progress') return
-    const { kind, phase, percent } = data as { kind: string; phase: string; percent: number }
-    modelProgress.value = { ...modelProgress.value, [kind]: { phase, percent } }
+    const { kind, phase, percent, hint } = data as { kind: string; phase: string; percent: number; hint?: string }
+    modelProgress.value = { ...modelProgress.value, [kind]: { phase, percent, hint } }
     if (phase === 'done') void refreshModelsStatus()
   })
 })
@@ -210,13 +214,23 @@ watch(pluginId, () => {
           <div class="plugin-config-page__model-right">
             <span v-if="modelsStatus[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
             <span v-else class="plugin-config-page__ready plugin-config-page__ready--no">未就绪</span>
-            <div v-if="modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done'" class="plugin-config-page__progress">
+            <div
+              v-if="downloading || (modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done')"
+              class="plugin-config-page__progress"
+            >
               <div
                 class="plugin-config-page__progress-bar"
                 :style="{ width: (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%' }"
               ></div>
               <span class="plugin-config-page__progress-text">
-                {{ modelProgress[dep.dest.split('/').pop() ?? '']?.phase === 'extract' ? '解压中…' : (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%' }}
+                {{
+                  modelProgress[dep.dest.split('/').pop() ?? '']?.hint
+                    ?? (modelProgress[dep.dest.split('/').pop() ?? '']?.phase === 'extract'
+                      ? '解压中…'
+                      : (downloading && !modelProgress[dep.dest.split('/').pop() ?? '']?.percent)
+                        ? '下载中…'
+                        : (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%')
+                }}
               </span>
             </div>
           </div>
