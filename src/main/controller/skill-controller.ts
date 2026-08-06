@@ -16,8 +16,8 @@ import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
 import type { SkillInfoVO, SkillListQueryDTO, SkillPageVO, SkillOpRequestDTO } from './types'
 
-/** PrivateSkillEntity → SkillInfoVO */
-export function toSkillInfoVO(s: PrivateSkillEntity): SkillInfoVO {
+/** PrivateSkillEntity → SkillInfoVO（includeBody 时携带正文，详情页用） */
+export function toSkillInfoVO(s: PrivateSkillEntity, includeBody = false): SkillInfoVO {
   return {
     id: s.id,
     name: s.name,
@@ -26,6 +26,7 @@ export function toSkillInfoVO(s: PrivateSkillEntity): SkillInfoVO {
     category: s.category,
     version: s.version,
     author: s.author,
+    body: includeBody ? (s.body ?? '') : undefined,
   }
 }
 
@@ -56,7 +57,7 @@ export class SkillController {
     const offset = payload?.offset ?? 0
     const limit = payload?.limit ?? 20
     const all = this.privateSkillService.findByAgent(profile).filter((s) => !s.isDeleted)
-    const items = all.slice(offset, offset + limit).map(toSkillInfoVO)
+    const items = all.slice(offset, offset + limit).map((s) => toSkillInfoVO(s))
     return ok({ items, total: all.length, offset, limit })
   }
 
@@ -69,13 +70,13 @@ export class SkillController {
     return ok(toSkillInfoVO(skill))
   }
 
-  /** 按 ID 查询技能详情（对齐 Java GET /skills/{id}） */
+  /** 按 ID 查询技能详情（对齐 Java GET /skills/{id}；详情带正文） */
   private getSkill(payload: SkillOpRequestDTO): ApiResponse<SkillInfoVO> {
     const skill = this.privateSkillService.findById(payload?.profile ?? 'default', payload?.id ?? '')
     if (!skill || skill.isDeleted) {
       return fail('Skill not found')
     }
-    return ok(toSkillInfoVO(skill))
+    return ok(toSkillInfoVO(skill, true))
   }
 
   /** 停用技能（软删除，按 profile 限定） */

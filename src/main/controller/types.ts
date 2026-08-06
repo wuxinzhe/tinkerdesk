@@ -224,6 +224,8 @@ export interface SkillInfoVO {
   category: string
   version: string
   author: string
+  /** 详情返回（列表不返回，节省传输） */
+  body?: string
 }
 
 /** 技能列表查询 DTO */

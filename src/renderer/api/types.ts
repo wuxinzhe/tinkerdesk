@@ -254,6 +254,8 @@ export interface SkillInfo {
   license?: string
   platforms?: string[]
   envs?: string[]
+  /** 正文（详情返回，列表不返回） */
+  body?: string
   tags?: string[]
   dependencies?: string[]
   requiresToolsets?: string[]
@@ -261,7 +263,6 @@ export interface SkillInfo {
   triggers?: string[]
   triggerConditions?: string
   config?: string
-  body?: string
   isEnabled?: boolean
   isInstalled?: boolean
   updatedAt?: string
