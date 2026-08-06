@@ -19,12 +19,43 @@ const configPlugin = ref<PluginInfo | null>(null)
 const configSchema = ref<ConfigSchema | null>(null)
 const configInitial = ref<Record<string, unknown>>({})
 
+/** 模型状态：pluginId → kind → ready */
+const modelsStatus = ref<Record<string, Record<string, boolean>>>({})
+/** 下载进度：pluginId → kind → {phase, percent} */
+const modelProgress = ref<Record<string, Record<string, { phase: string; percent: number }>>>({})
+
 async function loadPlugins(): Promise<void> {
   loading.value = true
   try {
     plugins.value = await pluginsApi.list()
+    // 有 modelDeps 的插件：查询模型就绪状态
+    for (const p of plugins.value) {
+      if (p.manifest.modelDeps?.length) {
+        await refreshModelsStatus(p.manifest.id)
+      }
+    }
   } finally {
     loading.value = false
+  }
+}
+
+/** 查询插件模型就绪状态（models:status；未实现该能力的插件静默跳过） */
+async function refreshModelsStatus(pluginId: string): Promise<void> {
+  try {
+    const status = await pluginsApi.invokePlugin<Record<string, boolean>>(pluginId, 'models:status')
+    modelsStatus.value = { ...modelsStatus.value, [pluginId]: status }
+  } catch {
+    // 插件未实现 models:status：视为无模型管理
+  }
+}
+
+/** 下载该插件全部缺失模型（进度经 models:progress 事件更新） */
+async function downloadModels(p: PluginInfo): Promise<void> {
+  try {
+    await pluginsApi.invokePlugin(p.manifest.id, 'models:download')
+    await refreshModelsStatus(p.manifest.id)
+  } catch {
+    // 错误提示由 inv 拦截统一派发
   }
 }
 
@@ -60,12 +91,22 @@ function closeConfig(): void {
   configPlugin.value = null
 }
 
-// 插件事件（stt:on-text 等）——v1 仅打日志，消费由具体功能页面注册
+// 插件事件：models:progress 更新下载进度
 let offEvent: (() => void) | null = null
 onMounted(() => {
   loadPlugins()
   offEvent = onPluginEvent(({ pluginId, event, data }) => {
-    console.log(`[plugin:event] ${pluginId}:${event}`, data ?? '')
+    if (event === 'models:progress' && data && typeof data === 'object') {
+      const { kind, phase, percent } = data as { kind: string; phase: string; percent: number }
+      modelProgress.value = {
+        ...modelProgress.value,
+        [pluginId]: { ...(modelProgress.value[pluginId] ?? {}), [kind]: { phase, percent } },
+      }
+      // 下载完成：刷新就绪状态
+      if (phase === 'done') {
+        void refreshModelsStatus(pluginId)
+      }
+    }
   })
 })
 onUnmounted(() => {
@@ -122,6 +163,45 @@ onUnmounted(() => {
         </div>
 
         <div v-if="p.status.detail" class="plugin-card__error">{{ p.status.detail }}</div>
+
+        <!-- 模型管理（manifest.modelDeps 驱动：状态 + 下载 + 进度） -->
+        <div v-if="p.manifest.modelDeps?.length" class="plugin-card__models">
+          <div class="plugin-card__models-title">模型</div>
+          <div v-for="dep in p.manifest.modelDeps" :key="dep.dest" class="model-row">
+            <div class="model-row__info">
+              <div class="model-row__name">{{ dep.name }}</div>
+              <div class="model-row__size">{{ dep.sizeMB }}MB</div>
+            </div>
+            <div class="model-row__right">
+              <!-- models:status 返回的 key 是 kind（dep.dest 尾部） -->
+              <template v-if="modelsStatus[p.manifest.id]?.[dep.dest.split('/').pop() ?? '']">
+                <span class="model-row__ready">已就绪</span>
+              </template>
+              <template v-else>
+                <span class="model-row__ready model-row__ready--no">未就绪</span>
+              </template>
+              <!-- 下载进度 -->
+              <div
+                v-if="modelProgress[p.manifest.id]?.[dep.dest] && modelProgress[p.manifest.id]?.[dep.dest].phase !== 'done'"
+                class="model-row__progress"
+              >
+                <div
+                  class="model-row__progress-bar"
+                  :style="{ width: (modelProgress[p.manifest.id]?.[dep.dest].percent ?? 0) + '%' }"
+                ></div>
+                <span class="model-row__progress-text">
+                  {{ modelProgress[p.manifest.id]?.[dep.dest].phase === 'extract' ? '解压中…' : (modelProgress[p.manifest.id]?.[dep.dest].percent ?? 0) + '%' }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button
+            class="plugin-card__btn plugin-card__btn--download"
+            @click="downloadModels(p)"
+          >
+            下载模型
+          </button>
+        </div>
 
         <div class="plugin-card__actions">
           <button class="plugin-card__btn" :disabled="!p.status.loaded" @click="togglePlugin(p)">
@@ -319,6 +399,95 @@ onUnmounted(() => {
   display: flex;
   gap: var(--sa-space-2, 8px);
   margin-top: var(--sa-space-3, 12px);
+}
+
+/* ── 模型管理区 ── */
+
+.plugin-card__models {
+  margin-top: var(--sa-space-3, 12px);
+  padding: var(--sa-space-3, 12px);
+  background: var(--sa-bg-secondary, #f5f5f7);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-2, 8px);
+}
+
+.plugin-card__models-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sa-text-secondary, #86868b);
+}
+
+.model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sa-space-3, 12px);
+}
+
+.model-row__info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.model-row__name {
+  font-size: 12px;
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.model-row__size {
+  font-size: 11px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+}
+
+.model-row__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sa-space-2, 8px);
+  flex-shrink: 0;
+}
+
+.model-row__ready {
+  font-size: 11px;
+  color: var(--sa-success, #34c759);
+}
+
+.model-row__ready--no {
+  color: var(--sa-destructive, #ff3b30);
+}
+
+.model-row__progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 110px;
+}
+
+.model-row__progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sa-accent, #007aff);
+  transition: width 0.2s;
+}
+
+.model-row__progress-text {
+  font-size: 11px;
+  color: var(--sa-text-secondary, #86868b);
+  white-space: nowrap;
+}
+
+.plugin-card__btn--download {
+  align-self: flex-start;
+  color: var(--sa-accent, #007aff);
+  border-color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.06);
+}
+
+.plugin-card__btn--download:hover:not(:disabled) {
+  background: rgba(0, 122, 255, 0.12);
 }
 
 .plugin-card__btn {
