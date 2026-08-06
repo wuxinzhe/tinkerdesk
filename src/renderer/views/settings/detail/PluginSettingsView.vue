@@ -9,6 +9,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { pluginsApi } from '@/renderer/api/plugins-api'
+import { confirm } from '@/renderer/api/confirm'
 import type { PluginInfo } from '@/renderer/api/types'
 
 const router = useRouter()
@@ -65,27 +66,21 @@ function openConfig(p: PluginInfo): void {
 /** 卸载确认弹窗的目标插件（null = 关闭） */
 const uninstallTarget = ref<PluginInfo | null>(null)
 
-/** 点「卸载」→ 打开确认弹窗 */
-function askUninstall(p: PluginInfo): void {
-  uninstallTarget.value = p
-}
-
-/** 确认卸载：删除插件及下载的模型 */
-async function confirmUninstall(): Promise<void> {
-  const p = uninstallTarget.value
-  if (!p) return
-  uninstallTarget.value = null
+/** 点「卸载」→ 全局确认弹窗 → 确认后删除插件及模型 */
+async function askUninstall(p: PluginInfo): Promise<void> {
+  const ok = await confirm({
+    title: `卸载「${p.manifest.name}」？`,
+    message: '插件目录及已下载的模型将被一并删除，此操作不可撤销。',
+    confirmText: '卸载',
+    destructive: true,
+  })
+  if (!ok) return
   try {
     await pluginsApi.uninstall(p.manifest.id)
     plugins.value = plugins.value.filter((x) => x.manifest.id !== p.manifest.id)
   } catch {
     // 错误提示由 inv 拦截统一派发
   }
-}
-
-/** 取消卸载 */
-function cancelUninstall(): void {
-  uninstallTarget.value = null
 }
 
 onMounted(loadPlugins)
@@ -185,30 +180,6 @@ onMounted(loadPlugins)
         </div>
       </div>
     </div>
-    <!-- 卸载确认弹窗（Apple HIG：居中卡片 + 遮罩模糊 + 底部按钮） -->
-    <Teleport to="body">
-      <Transition name="sa-modal">
-        <div v-if="uninstallTarget" class="sa-modal-mask" @click.self="cancelUninstall" @keydown.esc="cancelUninstall">
-          <div class="sa-modal" role="alertdialog" aria-modal="true" aria-labelledby="uninstall-title">
-            <div class="sa-modal__icon" aria-hidden="true">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 9v4" />
-                <path d="M12 17h.01" />
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-            </div>
-            <h2 id="uninstall-title" class="sa-modal__title">卸载「{{ uninstallTarget?.manifest.name }}」？</h2>
-            <p class="sa-modal__message">
-              插件目录及已下载的模型将被一并删除，此操作不可撤销。
-            </p>
-            <div class="sa-modal__actions">
-              <button class="sa-modal__btn" @click="cancelUninstall">取消</button>
-              <button class="sa-modal__btn sa-modal__btn--destructive" @click="confirmUninstall">卸载</button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
   </div>
 </template>
 
@@ -488,117 +459,6 @@ onMounted(loadPlugins)
   background: rgba(255, 59, 48, 0.12);
 }
 
-/* ── 卸载确认弹窗（Apple HIG） ── */
-.sa-modal-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-}
-
-.sa-modal {
-  width: 320px;
-  padding: 24px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-.sa-modal__icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 14px;
-  border-radius: 50%;
-  color: var(--sa-danger, #ff3b30);
-  background: rgba(255, 59, 48, 0.1);
-}
-
-.sa-modal__title {
-  margin: 0 0 6px;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--sa-text-primary, #1d1d1f);
-}
-
-.sa-modal__message {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--sa-text-secondary, #86868b);
-}
-
-.sa-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-}
-
-.sa-modal__btn {
-  min-width: 64px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  color: var(--sa-accent, #007aff);
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s ease-in-out;
-}
-
-.sa-modal__btn:hover {
-  background: var(--sa-bg-hover, rgba(0, 0, 0, 0.05));
-}
-
-.sa-modal__btn--destructive {
-  color: #ffffff;
-  background: var(--sa-danger, #ff3b30);
-}
-
-.sa-modal__btn--destructive:hover {
-  background: #e03228;
-}
-
-/* 弹窗动效（fade + scale，尊重 reduced-motion） */
-.sa-modal-enter-active,
-.sa-modal-leave-active {
-  transition: opacity 0.2s ease-in-out;
-}
-
-.sa-modal-enter-active .sa-modal,
-.sa-modal-leave-active .sa-modal {
-  transition: transform 0.2s ease-in-out;
-}
-
-.sa-modal-enter-from,
-.sa-modal-leave-to {
-  opacity: 0;
-}
-
-.sa-modal-enter-from .sa-modal,
-.sa-modal-leave-to .sa-modal {
-  transform: scale(0.96);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sa-modal-enter-active,
-  .sa-modal-leave-active,
-  .sa-modal-enter-active .sa-modal,
-  .sa-modal-leave-active .sa-modal {
-    transition: none;
-  }
-}
 
 .plugin-card__btn--config:hover:not(:disabled) {
   background: rgba(0, 122, 255, 0.12);

@@ -22,6 +22,9 @@
     <!-- 全局通知提示（tips/error 统一队列，右上角） -->
     <GlobalTipToast />
 
+    <!-- 全局确认弹窗（Apple HIG，命令式调用 confirm()） -->
+    <ConfirmModal />
+
     <!-- 错误上报 consent 弹窗 -->
     <n-modal
       v-model:show="showConsent"
@@ -49,6 +52,7 @@ import { useSessionStore } from '@/renderer/stores/session-store'
 import LockScreen from '@/renderer/components/LockScreen.vue'
 import TitleBar from '@/renderer/components/workspace/TitleBar.vue'
 import GlobalTipToast from '@/renderer/components/GlobalTipToast.vue'
+import ConfirmModal from '@/renderer/components/ConfirmModal.vue'
 import { setupAppHost, needsConsent, consentErrorSummary, resolveConsent } from '@/renderer/utils/app-init'
 import { NModal } from 'naive-ui'
 
