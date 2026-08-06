@@ -1,6 +1,25 @@
 <template>
   <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
     <div class="chat-input__row">
+      <!-- 语音输入（按住说话 → 松开识别 → 发送；录音是应用固有功能，STT 转发给语音 provider） -->
+      <button
+        v-if="sttAvailable"
+        class="chat-input__voice"
+        :class="{ 'chat-input__voice--recording': recording }"
+        :title="recording ? '松开结束并识别' : '按住说话'"
+        @mousedown.prevent="startRecording"
+        @mouseup.prevent="stopRecording"
+        @mouseleave="onVoiceLeave"
+      >
+        <svg v-if="!recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+          <path d="M19 10v2a7 7 0 01-14 0v-2" />
+          <line x1="12" y1="19" x2="12" y2="23" />
+          <line x1="8" y1="23" x2="16" y2="23" />
+        </svg>
+        <span v-else class="chat-input__voice-dot"></span>
+      </button>
+
       <textarea
         ref="textareaRef"
         class="chat-input__textarea"
@@ -104,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onMounted } from 'vue'
 import '@/renderer/api/types'
 
 const props = withDefaults(defineProps<{
@@ -136,6 +155,98 @@ const panelOpen = ref(false)
 const yoloView = ref(false)
 const yoloEnabled = ref(props.yolo)
 
+// ── 语音输入（应用固有录音；STT 由语音 provider 支持） ──
+const sttAvailable = ref(false)
+const recording = ref(false)
+let mediaRecorder: MediaRecorder | null = null
+let audioChunks: Blob[] = []
+let audioContext: AudioContext | null = null
+
+/** 启动时检测是否安装了支持 STT 的语音 provider（无则不显示按钮） */
+async function checkSttAvailability(): Promise<void> {
+  try {
+    const { stt } = await window.api.voice.providers()
+    sttAvailable.value = stt.length > 0
+  } catch {
+    sttAvailable.value = false
+  }
+}
+
+/** 按住：开始录音 */
+async function startRecording(): Promise<void> {
+  if (recording.value || props.disabled) return
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    audioChunks = []
+    mediaRecorder = new MediaRecorder(stream)
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data)
+    }
+    mediaRecorder.start()
+    recording.value = true
+  } catch {
+    // 麦克风权限被拒等：静默（提示走全局 toast 由调用方决定）
+  }
+}
+
+/** 松开：停止录音 → 转文本 → 直接发送 */
+async function stopRecording(): Promise<void> {
+  if (!recording.value || !mediaRecorder) return
+  recording.value = false
+  const recorder = mediaRecorder
+  const chunks = audioChunks
+  mediaRecorder = null
+  audioChunks = []
+  try {
+    // 停止并收集音频
+    const blob = await new Promise<Blob>((resolve) => {
+      recorder.onstop = () => resolve(new Blob(chunks, { type: chunks[0]?.type ?? 'audio/webm' }))
+      recorder.stop()
+      recorder.stream.getTracks().forEach((t) => t.stop())
+    })
+    // 解码 → 重采样 16k → Float32Array → STT
+    const samples = await decodeToPcm16k(blob)
+    if (samples.length === 0) return
+    const { text } = await window.api.voice.sttTranscribe(samples)
+    const trimmed = text.trim()
+    if (trimmed) {
+      emit('send', trimmed)
+    }
+  } catch {
+    // STT 失败：inv 拦截统一提示
+  }
+}
+
+/** 按住期间鼠标滑出：也结束（防漏录） */
+function onVoiceLeave(): void {
+  if (recording.value) {
+    void stopRecording()
+  }
+}
+
+/** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
+async function decodeToPcm16k(blob: Blob): Promise<Float32Array> {
+  if (!audioContext) audioContext = new AudioContext()
+  const arrayBuffer = await blob.arrayBuffer()
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+  const source = audioBuffer.getChannelData(0)
+  const srcRate = audioBuffer.sampleRate
+  const targetRate = 16000
+  if (srcRate === targetRate) return source
+  // 线性插值重采样
+  const ratio = srcRate / targetRate
+  const outLen = Math.floor(source.length / ratio)
+  const out = new Float32Array(outLen)
+  for (let i = 0; i < outLen; i++) {
+    const pos = i * ratio
+    const idx = Math.floor(pos)
+    const frac = pos - idx
+    const next = Math.min(idx + 1, source.length - 1)
+    out[i] = source[idx] * (1 - frac) + source[next] * frac
+  }
+  return out
+}
+
 // 切换 session 时重置功能面板 + YOLO 详情为关闭状态（组件复用，状态不跨会话保留）
 watch(
   () => props.sessionId,
@@ -144,6 +255,10 @@ watch(
     yoloView.value = false
   }
 )
+
+onMounted(() => {
+  void checkSttAvailability()
+})
 
 // 打开 YOLO 面板或切换会话时，向后台查询该 session 的最新 yolo 状态
 // （后台不会主动推送，开关状态必须每次打开时刷新，否则永远显示默认 false）
@@ -230,6 +345,48 @@ defineExpose({ focus })
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ── 语音输入按钮（按住说话） ── */
+
+.chat-input__voice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--sa-border, #d2d2d7);
+  border-radius: 50%;
+  background: var(--sa-bg-primary, #ffffff);
+  color: var(--sa-text-secondary, #86868b);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.chat-input__voice:hover {
+  border-color: var(--sa-accent, #007aff);
+  color: var(--sa-accent, #007aff);
+}
+
+.chat-input__voice--recording {
+  background: var(--sa-destructive, #ff3b30);
+  border-color: var(--sa-destructive, #ff3b30);
+  color: #ffffff;
+}
+
+.chat-input__voice-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  animation: voice-pulse 1s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.75); opacity: 0.7; }
 }
 
 /* ── 输入框 ── */

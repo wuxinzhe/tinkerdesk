@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, session } from 'electron'
 import { join } from 'path'
 import { initDatabase, closeDatabase } from './repository/database'
 import { bootstrap } from './bootstrap'
@@ -17,6 +17,8 @@ import { AccountController } from './controller/account-controller'
 import { McpController } from './controller/mcp-controller'
 import { PluginController } from './controller/plugin-controller'
 import { PluginManager } from './core/plugin/plugin-manager'
+import { VoiceProviderService } from './service/voice-provider-service'
+import { VoiceController } from './controller/voice-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -25,6 +27,11 @@ const pluginManager = new PluginManager()
 
 function createWindow() {
   Menu.setApplicationMenu(null)
+
+  // 麦克风权限：语音输入是应用固有功能，直接允许（本地应用）
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+    callback(permission === 'media' || permission === 'microphone' || permission === 'audio-capture')
+  })
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -79,6 +86,10 @@ app.whenReady().then(() => {
   // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
   pluginManager.loadAll()
   new PluginController(pluginManager).register()
+
+  // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
+  const voiceService = new VoiceProviderService(pluginManager)
+  new VoiceController(voiceService).register()
 
   // ── 窗口控制 IPC ──
   ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })

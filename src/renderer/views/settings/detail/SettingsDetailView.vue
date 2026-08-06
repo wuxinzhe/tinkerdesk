@@ -10,6 +10,9 @@
       <!-- 插件设置 -->
       <PluginSettingsView v-else-if="section === 'plugins'" />
 
+      <!-- 语音设置 -->
+      <VoiceSettingsView v-else-if="section === 'voice'" />
+
       <!-- 占位 -->
       <div v-else class="settings-placeholder">
         <div class="settings-placeholder__inner">
@@ -33,6 +36,7 @@ import { L3PageLayout } from '@/renderer/components'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
 import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'
+import VoiceSettingsView from '@/renderer/views/settings/detail/VoiceSettingsView.vue'
 
 const route = useRoute()
 

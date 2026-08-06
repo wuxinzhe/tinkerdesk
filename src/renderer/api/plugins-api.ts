@@ -17,6 +17,8 @@ export interface PluginApi {
   getSchema(id: string): Promise<ConfigSchema | null>
   getConfig(id: string): Promise<Record<string, unknown>>
   saveConfig(id: string, patch: Record<string, unknown>): Promise<boolean>
+  /** 调用插件注册的 IPC 能力（如 models:download） */
+  invokePlugin<T = unknown>(id: string, channel: string, payload?: unknown): Promise<T>
 }
 
 /** 监听插件事件（返回取消函数） */
@@ -36,4 +38,6 @@ export const pluginsApi: PluginApi = {
   getSchema: (id) => window.api.plugins.getSchema(id),
   getConfig: (id) => window.api.plugins.getConfig(id),
   saveConfig: (id, patch) => window.api.plugins.saveConfig(id, patch),
+  invokePlugin: <T = unknown>(id: string, channel: string, payload?: unknown) =>
+    window.api.plugins.invoke(id, channel, payload) as Promise<T>,
 }

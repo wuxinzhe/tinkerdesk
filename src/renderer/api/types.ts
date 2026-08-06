@@ -615,9 +615,19 @@ export interface PluginManifest {
   entry: string
   requiresMain?: boolean
   capabilities?: string[]
+  /** 插件声明实现的系统开放接口（如 voice.stt / voice.tts） */
+  systemInterfaces?: { id: string; version: number }[]
   permissions?: string[]
   description?: string
   modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
+}
+
+export interface VoiceProviderInfo {
+  pluginId: string
+  name: string
+  version: string
+  interfaceVersion: number
+  ready?: boolean
 }
 
 export interface PluginStatus {
@@ -786,6 +796,17 @@ export interface WindowApi {
     saveConfig: (id: string, patch: Record<string, unknown>) => Promise<boolean>
     /** 调用插件注册的 IPC 能力 */
     invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
+  }
+
+  voice: {
+    providers: () => Promise<{ stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] }>
+    getConfig: () => Promise<{ sttProvider: string | null; ttsProvider: string | null }>
+    setProvider: (patch: { sttProvider?: string | null; ttsProvider?: string | null }) => Promise<{ sttProvider: string | null; ttsProvider: string | null }>
+    providerReady: (pluginId: string) => Promise<boolean>
+    /** STT：整段音频（Float32Array 16kHz）转文本 */
+    sttTranscribe: (samples: Float32Array) => Promise<{ text: string }>
+    /** TTS：文本合成 → audio data URL */
+    ttsSpeak: (text: string) => Promise<{ audio: string }>
   }
 }
 

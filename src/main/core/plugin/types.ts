@@ -19,8 +19,13 @@ export interface PluginManifest {
   entry: string
   /** 需要 main 进程权限（native addon / 系统能力） */
   requiresMain?: boolean
-  /** 能力声明：如 ["stt", "tts"] */
+  /** 能力标签：如 ["stt", "tts"]（设置页展示用） */
   capabilities?: string[]
+  /** 实现的系统开放接口（多 provider 抽象的关键声明）：
+   *   { id: 'voice.stt', version: 1 } → 应用按固定契约调用 plugin:<id>:stt:transcribe
+   *   { id: 'voice.tts', version: 1 } → 应用按固定契约调用 plugin:<id>:tts:speak
+   */
+  systemInterfaces?: { id: string; version: number }[]
   /** 权限声明：如 ["mic", "audio-output"] */
   permissions?: string[]
   /** 描述 */

@@ -33,6 +33,8 @@ interface PluginRecord {
 export class PluginManager {
   private readonly pluginsDir: string
   private readonly registry = new Map<string, PluginRecord>()
+  /** 插件注册的 IPC handler（channel → handler），供应用内部转发（VoiceProviderService 等） */
+  private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
   /** renderer 事件转发目标（由 index.ts 注入 mainWindow.webContents） */
   private emitTarget: Electron.WebContents | null = null
 
@@ -131,13 +133,14 @@ export class PluginManager {
     this.emitTarget?.send('plugin:event', { pluginId, event, data })
   }
 
-  /** 插件注册 IPC 能力（renderer 调用 plugin:<id>:<channel>） */
+  /** 插件注册 IPC 能力（renderer 调用 plugin:<id>:<channel>；应用内部可经 invokePlugin 调用） */
   private registerPluginIpc(pluginId: string, channel: string, handler: (payload: unknown) => unknown): void {
     const full = `plugin:${pluginId}:${channel}`
-    if (ipcMain.listenerCount(full) > 0) {
+    if (this.ipcHandlers.has(full)) {
       console.warn(`[plugin] ${full} 已注册，跳过`)
       return
     }
+    this.ipcHandlers.set(full, handler)
     ipcMain.handle(full, async (_event, payload: unknown) => {
       try {
         return { success: true, data: await handler(payload) }
@@ -145,6 +148,22 @@ export class PluginManager {
         return { success: false, error: (e as Error).message }
       }
     })
+  }
+
+  /** 应用内部调用插件 IPC（不经 renderer；如 VoiceProviderService 转发 STT/TTS） */
+  async invokePlugin<T>(pluginId: string, channel: string, payload?: unknown): Promise<T> {
+    const handler = this.ipcHandlers.get(`plugin:${pluginId}:${channel}`)
+    if (!handler) {
+      throw new Error(`插件 ${pluginId} 未注册能力 ${channel}`)
+    }
+    return (await handler(payload)) as T
+  }
+
+  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider） */
+  findByCapability(cap: string): PluginRecord[] {
+    return Array.from(this.registry.values()).filter(
+      (r) => r.manifest.capabilities?.includes(cap) && r.api !== null
+    )
   }
 
   /** 插件列表 */

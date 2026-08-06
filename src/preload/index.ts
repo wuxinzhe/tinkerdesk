@@ -311,6 +311,20 @@ const api = {
     invoke: (id: string, channel: string, payload?: unknown) =>
       inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
   },
+
+  // ── 语音服务（系统固定接口，转发当前插件 provider） ──
+  voice: {
+    providers: () => inv('voice:providers').then(unwrap),
+    getConfig: () => inv('voice:get-config').then(unwrap),
+    setProvider: (patch: { sttProvider?: string | null; ttsProvider?: string | null }) =>
+      inv('voice:set-provider', patch).then(unwrap),
+    providerReady: (pluginId: string) => inv('voice:provider-ready', {pluginId}).then(unwrap),
+    /** STT：录音（应用固有）后整段转文本 */
+    sttTranscribe: (samples: Float32Array) =>
+      inv('voice:stt:transcribe', {samples}).then(unwrap),
+    /** TTS：文本合成 → audio data URL */
+    ttsSpeak: (text: string) => inv('voice:tts:speak', {text}).then(unwrap),
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)
