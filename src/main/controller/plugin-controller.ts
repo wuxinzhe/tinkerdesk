@@ -9,7 +9,7 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain, dialog, BrowserWindow, app } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app, Menu } from 'electron'
 import { readFileSync, existsSync, statSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -76,17 +76,28 @@ export class PluginController {
     }
   }
 
-  /** 选择插件安装包：文件夹或 zip（openFile + openDirectory 组合；不加 filters——Windows 上 filters 会隐藏文件） */
+  /**
+   * 选择插件安装包：先弹菜单选类型（zip / 文件夹），再弹对应对话框。
+   * 不能 openFile+openDirectory 组合——Windows 上是文件夹选择模式，文件（zip）不显示。
+   */
   private async pickInstallPackage(): Promise<ApiResult<string | null>> {
     try {
       const win = this.getWindow()
+      if (!win) return ok(null)
+      const choice = await new Promise<'zip' | 'folder' | null>((resolve) => {
+        const menu = Menu.buildFromTemplate([
+          { label: '安装 .zip 插件包', click: () => resolve('zip') },
+          { label: '安装插件文件夹', click: () => resolve('folder') },
+        ])
+        menu.popup({ window: win, callback: () => setTimeout(() => resolve(null), 300) })
+      })
+      if (!choice) return ok(null)
       const options: Electron.OpenDialogOptions = {
-        title: '选择插件包（文件夹或 .zip）',
-        properties: ['openFile', 'openDirectory'],
+        title: choice === 'zip' ? '选择插件包（.zip）' : '选择插件文件夹',
+        properties: choice === 'zip' ? ['openFile'] : ['openDirectory'],
+        filters: choice === 'zip' ? [{ name: '插件包', extensions: ['zip'] }] : undefined,
       }
-      const result = win
-        ? await dialog.showOpenDialog(win, options)
-        : await dialog.showOpenDialog(options)
+      const result = await dialog.showOpenDialog(win, options)
       return ok(result.canceled ? null : (result.filePaths[0] ?? null))
     } catch (e) {
       return fail((e as Error).message)
