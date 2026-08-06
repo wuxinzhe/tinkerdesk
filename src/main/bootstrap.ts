@@ -264,7 +264,7 @@ export function bootstrap(
   void mcpCenter.restoreFromDb()
 
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
-  const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository)
+  const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
 
   // ── 安全门检服务（AgentLoop 工具门检用，需在 AgentLoop 之前组装） ──
   const sandboxWhitelistService = new SandboxWhitelistService(new UserUrlWhitelistRepository(), new UserPathWhitelistRepository())
