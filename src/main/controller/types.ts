@@ -224,6 +224,8 @@ export interface SkillInfoVO {
   category: string
   version: string
   author: string
+  /** 启用状态（停用 = 软删） */
+  isEnabled: boolean
   /** 详情返回（列表不返回，节省传输） */
   body?: string
 }

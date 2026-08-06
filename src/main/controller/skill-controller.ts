@@ -26,6 +26,7 @@ export function toSkillInfoVO(s: PrivateSkillEntity, includeBody = false): Skill
     category: s.category,
     version: s.version,
     author: s.author,
+    isEnabled: !s.isDeleted,
     body: includeBody ? (s.body ?? '') : undefined,
   }
 }
