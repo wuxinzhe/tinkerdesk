@@ -61,6 +61,14 @@ import {
   ScheduleTimerTool, SCHEDULE_TIMER_TOOL_NAME,
   FileMutationVerifierTool, FILE_MUTATION_VERIFIER_TOOL_NAME,
 } from './tools/desktop'
+import { PluginManager } from './core/plugin/plugin-manager'
+import {
+  PluginInstallTool, PLUGIN_INSTALL_TOOL_NAME,
+  PluginConfigureTool, PLUGIN_CONFIGURE_TOOL_NAME,
+  PluginEnableTool, PLUGIN_ENABLE_TOOL_NAME,
+  PluginListTool, PLUGIN_LIST_TOOL_NAME,
+  PluginUninstallTool, PLUGIN_UNINSTALL_TOOL_NAME,
+} from './tools/plugin-tools'
 import {
   ClarifyTool,
   CLARIFY_TOOL_NAME,
@@ -123,6 +131,7 @@ export interface TinkerDesk {
   promptManager: PromptManager
   promptModuleBuilder: PromptModuleBuilder
   toolManager: ToolManager
+  pluginManager: PluginManager
   llmRouter: LlmRouter
   // ── controller 层依赖 ──
   privateSkillService: PrivateSkillService
@@ -236,8 +245,17 @@ export function bootstrap(
     {meta: {name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰'}, tool: new ScheduleTimerTool(renderer)},
     {meta: {name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬'}, tool: new FileMutationVerifierTool(renderer)},
   ]
+  // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
+  const pluginManager = new PluginManager()
+  const pluginTools: AgentToolRegistration[] = [
+    {meta: {name: PLUGIN_INSTALL_TOOL_NAME, emoji: '🧩'}, tool: new PluginInstallTool(renderer, pluginManager)},
+    {meta: {name: PLUGIN_CONFIGURE_TOOL_NAME, emoji: '⚙️'}, tool: new PluginConfigureTool(renderer, pluginManager)},
+    {meta: {name: PLUGIN_ENABLE_TOOL_NAME, emoji: '✅'}, tool: new PluginEnableTool(renderer, pluginManager)},
+    {meta: {name: PLUGIN_LIST_TOOL_NAME, emoji: '📦'}, tool: new PluginListTool(renderer, pluginManager)},
+    {meta: {name: PLUGIN_UNINSTALL_TOOL_NAME, emoji: '🗑️'}, tool: new PluginUninstallTool(renderer, pluginManager)},
+  ]
 
-  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...toolRegistrations])
+  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
   // MCP 工具同构注册：McpToolCenter 连接后生成 McpTool 实例 → 动态注册进统一注册中心
   // （toolType=mcp，ToolManager.execute 按类型路由到 MCP 统一执行器）
   const mcpCenter = getMcpToolCenter()
@@ -295,6 +313,7 @@ export function bootstrap(
     promptManager,
     promptModuleBuilder,
     toolManager,
+    pluginManager,
     llmRouter,
     privateSkillService,
     skillCategoryService,

@@ -99,34 +99,11 @@ export class PluginController {
 
   /** 安装插件：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
   private async install(payload: { path: string }): Promise<ApiResult<PluginInfo>> {
-    const src = payload?.path
-    if (!src || !existsSync(src)) {
-      return fail('插件包路径不存在')
-    }
-    const tmpDir = join(app.getPath('temp'), `tinkerdesk-plugin-install-${Date.now()}`)
     try {
-      const stat = statSync(src)
-      let pluginDir: string
-      if (stat.isDirectory()) {
-        pluginDir = src
-      } else if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
-        // 解压 zip 到临时目录（Windows 自带 bsdtar 支持 zip）
-        mkdirSync(tmpDir, { recursive: true })
-        execFileSync(this.tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
-        const located = this.locateManifestDir(tmpDir)
-        if (!located) {
-          return fail('zip 内未找到 manifest.json（插件包结构无效）')
-        }
-        pluginDir = located
-      } else {
-        return fail('请选择插件文件夹或 .zip 插件包')
-      }
-      const info = this.pluginManager.installPlugin(pluginDir)
+      const info = this.pluginManager.installFromPath(payload?.path ?? '')
       return ok(info)
     } catch (e) {
       return fail((e as Error).message)
-    } finally {
-      rmSync(tmpDir, { recursive: true, force: true })
     }
   }
 

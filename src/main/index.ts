@@ -22,8 +22,6 @@ import { VoiceController } from './controller/voice-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
-/** 插件管理器（扫描 %APPDATA%/tinkerdesk/plugins/） */
-const pluginManager = new PluginManager()
 
 function createWindow() {
   Menu.setApplicationMenu(null)
@@ -84,11 +82,11 @@ app.whenReady().then(() => {
   new AccountController(desk.accountService).register()
 
   // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
-  pluginManager.loadAll()
-  new PluginController(pluginManager, () => mainWindow).register()
+  desk.pluginManager.loadAll()
+  new PluginController(desk.pluginManager, () => mainWindow).register()
 
   // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
-  const voiceService = new VoiceProviderService(pluginManager)
+  const voiceService = new VoiceProviderService(desk.pluginManager)
   new VoiceController(voiceService).register()
 
   // ── 窗口控制 IPC ──
@@ -105,7 +103,7 @@ app.whenReady().then(() => {
 
   createWindow()
   // 插件事件转发目标（窗口就绪后注入）
-  pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
+  desk.pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
   checkForUpdatesOnStartup()
 })
 

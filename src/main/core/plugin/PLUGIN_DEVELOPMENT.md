@@ -20,6 +20,7 @@
 插件目录（%APPDATA%/tinkerdesk/plugins/<plugin-id>/）
 ├── manifest.json      ← 元数据（必填）
 ├── index.js           ← 入口（CommonJS，main 进程加载）
+├── guide.md           ← 安装引导文档（推荐，Agent 自动安装时读取，见 §10）
 ├── lib/               ← 插件自己的模块
 ├── scripts/           ← 插件自己的脚本（如调用外部引擎）
 ├── node_modules/      ← 自带依赖（分发时包含）
@@ -308,3 +309,37 @@ module.exports = {
 - [ ] 敏感配置用 `secret` 类型
 - [ ] node_modules 自带（分发 zip 包含）
 - [ ] README：安装方法、配置说明、依赖环境
+- [ ] 有外部依赖（Python/GPU/引擎）的插件必须带 `guide.md`（见 §10）
+
+---
+
+## 10. 安装引导文档（guide.md）规范
+
+**目的**：让 Agent 或用户无需内置任何插件知识即可完成安装。**凡是需要前置环境（Python/GPU/外部引擎/系统组件）的插件，必须附带 `guide.md`**；纯代码零依赖的插件可选。
+
+**固定格式**（Agent 按此结构解析）：
+
+```markdown
+# <插件名> 安装引导
+
+## 前置依赖
+- 需要安装什么（如：OmniVoice 引擎、Python 3.10+、NVIDIA GPU）
+
+## 环境要求
+- 版本/硬件/驱动要求（如：torch CUDA 版、驱动 ≥ xxx）
+
+## 对接方式
+- 插件如何桥接外部能力（系统接口、配置项含义）
+
+## 安装步骤
+1. 安装前置依赖（给命令或下载地址）
+2. 模型/配置准备（如需）
+
+## 常见路径
+- 各平台默认安装位置（Agent 探测用）
+```
+
+**约定**：
+- Agent 安装流程（skill `tinkerdesk-plugin-install`）：`plugin_install` 装包 → 读插件目录 `guide.md` → 按"安装步骤"用 terminal 准备环境 → `plugin_configure` 自动探测配置 → `plugin_enable` 启用验证
+- 插件**不得**假设系统知道自己的依赖——一切写在 guide.md
+- 环境探测优先顺序：预设路径 → 环境变量（如 `OMNI_VENV_PYTHON`）→ 配置表单手动指定

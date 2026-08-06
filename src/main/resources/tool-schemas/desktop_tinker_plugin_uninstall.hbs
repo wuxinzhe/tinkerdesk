@@ -1,0 +1,13 @@
+{
+  "name": "desktop_tinker_plugin_uninstall",
+  "description": "Uninstall a plugin: stops it, unregisters its providers, and deletes the plugin directory including downloaded models. Irreversible.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "description": "Plugin id (from plugin_list)" }
+    },
+    "required": ["id"]
+  },
+  "toolType": "desktop",
+  "emoji": "🗑️"
+}

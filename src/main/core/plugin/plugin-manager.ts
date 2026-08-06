@@ -11,8 +11,9 @@
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */
 import { app, ipcMain } from 'electron'
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
 import { join } from 'path'
+import { execFileSync } from 'child_process'
 import { matchSystemInterfaces, findSystemInterface, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
   PluginApi,
@@ -316,6 +317,62 @@ export class PluginManager {
     }
   }
 
+  /**
+   * 从路径安装插件（目录或 .zip）：自动检测 → 解压 → 定位 manifest → installPlugin。
+   * 供 UI 安装与 Agent 工具（plugin_install）共用。
+   */
+  installFromPath(src: string): PluginInfo {
+    if (!src || !existsSync(src)) {
+      throw new Error('插件包路径不存在')
+    }
+    const stat = statSync(src)
+    const tmpDir = join(app.getPath('temp'), `tinkerdesk-plugin-install-${Date.now()}`)
+    try {
+      let pluginDir: string
+      if (stat.isDirectory()) {
+        pluginDir = src
+      } else if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
+        mkdirSync(tmpDir, { recursive: true })
+        execFileSync(this.tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
+        const located = this.locateManifestDir(tmpDir)
+        if (!located) {
+          throw new Error('zip 内未找到 manifest.json（插件包结构无效）')
+        }
+        pluginDir = located
+      } else {
+        throw new Error('请选择插件文件夹或 .zip 插件包')
+      }
+      return this.installPlugin(pluginDir)
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true })
+    }
+  }
+
+  /** 在解压目录中定位含 manifest.json 的插件目录（根目录或一层子目录） */
+  private locateManifestDir(root: string): string | null {
+    if (existsSync(join(root, 'manifest.json'))) return root
+    try {
+      for (const name of readdirSync(root)) {
+        const sub = join(root, name)
+        if (statSync(sub).isDirectory() && existsSync(join(sub, 'manifest.json'))) {
+          return sub
+        }
+      }
+    } catch {
+      // 忽略不可读子目录
+    }
+    return null
+  }
+
+  /** tar 命令：Windows 用 System32 自带 bsdtar（Electron PATH 的 tar 不可用）；Linux/macOS 用系统 tar */
+  private tarBin(): string {
+    if (process.platform === 'win32') {
+      const sysRoot = process.env.SystemRoot ?? 'C:\\Windows'
+      return join(sysRoot, 'System32', 'tar.exe')
+    }
+    return 'tar'
+  }
+
   /** 插件列表 */
   list(): PluginInfo[] {
     return Array.from(this.registry.values()).map((r) => ({
@@ -405,6 +462,11 @@ export class PluginManager {
     return custom
       ? { ...custom, enabled: record.enabled, started: record.started }
       : { loaded: true, enabled: record.enabled, started: record.started }
+  }
+
+  /** 内部记录访问（Agent 工具等需要直接操作 ctx/配置时用） */
+  getRecord(id: string): PluginRecord | null {
+    return this.registry.get(id) ?? null
   }
 
   /** 配置 Schema（动态） */
