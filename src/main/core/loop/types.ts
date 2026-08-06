@@ -5,6 +5,7 @@
  * 复刻 tinker-agent ConversationEngine 相关接口（线程模型版）。
  */
 import type {LlmRouter} from '../llm/llm-router'
+import type {AgentActionType} from './constants'
 import type {ToolManager} from '../tool/tool-manager'
 import type {LlmResponse, ModelConfig} from '../llm/types'
 import type {LlmChunk} from '../llm/types'
@@ -21,10 +22,8 @@ import type {ToolCall} from '../llm/types'
 
 /** 主对话场景（单一来源在 core/llm/types，此处不再重复定义） */
 
-/** 对话状态常量 */
-export const CONV_IN_PROGRESS = 'IN_PROGRESS'
-export const CONV_COMPLETED = 'COMPLETED'
-export const CONV_COMPRESSED = 'COMPRESSED'
+/** 对话状态常量（单一来源在 repository/conversation-repository，此处 re-export） */
+export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED } from '../../repository/conversation-repository'
 
 /** 引擎层响应类型（AgentLoop 内部产生的非 LLM 响应） */
 export const RES_INTERRUPTED = 'INTERRUPTED'
@@ -115,7 +114,7 @@ export interface IEventSender {
   /** 消息通道（入会话消息列表） */
   sendMessage(sessionId: string, type: string, data: unknown): void
   /** 动作通道（入会话消息列表） */
-  sendAction(sessionId: string, type: string, data: unknown): void
+  sendAction(sessionId: string, type: AgentActionType | (string & {}), data: unknown): void
   /** 提示信号通道（一次性展示） */
   sendTips(sessionId: string, type: string, message: string): void
   /** 流式 token 通道（text/reasoning/toolCallArgs 增量） */
@@ -148,7 +147,7 @@ export interface SessionContext {
   /** 发送提示（一次性弹窗/气泡） */
   sendTips(eventType: string, content: string): void
   /** 发送动作事件（入会话消息列表） */
-  sendAction(eventType: string, payload: Record<string, unknown> | null): void
+  sendAction(eventType: AgentActionType | (string & {}), payload: Record<string, unknown> | null): void
   /** 发送消息事件（入会话消息列表） */
   sendMessage(eventType: string, payload: unknown): void
   /** 发送流式 token（text/reasoning/toolCallArgs 增量） */

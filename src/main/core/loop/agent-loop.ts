@@ -38,10 +38,24 @@ import type { PromptModuleBuilder } from '../prompt/prompt-module-builder'
 import type { ToolManager } from '../tool/tool-manager'
 import type { ToolSchema } from '../tool/tool-schema'
 import type { ConversationContext, SessionContext } from './context'
+import { AgentActionType } from './constants'
 import { buildConvCtx, buildToolCtx } from './context'
 import type { AgentLoopOptions, AgentLoopResult } from './types'
 import { CONV_COMPLETED, RES_INTERRUPTED } from './types'
 import { SCENE_CHAT } from '../llm/types'
+import {
+  APPROVAL_REJECTED_MSG,
+  EVT_BUDGET_UPDATE,
+  EVT_INTERACTION_STATUS_UPDATE,
+  EVT_MESSAGE_QUEUED,
+  EVT_SESSION_TITLE_UPDATED,
+  EVT_TOOL_DONE,
+  EVT_TOOL_START,
+  ROLE_SYSTEM,
+  ROLE_TOOL,
+  STATUS_TIMED_OUT,
+} from './constants'
+import { MSG_TYPE_APPROVAL_REQUEST, MSG_TYPE_TOOL_RESULT } from '../../service/message-service'
 
 /** 线程模型 AgentLoop */
 export class AgentLoop {
@@ -109,7 +123,7 @@ export class AgentLoop {
 
     // ── 2. 会话处理中 → 排队等待（处理循环结束时会自动取下一批） ──
     if (this.queueStore.isProcessing(sessionId)) {
-      ctx.sendTips('MESSAGE_QUEUED', '消息已入队，等待处理…')
+      ctx.sendTips(EVT_MESSAGE_QUEUED, '消息已入队，等待处理…')
       return {
         response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '消息已入队' } as LlmResponse,
         sessionId,
@@ -202,7 +216,7 @@ export class AgentLoop {
     const systemPrompt = this.promptModuleBuilder.buildSystemPrompt(convCtx)
     const messages: ApiMessage[] = []
     if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt })
+      messages.push({ role: ROLE_SYSTEM, content: systemPrompt })
     }
     messages.push(...history)
 
@@ -245,7 +259,7 @@ export class AgentLoop {
         const mainCfg = convCtx.getMainModelConfig()
         if (response.promptTokens !== undefined && mainCfg) {
           const budget = Math.max(Math.floor(mainCfg.contextLimit * 0.85) - response.promptTokens, 0)
-          convCtx.sendAction('BUDGET_UPDATE', { remainingTokens: budget, contextLimit: mainCfg.contextLimit })
+          convCtx.sendAction(EVT_BUDGET_UPDATE, { remainingTokens: budget, contextLimit: mainCfg.contextLimit })
         }
 
         switch (response.resType) {
@@ -271,14 +285,14 @@ export class AgentLoop {
             guardrail.resetForTurn()
             for (const tc of response.toolCalls) {
               // 工具开始事件（对齐 Java sendAction(TOOL_START)）
-              convCtx.sendAction('TOOL_START', { toolName: tc.name })
+              convCtx.sendAction(EVT_TOOL_START, { toolName: tc.name })
               const result = await this.executeToolCall(convCtx, tc, guardrail)
               // 工具完成事件（对齐 Java sendAction(TOOL_DONE)：前端据此隐藏 loading）
-              convCtx.sendAction('TOOL_DONE', { toolCallId: tc.id, toolName: tc.name, success: true })
+              convCtx.sendAction(EVT_TOOL_DONE, { toolCallId: tc.id, toolName: tc.name, success: true })
               // 工具结果持久化 + 回填 LLM 上下文
               this.messageService.saveTempMessage(MessageFactory.buildToolResult(convId, sessionId, profile, tc.id, result))
               messages.push({
-                role: 'tool',
+                role: ROLE_TOOL,
                 content: result,
                 toolCallId: tc.id,
                 name: tc.name,
@@ -315,7 +329,7 @@ export class AgentLoop {
                 errorMessage: '模型连续返回空响应',
               } as LlmResponse)
             }
-            const hasToolResults = messages.some((m) => m.role === 'tool')
+            const hasToolResults = messages.some((m) => m.role === ROLE_TOOL)
             this.messageService.saveTempMessage(MessageFactory.buildUserMessage(
               convId,
               sessionId,
@@ -541,7 +555,7 @@ export class AgentLoop {
       const title = response.text?.trim().slice(0, 50)
       if (title) {
         this.sessionService.updateTitle(sessionId, title, profile)
-        convCtx.sendAction('SESSION_TITLE_UPDATED', { title })
+        convCtx.sendAction(EVT_SESSION_TITLE_UPDATED, { title })
         console.log(`action=TITLE_GENERATED sessionId=${sessionId} title=${title}`)
       }
     } catch (e) {
@@ -569,7 +583,7 @@ export class AgentLoop {
       if (authz === AuthzDecision.ASK) {
         const approved = await this.requestApproval(convCtx, toolCall, '危险操作，需要审批')
         if (!approved) {
-          return '用户拒绝执行'
+          return APPROVAL_REJECTED_MSG
         }
       }
       // ③ 沙盒检查（URL/路径白名单 → ASK）
@@ -577,7 +591,7 @@ export class AgentLoop {
       if (sandbox === SandboxDecision.ASK) {
         const approved = await this.requestApproval(convCtx, toolCall, '沙盒限制')
         if (!approved) {
-          return '用户拒绝执行'
+          return APPROVAL_REJECTED_MSG
         }
       }
     }
@@ -586,7 +600,7 @@ export class AgentLoop {
     if (!toolCtx.yolo) {
       const approved = await this.requestApproval(convCtx, toolCall)
       if (!approved) {
-        return '用户拒绝执行'
+        return APPROVAL_REJECTED_MSG
       }
     }
 
@@ -628,11 +642,11 @@ export class AgentLoop {
       const timer = setTimeout(() => {
         this.approvalWaiters.delete(toolCall.id)
         // 超时视为拒绝（对齐 Java markApprovalExpired）
-        convCtx.sendAction('INTERACTION_STATUS_UPDATE', {
+        convCtx.sendAction(EVT_INTERACTION_STATUS_UPDATE, {
           toolCallId: toolCall.id,
-          interactionStatus: 'timed_out',
+          interactionStatus: STATUS_TIMED_OUT,
           content: '⏰ 已过期',
-          messageType: 'approval_request',
+          messageType: MSG_TYPE_APPROVAL_REQUEST,
         })
         console.warn(`审批超时，视为拒绝 tool=${toolCall.name} toolCallId=${toolCall.id}`)
         resolve(false)
@@ -662,11 +676,11 @@ export class AgentLoop {
     return new Promise<string>((resolve) => {
       const timer = setTimeout(() => {
         this.toolResultWaiters.delete(toolCallId)
-        cycle.sendAction('INTERACTION_STATUS_UPDATE', {
+        cycle.sendAction(EVT_INTERACTION_STATUS_UPDATE, {
           toolCallId,
-          interactionStatus: 'timed_out',
+          interactionStatus: STATUS_TIMED_OUT,
           content: '⏰ 已过期',
-          messageType: 'tool_result',
+          messageType: MSG_TYPE_TOOL_RESULT,
         })
         console.warn(`工具结果等待超时 toolCallId=${toolCallId}`)
         resolve('Error: 等待客户端工具结果超时（60s），工具调用已过期')

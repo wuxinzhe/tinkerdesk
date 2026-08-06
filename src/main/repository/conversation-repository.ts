@@ -7,6 +7,12 @@
 import { getDatabase } from './database'
 import type { ConversationEntity, ConversationStatusUpdate } from './types'
 
+/** 对话状态常量（SQL 层单一来源；service/loop 从 core/loop/types re-export 引用） */
+export const CONV_IN_PROGRESS = 'IN_PROGRESS'
+export const CONV_COMPLETED = 'COMPLETED'
+export const CONV_COMPRESSED = 'COMPRESSED'
+export const CONV_INTERRUPTED = 'INTERRUPTED'
+
 /** 对话实体（对应 ConversationEntity） */
 
 /** 更新状态参数 */
@@ -72,8 +78,8 @@ export class ConversationRepository {
   findInProgress(sessionId: string): ConversationEntity | null {
     const db = getDatabase()
     const row = db
-      .prepare(`SELECT ${COLS} FROM conversations WHERE session_id = ? AND status = 'IN_PROGRESS' LIMIT 1`)
-      .get(sessionId) as Record<string, unknown> | undefined
+      .prepare(`SELECT ${COLS} FROM conversations WHERE session_id = ? AND status = ? LIMIT 1`)
+      .get(sessionId, CONV_IN_PROGRESS) as Record<string, unknown> | undefined
     return row ? toEntity(row) : null
   }
 
@@ -85,11 +91,11 @@ export class ConversationRepository {
         `SELECT EXISTS(
            SELECT 1 FROM conversations c
            JOIN sessions s ON c.session_id = s.id
-           WHERE s.profile = ? AND c.status = 'IN_PROGRESS'
+           WHERE s.profile = ? AND c.status = ?
            LIMIT 1
          ) AS ex`
       )
-      .get(profile) as { ex: number }
+      .get(profile, CONV_IN_PROGRESS) as { ex: number }
     return row.ex === 1
   }
 
@@ -102,7 +108,7 @@ export class ConversationRepository {
            SELECT id, estimated_tokens,
                   ROW_NUMBER() OVER (ORDER BY started_at DESC) - 1 AS rn
            FROM conversations
-           WHERE session_id = ? AND status = 'COMPLETED'
+           WHERE session_id = ? AND status = ?
          ),
          running AS (
            SELECT id, rn, SUM(estimated_tokens) OVER (ORDER BY rn) AS tail_running
@@ -117,7 +123,7 @@ export class ConversationRepository {
          WHERE n.rn > (SELECT split_rn FROM split)
          ORDER BY n.rn DESC`
       )
-      .all(sessionId, tailTokenBudget) as Array<{ id: string }>
+      .all(sessionId, CONV_COMPLETED, tailTokenBudget) as Array<{ id: string }>
     return rows.map((r) => r.id)
   }
 

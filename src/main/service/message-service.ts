@@ -10,6 +10,7 @@ import { MessageRepository } from '../repository/message-repository'
 import type { MessageEntity } from '../repository/types'
 import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
+import { ROLE_SYSTEM } from '../core/loop/constants'
 
 /** 消息类型常量（对齐 tinker-agent MessageConstants） */
 export const MSG_TYPE_USER = 'user_message'
@@ -242,7 +243,7 @@ export class MessageService {
       profile,
       sortOrder: 'DESC',
       limit: 1,
-      roles: ['system'],
+      roles: [ROLE_SYSTEM],
     })
     if (msgs.length === 0) {
       return null
@@ -262,7 +263,7 @@ export class MessageService {
       profile,
       sortOrder: 'DESC',
       limit: 50,
-      roles: ['system'],
+      roles: [ROLE_SYSTEM],
     })
     for (const m of existing) {
       if (m.messageType === MSG_TYPE_SUMMARY) {
