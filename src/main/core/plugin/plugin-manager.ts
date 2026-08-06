@@ -11,7 +11,7 @@
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */
 import { app, ipcMain } from 'electron'
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync } from 'fs'
 import { join } from 'path'
 import { matchSystemInterfaces, findSystemInterface, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
@@ -85,7 +85,7 @@ export class PluginManager {
     }
   }
 
-  /** 加载单个插件（读 manifest → require → init） */
+  /** 校验并加载单个插件（读 manifest → require → init）；已存在 → 抛错 */
   private loadPlugin(dir: string): void {
     const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as PluginManifest
 
@@ -268,6 +268,52 @@ export class PluginManager {
     return Array.from(this.registry.values()).filter(
       (r) => r.manifest.capabilities?.includes(cap) && r.api !== null && r.started
     )
+  }
+
+  /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
+  installPlugin(srcDir: string): PluginInfo {
+    // 源目录必须含 manifest.json
+    const manifestFile = join(srcDir, 'manifest.json')
+    if (!existsSync(manifestFile)) {
+      throw new Error('所选目录不是有效插件（缺少 manifest.json）')
+    }
+    const manifest = JSON.parse(readFileSync(manifestFile, 'utf-8')) as PluginManifest
+    if (!manifest.id || !manifest.entry || !manifest.name) {
+      throw new Error('manifest 缺少 id/entry/name')
+    }
+    if (manifest.apiVersion !== 1) {
+      throw new Error(`不支持的 apiVersion: ${manifest.apiVersion}（当前支持 1）`)
+    }
+    // id 安全校验（防路径穿越/非法目录名）
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(manifest.id)) {
+      throw new Error(`插件 id 非法（仅允许小写字母/数字/连字符）: ${manifest.id}`)
+    }
+    if (this.registry.has(manifest.id)) {
+      throw new Error(`插件已存在: ${manifest.id}（请先停用并删除旧版本）`)
+    }
+    // 复制到插件目录（覆盖式复制，清理旧残留）
+    const destDir = join(this.pluginsDir, manifest.id)
+    if (existsSync(destDir)) {
+      rmSync(destDir, { recursive: true, force: true })
+    }
+    cpSync(srcDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
+    // 加载（含契约校验）
+    this.loadPlugin(destDir)
+    const record = this.registry.get(manifest.id)
+    if (!record) {
+      throw new Error(`插件加载失败: ${manifest.id}`)
+    }
+    // 安装后默认启用（自检通过才注册）
+    this.autoRegister(record)
+    console.log(`[plugin] 已安装 ${manifest.id}@${manifest.version}`)
+    return {
+      manifest: record.manifest,
+      status: {
+        loaded: record.api !== null,
+        enabled: record.enabled,
+        started: record.started,
+      },
+    }
   }
 
   /** 插件列表 */

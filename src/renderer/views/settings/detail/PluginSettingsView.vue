@@ -41,6 +41,18 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
   }
 }
 
+/** 安装插件：选文件夹或 zip → 自动检测 → 校验安装 → 刷新列表 */
+async function installPlugin(): Promise<void> {
+  try {
+    const path = await window.api.plugins.pickInstallPackage()
+    if (!path) return
+    const info = await pluginsApi.install(path)
+    plugins.value.push(info)
+  } catch {
+    // 错误提示由 inv 拦截统一派发
+  }
+}
+
 /** 进入插件配置页（Lv3） */
 function openConfig(p: PluginInfo): void {
   void router.push(`/workspace/settings/plugins/${p.manifest.id}`)
@@ -52,12 +64,20 @@ onMounted(loadPlugins)
 <template>
   <div class="plugin-settings-page">
     <div class="plugin-settings-page__header">
-      <div class="plugin-settings-page__title">插件设置</div>
-      <div class="plugin-settings-page__desc">
-        插件独立于应用分发：下载 zip 解压到
-        <code class="plugin-settings-page__path">%APPDATA%/tinkerdesk/plugins/</code>
-        后重启应用即可加载。启用后按插件声明的接口注册为 provider。
+      <div class="plugin-settings-page__header-text">
+        <div class="plugin-settings-page__title">插件设置</div>
+        <div class="plugin-settings-page__desc">
+          插件独立于应用分发：可直接安装 zip 插件包或插件文件夹。启用后按插件声明的接口注册为 provider。
+        </div>
       </div>
+      <button class="plugin-settings-page__install" @click="installPlugin">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        安装插件
+      </button>
     </div>
 
     <!-- 加载态 -->
@@ -122,10 +142,45 @@ onMounted(loadPlugins)
   overflow-y: auto;
 }
 
+/* 头部：标题 + 右侧安装按钮 */
+.plugin-settings-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.plugin-settings-page__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .plugin-settings-page__title {
   font-size: var(--sa-fs-title, 20px);
   font-weight: 600;
   color: var(--sa-text-primary, #1d1d1f);
+}
+
+/* 头部右侧安装按钮 */
+.plugin-settings-page__install {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid var(--sa-accent, #007aff);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+
+.plugin-settings-page__install:hover {
+  background: rgba(0, 122, 255, 0.12);
 }
 
 .plugin-settings-page__desc {

@@ -9,7 +9,10 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
+import { readFileSync, existsSync, statSync, mkdirSync, rmSync } from 'fs'
+import { join } from 'path'
+import { execFileSync } from 'child_process'
 import { PluginManager } from '../core/plugin/plugin-manager'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
@@ -44,6 +47,8 @@ export class PluginController {
     ipcMain.handle('plugin:pick-file', (_event, payload: { filters?: { name: string; extensions: string[] }[] }) =>
       this.pickFile(payload),
     )
+    ipcMain.handle('plugin:install', (_event, payload: { path: string }) => this.install(payload))
+    ipcMain.handle('plugin:pick-install-package', () => this.pickInstallPackage()),
     ipcMain.handle('plugin:get-config', (_event, payload: { id: string }) =>
       this.getPluginConfig(payload),
     )
@@ -69,6 +74,80 @@ export class PluginController {
     } catch (e) {
       return fail((e as Error).message)
     }
+  }
+
+  /** 选择插件安装包：文件夹或 zip（openFile + openDirectory 组合） */
+  private async pickInstallPackage(): Promise<ApiResult<string | null>> {
+    try {
+      const win = this.getWindow()
+      const options: Electron.OpenDialogOptions = {
+        title: '选择插件包（文件夹或 .zip）',
+        properties: ['openFile', 'openDirectory'],
+        filters: [{ name: '插件包', extensions: ['zip'] }],
+      }
+      const result = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options)
+      return ok(result.canceled ? null : (result.filePaths[0] ?? null))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 安装插件：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
+  private async install(payload: { path: string }): Promise<ApiResult<PluginInfo>> {
+    const src = payload?.path
+    if (!src || !existsSync(src)) {
+      return fail('插件包路径不存在')
+    }
+    const tmpDir = join(app.getPath('temp'), `tinkerdesk-plugin-install-${Date.now()}`)
+    try {
+      const stat = statSync(src)
+      let pluginDir: string
+      if (stat.isDirectory()) {
+        pluginDir = src
+      } else if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
+        // 解压 zip 到临时目录（Windows 自带 bsdtar 支持 zip）
+        mkdirSync(tmpDir, { recursive: true })
+        execFileSync(this.tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
+        const located = this.locateManifestDir(tmpDir)
+        if (!located) {
+          return fail('zip 内未找到 manifest.json（插件包结构无效）')
+        }
+        pluginDir = located
+      } else {
+        return fail('请选择插件文件夹或 .zip 插件包')
+      }
+      const info = this.pluginManager.installPlugin(pluginDir)
+      return ok(info)
+    } catch (e) {
+      return fail((e as Error).message)
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true })
+    }
+  }
+
+  /** 在解压目录中定位含 manifest.json 的插件目录（根目录或一层子目录） */
+  private locateManifestDir(root: string): string | null {
+    if (existsSync(join(root, 'manifest.json'))) return root
+    const { readdirSync } = require('fs')
+    try {
+      for (const name of readdirSync(root)) {
+        const sub = join(root, name)
+        if (statSync(sub).isDirectory() && existsSync(join(sub, 'manifest.json'))) {
+          return sub
+        }
+      }
+    } catch {
+      // 忽略读取异常
+    }
+    return null
+  }
+
+  /** Windows 系统自带 tar（bsdtar，支持 zip/bz2） */
+  private tarBin(): string {
+    const sysRoot = process.env.SystemRoot ?? 'C:\\Windows'
+    return join(sysRoot, 'System32', 'tar.exe')
   }
 
   /** 文件选择对话框（配置表单 file 字段用；必须关联主窗口，异步版） */

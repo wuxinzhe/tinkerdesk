@@ -7,7 +7,6 @@
     <router-view v-slot="{ Component, route }">
       <transition
         :name="(route.meta.transition as string | undefined) || 'fade'"
-        mode="out-in"
         @before-leave="onTransitionStart"
         @after-enter="onTransitionEnd"
       >

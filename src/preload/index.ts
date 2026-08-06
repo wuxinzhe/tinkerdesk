@@ -316,6 +316,10 @@ const api = {
       inv('plugin:pick-file', {
         filters: filters ? JSON.parse(JSON.stringify(filters)) : undefined,
       }).then(unwrap),
+    /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
+    install: (path: string) => inv('plugin:install', { path }).then(unwrap),
+    /** 选择插件包：文件夹或 zip 二选一 */
+    pickInstallPackage: () => inv('plugin:pick-install-package').then(unwrap),
   },
 
   // ── 语音服务（系统固定接口，转发当前插件 provider） ──

@@ -16,6 +16,8 @@ export interface PluginApi {
   list(): Promise<PluginInfo[]>
   toggle(id: string, enabled: boolean): Promise<ToggleResult>
   check(id: string): Promise<PluginCheckResult>
+  /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
+  install(path: string): Promise<PluginInfo>
   getStatus(id: string): Promise<PluginStatus>
   getSchema(id: string): Promise<ConfigSchema | null>
   getConfig(id: string): Promise<Record<string, unknown>>
@@ -38,6 +40,7 @@ export const pluginsApi: PluginApi = {
   list: () => window.api.plugins.list(),
   toggle: (id, enabled) => window.api.plugins.toggle(id, enabled),
   check: (id) => window.api.plugins.check(id),
+  install: (path) => window.api.plugins.install(path),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),
   getConfig: (id) => window.api.plugins.getConfig(id),

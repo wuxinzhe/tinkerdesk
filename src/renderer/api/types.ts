@@ -826,6 +826,10 @@ export interface WindowApi {
     invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
     /** 文件选择对话框（配置表单 file 字段） */
     pickFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
+    /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
+    install: (path: string) => Promise<PluginInfo>
+    /** 选择插件包：文件夹或 zip 二选一（对话框） */
+    pickInstallPackage: () => Promise<string | null>
   }
 
   voice: {
