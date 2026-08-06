@@ -34,7 +34,11 @@ export class OpenAIClient implements LlmClient {
       // assistant 工具调用：toolCall(JSON) → tool_calls 数组（缺失会导致 tool 结果消息 400）
       if (m.role === 'assistant' && m.toolCall) {
         try {
-          const calls = JSON.parse(m.toolCall) as Array<{ id: string; name: string; arguments: unknown }>
+          // 兼容两种存储格式：数组 [{id,name,arguments}] 或 Map {id:{name,arguments}}
+          const parsed = JSON.parse(m.toolCall) as unknown
+          const calls: Array<{ id: string; name: string; arguments: unknown }> = Array.isArray(parsed)
+            ? parsed as Array<{ id: string; name: string; arguments: unknown }>
+            : Object.entries(parsed as Record<string, { name: string; arguments: unknown }>).map(([id, v]) => ({ id, name: v.name, arguments: v.arguments }))
           return {
             ...base,
             tool_calls: calls.map((c) => ({
