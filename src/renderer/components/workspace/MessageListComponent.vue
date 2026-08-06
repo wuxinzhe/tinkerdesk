@@ -59,6 +59,7 @@ const DISPLAY_TYPES = new Set([
   'user_normal',
   'assistant_text',
   'assistant_hybrid',
+  'assistant_tool_call',
   'approval_request',
   'clarify_request'
 ])

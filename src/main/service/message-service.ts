@@ -16,6 +16,8 @@ import {
   MSG_TYPE_USER, MSG_TYPE_USER_CONTINUE, MSG_TYPE_ASSISTANT_TEXT, MSG_TYPE_ASSISTANT_TOOL_CALL,
   MSG_TYPE_ASSISTANT_HYBRID, MSG_TYPE_ASSISTANT_THINKING, MSG_TYPE_TOOL_RESULT,
   MSG_TYPE_APPROVAL_REQUEST, MSG_TYPE_CLARIFY_REQUEST, MSG_TYPE_SYSTEM_SUMMARY,
+  MSG_TYPE_DISPLAY_SET, MSG_TYPE_LLM_CONTEXT_SET,
+  STATUS_PENDING,
   FINISH_COMPLETE, FINISH_LENGTH,
 } from '../core/constants/message'
 
@@ -107,6 +109,35 @@ export class MessageFactory {
     }
   }
 
+  /** 审批请求消息（对齐 Java MessageEntity.buildApprovalRequest：toolCall 存 {toolCallId:{name,arguments}} JSON） */
+  static buildApprovalRequest(
+    convId: string,
+    sessionId: string,
+    profile: string,
+    toolCallId: string,
+    toolName: string,
+    reason: string | undefined,
+    argumentsData: unknown
+  ): MessageEntity {
+    return {
+      sessionId,
+      conversationId: convId,
+      profile,
+      role: 'approval',
+      toolCallId,
+      toolName,
+      messageType: MSG_TYPE_APPROVAL_REQUEST,
+      interactionStatus: STATUS_PENDING,
+      content: reason != null ? `⏳ 需要审批：${reason}` : '⏳ 等待审批',
+      toolCall: argumentsData != null
+        ? JSON.stringify({ [toolCallId]: { name: toolName, arguments: argumentsData } })
+        : null,
+      reasoningContent: '',
+      finishReason: FINISH_COMPLETE,
+      deleted: false,
+    }
+  }
+
   static buildToolResult(convId: string, sessionId: string, profile: string, toolCallId: string, content: string): MessageEntity {
     return {
       sessionId,
@@ -144,6 +175,11 @@ export class MessageService {
     this.tempMessages.set(convId, list)
   }
 
+  /** 读取指定对话的暂存消息（供审批超时标记等场景直接修改） */
+  getTempMessages(convId: string): MessageEntity[] {
+    return this.tempMessages.get(convId) ?? []
+  }
+
   /** 更新审批状态（approved/rejected） */
   updateApprovalMessageStatusTemp(convId: string, toolCallId: string, approved: boolean, profile: string, sessionId: string): void {
     // 暂存区查找匹配消息更新
@@ -163,7 +199,7 @@ export class MessageService {
     this.messageRepo.updateApprovalStatusTimedOut(toolCallId, profile, sessionId)
   }
 
-  /** 按 session 分页查询消息（DB 已落库 + 拼上当前进行中对话的暂存消息） */
+  /** 按 session 分页查询消息（DB 已落库 + 拼上当前进行中对话的暂存消息；按 DISPLAY_SET 控制可见性） */
   listMessagesBySession(sessionId: string, profile: string, limit: number, offset: number): MessageEntity[] {
     const db = this.messageRepo.findMessagesBySession({
       sessionId,
@@ -181,8 +217,12 @@ export class MessageService {
         }
       }
     }
-    if (temp.length === 0) return db.slice(offset)
-    const all = [...db, ...temp].sort((a, b) =>
+    // 可见性：只返回 DISPLAY_SET 内的消息类型（对齐 Java TYPE_DISPLAY_TYPES）
+    const visible = (m: MessageEntity) => m.messageType != null && MSG_TYPE_DISPLAY_SET.has(m.messageType)
+    const dbVisible = db.filter(visible)
+    const tempVisible = temp.filter(visible)
+    if (tempVisible.length === 0) return dbVisible.slice(offset)
+    const all = [...dbVisible, ...tempVisible].sort((a, b) =>
       (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0)
     )
     return all.slice(offset)
@@ -193,7 +233,7 @@ export class MessageService {
     return this.messageRepo.findByConditions({ conversationId, profile })
   }
 
-  /** 合并历史 + 当前暂存，按时间排序，转为 ApiMessage（LLM 上下文） */
+  /** 合并历史 + 当前暂存，按时间排序，转为 ApiMessage（LLM 上下文；按 LLM_CONTEXT_SET 过滤，审批不进上下文） */
   loadContextMessages(sessionId: string, convId: string, profile: string): ApiMessage[] {
     // 源1：已完成对话的历史消息（COMPLETED 状态，压缩过的 COMPRESSED 对话不在此列）
     const history = this.messageRepo.findBySessionCompleted(sessionId, profile, 'COMPLETED')
@@ -202,12 +242,16 @@ export class MessageService {
     // 源3：当前进行中对话的暂存消息（尚未 flush 的数据）
     const current = this.tempMessages.get(convId) ?? []
 
+    // 可见性：只保留 LLM_CONTEXT_SET 内的消息类型（审批/系统摘要等非对话内容排除，对齐 Java TYPE_LLM_CONTEXT_TYPES）
+    const inContext = (m: MessageEntity): boolean =>
+      m.messageType != null && MSG_TYPE_LLM_CONTEXT_SET.has(m.messageType)
+
     if (summary) {
       // 合并：summary 最前（最旧）→ 历史中间 → 暂存最后（最新）
-      return [summary, ...history.map(entityToApiMessage), ...current.map(entityToApiMessage)]
+      return [summary, ...history.filter(inContext).map(entityToApiMessage), ...current.filter(inContext).map(entityToApiMessage)]
     }
 
-    const all = [...history, ...current]
+    const all = [...history.filter(inContext), ...current.filter(inContext)]
     all.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0))
     return all.map(entityToApiMessage)
   }

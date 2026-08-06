@@ -87,8 +87,8 @@ export class AgentLoop {
 
   /** 中断标志：sessionId → abort */
   private readonly abortControllers = new Map<string, AbortController>()
-  /** 审批挂起表：toolCallId → {resolve, timer}（超时自动拒绝） */
-  private readonly approvalWaiters = new Map<string, { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }>()
+  /** 审批挂起表：toolCallId → {resolve, timer, convId, profile, sessionId}（超时自动拒绝） */
+  private readonly approvalWaiters = new Map<string, { resolve: (approved: boolean) => void; timer: NodeJS.Timeout; convId: string; profile: string; sessionId: string }>()
   /** 本轮对话自动批准集合（conversationId → 有值则本轮所有审批直接放行） */
   private readonly autoApproveConversations = new Set<string>()
   /** 工具结果挂起表：toolCallId → {resolve, timer}（超时返回超时结果） */
@@ -394,12 +394,13 @@ export class AgentLoop {
   /** 本轮对话自动批准：当前挂起审批全部放行 + 后续本轮审批直接放行（前端"本轮自动批准"按钮） */
   setAutoApprove(conversationId: string): void {
     this.autoApproveConversations.add(conversationId)
-    // 放行当前所有挂起审批
+    // 放行当前所有挂起审批（同步更新审批消息状态为 approved，对齐 onApproval 路径）
     const pending = this.approvalWaiters.size
     for (const [toolCallId, waiter] of this.approvalWaiters) {
       this.approvalWaiters.delete(toolCallId)
       clearTimeout(waiter.timer)
       waiter.resolve(true)
+      this.messageService.updateApprovalMessageStatusTemp(waiter.convId, toolCallId, true, waiter.profile, waiter.sessionId)
     }
     console.log(`[agent] 本轮自动批准已开启 conversationId=${conversationId}（放行挂起审批 ${pending} 个）`)
   }
@@ -417,8 +418,24 @@ export class AgentLoop {
     this.approvalWaiters.delete(toolCallId)
     clearTimeout(waiter.timer)
     waiter.resolve(approved)
+    // 审批消息状态更新（暂存 + 落库，对齐 Java updateApprovalMessageStatusTemp）
+    this.messageService.updateApprovalMessageStatusTemp(waiter.convId, toolCallId, approved, waiter.profile, sessionId)
     console.log(`action=APPROVAL sessionId=${sessionId} toolCallId=${toolCallId} approved=${approved}`)
     return true
+  }
+
+  /** 审批超时：暂存消息标记 timed_out + 落库（对齐 Java markApprovalExpired） */
+  private markApprovalTimedOut(convCtx: ConversationContext, toolCallId: string): void {
+    // 暂存区查找更新
+    const list = this.messageService.getTempMessages(convCtx.conversationId)
+    for (const m of list) {
+      if (m.role === 'approval' && m.toolCallId === toolCallId) {
+        m.interactionStatus = STATUS_TIMED_OUT
+        m.content = '⏰ 已过期'
+      }
+    }
+    // 落库标记过期
+    this.messageService.markApprovalExpired(toolCallId, convCtx.profile, convCtx.sessionId)
   }
 
   /**
@@ -680,6 +697,8 @@ export class AgentLoop {
           content: '⏰ 已过期',
           messageType: MSG_TYPE_APPROVAL_REQUEST,
         })
+        // 暂存 + 落库标记过期（对齐 Java markApprovalExpired）
+        this.markApprovalTimedOut(convCtx, toolCall.id)
         console.warn(`审批超时，视为拒绝 tool=${toolCall.name} toolCallId=${toolCall.id}`)
         resolve(false)
       }, AgentLoop.APPROVAL_TIMEOUT_MS)
@@ -689,7 +708,20 @@ export class AgentLoop {
           resolve(approved)
         },
         timer,
+        convId: convCtx.conversationId,
+        profile: convCtx.profile,
+        sessionId: convCtx.sessionId,
       })
+      // 审批请求消息入暂存（对齐 Java saveTempMessage(buildApprovalRequest)）
+      this.messageService.saveTempMessage(MessageFactory.buildApprovalRequest(
+        convCtx.conversationId,
+        convCtx.sessionId,
+        convCtx.profile,
+        toolCall.id,
+        toolCall.name,
+        reason,
+        toolCall.arguments
+      ))
       // 通过 sender 发审批事件（对齐 Java ctx.sendMessage(APPROVAL_REQUEST, ...)）
       convCtx.sendApprovalRequest({
         toolCallId: toolCall.id,

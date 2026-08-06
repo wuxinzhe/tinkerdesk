@@ -28,6 +28,12 @@
         <template v-else>
           {{ message.content }}
         </template>
+
+        <!-- assistant_tool_call → 工具调用内容（toolCall JSON：工具名 + 参数） -->
+        <div v-if="isToolCall" class="tool-call-card">
+          <div class="tool-call-card__header">🔧 工具调用</div>
+          <pre class="tool-call-card__body">{{ prettyToolCall }}</pre>
+        </div>
       </div>
 
       <!-- ── 时间戳 ── -->
@@ -159,12 +165,29 @@ const effectiveType = computed(() =>
 
 const isUserNormal = computed(() => effectiveType.value === 'user_normal')
 const isAssistantText = computed(() => effectiveType.value === 'assistant_text')
+const isToolCall = computed(() => effectiveType.value === 'assistant_tool_call')
 const isApprovalRequest = computed(() => effectiveType.value === 'approval_request')
 const isClarifyRequest = computed(() => effectiveType.value === 'clarify_request')
 
+/** toolCall JSON 美化显示（{toolCallId: {name, arguments}} → 工具名 + 参数 JSON） */
+const prettyToolCall = computed(() => {
+  if (!props.message.toolCall) return ''
+  try {
+    const parsed = JSON.parse(props.message.toolCall as string) as Record<string, { name: string; arguments: unknown }>
+    const entries = Object.entries(parsed)
+    if (entries.length === 0) return props.message.toolCall as string
+    const first = entries[0][1]
+    const name = first?.name ?? ''
+    const args = first?.arguments != null ? JSON.stringify(first.arguments, null, 2) : ''
+    return name + (args ? '\n' + args : '')
+  } catch {
+    return props.message.toolCall as string
+  }
+})
+
 /** 是否需要气泡容器（文本类消息） */
 const showBubble = computed(() =>
-  isUserNormal.value || isAssistantText.value || !props.message.messageType
+  isUserNormal.value || isAssistantText.value || isToolCall.value || !props.message.messageType
 )
 
 /** 流式接收区：isStreaming 且有 buffer 时显示原始文本 */
@@ -253,6 +276,30 @@ const bubbleStyleClass = computed(() =>
   background: var(--sa-bg-secondary, #f5f5f7);
   color: var(--sa-text-primary, #1d1d1f);
   border-bottom-left-radius: 4px;
+}
+
+/* ── 工具调用卡片（assistant_tool_call） ── */
+
+.tool-call-card {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.tool-call-card__header {
+  font-weight: 600;
+  color: var(--sa-text-secondary, #86868b);
+  margin-bottom: 6px;
+}
+
+.tool-call-card__body {
+  margin: 0;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 8px;
+  color: var(--sa-text-primary, #1d1d1f);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--sa-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 
 /* ── 气泡容器（user/assistant 文本类消息）─── */
