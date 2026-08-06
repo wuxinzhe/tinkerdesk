@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu, session } from 'electron'
 import { join } from 'path'
+import { initLogger } from './utils/logger'
 import { initDatabase, closeDatabase } from './repository/database'
 import { bootstrap } from './bootstrap'
 import { AgentController } from './controller/agent-controller'
@@ -60,6 +61,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // 日志文件系统最先初始化（后续所有 console 输出落盘）
+  initLogger()
   // 初始化本地数据库（SQLite，custom_models 等表）
   initDatabase()
 
