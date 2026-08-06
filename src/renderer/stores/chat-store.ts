@@ -337,28 +337,42 @@ export const useChatStore = defineStore('chat', () => {
     }
     const placeholder = msgs.find(m => m.isStreaming)
     if (placeholder) {
-      // 占位消息已在流式中 → 更新
+      // 占位消息仍在流式中 → 更新（isFinish 未到或顺序竞态）
       placeholder.content = msg.content || placeholder.content
       placeholder.messageType = msg.messageType ?? 'assistant_text'
       placeholder.reasoningContent = msg.reasoningContent || placeholder.reasoningContent
       placeholder.isStreaming = false
       placeholder.status = 'completed'
       placeholder.timestamp = Date.now()
-    } else if (msg.content || msg.reasoningContent) {
-      // 无占位（非流式或纯工具调用）→ 追加新消息
-      messagesBySession.value[sid].push({
-        id: `msg_${Date.now()}`,
-        sessionId: sid,
-        conversationId: msg.conversationId,
-        role: 'assistant',
-        messageType: msg.messageType ?? 'assistant_text',
-        content: msg.content,
-        reasoningContent: msg.reasoningContent,
-        toolCall: msg.toolCall as ToolCall | undefined,
-        toolCallId: msg.toolCallId,
-        timestamp: Date.now(),
-        status: 'completed',
-      } as ApiMessage)
+    } else {
+      // 流式已由 isFinish 转正（占位 isStreaming=false）→ 找到本轮 assistant 消息原地补齐，
+      // 避免追加第二条相同消息（双渲染）
+      const localKey = `local:${sid}`
+      const lastAssistant = [...msgs].reverse().find(m =>
+        m.role === 'assistant' &&
+        (m.conversationId === msg.conversationId || m.conversationId === localKey)
+      )
+      if (lastAssistant) {
+        lastAssistant.content = msg.content || lastAssistant.content
+        lastAssistant.messageType = msg.messageType ?? lastAssistant.messageType
+        lastAssistant.reasoningContent = msg.reasoningContent || lastAssistant.reasoningContent
+        lastAssistant.status = 'completed'
+      } else if (msg.content || msg.reasoningContent) {
+        // 无占位且无本轮 assistant（非流式或纯异常）→ 追加新消息
+        messagesBySession.value[sid].push({
+          id: `msg_${Date.now()}`,
+          sessionId: sid,
+          conversationId: msg.conversationId,
+          role: 'assistant',
+          messageType: msg.messageType ?? 'assistant_text',
+          content: msg.content,
+          reasoningContent: msg.reasoningContent,
+          toolCall: msg.toolCall as ToolCall | undefined,
+          toolCallId: msg.toolCallId,
+          timestamp: Date.now(),
+          status: 'completed',
+        } as ApiMessage)
+      }
     }
   }
 
