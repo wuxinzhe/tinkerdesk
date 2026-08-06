@@ -5,18 +5,17 @@
  * - LlmRouterOptions 装载全部调用参数（scene/messages/tools/modelConfigs 数据）
  * - 模型回退：按 modelConfigs 顺序逐个尝试，Operation 判决决定是否回退
  */
-import type { ApiMessage, CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
-import { errorResponse, ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, isSuccess } from './llm-response'
-import type { ToolSchema } from '../tool/tool-schema'
 import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
+import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, errorResponse, isSuccess } from './llm-response'
+import type { CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
 
 /** LLM 路由器 */
 export class LlmRouter {
   constructor(
     private readonly clientManager: LlmClientManager,
     private readonly operationManager: LlmOperationManager
-  ) {}
+  ) { }
 
   /**
    * 流式调用 LLM，支持模型回退。

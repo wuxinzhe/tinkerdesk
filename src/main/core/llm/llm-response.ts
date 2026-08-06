@@ -1,27 +1,22 @@
 import type { LlmResponse } from './types'
+import {
+  RES_TEXT, RES_TOOL_CALLS, RES_REASONING, RES_EMPTY, RES_TRUNCATED,
+  ERROR_RATE_LIMITED, ERROR_AUTH_FAILED, ERROR_CONTEXT_OVERFLOW, ERROR_SERVER_ERROR,
+  ERROR_NETWORK_ERROR, ERROR_INVALID_REQUEST, ERROR_ALL_MODELS_FAILED,
+} from '../constants/llm'
 
 /**
  * llm-response.ts — LLM 响应常量与工厂
  *
  * 对应 tinker-agent LlmResponse：所有下游层只根据 resType 做分发。
  * 类型定义集中在 types.ts，本文件只提供常量、工厂和查询方法。
+ * 常量值对齐 showing-agent LlmConstants（小写风格），定义在 core/constants/llm.ts。
  */
 
-// ── 响应类型常量 ──
+// ── 响应类型常量（re-export，定义在 core/constants/llm.ts）──
 
-export const RES_TEXT = 'RES_TEXT'
-export const RES_TOOL_CALLS = 'RES_TOOL_CALLS'
-export const RES_REASONING = 'RES_REASONING'
-export const RES_EMPTY = 'RES_EMPTY'
-export const RES_TRUNCATED = 'RES_TRUNCATED'
-
-export const ERROR_RATE_LIMITED = 'ERROR_RATE_LIMITED'
-export const ERROR_AUTH_FAILED = 'ERROR_AUTH_FAILED'
-export const ERROR_CONTEXT_OVERFLOW = 'ERROR_CONTEXT_OVERFLOW'
-export const ERROR_SERVER_ERROR = 'ERROR_SERVER_ERROR'
-export const ERROR_NETWORK_ERROR = 'ERROR_NETWORK_ERROR'
-export const ERROR_INVALID_REQUEST = 'ERROR_INVALID_REQUEST'
-export const ERROR_ALL_MODELS_FAILED = 'ERROR_ALL_MODELS_FAILED'
+export { RES_TEXT, RES_TOOL_CALLS, RES_REASONING, RES_EMPTY, RES_TRUNCATED } from '../constants/llm'
+export { ERROR_RATE_LIMITED, ERROR_AUTH_FAILED, ERROR_CONTEXT_OVERFLOW, ERROR_SERVER_ERROR, ERROR_NETWORK_ERROR, ERROR_INVALID_REQUEST, ERROR_ALL_MODELS_FAILED } from '../constants/llm'
 
 /** 错误类型集合（用于 isSuccess 判定） */
 const ERROR_TYPES = new Set([

@@ -22,8 +22,8 @@ import type {ToolCall} from '../llm/types'
 
 /** 主对话场景（单一来源在 core/llm/types，此处不再重复定义） */
 
-/** 对话状态常量（单一来源在 repository/conversation-repository，此处 re-export） */
-export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED } from '../../repository/conversation-repository'
+/** 对话状态常量（单一来源在 core/constants/conversation，此处 re-export） */
+export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED } from '../constants/conversation'
 
 /** 引擎层响应类型（AgentLoop 内部产生的非 LLM 响应） */
 export const RES_INTERRUPTED = 'INTERRUPTED'

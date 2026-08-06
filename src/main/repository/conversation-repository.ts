@@ -7,12 +7,9 @@
 import { getDatabase } from './database'
 import type { ConversationEntity, ConversationStatusUpdate } from './types'
 
-/** 对话状态常量（SQL 层单一来源；service/loop 从 core/loop/types re-export 引用） */
-export const CONV_IN_PROGRESS = 'IN_PROGRESS'
-export const CONV_COMPLETED = 'COMPLETED'
-export const CONV_COMPRESSED = 'COMPRESSED'
-export const CONV_DELETED = 'DELETED'
-export const CONV_INTERRUPTED = 'INTERRUPTED'
+/** 对话状态常量（单一来源在 core/constants/conversation；此处 re-export 保持既有导入链） */
+export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED, CONV_DELETED, CONV_INTERRUPTED } from '../core/constants/conversation'
+import { CONV_IN_PROGRESS, CONV_COMPLETED } from '../core/constants/conversation'
 
 /** 对话实体（对应 ConversationEntity） */
 
