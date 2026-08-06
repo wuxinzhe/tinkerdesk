@@ -41,17 +41,21 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
   }
 }
 
-/** 安装插件：选文件夹或 zip → 自动检测 → 校验安装 → 刷新列表 */
-async function installPlugin(): Promise<void> {
+/** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder */
+async function installPlugin(kind: 'zip' | 'folder' = 'zip'): Promise<void> {
   try {
-    const path = await window.api.plugins.pickInstallPackage()
+    const path = await window.api.plugins.pickInstallPackage(kind)
     if (!path) return
     const info = await pluginsApi.install(path)
     plugins.value.push(info)
+    installMenuOpen.value = false
   } catch {
     // 错误提示由 inv 拦截统一派发
   }
 }
+
+/** 安装方式下拉菜单开关 */
+const installMenuOpen = ref(false)
 
 /** 进入插件配置页（Lv3） */
 function openConfig(p: PluginInfo): void {
@@ -70,14 +74,37 @@ onMounted(loadPlugins)
           插件独立于应用分发：可直接安装 zip 插件包或插件文件夹。启用后按插件声明的接口注册为 provider。
         </div>
       </div>
-      <button class="plugin-settings-page__install" @click="installPlugin">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        安装插件
-      </button>
+      <div class="plugin-settings-page__install-group">
+        <button class="plugin-settings-page__install plugin-settings-page__install--main" @click="installPlugin('zip')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          安装插件
+        </button>
+        <button class="plugin-settings-page__install plugin-settings-page__install--arrow" @click="installMenuOpen = !installMenuOpen">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <div v-if="installMenuOpen" class="plugin-settings-page__install-menu" @click.stop>
+          <button class="plugin-settings-page__install-menu-item" @click="installPlugin('zip')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            安装 .zip 插件包
+          </button>
+          <button class="plugin-settings-page__install-menu-item" @click="installPlugin('folder')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            </svg>
+            安装插件文件夹
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- 加载态 -->
@@ -161,9 +188,15 @@ onMounted(loadPlugins)
   color: var(--sa-text-primary, #1d1d1f);
 }
 
-/* 头部右侧安装按钮 */
-.plugin-settings-page__install {
+/* 头部右侧安装按钮（组合按钮） */
+.plugin-settings-page__install-group {
+  position: relative;
   flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.plugin-settings-page__install {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -174,13 +207,57 @@ onMounted(loadPlugins)
   color: var(--sa-accent, #007aff);
   background: rgba(0, 122, 255, 0.06);
   border: 1px solid var(--sa-accent, #007aff);
-  border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s ease-in-out;
 }
 
+.plugin-settings-page__install--main {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.plugin-settings-page__install--arrow {
+  border-radius: 0 8px 8px 0;
+  padding: 7px 8px;
+}
+
 .plugin-settings-page__install:hover {
   background: rgba(0, 122, 255, 0.12);
+}
+
+/* 安装方式下拉菜单 */
+.plugin-settings-page__install-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 168px;
+  padding: 4px;
+  background: var(--sa-bg-elevated, #ffffff);
+  border: 1px solid var(--sa-border, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  z-index: 30;
+}
+
+.plugin-settings-page__install-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--sa-text-primary, #1d1d1f);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.plugin-settings-page__install-menu-item:hover {
+  background: var(--sa-bg-hover, rgba(0, 0, 0, 0.05));
 }
 
 .plugin-settings-page__desc {

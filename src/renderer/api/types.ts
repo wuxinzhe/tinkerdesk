@@ -828,8 +828,8 @@ export interface WindowApi {
     pickFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
     /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
     install: (path: string) => Promise<PluginInfo>
-    /** 选择插件包：文件夹或 zip 二选一（对话框） */
-    pickInstallPackage: () => Promise<string | null>
+    /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
+    pickInstallPackage: (kind?: 'zip' | 'folder') => Promise<string | null>
   }
 
   voice: {

@@ -9,7 +9,7 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain, dialog, BrowserWindow, app, Menu } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
 import { readFileSync, existsSync, statSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -48,7 +48,9 @@ export class PluginController {
       this.pickFile(payload),
     )
     ipcMain.handle('plugin:install', (_event, payload: { path: string }) => this.install(payload))
-    ipcMain.handle('plugin:pick-install-package', () => this.pickInstallPackage()),
+    ipcMain.handle('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
+      this.pickInstallPackage(payload ?? {}),
+    )
     ipcMain.handle('plugin:get-config', (_event, payload: { id: string }) =>
       this.getPluginConfig(payload),
     )
@@ -76,26 +78,16 @@ export class PluginController {
     }
   }
 
-  /**
-   * 选择插件安装包：先弹菜单选类型（zip / 文件夹），再弹对应对话框。
-   * 不能 openFile+openDirectory 组合——Windows 上是文件夹选择模式，文件（zip）不显示。
-   */
-  private async pickInstallPackage(): Promise<ApiResult<string | null>> {
+  /** 选择插件安装包：按 kind 弹对应对话框（zip=文件选择器 / folder=目录选择器；分开弹——Windows 组合模式不显示文件） */
+  private async pickInstallPackage(payload: { kind?: 'zip' | 'folder' }): Promise<ApiResult<string | null>> {
     try {
       const win = this.getWindow()
       if (!win) return ok(null)
-      const choice = await new Promise<'zip' | 'folder' | null>((resolve) => {
-        const menu = Menu.buildFromTemplate([
-          { label: '安装 .zip 插件包', click: () => resolve('zip') },
-          { label: '安装插件文件夹', click: () => resolve('folder') },
-        ])
-        menu.popup({ window: win, callback: () => setTimeout(() => resolve(null), 300) })
-      })
-      if (!choice) return ok(null)
+      const kind = payload?.kind === 'folder' ? 'folder' : 'zip'
       const options: Electron.OpenDialogOptions = {
-        title: choice === 'zip' ? '选择插件包（.zip）' : '选择插件文件夹',
-        properties: choice === 'zip' ? ['openFile'] : ['openDirectory'],
-        filters: choice === 'zip' ? [{ name: '插件包', extensions: ['zip'] }] : undefined,
+        title: kind === 'zip' ? '选择插件包（.zip）' : '选择插件文件夹',
+        properties: kind === 'zip' ? ['openFile'] : ['openDirectory'],
+        filters: kind === 'zip' ? [{ name: '插件包', extensions: ['zip'] }] : undefined,
       }
       const result = await dialog.showOpenDialog(win, options)
       return ok(result.canceled ? null : (result.filePaths[0] ?? null))
