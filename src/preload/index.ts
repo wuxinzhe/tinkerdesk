@@ -81,15 +81,15 @@ function inv<T>(channel: string, ...args: unknown[]): Promise<T> {
     const failed = r?.success === false
     const ms = Date.now() - t
     if (failed) {
-      console.error(`[IPC] ${channel} ✗ ${ms}ms`, req, '→', r?.error ?? '')
+      console.error(`[IPC] ✗ ${r?.error ?? '操作失败'} | ${channel} ${ms}ms`, req)
       dispatchGlobalTip('error', channel, r?.error ?? '操作失败，请重试')
     } else {
       const resp = truncateLog(redactArgs(r?.data))
-      console.log(`[IPC] ${channel} ✓ ${ms}ms`, req, '→', resp)
+      console.log(`[IPC] ✓ ${channel} ${ms}ms`, req, '→', resp)
     }
     return res as T
   }).catch((e: Error) => {
-    console.error(`[IPC] ${channel} ✗ ${Date.now() - t}ms`, req, '→', e)
+    console.error(`[IPC] ✗ ${e.message || '操作失败，请重试'} | ${channel} ${Date.now() - t}ms`, req)
     dispatchGlobalTip('error', channel, e.message || '操作失败，请重试')
     throw e
   })
