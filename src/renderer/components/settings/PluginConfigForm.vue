@@ -58,11 +58,12 @@ function submit(): void {
   emit('save', patch)
 }
 
-/** file 字段：调系统文件对话框选择 */
+/** file 字段：调系统文件对话框选择（filters 是 Vue 响应式 Proxy，跨 contextBridge 前必须序列化为普通对象） */
 async function pickFile(key: string, filters?: { name: string; extensions: string[] }[]): Promise<void> {
   console.log(`[config-form] pickFile 触发: ${key}`)
   try {
-    const path = await window.api.plugins.pickFile(filters)
+    const plain = filters ? JSON.parse(JSON.stringify(filters)) : undefined
+    const path = await window.api.plugins.pickFile(plain)
     console.log(`[config-form] pickFile 返回: ${path ?? 'null'}`)
     if (path) form[key] = path
   } catch (e) {
