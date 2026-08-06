@@ -1,85 +1,73 @@
-
-import { getDatabase } from './database'
+/**
+ * skill-category-repository.ts — 技能分类仓库（本地 JSON 数据源）
+ *
+ * 本地客户端不维护 skill_categories 数据库表，分类数据用 JSON 文件维护
+ * （src/main/resources/skill-categories.json，数据源自 showing-agent 的 skill_categories 表）。
+ * 保留 insert 写库（兼容），读取一律走 JSON。
+ */
+import { readFileSync } from 'fs'
+import { resolveResource } from '../utils/resources-path'
 import type { SkillCategoryEntity } from './types'
 
-const COLS = 'id, name, display_name, description, icon, sort_order, is_active, created_at, updated_at'
+interface CategoryJson {
+  id: string
+  name: string
+  displayName: string
+  description?: string
+  icon?: string
+  sortOrder?: number
+  isActive?: boolean
+}
 
-function toEntity(row: Record<string, unknown>): SkillCategoryEntity {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    displayName: row.display_name as string,
-    description: row.description as string,
-    icon: row.icon as string,
-    sortOrder: row.sort_order as number,
-    isActive: (row.is_active as number) === 1,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
+let cache: SkillCategoryEntity[] | null = null
+
+function loadFromJson(): SkillCategoryEntity[] {
+  if (cache) return cache
+  try {
+    const file = resolveResource('skill-categories.json')
+    const list = JSON.parse(readFileSync(file, 'utf-8')) as CategoryJson[]
+    cache = list.map((c) => ({
+      id: c.id,
+      name: c.name,
+      displayName: c.displayName,
+      description: c.description ?? '',
+      icon: c.icon ?? '',
+      sortOrder: c.sortOrder ?? 0,
+      isActive: c.isActive ?? true,
+      createdAt: '',
+      updatedAt: '',
+    }))
+  } catch (e) {
+    console.warn(`[SkillCategory] 分类 JSON 读取失败: ${(e as Error).message}`)
+    cache = []
   }
+  return cache
 }
 
 /** 技能分类仓库 */
 export class SkillCategoryRepository {
-  /** 查询全部分类 */
+  /** 查询全部分类（JSON） */
   findAll(): SkillCategoryEntity[] {
-    const db = getDatabase()
-    const rows = db.prepare(`SELECT ${COLS} FROM skill_categories ORDER BY sort_order, name`).all() as Array<Record<string, unknown>>
-    return rows.map(toEntity)
+    return [...loadFromJson()].sort((a, b) => a.sortOrder - b.sortOrder)
   }
 
-  /** 查询启用的分类 */
+  /** 查询启用的分类（JSON） */
   findActive(): SkillCategoryEntity[] {
-    const db = getDatabase()
-    const rows = db
-      .prepare(`SELECT ${COLS} FROM skill_categories WHERE is_active = 1 ORDER BY sort_order, name LIMIT 200`)
-      .all() as Array<Record<string, unknown>>
-    return rows.map(toEntity)
+    return loadFromJson().filter((c) => c.isActive).sort((a, b) => a.sortOrder - b.sortOrder)
   }
 
   /** 按 ID 查询 */
   findById(id: string): SkillCategoryEntity | null {
-    const db = getDatabase()
-    const row = db.prepare(`SELECT ${COLS} FROM skill_categories WHERE id = ?`).get(id) as Record<string, unknown> | undefined
-    return row ? toEntity(row) : null
+    return loadFromJson().find((c) => c.id === id) ?? null
   }
 
   /** 按名称查询 */
   findByName(name: string): SkillCategoryEntity | null {
-    const db = getDatabase()
-    const row = db.prepare(`SELECT ${COLS} FROM skill_categories WHERE name = ?`).get(name) as Record<string, unknown> | undefined
-    return row ? toEntity(row) : null
+    return loadFromJson().find((c) => c.name === name) ?? null
   }
 
-  /** 插入分类（名称冲突忽略） */
-  insert(entity: SkillCategoryEntity): void {
-    const db = getDatabase()
-    db.prepare(
-      `INSERT INTO skill_categories (id, name, display_name, description, icon, sort_order, is_active)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT (name) DO NOTHING`
-    ).run(
-      entity.id,
-      entity.name,
-      entity.displayName,
-      entity.description ?? '',
-      entity.icon ?? '',
-      entity.sortOrder ?? 0,
-      entity.isActive === false ? 0 : 1
-    )
-  }
-
-  /** 更新分类 */
-  update(entity: SkillCategoryEntity): number {
-    const db = getDatabase()
-    const result = db
-      .prepare(
-        `UPDATE skill_categories SET
-           name = ?, display_name = ?, description = ?,
-           icon = ?, sort_order = ?, is_active = ?,
-           updated_at = datetime('now')
-         WHERE id = ?`
-      )
-      .run(entity.name, entity.displayName, entity.description, entity.icon, entity.sortOrder, entity.isActive ? 1 : 0, entity.id)
-    return Number(result.changes)
+  /** 插入分类（名称冲突忽略；本地 JSON 只读，保留接口兼容） */
+  insert(_entity: SkillCategoryEntity): void {
+    // 本地客户端分类由 JSON 文件维护，不写库
   }
 }

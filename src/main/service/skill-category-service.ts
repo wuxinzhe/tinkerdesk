@@ -50,8 +50,8 @@ export class SkillCategoryService {
     return entity
   }
 
-  /** 更新分类 */
-  update(entity: SkillCategoryEntity): boolean {
-    return this.categoryRepo.update(entity) > 0
+  /** 更新分类（本地 JSON 只读，保留接口兼容返回 false） */
+  update(_entity: SkillCategoryEntity): boolean {
+    return false
   }
 }

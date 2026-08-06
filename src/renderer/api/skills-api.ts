@@ -38,6 +38,12 @@ export class SkillsApi {
     return (data as SkillInfo) ?? null
   }
 
+  /** 安装外部技能（SKILL.md 全文；后端校验格式，不兼容抛错） */
+  async installFromMarkdown(content: string, profile = 'default'): Promise<SkillInfo> {
+    const data = await window.api.skills.install(content, profile)
+    return data as SkillInfo
+  }
+
   /** 本地无官方技能安装 */
   async install(_skillId: string, _profile = 'default'): Promise<ApiResponse> {
     return { success: false, error: '本地客户端无官方技能市场' }

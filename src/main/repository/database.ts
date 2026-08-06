@@ -1,6 +1,9 @@
 import { app } from 'electron';
 import { DatabaseSync } from 'node:sqlite';
 import { join } from 'path';
+import { readFileSync } from 'fs';
+import { randomUUID } from 'crypto';
+import { resolveResource } from '../utils/resources-path';
 
 // 单例数据库连接（主进程生命周期内保持）
 let db: DatabaseSync | null = null;
@@ -22,7 +25,76 @@ export function initDatabase(): DatabaseSync {
   db.exec('PRAGMA journal_mode = WAL;');
   createTables(db);
   seedProviders(db);
+  seedDefaultSkills(db);
   return db;
+}
+
+/** 种子：默认技能（tinkerdesk-plugin-install / tinkerdesk-skill-authoring），name 冲突忽略（幂等） */
+function seedDefaultSkills(database: DatabaseSync): void {
+  const defaults: Array<{
+    name: string
+    displayName: string
+    description: string
+    category: string
+    file: string
+  }> = [
+    {
+      name: 'tinkerdesk-plugin-install',
+      displayName: '插件安装引导',
+      description: '安装/管理 TinkerDesk 插件时加载：plugin_install 装包 → 读 guide.md → 准备环境 → 配置 → 启用',
+      category: 'plugin',
+      file: 'tinkerdesk-plugin-install.md',
+    },
+    {
+      name: 'tinkerdesk-skill-authoring',
+      displayName: 'Skill 编写规范',
+      description: '编写/更新 TinkerDesk skill 时加载：表字段映射、body 纯正文规范、创建方式、自检清单',
+      category: 'agent',
+      file: 'tinkerdesk-skill-authoring.md',
+    },
+  ]
+  for (const d of defaults) {
+    const exists = database
+      .prepare(`SELECT id FROM private_skills WHERE profile = 'default' AND name = ?`)
+      .get(d.name)
+    if (exists) continue
+    let body = ''
+    try {
+      body = readFileSync(resolveResource('default-skills', d.file), 'utf-8')
+    } catch (e) {
+      console.warn(`[Seed] 默认技能文件缺失: ${d.file} — ${(e as Error).message}`)
+      continue
+    }
+    const id = randomUUID()
+    database
+      .prepare(
+        `INSERT INTO private_skills (id, name, display_name, description, category, version, author, license, platforms, tags, requires_tools, triggers, body, profile, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, '1.0.0', 'TinkerDesk', 'MIT', 'desktop', ?, ?, ?, ?, 'default', datetime('now'), datetime('now'))`,
+      )
+      .run(
+        id,
+        d.name,
+        d.displayName,
+        d.description,
+        d.category,
+        d.name === 'tinkerdesk-plugin-install'
+          ? 'plugin,install,agent'
+          : 'skill,authoring,规范',
+        d.name === 'tinkerdesk-plugin-install'
+          ? 'desktop_tinker_plugin_install,desktop_tinker_plugin_configure,desktop_tinker_plugin_enable,desktop_tinker_plugin_list,desktop_tinker_plugin_uninstall,desktop_tinker_read_file,desktop_tinker_terminal'
+          : 'desktop_tinker_skill_manage',
+        d.name === 'tinkerdesk-plugin-install'
+          ? '装插件,安装插件,卸载插件,配置插件,plugin install'
+          : '写skill,编写skill,创建skill,skill规范',
+        body,
+      )
+    database
+      .prepare(
+        `INSERT INTO private_skill_files (skill_id, file_type, content, language, sort_order) VALUES (?, 'SKILL.md', ?, '', 0)`,
+      )
+      .run(id, body)
+    console.log(`[Seed] 默认技能已创建: ${d.name}`)
+  }
 }
 
 /** 建表（幂等，IF NOT EXISTS） */

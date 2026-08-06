@@ -258,6 +258,8 @@ const api = {
     deactivate: (id: string, profile?: string) => inv('skill:deactivate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
     activate: (id: string, profile?: string) => inv('skill:activate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
     categories: () => inv('skill:categories').then(unwrap),
+    /** 安装外部技能（SKILL.md 全文；后端校验格式，不兼容会返回错误提示交给 Agent 重写） */
+    install: (content: string, profile?: string) => inv('skill:install', { content, profile }).then(unwrap),
   },
 
   // ── 账号初始化（AccountController，4 步向导）──

@@ -46,6 +46,7 @@ export class SkillController {
     ipcMain.handle('skill:deactivate', (_event, payload) => this.deactivateSkill(payload))
     ipcMain.handle('skill:activate', (_event, payload) => this.activateSkill(payload))
     ipcMain.handle('skill:categories', () => this.listSkillCategories())
+    ipcMain.handle('skill:install', (_event, payload) => this.installSkill(payload))
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -95,5 +96,76 @@ export class SkillController {
   /** 查询激活的技能分类列表 */
   private listSkillCategories(): ApiResponse<unknown> {
     return ok(this.categoryService.findActive())
+  }
+
+  /**
+   * 安装技能（外部导入）：先校验格式兼容性。
+   * 外部 skill（SKILL.md 全文，可能带 frontmatter）→ 校验 name/description 齐全 →
+   * 转换（frontmatter 字段入表，body 存纯正文）→ 创建。
+   * 格式不兼容 → 返回 reason=incompatible，提示用户交给 Agent 重写。
+   */
+  private installSkill(payload: { content?: string; profile?: string }): ApiResponse<SkillInfoVO> {
+    const content = (payload?.content ?? '').trim()
+    if (!content) return fail('技能内容为空')
+    const parsed = parseSkillMarkdown(content)
+    if (!parsed.ok) {
+      return fail(parsed.error ?? '技能格式不兼容（缺少 name/description），请交给 Agent 重写')
+    }
+    const profile = payload?.profile ?? 'default'
+    const created = this.privateSkillService.createSkill(profile, {
+      name: parsed.name!,
+      displayName: parsed.displayName,
+      description: parsed.description ?? '',
+      category: parsed.category ?? '',
+      body: parsed.body,
+    })
+    if (!created) {
+      return fail(`技能已存在: ${parsed.name}`)
+    }
+    return ok(toSkillInfoVO(created, true))
+  }
+}
+
+/**
+ * 解析外部 SKILL.md：frontmatter（--- ... ---）→ 元数据，正文 → body。
+ * 兼容标准 skill 格式（name/description 必填）；不兼容返回 ok=false。
+ */
+function parseSkillMarkdown(content: string): {
+  ok: boolean
+  error?: string
+  name?: string
+  displayName?: string
+  description?: string
+  category?: string
+  body: string
+} {
+  const m = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/.exec(content)
+  if (!m) {
+    return { ok: false, error: '技能缺少 frontmatter（--- 元数据 ---），无法识别，请交给 Agent 重写', body: content }
+  }
+  const frontmatter = m[1]
+  const body = (m[2] ?? '').trim()
+  const fields: Record<string, string> = {}
+  for (const line of frontmatter.split('\n')) {
+    const kv = /^([a-zA-Z_]+):\s*(.*)$/.exec(line.trim())
+    if (kv) fields[kv[1]] = kv[2].trim()
+  }
+  const name = fields.name
+  if (!name || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+    return { ok: false, error: `技能 name 缺失或非法（${name ?? '空'}），请交给 Agent 重写`, body: content }
+  }
+  if (!fields.description) {
+    return { ok: false, error: '技能缺少 description，请交给 Agent 重写', body: content }
+  }
+  if (!body) {
+    return { ok: false, error: '技能正文为空，请交给 Agent 重写', body: content }
+  }
+  return {
+    ok: true,
+    name,
+    displayName: fields.displayName ?? fields['display_name'] ?? name,
+    description: fields.description,
+    category: fields.category,
+    body,
   }
 }

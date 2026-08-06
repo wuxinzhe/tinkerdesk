@@ -782,6 +782,7 @@ export interface WindowApi {
     deactivate: (id: string, profile?: string) => Promise<void>
     activate: (id: string, profile?: string) => Promise<void>
     categories: () => Promise<SkillCategory[]>
+    install: (content: string, profile?: string) => Promise<SkillInfo>
   }
 
   account: {
