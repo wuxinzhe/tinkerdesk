@@ -62,6 +62,17 @@ function openConfig(p: PluginInfo): void {
   void router.push(`/workspace/settings/plugins/${p.manifest.id}`)
 }
 
+/** 卸载插件（确认后删除插件及下载的模型） */
+async function uninstallPlugin(p: PluginInfo): Promise<void> {
+  if (!window.confirm(`确定卸载「${p.manifest.name}」？\n插件目录及已下载的模型将被一并删除。`)) return
+  try {
+    await pluginsApi.uninstall(p.manifest.id)
+    plugins.value = plugins.value.filter((x) => x.manifest.id !== p.manifest.id)
+  } catch {
+    // 错误提示由 inv 拦截统一派发
+  }
+}
+
 onMounted(loadPlugins)
 </script>
 
@@ -152,6 +163,9 @@ onMounted(loadPlugins)
           </button>
           <button class="plugin-card__btn plugin-card__btn--config" @click="openConfig(p)">
             配置
+          </button>
+          <button class="plugin-card__btn plugin-card__btn--danger" @click="uninstallPlugin(p)">
+            卸载
           </button>
         </div>
       </div>
@@ -391,6 +405,7 @@ onMounted(loadPlugins)
 
 .plugin-card__actions {
   display: flex;
+  justify-content: flex-end;
   gap: var(--sa-space-2, 8px);
   margin-top: var(--sa-space-3, 12px);
 }
@@ -421,6 +436,17 @@ onMounted(loadPlugins)
   color: var(--sa-accent, #007aff);
   border-color: var(--sa-accent, #007aff);
   background: rgba(0, 122, 255, 0.06);
+}
+
+/* 卸载（危险操作） */
+.plugin-card__btn--danger {
+  color: var(--sa-danger, #ff3b30);
+  border-color: var(--sa-danger, #ff3b30);
+  background: rgba(255, 59, 48, 0.06);
+}
+
+.plugin-card__btn--danger:hover {
+  background: rgba(255, 59, 48, 0.12);
 }
 
 .plugin-card__btn--config:hover:not(:disabled) {

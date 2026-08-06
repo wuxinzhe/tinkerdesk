@@ -828,6 +828,8 @@ export interface WindowApi {
     pickFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
     /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
     install: (path: string) => Promise<PluginInfo>
+    /** 卸载插件（删除插件及下载的模型） */
+    uninstall: (id: string) => Promise<void>
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
     pickInstallPackage: (kind?: 'zip' | 'folder') => Promise<string | null>
   }

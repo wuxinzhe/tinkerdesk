@@ -358,6 +358,22 @@ export class PluginManager {
     return { ok: true, enabled: record.enabled, started: record.started }
   }
 
+  /** 卸载插件：停用（注销 provider）→ 删除插件目录（含模型/config）→ 移出注册表 */
+  uninstallPlugin(id: string): void {
+    const record = this.registry.get(id)
+    if (!record) throw new Error(`插件不存在: ${id}`)
+    if (record.started) {
+      record.api?.stop?.()
+      this.unregisterProviders(record)
+      record.started = false
+      record.enabled = false
+    }
+    const dir = join(this.pluginsDir, id)
+    if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
+    this.registry.delete(id)
+    console.log(`[plugin] 已卸载 ${id}`)
+  }
+
   /** 持久化启停状态到 config.json（与配置同文件） */
   private persistEnabled(record: PluginRecord): void {
     if (!record.ctx) return

@@ -48,6 +48,7 @@ export class PluginController {
       this.pickFile(payload),
     )
     ipcMain.handle('plugin:install', (_event, payload: { path: string }) => this.install(payload))
+    ipcMain.handle('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     ipcMain.handle('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
     )
@@ -153,6 +154,20 @@ export class PluginController {
       return join(sysRoot, 'System32', 'tar.exe')
     }
     return 'tar'
+  }
+
+  /** 卸载插件（一键删除插件及模型） */
+  private uninstall(payload: { id: string }): ApiResult<void> {
+    try {
+      const id = payload?.id
+      if (!id || !this.pluginManager.list().some((p) => p.manifest.id === id)) {
+        return fail('插件不存在')
+      }
+      this.pluginManager.uninstallPlugin(id)
+      return ok(undefined)
+    } catch (e) {
+      return fail((e as Error).message)
+    }
   }
 
   /** 文件选择对话框（配置表单 file 字段用；必须关联主窗口，异步版） */

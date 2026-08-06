@@ -18,6 +18,8 @@ export interface PluginApi {
   check(id: string): Promise<PluginCheckResult>
   /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
   install(path: string): Promise<PluginInfo>
+  /** 卸载插件（删除插件及下载的模型） */
+  uninstall(id: string): Promise<void>
   getStatus(id: string): Promise<PluginStatus>
   getSchema(id: string): Promise<ConfigSchema | null>
   getConfig(id: string): Promise<Record<string, unknown>>
@@ -41,6 +43,7 @@ export const pluginsApi: PluginApi = {
   toggle: (id, enabled) => window.api.plugins.toggle(id, enabled),
   check: (id) => window.api.plugins.check(id),
   install: (path) => window.api.plugins.install(path),
+  uninstall: (id) => window.api.plugins.uninstall(id),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),
   getConfig: (id) => window.api.plugins.getConfig(id),
