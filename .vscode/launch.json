@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "dev:web",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["run", "dev:web"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "dev:desktop",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["run", "dev:desktop"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "debug:main (attach 5858)",
+      "type": "node",
+      "request": "attach",
+      "port": 5858,
+      "cwd": "${workspaceFolder}",
+      "restart": true,
+      "timeout": 30000
+    },
+    {
+      "name": "debug:renderer (attach 9222)",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src/renderer"
+    }
+  ]
+}

@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import type { ConversationCard } from '@/renderer/composables/useConversationCards'
+import { formatDateTime } from '@/renderer/utils/date-utils'
 
 defineProps<{
   card: ConversationCard

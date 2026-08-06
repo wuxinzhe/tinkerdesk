@@ -16,12 +16,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToolCenterStore } from '@/stores/tool-center-store'
+import { getToolCenterApi } from '@/renderer/api/tool-center-api'
 import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
 import McpServerForm from '@/renderer/components/settings/McpServerForm.vue'
 
 const router = useRouter()
-const toolCenterStore = useToolCenterStore()
+const mcpApi = getToolCenterApi()
 
 const adding = ref(false)
 const addError = ref('')
@@ -35,7 +35,7 @@ async function onAdd() {
   addError.value = ''
   adding.value = true
   try {
-    await toolCenterStore.upsertMcpServer({
+    await mcpApi.upsertMcpServer({
       name: form.value.name,
       transport: form.value.transport,
       command: form.value.command || undefined,
@@ -44,8 +44,8 @@ async function onAdd() {
       enabled: true
     })
     router.back()
-  } catch (e: any) {
-    addError.value = e.message || '连接失败'
+  } catch (e) {
+    addError.value = (e as Error).message || '连接失败'
   } finally {
     adding.value = false
   }

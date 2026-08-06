@@ -12,7 +12,11 @@
  */
 
 import { log } from './logger'
-import type { ErrorType, ErrorRecord } from '@/defines/utils/error-types'
+import type { ErrorRecord, ErrorType } from './types'
+
+// ── 类型定义 ──
+
+export type { ErrorRecord, ErrorType } from './types'
 
 // ── 配置 ──
 

@@ -52,8 +52,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { promptModulesApi } from '@/api/prompt-modules-api'
-import type { PromptModuleData } from '@/defines/models/prompt-module'
+import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
+import type { PromptModuleData } from '@/renderer/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,8 +80,8 @@ onMounted(async () => {
       } else {
         formError.value = '未找到该模块'
       }
-    } catch (e: any) {
-      formError.value = e.message ?? '加载失败'
+    } catch (e) {
+      formError.value = (e as Error).message ?? '加载失败'
     } finally {
       loading.value = false
     }
@@ -104,13 +104,13 @@ async function saveModule() {
   formError.value = ''
   try {
     if (isEdit.value) {
-      await promptModulesApi.update(Number(moduleId.value), formName.value.trim(), formContent.value)
+      await promptModulesApi.update(Number(moduleId.value), formName.value.trim(), formContent.value, profile.value)
     } else {
       await promptModulesApi.create(profile.value, formName.value.trim(), formContent.value)
     }
     goBack()
-  } catch (e: any) {
-    formError.value = e.message ?? '保存失败'
+  } catch (e) {
+    formError.value = (e as Error).message ?? '保存失败'
   } finally {
     saving.value = false
   }

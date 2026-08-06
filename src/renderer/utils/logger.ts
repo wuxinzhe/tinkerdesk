@@ -12,7 +12,8 @@
  *   - log.setEnabled(false) / log.setLevel('warn') 编程控制
  */
 
-import type { LogLevel } from '@/defines/utils/log-types'
+import type { LogLevel } from './types'
+export type { LogLevel } from './types'
 
 const LEVEL_RANK: Record<LogLevel, number> = {
   debug: 0,

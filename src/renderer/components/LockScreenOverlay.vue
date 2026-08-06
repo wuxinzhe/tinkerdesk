@@ -1,55 +1,50 @@
 <template>
-  <Teleport to="body">
-    <transition name="lock-fade">
-      <div v-if="visible" class="lock-screen-overlay" @click.self="() => {}">
-        <div class="lock-screen-overlay__content">
-          <!-- Logo -->
-          <svg
-            class="lock-screen-overlay__logo"
-            viewBox="0 0 32 32"
-            width="64"
-            height="64"
-          >
-            <circle cx="16" cy="16" r="14" fill="#007aff" opacity="0.08" />
-            <path d="M10 22V10l8 6-8 6Z" fill="#007aff" />
-          </svg>
+  <!-- 挂载/卸载动画由外层 App.vue <Transition name="lock"> 统一控制（去掉 Teleport 让组件根成为真实 DOM） -->
+  <div class="lock-screen-overlay" @click.self="() => {}">
+    <div class="lock-screen-overlay__content">
+      <!-- Logo -->
+      <svg
+        class="lock-screen-overlay__logo"
+        viewBox="0 0 32 32"
+        width="64"
+        height="64"
+      >
+        <circle cx="16" cy="16" r="14" fill="#007aff" opacity="0.08" />
+        <path d="M10 22V10l8 6-8 6Z" fill="#007aff" />
+      </svg>
 
-          <h2 class="lock-screen-overlay__title">您已离开一段时间</h2>
-          <p class="lock-screen-overlay__subtitle">智能助手随时待命</p>
+      <h2 class="lock-screen-overlay__title">您已离开一段时间</h2>
+      <p class="lock-screen-overlay__subtitle">智能助手随时待命</p>
 
-          <!-- Unlock button -->
-          <button
-            class="lock-screen-overlay__btn"
-            :disabled="status === 'unlocking'"
-            @click="$emit('unlock')"
-          >
-            <span v-if="status === 'unlocking'" class="lock-screen-overlay__spinner"></span>
-            <span v-else>点击解锁</span>
-          </button>
+      <!-- Unlock button -->
+      <button
+        class="lock-screen-overlay__btn"
+        :disabled="status === 'unlocking'"
+        @click="$emit('unlock')"
+      >
+        <span v-if="status === 'unlocking'" class="lock-screen-overlay__spinner"></span>
+        <span v-else>点击解锁</span>
+      </button>
 
-          <p v-if="status === 'error' && errorMessage" class="lock-screen-overlay__error">
-            {{ errorMessage }}
-          </p>
-        </div>
+      <p v-if="status === 'error' && errorMessage" class="lock-screen-overlay__error">
+        {{ errorMessage }}
+      </p>
+    </div>
 
-        <p class="lock-screen-overlay__version">{{ versionText }}</p>
-      </div>
-    </transition>
-  </Teleport>
+    <p class="lock-screen-overlay__version">{{ versionText }}</p>
+  </div>
 </template>
 
 <script setup lang="ts">
 export type LockStatus = 'visible' | 'unlocking' | 'error'
 
 interface LockScreenOverlayProps {
-  visible: boolean
   status?: LockStatus
   errorMessage?: string
   versionText?: string
 }
 
 withDefaults(defineProps<LockScreenOverlayProps>(), {
-  visible: false,
   status: 'visible',
   errorMessage: '',
   versionText: '',
@@ -151,15 +146,5 @@ defineEmits<{
   font-size: var(--sa-fs-caption);
   color: rgba(255, 255, 255, 0.4);
   margin: 0;
-}
-
-/* Transition */
-.lock-fade-enter-active,
-.lock-fade-leave-active {
-  transition: opacity 0.4s ease;
-}
-.lock-fade-enter-from,
-.lock-fade-leave-to {
-  opacity: 0;
 }
 </style>

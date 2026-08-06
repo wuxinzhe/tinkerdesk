@@ -41,11 +41,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import type { Session } from '@/defines/models/session'
+import type { Session } from '@/renderer/api/types'
 import SessionItemComponent from '@/renderer/components/workspace/SessionItemComponent.vue'
 import { useChatStore } from '@/renderer/stores/chat-store'
-import { useSessionStore } from '@/stores/session-store'
-import { sessionsApi } from '@/api/sessions-api'
+import { useSessionStore } from '@/renderer/stores/session-store'
+import { sessionsApi } from '@/renderer/api/sessions-api'
 import { SaSkeleton } from '@/renderer/components'
 
 const props = defineProps<{

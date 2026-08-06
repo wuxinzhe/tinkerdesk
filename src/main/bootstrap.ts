@@ -21,7 +21,7 @@ import { MemoryStore } from './service/memory-store'
 import { MessageService } from './service/message-service'
 import { SessionService } from './service/session-service'
 
-import type { IDynamicPromptModule } from './prompt'
+import type { IDynamicPromptModule } from './core/prompt'
 import {
   AgentModePromptModule,
   GoogleOperationalModule,
@@ -39,12 +39,28 @@ import {
   TaskCompletionModule,
   ToolEnforcementModule,
   UserProfileModule,
-} from './prompt'
+} from './core/prompt'
 
-import type { ModelConfig } from './llm'
-import { AnthropicClient, apiModeFromString, createModelConfig, LlmClientManager, LlmOperationManager, LlmRouter, OpenAIClient } from './llm'
+import type { ModelConfig } from './core/llm'
+import { AnthropicClient, LlmClientManager, LlmOperationManager, LlmRouter, OpenAIClient } from './core/llm'
 
 import type { AgentToolRegistration } from './tools'
+import { getMcpToolCenter } from './core/tool'
+import type { McpToolCenter } from './core/tool'
+import {
+  TerminalTool, TERMINAL_TOOL_NAME,
+  ProcessTool, PROCESS_TOOL_NAME,
+  ReadTerminalTool, READ_TERMINAL_TOOL_NAME,
+  CloseTerminalTool, CLOSE_TERMINAL_TOOL_NAME,
+  ReadFileTool, READ_FILE_TOOL_NAME,
+  WriteFileTool, WRITE_FILE_TOOL_NAME,
+  PatchTool, PATCH_TOOL_NAME,
+  SearchFilesTool, SEARCH_FILES_TOOL_NAME,
+  WebSearchTool, WEB_SEARCH_TOOL_NAME,
+  WebExtractTool, WEB_EXTRACT_TOOL_NAME,
+  ScheduleTimerTool, SCHEDULE_TIMER_TOOL_NAME,
+  FileMutationVerifierTool, FILE_MUTATION_VERIFIER_TOOL_NAME,
+} from './tools/desktop'
 import {
   ClarifyTool,
   CLARIFY_TOOL_NAME,
@@ -60,15 +76,41 @@ import {
   SKILL_VIEW_TOOL_NAME,
   TodoTool,
   TODO_TOOL_NAME,
-  ToolManager,
 } from './tools'
+import { ToolManager } from './core/tool'
 import {TodoService} from './service/todo-service'
 import {PrivateSkillService} from './service/private-skill-service'
+import {UserCustomModelService} from './service/user-custom-model-service'
+import {SceneModelService} from './service/scene-model-service'
+import {AgentService} from './service/agent-service'
+import {AgentConfigService} from './service/agent-config-service'
+import {SystemProviderService} from './service/system-provider-service'
+import {SkillCategoryService} from './service/skill-category-service'
+import {PromptService} from './service/prompt-service'
+import { ModelConfigService } from './service/model-config-service'
+import { TitleOperation } from './core/llm/operations/title-operation'
+import { ChatOperation } from './core/llm/operations/chat-operation'
+import { SummaryOperation } from './core/llm/operations/summary-operation'
+import { SessionContextFactory } from './service/session-context-factory'
+import { AgentModeService } from './service/agent-mode-service'
+import { AccountService } from './service/account-service'
+import { DefaultAgentMode } from './service/agent/default-agent-mode'
+import { AgentModeRegistry } from './core/mode/agent-mode-registry'
+import { SandboxWhitelistService } from './service/sandbox-whitelist-service'
+import { ToolAuthService } from './service/tool-auth-service'
 import {PrivateSkillRepository} from './repository/private-skill-repository'
 import {PrivateSkillFileRepository} from './repository/private-skill-file-repository'
 import {PrivateSkillRelatedRepository} from './repository/private-skill-related-repository'
+import {AgentRepository} from './repository/agent-repository'
+import {AgentConfigRepository} from './repository/agent-config-repository'
+import {SkillCategoryRepository} from './repository/skill-category-repository'
+import {PromptModuleRepository} from './repository/prompt-module-repository'
+import {UserUrlWhitelistRepository} from './repository/user-url-whitelist-repository'
+import {UserPathWhitelistRepository} from './repository/user-path-whitelist-repository'
+import {SystemProviderRepository} from './repository/system-provider-repository'
+import {UserSceneModelRepository} from './repository/user-scene-model-repository'
 
-import { AgentLoop } from './loop/agent-loop'
+import { AgentLoop } from './core/loop/agent-loop'
 
 /** 组装结果 */
 export interface TinkerDesk {
@@ -82,6 +124,25 @@ export interface TinkerDesk {
   promptModuleBuilder: PromptModuleBuilder
   toolManager: ToolManager
   llmRouter: LlmRouter
+  // ── controller 层依赖 ──
+  privateSkillService: PrivateSkillService
+  skillCategoryService: SkillCategoryService
+  promptService: PromptService
+  sandboxWhitelistService: SandboxWhitelistService
+  agentRepo: AgentRepository
+  agentConfigRepo: AgentConfigRepository
+  providerRepo: SystemProviderRepository
+  sceneRepo: UserSceneModelRepository
+  customModelService: UserCustomModelService
+  sceneModelService: SceneModelService
+  agentService: AgentService
+  agentConfigService: AgentConfigService
+  systemProviderService: SystemProviderService
+  accountService: AccountService
+  sessionContextFactory: SessionContextFactory
+  agentModeRegistry: AgentModeRegistry
+  agentModeService: AgentModeService
+  mcpToolCenter: McpToolCenter
 }
 
 /**
@@ -100,7 +161,12 @@ export function bootstrap(
 
   // ── LLM（先建，CompactionService 需要）──
   const clientManager = new LlmClientManager([new OpenAIClient(), new AnthropicClient()])
-  const operationManager = new LlmOperationManager([])
+  const renderer = new PromptRenderer()
+  const operationManager = new LlmOperationManager([
+    new ChatOperation(),
+    new SummaryOperation(),
+    new TitleOperation(renderer),
+  ])
   const llmRouter = new LlmRouter(clientManager, operationManager)
 
   // ── Service 层 ──
@@ -108,10 +174,10 @@ export function bootstrap(
   const conversationService = new ConversationService(conversationRepo)
   const sessionService = new SessionService(sessionRepo, messageRepo)
   const cooldownStore = new CompressionCooldownStore()
-  const compactionService = new CompactionService(llmRouter, messageService, conversationService, cooldownStore)
+  const todoService = new TodoService(app.getPath('userData'))
+  const compactionService = new CompactionService(llmRouter, messageService, conversationService, cooldownStore, todoService)
 
   // ── Prompt（预设模块 + 调用方自定义模块） ──
-  const renderer = new PromptRenderer()
 
   // 预设模块：注入技能查询/记忆读取依赖（对接 PrivateSkillService / MemoryStore）
   const presetModules: IDynamicPromptModule[] = [
@@ -124,16 +190,19 @@ export function bootstrap(
     new GoogleOperationalModule(renderer),
     new MemoryGuidanceModule(renderer),
     new SessionSearchModule(renderer),
-    new UserProfileModule(renderer),
     new SoulPromptModule(renderer),
   ]
 
-  // 条件模块（依赖技能/记忆数据源；未注入时提供空实现）
+  // 数据源（条件模块依赖；需在模块注册前创建）
   const memoryStore = new MemoryStore(app.getPath('userData'))
+  const privateSkillService = new PrivateSkillService(new PrivateSkillRepository(), new PrivateSkillFileRepository(), new PrivateSkillRelatedRepository())
+
+  // 条件模块（依赖技能/记忆数据源）
   const allModules: IDynamicPromptModule[] = [
     ...presetModules,
     ...promptModules,
-    new SkillsIndexModule(renderer, () => []),
+    new UserProfileModule(renderer, memoryStore),
+    new SkillsIndexModule(renderer, (profile) => privateSkillService.findFiltered(profile)),
     new MemorySnapshotModule(renderer, (profile) => memoryStore.readAll(MemoryStore.TARGET_MEMORY, profile)),
   ]
   const promptManager = new PromptManager(allModules)
@@ -143,8 +212,6 @@ export function bootstrap(
   const promptModuleBuilder = new PromptModuleBuilder(promptManager, sessionRepo, staticModuleRepo)
 
   // ── Tools（内建工具 + 调用方自定义工具） ──
-  const todoService = new TodoService(app.getPath('userData'))
-  const privateSkillService = new PrivateSkillService(new PrivateSkillRepository(), new PrivateSkillFileRepository(), new PrivateSkillRelatedRepository())
   const builtinTools: AgentToolRegistration[] = [
     {meta: {name: MEMORY_TOOL_NAME, emoji: '🧠'}, tool: new MemoryTool(renderer, memoryStore)},
     {meta: {name: TODO_TOOL_NAME, emoji: '✅'}, tool: new TodoTool(renderer, todoService)},
@@ -154,23 +221,36 @@ export function bootstrap(
     {meta: {name: SKILL_MANAGE_TOOL_NAME, emoji: '🛠️'}, tool: new SkillManageTool(renderer, privateSkillService, new PrivateSkillFileRepository())},
     {meta: {name: SESSION_SEARCH_TOOL_NAME, emoji: '🔍'}, tool: new SessionSearchTool(renderer, sessionService)},
   ]
-  const toolManager = new ToolManager([...builtinTools, ...toolRegistrations])
+  // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
+  const desktopTools: AgentToolRegistration[] = [
+    {meta: {name: TERMINAL_TOOL_NAME, emoji: '💻'}, tool: new TerminalTool(renderer)},
+    {meta: {name: PROCESS_TOOL_NAME, emoji: '⚙️'}, tool: new ProcessTool(renderer)},
+    {meta: {name: READ_TERMINAL_TOOL_NAME, emoji: '📋'}, tool: new ReadTerminalTool(renderer)},
+    {meta: {name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌'}, tool: new CloseTerminalTool(renderer)},
+    {meta: {name: READ_FILE_TOOL_NAME, emoji: '📄'}, tool: new ReadFileTool(renderer)},
+    {meta: {name: WRITE_FILE_TOOL_NAME, emoji: '📝'}, tool: new WriteFileTool(renderer)},
+    {meta: {name: PATCH_TOOL_NAME, emoji: '✂️'}, tool: new PatchTool(renderer)},
+    {meta: {name: SEARCH_FILES_TOOL_NAME, emoji: '🔍'}, tool: new SearchFilesTool(renderer)},
+    {meta: {name: WEB_SEARCH_TOOL_NAME, emoji: '🌐'}, tool: new WebSearchTool(renderer)},
+    {meta: {name: WEB_EXTRACT_TOOL_NAME, emoji: '📰'}, tool: new WebExtractTool(renderer)},
+    {meta: {name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰'}, tool: new ScheduleTimerTool(renderer)},
+    {meta: {name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬'}, tool: new FileMutationVerifierTool(renderer)},
+  ]
 
-  // ── 模型配置解析（custom_models + providers → ModelConfig[]） ──
-  const resolveModelConfigs = (scene: string): ModelConfig[] => {
-    const models = CustomModelRepository.listEnabled('default')
-    return models.map((m) => {
-      const provider = ProviderRepository.findById(m.providerId)
-      const apiMode = provider ? apiModeFromString(provider.apiMode) : 'openai'
-      return createModelConfig(
-        m.modelName,
-        m.apiKey,
-        m.baseUrl || provider?.baseUrl || '',
-        m.contextLimit,
-        apiMode
-      )
-    })
-  }
+  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...toolRegistrations])
+  // MCP 工具同构注册：McpToolCenter 连接后生成 McpTool 实例 → 动态注册进统一注册中心
+  // （toolType=mcp，ToolManager.execute 按类型路由到 MCP 统一执行器）
+  const mcpCenter = getMcpToolCenter()
+  mcpCenter.attachToolManager(toolManager)
+  // 启动恢复：从库加载已注册 MCP 工具 → check 可用性 → 注册（无需重新 discover）
+  void mcpCenter.restoreFromDb()
+
+  // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
+  const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository)
+
+  // ── 安全门检服务（AgentLoop 工具门检用，需在 AgentLoop 之前组装） ──
+  const sandboxWhitelistService = new SandboxWhitelistService(new UserUrlWhitelistRepository(), new UserPathWhitelistRepository())
+  const toolAuthService = new ToolAuthService()
 
   // ── AgentLoop ──
   const agentLoop = new AgentLoop({
@@ -181,8 +261,29 @@ export function bootstrap(
     conversationService,
     compactionService,
     promptModuleBuilder,
-    resolveModelConfigs,
+    modelConfigService,
+    sandboxWhitelistService,
+    toolAuthService,
   })
+
+  // ── Controller 层依赖 ──
+  const agentRepo = new AgentRepository()
+  const agentConfigRepo = new AgentConfigRepository()
+  const providerRepo = new SystemProviderRepository()
+  const sceneRepo = new UserSceneModelRepository()
+  const skillCategoryService = new SkillCategoryService(new SkillCategoryRepository())
+  const promptService = new PromptService(new PromptModuleRepository())
+  const customModelService = new UserCustomModelService(CustomModelRepository, providerRepo)
+  const sceneModelService = new SceneModelService(sceneRepo, operationManager)
+  // ── Agent Mode：注册表 + 默认模式（对齐 Java 注解扫描 → 手动注册），agentService 创建时需要 ---
+  const agentModeRegistry = new AgentModeRegistry()
+  agentModeRegistry.register(new DefaultAgentMode(renderer))
+  const agentService = new AgentService(agentRepo, agentConfigRepo, agentModeRegistry)
+  const agentConfigService = new AgentConfigService(agentConfigRepo, agentService, agentModeRegistry)
+  const systemProviderService = new SystemProviderService(providerRepo)
+  const agentModeService = new AgentModeService(agentModeRegistry, agentService)
+  const accountService = new AccountService(agentService, agentConfigService, customModelService, sceneModelService)
+  const sessionContextFactory = new SessionContextFactory(agentConfigService, sessionService, agentModeRegistry, agentService)
 
   return {
     agentLoop,
@@ -195,5 +296,23 @@ export function bootstrap(
     promptModuleBuilder,
     toolManager,
     llmRouter,
+    privateSkillService,
+    skillCategoryService,
+    promptService,
+    sandboxWhitelistService,
+    agentRepo,
+    agentConfigRepo,
+    providerRepo,
+    sceneRepo,
+    customModelService,
+    sceneModelService,
+    agentService,
+    agentConfigService,
+    systemProviderService,
+    accountService,
+    sessionContextFactory,
+    agentModeRegistry,
+    agentModeService,
+    mcpToolCenter: mcpCenter,
   }
 }

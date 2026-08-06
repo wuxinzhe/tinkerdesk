@@ -1,12 +1,12 @@
 /**
  * message-repository.ts — messages 表仓库
  *
- * 复刻 showing-agent MessageRepository：
+ * 复刻 tinker-agent MessageRepository：
  * 消息 CRUD、条件查询、分页、会话历史加载。
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
-import {getDatabase} from './database'
-import type {MessageEntity, MessageQuery, SessionMessageQuery} from './types'
+import { getDatabase } from './database'
+import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
 
 /** 消息实体（对应 MessageEntity） */
 
@@ -194,17 +194,51 @@ export class MessageRepository {
     return rows.map(toEntity)
   }
 
-  /** 列出会话全部消息（READ/SCROLL 模式用，不按 profile 过滤） */
-  listAllBySession(sessionId: string, limit = 10000): MessageEntity[] {
+  /** 列出会话全部消息（READ/SCROLL 模式用，profile 限定） */
+  listAllBySession(sessionId: string, profile: string, limit = 10000): MessageEntity[] {
     const db = getDatabase()
     const rows = db
       .prepare(
         `SELECT ${COLS} FROM messages m
-        WHERE m.session_id = ? AND m.deleted = 0
+        WHERE m.session_id = ? AND m.profile = ? AND m.deleted = 0
         ORDER BY m.id ASC LIMIT ?`
       )
-      .all(sessionId, limit) as Record<string, unknown>[]
+      .all(sessionId, profile, limit) as Record<string, unknown>[]
     return rows.map(toEntity)
+  }
+
+  /**
+   * 全文检索消息（对齐 Java FTS discover 功能，SQLite 用 LIKE 近似）：
+   * 内容 LIKE 匹配 + 角色过滤 + 排除 source='tool' 会话 + profile 限定。
+   */
+  discoverHits(query: string, roles: string[], sort: string | null, profile: string, limit: number): Array<{ id: number; sessionId: string; matchedRole: string; snippet: string; title: string; when: string }> {
+    const db = getDatabase()
+    const where: string[] = ['m.content LIKE ?', 'm.deleted = 0', 's.source IS NULL OR s.source NOT IN (?)']
+    const params: Array<string | number> = [`%${query}%`, 'tool']
+    if (roles.length > 0) {
+      where.push(`m.role IN (${roles.map(() => '?').join(',')})`)
+      params.push(...roles)
+    }
+    where.push('s.profile = ?')
+    params.push(profile)
+    const order = sort === 'newest' ? 'm.created_at DESC' : sort === 'oldest' ? 'm.created_at ASC' : 'm.created_at DESC'
+    const rows = db
+      .prepare(
+        `SELECT m.id, m.session_id, m.role AS matchedRole, substr(m.content, 1, 120) AS snippet,
+                s.title, s.started_at AS when
+         FROM messages m JOIN sessions s ON m.session_id = s.id
+         WHERE ${where.join(' AND ')}
+         ORDER BY ${order} LIMIT ?`
+      )
+      .all(...params, limit) as Array<{ id: number; session_id: string; matchedRole: string; snippet: string; title: string; when: string }>
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.session_id,
+      matchedRole: r.matchedRole,
+      snippet: r.snippet,
+      title: r.title,
+      when: r.when,
+    }))
   }
 
   /** 按 ID 范围查找消息窗口（滚动浏览） */
@@ -231,7 +265,7 @@ export class MessageRepository {
       sql += ` AND m.role IN (${roles.map(() => '?').join(',')})`
       params.push(...roles)
     }
-    const row = db.prepare(sql).get(...params) as {cnt: number}
+    const row = db.prepare(sql).get(...params) as { cnt: number }
     return row.cnt
   }
 
@@ -283,7 +317,7 @@ export class MessageRepository {
     const db = getDatabase()
     const row = db
       .prepare(`SELECT m.session_id FROM messages m WHERE m.id = ? AND m.profile = ?`)
-      .get(messageId, profile) as {session_id: string} | undefined
+      .get(messageId, profile) as { session_id: string } | undefined
     return row?.session_id ?? null
   }
 }

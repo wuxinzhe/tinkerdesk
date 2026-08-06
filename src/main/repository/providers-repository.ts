@@ -1,5 +1,5 @@
-import {getDatabase} from './database';
-import {ProviderEntity, ProviderRow, PROVIDER_STRING_COLS, PROVIDER_NUMBER_COLS} from './types';
+import { getDatabase } from './database';
+import { PROVIDER_NUMBER_COLS, PROVIDER_STRING_COLS, ProviderEntity, ProviderRow } from './types';
 
 /**
  * 运行时校验 providers 数据库行（与 custom-model-repository 相同的强类型模式）
@@ -11,12 +11,12 @@ function toRow(value: unknown): ProviderRow {
   const r = value as Record<string, unknown>
   for (const col of PROVIDER_STRING_COLS) {
     if (typeof r[col] !== 'string') {
-      throw new Error(`providers 列 ${col} 类型错误: 期望 string, 得到 ${typeof r[col]}`)
+      throw new Error(`system_providers 列 ${col} 类型错误: 期望 string, 得到 ${typeof r[col]}`)
     }
   }
   for (const col of PROVIDER_NUMBER_COLS) {
     if (typeof r[col] !== 'number') {
-      throw new Error(`providers 列 ${col} 类型错误: 期望 number, 得到 ${typeof r[col]}`)
+      throw new Error(`system_providers 列 ${col} 类型错误: 期望 number, 得到 ${typeof r[col]}`)
     }
   }
   return {
@@ -50,7 +50,7 @@ export const ProviderRepository = {
   listAll(): ProviderEntity[] {
     const db = getDatabase()
     const rows = db
-      .prepare(`SELECT ${SELECT_COLS} FROM providers ORDER BY sort_order, id`)
+      .prepare(`SELECT ${SELECT_COLS} FROM system_providers ORDER BY sort_order, id`)
       .all()
     return rows.map((r) => rowToEntity(toRow(r)))
   },
@@ -58,7 +58,7 @@ export const ProviderRepository = {
   /** 按 id 查询 */
   findById(id: string): ProviderEntity | null {
     const db = getDatabase()
-    const row = db.prepare(`SELECT ${SELECT_COLS} FROM providers WHERE id = ?`).get(id)
+    const row = db.prepare(`SELECT ${SELECT_COLS} FROM system_providers WHERE id = ?`).get(id)
     return row ? rowToEntity(toRow(row)) : null
   },
 
@@ -66,7 +66,7 @@ export const ProviderRepository = {
   listByMode(apiMode: 'openai' | 'anthropic'): ProviderEntity[] {
     const db = getDatabase()
     const rows = db
-      .prepare(`SELECT ${SELECT_COLS} FROM providers WHERE api_mode = ? ORDER BY sort_order, id`)
+      .prepare(`SELECT ${SELECT_COLS} FROM system_providers WHERE api_mode = ? ORDER BY sort_order, id`)
       .all(apiMode)
     return rows.map((r) => rowToEntity(toRow(r)))
   },

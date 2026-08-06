@@ -96,16 +96,15 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useSkillStore } from '@/stores/skill-store'
-import type { SkillInfo, SkillCategory } from '@/defines/models/skill'
+import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import { useRouter, useRoute } from 'vue-router'
-import { viewingSkill } from '@/stores/skill-detail-store'
+import type { HistoryState } from 'vue-router'
 import { NSelect } from 'naive-ui'
 import { SaLoading, SaEmpty, SaPagination, SaActionBtn, SaSkeleton, L3PageLayout } from '@/renderer/components'
+import { skillsApi } from '@/renderer/api/skills-api'
 
 const router = useRouter()
 const route = useRoute()
-const skillStore = useSkillStore()
 
 // 从路由参数取当前 Agent profile（路由定义: agents/:profile/market）
 const profile = computed(() => (route.params.profile as string) || 'default')
@@ -147,7 +146,7 @@ watch(profile, () => {
 
 async function loadCategories() {
   try {
-    categories.value = await skillStore.categories()
+    categories.value = await skillsApi.categories()
   } catch {
     // 静默
   }
@@ -170,7 +169,7 @@ function onSearchChange() {
 async function loadSkills() {
   loading.value = true
   try {
-    const res = await skillStore.listOfficial({
+    const res = await skillsApi.listOfficial({
       offset: (page.value - 1) * PAGE_SIZE,
       limit: PAGE_SIZE,
       category: category.value || undefined,
@@ -204,8 +203,7 @@ function goPage(p: number) {
 }
 
 function viewSkill(skill: SkillInfo) {
-  viewingSkill.value = skill
-  router.push(`/workspace/agents/${profile.value}/skill/${skill.id}`)
+  router.push({ path: `/workspace/agents/${profile.value}/skill/${skill.id}`, state: { skill } as unknown as HistoryState })
 }
 
 async function installSkill(skill: SkillInfo) {
@@ -214,7 +212,7 @@ async function installSkill(skill: SkillInfo) {
 
   installingIds.value = new Set(installingIds.value).add(skill.id)
   try {
-    await skillStore.install(skill.id, profile.value)
+    await skillsApi.install(skill.id, profile.value)
     installedIds.value = new Set(installedIds.value).add(skill.id)
   } catch (e) {
     console.error('Failed to install skill', e)

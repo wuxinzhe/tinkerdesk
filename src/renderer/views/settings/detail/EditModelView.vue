@@ -19,13 +19,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useModelStore } from '@/stores/model-store'
 import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
 import CustomModelForm from '@/renderer/components/settings/CustomModelForm.vue'
+import { modelsApi } from '@/renderer/api/models-api'
 
 const route = useRoute()
 const router = useRouter()
-const modelStore = useModelStore()
 
 const modelId = computed(() => route.params.modelId as string)
 
@@ -39,7 +38,7 @@ const formError = ref('')
 
 async function loadModel() {
   try {
-    const models = await modelStore.listCustomModels()
+    const models = await modelsApi.listCustomModels('default')
     const m = models.find(m => m.id === modelId.value)
     if (!m) { formError.value = '模型不存在'; return }
     form.alias = m.alias
@@ -48,8 +47,8 @@ async function loadModel() {
     form.baseUrl = m.baseUrl ?? ''
     form.contextLimit = m.contextLimit ?? 128000
     form.apiKey = ''
-  } catch (e: any) {
-    formError.value = e?.message ?? '加载模型失败'
+  } catch (e) {
+    formError.value = (e as Error).message ?? '加载模型失败'
   }
 }
 
@@ -60,14 +59,14 @@ async function save() {
   saving.value = true
   formError.value = ''
   try {
-    await modelStore.updateCustomModel(modelId.value, {
-      id: modelId.value, alias: form.alias, modelName: form.modelName,
+    await modelsApi.updateCustomModel('default', modelId.value, {
+      alias: form.alias, modelName: form.modelName,
       providerId: form.providerId, apiKey: form.apiKey || undefined,
       baseUrl: form.baseUrl || undefined, contextLimit: form.contextLimit || 128000
     })
     router.back()
-  } catch (e: any) {
-    formError.value = e?.message ?? '保存失败'
+  } catch (e) {
+    formError.value = (e as Error).message ?? '保存失败'
   } finally {
     saving.value = false
   }
@@ -77,7 +76,7 @@ async function deleteModel() {
   if (deleting.value) return
   deleting.value = true
   try {
-    await modelStore.deleteCustomModel(modelId.value)
+    await modelsApi.deleteCustomModel('default', modelId.value)
     router.back()
   } catch { /* ignore */
   } finally { deleting.value = false }

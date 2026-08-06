@@ -61,8 +61,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { promptModulesApi } from '@/api/prompt-modules-api'
-import type { PromptModuleData } from '@/defines/models/prompt-module'
+import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
+import type { PromptModuleData } from '@/renderer/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,9 +110,9 @@ async function toggleModule(mod: PromptModuleData) {
   try {
     await promptModulesApi.toggle(mod.id, profile.value, target)
     mod.enabled = target
-  } catch (e: any) {
+  } catch (e) {
     // 回滚 UI
-    alert(e.message ?? '操作失败')
+    alert((e as Error).message ?? '操作失败')
   }
 }
 
@@ -121,8 +121,8 @@ async function confirmDelete(mod: PromptModuleData) {
   try {
     await promptModulesApi.delete(mod.id, profile.value)
     await loadModules()
-  } catch (e: any) {
-    alert(e.message ?? '删除失败')
+  } catch (e) {
+    alert((e as Error).message ?? '删除失败')
   }
 }
 

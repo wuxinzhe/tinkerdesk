@@ -130,8 +130,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
-import type { SkillInfo } from '@/defines/models/skill'
-import { viewingSkill } from '@/stores/skill-detail-store'
+import type { SkillInfo } from '@/renderer/api/types'
 import { L3PageLayout } from '@/renderer/components'
 
 const router = useRouter()
@@ -139,8 +138,10 @@ const skill = ref<SkillInfo | null>(null)
 const showRaw = ref(false)
 
 onMounted(() => {
-  if (viewingSkill.value) {
-    skill.value = viewingSkill.value
+  // 列表页通过 router.push({ state }) 传入完整 skill 对象
+  const stateSkill = (history.state as { skill?: SkillInfo } | null)?.skill
+  if (stateSkill) {
+    skill.value = stateSkill
   } else {
     // 兜底：无数据返回上一页
     goBack()

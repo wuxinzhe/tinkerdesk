@@ -2,11 +2,11 @@
 /**
  * private-skill-repository.ts — 私有技能仓库
  *
- * 复刻 showing-agent PrivateSkillRepository（去 user_id，UNIQUE(profile, name)）：
+ * 复刻 tinker-agent PrivateSkillRepository（去 user_id，UNIQUE(profile, name)）：
  * 表 private_skills — 用户私有技能（含运行时条件过滤、触发条件、配置声明）。
  */
-import {getDatabase} from './database'
-import type {FilteredSkillDTO, PrivateSkillEntity} from './types'
+import { getDatabase } from './database'
+import type { FilteredSkillDTO, PrivateSkillEntity } from './types'
 
 
 
@@ -76,14 +76,14 @@ export class PrivateSkillRepository {
   /** 统计同名技能数 */
   countByName(profile: string, name: string): number {
     const db = getDatabase()
-    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND name = ?').get(profile, name) as {cnt: number}
+    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND name = ?').get(profile, name) as { cnt: number }
     return row.cnt
   }
 
   /** 统计未删除技能数 */
   countEnabled(profile: string): number {
     const db = getDatabase()
-    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND is_deleted = 0').get(profile) as {cnt: number}
+    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND is_deleted = 0').get(profile) as { cnt: number }
     return row.cnt
   }
 
@@ -101,7 +101,8 @@ export class PrivateSkillRepository {
     const db = getDatabase()
     const rows = db
       .prepare(
-        `SELECT id, name, display_name, description, category, version, author, is_deleted
+        `SELECT id, name, display_name, description, category, version, author, is_deleted,
+                tags, api_key, platforms, requires_toolsets
          FROM private_skills WHERE profile = ?`
       )
       .all(profile) as Array<Record<string, unknown>>
@@ -114,6 +115,10 @@ export class PrivateSkillRepository {
       version: r.version as string,
       author: r.author as string,
       isDeleted: (r.is_deleted as number) === 1,
+      tags: (r.tags as string) ?? '',
+      apiKey: (r.api_key as string | null) ?? null,
+      platforms: (r.platforms as string) ?? '',
+      requiresToolsets: (r.requires_toolsets as string) ?? '',
     }))
   }
 

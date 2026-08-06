@@ -11,10 +11,6 @@
           <div class="agent-card__model">{{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion"> · {{ agent.agentModeVersion }}</template></div>
           <div v-if="agent.description" class="agent-card__desc">{{ agent.description }}</div>
         </div>
-        <!-- 连接状态指示器 -->
-        <div class="agent-card__status" :class="'agent-card__status--' + connectionStatus" :title="statusTitle">
-          <span class="agent-card__status-dot" />
-        </div>
       </div>
       <div class="agent-card__footer">
         <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
@@ -56,10 +52,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useSessionStore } from '@/stores/session-store'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 
-export interface AgentInfo {
+/** 组件私有 Agent 展示类型（完整 Agent 定义在 api/types.ts） */
+interface AgentInfo {
   displayName?: string
   description?: string
   avatar?: string
@@ -81,16 +77,6 @@ defineEmits<{
   'switch-agent': []
   'close': []
 }>()
-
-const sessionStore = useSessionStore()
-const connectionStatus = computed(() => sessionStore.connectionStatus)
-const statusTitle = computed(() => {
-  switch (connectionStatus.value) {
-    case 'connected': return 'WebSocket 已连接'
-    case 'connecting': return 'WebSocket 连接中...'
-    default: return 'WebSocket 已断开'
-  }
-})
 
 /* ── 思考动画状态机 ── */
 //

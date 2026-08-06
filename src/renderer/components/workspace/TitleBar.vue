@@ -1,39 +1,63 @@
 <template>
   <header class="title-bar" :class="{ maximized }">
-    <!-- macOS 风格交通灯按钮 -->
+    <!-- macOS 风格交通灯按钮（12px 圆、8px 间距、hover 显示图标） -->
     <div class="title-bar__traffic-lights">
       <button class="tl-btn tl-btn--close" title="关闭" @click="handleClose">
-        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon">
-          <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="rgba(0,0,0,0.4)" stroke-width="1" fill="none" />
+        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#4d0000" stroke-width="1" stroke-linecap="round">
+          <path d="M2.6 2.6l2.8 2.8M5.4 2.6L2.6 5.4" />
         </svg>
       </button>
       <button class="tl-btn tl-btn--minimize" title="最小化" @click="handleMinimize">
-        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon">
-          <path d="M2 4h4" stroke="rgba(0,0,0,0.4)" stroke-width="1" fill="none" />
+        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#90591d" stroke-width="1" stroke-linecap="round">
+          <path d="M2.4 4h3.2" />
         </svg>
       </button>
       <button class="tl-btn tl-btn--maximize" :title="maximized ? '还原' : '最大化'" @click="handleMaximize">
-        <svg v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon">
-          <rect x="1.5" y="1.5" width="5" height="5" stroke="rgba(0,0,0,0.4)" stroke-width="1" fill="none" />
+        <!-- expand：两个对角箭头（指向左上/右下）——macOS 全屏标准图标 -->
+        <svg v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.3 4.3L2.2 2.2M2.2 2.2l1.1-.15M2.2 2.2l.15 1.1" />
+          <path d="M3.7 3.7l2.1 2.1M5.8 5.8l-1.1.15M5.8 5.8l-.15-1.1" />
         </svg>
-        <svg v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon">
-          <rect x="2" y="0.5" width="5" height="5" stroke="rgba(0,0,0,0.4)" stroke-width="1" fill="none" />
-          <rect x="0.5" y="2" width="5" height="5" stroke="rgba(0,0,0,0.4)" stroke-width="1" fill="#fff" />
+        <!-- restore：两个对角箭头（指向右上/左下）——还原标准图标 -->
+        <svg v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.3 3.7L5.8 2.2M5.8 2.2l-.15-1.1M5.8 2.2l-1.1-.15" />
+          <path d="M3.7 4.3L2.2 5.8M2.2 5.8l.15 1.1M2.2 5.8l1.1.15" />
         </svg>
       </button>
     </div>
 
     <!-- 可拖拽区域 -->
     <div class="title-bar__drag"></div>
+
+    <!-- 锁屏按钮（右侧） -->
+    <button class="title-bar__lock" title="锁屏 (Ctrl+Shift+L)" @click="handleLock">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="11" width="16" height="9" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+      </svg>
+    </button>
   </header>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useSessionStore } from '@/renderer/stores/session-store'
+import '@/renderer/api/types'
 
 const maximized = ref(false)
 
-const api = (window as any).api
+const api = window.api
+const sessionStore = useSessionStore()
+
+function handleLock() {
+  sessionStore.setLocked(true)
+}
 
 async function handleMinimize() {
   await api?.windowMinimize()
@@ -76,7 +100,7 @@ onUnmounted(() => {
 .title-bar__traffic-lights {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   padding: 0 12px;
   flex-shrink: 0;
 }
@@ -112,10 +136,10 @@ onUnmounted(() => {
 }
 
 .tl-btn--minimize {
-  background: #febc2e;
+  background: #f6be50;
 }
 .tl-btn--minimize:hover {
-  background: #dd9e1a;
+  background: #e1a73e;
 }
 
 .tl-btn--maximize {
@@ -135,6 +159,32 @@ onUnmounted(() => {
   justify-content: center;
   padding: 0 12px;
   min-width: 0;
+}
+
+/* ── 锁屏按钮（右侧） ── */
+.title-bar__lock {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.title-bar__lock:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.title-bar__lock:active {
+  background: var(--sa-bg-tertiary, #fafafa);
 }
 
 </style>

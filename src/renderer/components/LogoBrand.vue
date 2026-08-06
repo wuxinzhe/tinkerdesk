@@ -16,7 +16,7 @@ interface LogoBrandProps {
 
 withDefaults(defineProps<LogoBrandProps>(), {
   faded: false,
-  maxWidth: '200px',
+  maxWidth: '140px',
 })
 </script>
 

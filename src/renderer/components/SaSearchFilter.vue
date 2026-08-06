@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { SkillCategory } from '@/defines/models/skill'
+import type { SkillCategory } from '@/renderer/api/types'
 
 const props = withDefaults(defineProps<{
   categories?: SkillCategory[]

@@ -1,6 +1,6 @@
 
-import type {UserUrlWhitelistEntity} from './types'
-import {getDatabase} from './database'
+import { getDatabase } from './database'
+import type { UserUrlWhitelistEntity } from './types'
 
 /** 用户 URL 白名单仓库 */
 export class UserUrlWhitelistRepository {

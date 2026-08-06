@@ -1,5 +1,5 @@
 {
-  "name": "showing-agent-client",
+  "name": "tinkerdesk",
   "version": "0.1.0",
   "private": true,
   "main": "./out/main/index.js",
@@ -13,7 +13,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
     "@stomp/stompjs": "^7.3.0",
-    "axios": "^1.18.1",
     "cheerio": "^1.2.0",
     "electron-updater": "^6.8.9",
     "handlebars": "^4.7.9",

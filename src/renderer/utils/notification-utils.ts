@@ -1,15 +1,12 @@
 /**
- * notification-utils.ts — 全局错误气泡提示 & 信息通知
+ * notification-utils.ts — 全局通知/错误提示统一入口
  *
- * 使用 Naive UI 的 createDiscreteApi，可在 Pinia store / 非组件代码中直接调用。
- * 两种类型：
- *   - Error 弹窗：红色、永久显示、带关闭按钮、长消息可展开查看详情
- *   - Tips 弹窗：灰色、3 秒自动消失、轻量提示
+ * 不再使用 naive-ui 的 notification（n-notification-provider 已废弃）。
+ * 所有提示统一派发 window 'global-tip' 事件 → GlobalTipToast（App.vue 全局组件）：
+ *   - showInfoToast  → type: 'tip'   （普通通知，浅色样式）
+ *   - showErrorToast → type: 'error' （错误提示，红色样式）
+ * 两种类型共用队列，弹出时按类型区分 UI。
  */
-import { createDiscreteApi } from 'naive-ui'
-import { h } from 'vue'
-
-const { notification, dialog } = createDiscreteApi(['notification', 'dialog'])
 
 interface ErrorNotification {
   /** 错误码，如 LLM_FAILED、SERVER_BUSY、EVENT_ERROR、MSG_TOO_LARGE */
@@ -18,86 +15,35 @@ interface ErrorNotification {
   message: string
 }
 
-/** 通知体最大字符数，超出则在通知体截断，可通过「查看详情」展开 */
-const MAX_BODY_LENGTH = 120
-
 /**
- * 显示一个全局错误弹窗。
- * - 红色、左上角固定、不会自动消失
- * - 消息超过 120 字时，通知体显示截断版本，附加「查看详情」按钮弹出完整内容
- * - 同一错误码只显示一条，后续同码错误会覆盖更新
+ * 显示一个全局错误提示（红色样式，进入 GlobalTipToast 队列）。
+ * 长消息截断展示，完整内容由组件 word-break 处理。
  */
 export function showErrorToast(err: ErrorNotification): void {
   const { code, message } = err
-  const displayMessage = sanitizeErrorMessage(message)
-  const isLong = message.length > MAX_BODY_LENGTH
-
-  notification.create({
-    type: 'error',
-    title: code,
-    content: displayMessage,
-    duration: 0,                    // 不自动消失，用户手动关闭
-    keepAliveOnHover: true,
-    closable: true,
-    placement: 'top-left',
-    action: isLong
-    ? () =>
-      h(
-        'button',
-        {
-          style: {
-            padding: '4px 12px',
-            fontSize: '12px',
-            color: '#e88080',
-            background: 'transparent',
-            border: '1px solid #e88080',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          },
-          onClick: () => {
-            dialog.info({
-              title: `错误详情 — ${code}`,
-              content: message,
-              positiveText: '关闭',
-              maskClosable: true,
-              style: { maxHeight: '60vh', overflow: 'auto' }
-            })
-          }
-        },
-        '查看详情'
-      )
-    : undefined
-  })
+  window.dispatchEvent(new CustomEvent('global-tip', {
+    detail: { type: 'error', code, message: sanitizeErrorMessage(message) }
+  }))
 }
 
 /**
- * 显示一个短暂的信息提示（如"消息已入队"）。
- * 3 秒后自动消失，不需要用户操作。
+ * 显示一个普通通知提示（浅色样式，进入 GlobalTipToast 队列）。
+ * 与 main 的 agent:queueTip 出口（ElectronEventSender.sendTips）同一队列。
  */
 export function showInfoToast(message: string): void {
-  notification.create({
-    type: 'info',
-    title: '',
-    content: message,
-    duration: 3000,
-    keepAliveOnHover: false,
-    closable: true,
-    placement: 'top-left'
-  })
+  if (!message) return
+  window.dispatchEvent(new CustomEvent('global-tip', {
+    detail: { type: 'tip', message }
+  }))
 }
 
 /**
  * 对内部错误信息做裁剪，只展示用户友好的部分。
- * SQL 异常、堆栈等细节只保留在「查看详情」对话框中。
  */
 function sanitizeErrorMessage(message: string): string {
   // JDBC/SQL 类错误 — 只取简短描述
   if (message.startsWith('PreparedStatementCallback')) {
     return '服务内部错误，请稍后重试'
-  }
-  // 超出长度截断
-  if (message.length > MAX_BODY_LENGTH) {
-    return message.substring(0, MAX_BODY_LENGTH) + '…'
   }
   return message
 }

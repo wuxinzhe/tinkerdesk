@@ -14,8 +14,6 @@
 import { log } from './logger'
 import { errorReporter } from './error-reporter'
 import { ref } from 'vue'
-import { toolRegistry } from '@/services/registry/tool-registry'
-import { readIndexDbTool } from '@/tools/shared/read-indexdb'
 
 // ── 全局状态（响应式，供 UI 绑定）──
 
@@ -62,10 +60,7 @@ export function setupAppHost() {
     }
   })
 
-  // ── 3. 注册内置共享工具 ──
-  toolRegistry.registerSharedTool(readIndexDbTool)
-  log.info('AppHost', 'Shared tools registered')
-
+  // ── 3. 本地工具注册（AgentToolsView 打开时经 IPC 拉取，无需预注册） ──
   log.info('AppHost', 'Application Host 初始化完成')
 
   return {

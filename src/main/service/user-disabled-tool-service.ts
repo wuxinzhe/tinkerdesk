@@ -1,14 +1,14 @@
 /**
  * user-disabled-tool-service.ts — 用户禁用工具服务层
  *
- * 复刻 showing-agent UserDisabledToolRepository 对应服务（本地单用户版，去 userId）：
+ * 复刻 tinker-agent UserDisabledToolRepository 对应服务（本地单用户版，去 userId）：
  * 禁用工具黑名单的查询/添加/移除。
  */
-import {UserDisabledToolRepository} from '../repository/user-disabled-tool-repository'
+import { UserDisabledToolRepository } from '../repository/user-disabled-tool-repository'
 
 /** 禁用工具服务 */
 export class UserDisabledToolService {
-  constructor(private readonly disabledRepo: UserDisabledToolRepository) {}
+  constructor(private readonly disabledRepo: UserDisabledToolRepository) { }
 
   /** 查询 profile 下禁用的工具名集合 */
   listDisabled(profile: string): string[] {

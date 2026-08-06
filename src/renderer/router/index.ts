@@ -44,18 +44,7 @@ const router = createRouter({
       meta: { transition: 'fade' },
     },
     {
-      path: '/login',
-      name: 'login',
-      component: () => import('@/renderer/views/LoginView.vue'),
-      meta: { transition: 'slide-right' },
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: () => import('@/renderer/views/RegisterView.vue'),
-      meta: { transition: 'slide-left' },
-    },
-    {
+      // LV1 页面：首次启动初始化向导（对齐 showing-agent-ui /init-account）
       path: '/init-account',
       name: 'init-account',
       component: () => import('@/renderer/views/InitAccountView.vue'),
@@ -84,6 +73,15 @@ const router = createRouter({
             default: () => import('@/renderer/views/chat/detail/ChatDetailView.vue'),
             level2: () => import('@/renderer/views/chat/ChatListView.vue'),
             level3: () => import('@/renderer/views/chat/detail/ChatDetailView.vue'),
+          },
+        },
+        {
+          // 历史预览（入栈新页面，非原位切换）
+          path: 'chat/:sessionId/history',
+          components: {
+            default: () => import('@/renderer/views/chat/detail/HistoryPreviewView.vue'),
+            level2: () => import('@/renderer/views/chat/ChatListView.vue'),
+            level3: () => import('@/renderer/views/chat/detail/HistoryPreviewView.vue'),
           },
         },
         {
@@ -237,7 +235,7 @@ const router = createRouter({
           meta: { level3Placeholder: true },
         },
         {
-          path: 'settings/:section(model|mcp|account|theme)',
+          path: 'settings/:section(model|mcp|plugins)',
           components: {
             default: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
             level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
@@ -288,7 +286,7 @@ router.beforeEach((to, _from) => {
   // 刷新后强制走 splash → workspace 的完整初始化流程
   if (to.meta.requiresAuth && !appInitialized) {
     // 排除 bootstrap 页面自身，防止循环
-    if (to.name !== 'splash' && to.name !== 'login' && to.name !== 'register' && to.name !== 'init-account') {
+    if (to.name !== 'splash' && to.name !== 'init-account') {
       sessionStorage.setItem('app_redirect_target', to.fullPath)
     }
     return { name: 'splash' }

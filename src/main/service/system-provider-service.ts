@@ -1,15 +1,15 @@
 /**
  * system-provider-service.ts — 系统供应商服务层
  *
- * 复刻 showing-agent IProviderService 的供应商管理部分（本地单用户版）：
+ * 复刻 tinker-agent IProviderService 的供应商管理部分（本地单用户版）：
  * 供应商列表/详情/CRUD。
  */
-import {SystemProviderRepository} from '../repository/system-provider-repository'
-import type {SystemProviderEntity} from '../repository/types'
+import { SystemProviderRepository } from '../repository/system-provider-repository'
+import type { SystemProviderEntity } from '../repository/types'
 
 /** 系统供应商服务 */
 export class SystemProviderService {
-  constructor(private readonly providerRepo: SystemProviderRepository) {}
+  constructor(private readonly providerRepo: SystemProviderRepository) { }
 
   /** 查询全部供应商 */
   findAll(): SystemProviderEntity[] {

@@ -41,7 +41,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Session } from '@/defines/models/session'
+import type { Session } from '@/renderer/api/types'
 import { useChatStore } from '@/renderer/stores/chat-store'
 import { getToolDisplayName } from '@/renderer/utils/tool-display'
 

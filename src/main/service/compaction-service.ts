@@ -1,21 +1,22 @@
 /**
  * compaction-service.ts — 上下文压缩服务（Token-based）
  *
- * 复刻 showing-agent CompactionService（本地单用户版）：
+ * 复刻 tinker-agent CompactionService（本地单用户版）：
  * - 触发条件：actualPromptTokens >= contextLimit × thresholdPercent（主动压缩检查）
  * - 压缩策略：从最旧对话开始，逐对话累计 token，保留尾部 tailRatio 不压缩
  * - 中间的旧对话消息 → 调用 LLM 汇总 → 摘要消息 → 归档旧消息
  * - LLM 摘要失败时使用 fallback 占位符，保证会话不会因压缩失败而永久死亡
  * - 冷却控制：失败后阶梯 TTL 暂停重试；无效/fallback 连续抑制
  */
-import type {LlmRouter} from '../llm/llm-router'
-import type {MessageService} from './message-service'
-import type {ConversationService} from './conversation-service'
-import type {CompressionCooldownStore} from './compression-cooldown-store'
-import type {ApiMessage, ModelConfig} from '../llm/types'
-import {CONV_COMPRESSED} from '../loop/types'
-import {SCENE_SUMMARY} from '../llm/types'
-import {RES_TEXT} from '../llm/llm-response'
+import { RES_TEXT } from '../core/llm/llm-response'
+import type { LlmRouter } from '../core/llm/llm-router'
+import type { ApiMessage, ModelConfig } from '../core/llm/types'
+import { SCENE_SUMMARY } from '../core/llm/types'
+import { CONV_COMPRESSED } from '../core/loop/types'
+import type { CompressionCooldownStore } from './compression-cooldown-store'
+import type { ConversationService } from './conversation-service'
+import type { MessageService } from './message-service'
+import type { TodoService, TodoItem } from './todo-service'
 
 /** 压缩服务 */
 export class CompactionService {
@@ -23,8 +24,9 @@ export class CompactionService {
     private readonly llmRouter: LlmRouter,
     private readonly messageService: MessageService,
     private readonly conversationService: ConversationService,
-    private readonly cooldownStore: CompressionCooldownStore
-  ) {}
+    private readonly cooldownStore: CompressionCooldownStore,
+    private readonly todoService?: TodoService
+  ) { }
 
   /**
    * 检查刚完成的 LLM 调用是否已接近上下文上限（主动压缩检查）。
@@ -103,12 +105,48 @@ export class CompactionService {
     this.cooldownStore.clearCooldown(sessionId)
     this.cooldownStore.clearIneffective(sessionId)
 
-    const finalSummary = summary.trim() !== '' ? summary : buildFallbackSummary(compressConvIds)
+    let finalSummary = summary.trim() !== '' ? summary : buildFallbackSummary(compressConvIds)
+
+    // 压缩后注入活跃 todo 列表（对齐 Java formatTodoInjection / Hermes TodoStore.format_for_injection）：
+    // 只注入 pending/in_progress——completed/cancelled 会让模型在压缩后重复已完成工作。
+    const todoBlock = this.formatTodoInjection(sessionId)
+    if (todoBlock !== null) {
+      finalSummary = (finalSummary !== '' ? finalSummary + '\n\n' : '') + todoBlock
+    }
+
     this.messageService.saveSummary(sessionId, profile, finalSummary)
     this.conversationService.batchUpdateStatus(sessionId, compressConvIds, CONV_COMPRESSED)
 
     console.log(`action=COMPACTION_DONE sessionId=${sessionId} summaryLen=${finalSummary.length} fallback=${usedFallback}`)
     return true
+  }
+
+  /**
+   * 格式化压缩后注入的活跃 todo 块（对齐 Java formatTodoInjection）。
+   * 只包含 pending / in_progress 项；无活跃项返回 null（不注入）。
+   * 格式：
+   * [Your active task list was preserved across context compression]
+   * - [>] task_1. 任务描述 (in_progress)
+   * - [ ] task_2. 任务描述 (pending)
+   */
+  private formatTodoInjection(sessionId: string): string | null {
+    if (!this.todoService) {
+      return null
+    }
+    const items = this.todoService.read(sessionId)
+    if (!items || items.length === 0) {
+      return null
+    }
+    const active = items.filter((i) => i.status === 'pending' || i.status === 'in_progress')
+    if (active.length === 0) {
+      return null
+    }
+    const lines: string[] = ['[Your active task list was preserved across context compression]']
+    for (const item of active) {
+      const marker = item.status === 'in_progress' ? '[>]' : '[ ]'
+      lines.push(`- ${marker} ${item.id}. ${item.content} (${item.status})`)
+    }
+    return lines.join('\n')
   }
 
   /** 记录压缩失败（冷却阶梯） */
@@ -130,9 +168,12 @@ export class CompactionService {
         return ''
       }
       // 调用摘要 Operation（复用 LlmRouter 的 execute，scene=summary）
-      const response = await this.llmRouter.execute(SCENE_SUMMARY, {
-        getModelConfigs: () => configs,
-      }, messages, [])
+      const response = await this.llmRouter.execute({
+        scene: SCENE_SUMMARY,
+        messages,
+        tools: [],
+        modelConfigs: configs,
+      })
       if (response.resType === RES_TEXT) {
         return response.text
       }

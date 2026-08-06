@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import type { Message } from '@/defines/models/message'
+import type { Message } from '@/renderer/api/types'
 import MessageBubbleComponent from './MessageBubbleComponent.vue'
 import { SaSpinner } from '@/renderer/components'
 

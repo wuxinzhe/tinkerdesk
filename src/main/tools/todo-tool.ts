@@ -1,25 +1,25 @@
 /**
  * todo-tool.ts — 待办事项工具
  *
- * 复刻 showing-agent TodoTool：
+ * 复刻 tinker-agent TodoTool：
  * 读取/写入 session 待办列表（全量或合并），Hermes 兼容。
  */
-import type {PromptRenderer} from '../prompt/renderer'
-import {BaseTool} from './base-tool'
-import type {ToolExecutionContext} from './types'
-import {ToolResult} from './tool-result'
-import {TodoService} from '../service/todo-service'
-import type {TodoItem} from '../service/todo-service'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { TodoItem } from '../service/todo-service'
+import { TodoService } from '../service/todo-service'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { ToolContext } from '../core/loop/types'
 
 /** 工具名 */
-export const TOOL_NAME = 'server_showing_todo'
+export const TOOL_NAME = 'builtin_tinker_todo'
 
 /** 最大待办项数（对齐 MAX_TODO_ITEMS） */
-const MAX_TODO_ITEMS = 20
-/** 单条内容最大字符数 */
-const MAX_TODO_CONTENT_CHARS = 500
-/** 截断标记 */
-const TRUNCATION_MARKER = '...'
+const MAX_TODO_ITEMS = 256
+/** 单条内容最大字符数（对齐 Hermes MAX_TODO_CONTENT_CHARS） */
+const MAX_TODO_CONTENT_CHARS = 4000
+/** 截断标记（对齐 Hermes _TRUNCATION_MARKER） */
+const TRUNCATION_MARKER = '\u2026 [truncated]'
 /** 有效状态 */
 const VALID_STATUSES = new Set(['pending', 'in_progress', 'completed', 'cancelled'])
 
@@ -32,7 +32,7 @@ export class TodoTool extends BaseTool {
     this.todoService = todoService
   }
 
-  async execute(ctx: ToolExecutionContext): Promise<ToolResult> {
+  async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as Record<string, unknown>
     const sessionId = ctx.sessionId
 
@@ -48,11 +48,11 @@ export class TodoTool extends BaseTool {
           try {
             todosNode = JSON.parse(todosNode)
           } catch {
-            return ToolResult.sync(JSON.stringify({success: false, error: 'todos must be a list of objects, got unparseable string'}))
+            return ToolResult.sync(JSON.stringify({ success: false, error: 'todos must be a list of objects, got unparseable string' }))
           }
         }
         if (!Array.isArray(todosNode)) {
-          return ToolResult.sync(JSON.stringify({success: false, error: `todos must be a list, got ${typeof todosNode}`}))
+          return ToolResult.sync(JSON.stringify({ success: false, error: `todos must be a list, got ${typeof todosNode}` }))
         }
         const todos = this.parseTodos(todosNode as Array<Record<string, unknown>>)
         const merge = Boolean(args.merge)
@@ -64,7 +64,7 @@ export class TodoTool extends BaseTool {
       }
       return ToolResult.sync(this.buildJsonResponse(items))
     } catch (e) {
-      return ToolResult.sync(JSON.stringify({success: false, error: (e as Error).message}))
+      return ToolResult.sync(JSON.stringify({ success: false, error: (e as Error).message }))
     }
   }
 
@@ -90,7 +90,7 @@ export class TodoTool extends BaseTool {
       }
       let status = String(n.status ?? '').trim().toLowerCase()
       if (!VALID_STATUSES.has(status)) status = 'pending'
-      items.push({id, content, status})
+      items.push({ id, content, status })
     }
     return items
   }
@@ -105,7 +105,7 @@ export class TodoTool extends BaseTool {
     return JSON.stringify(
       {
         todos: list,
-        summary: {total: list.length, pending, in_progress: inProgress, completed, cancelled},
+        summary: { total: list.length, pending, in_progress: inProgress, completed, cancelled },
       },
       null,
       2

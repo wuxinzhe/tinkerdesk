@@ -16,18 +16,6 @@
           <span>{{ item.label }}</span>
         </button>
       </nav>
-      <div class="workspace__drawer-footer">
-        <button class="workspace__drawer-item workspace__drawer-item--logout" @click="$emit('logout')">
-          <span class="workspace__drawer-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </span>
-          <span>退出登录</span>
-        </button>
-      </div>
     </aside>
   </Teleport>
 </template>
@@ -41,7 +29,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   select: [id: string]
-  logout: []
 }>()
 
 const items = [
@@ -147,9 +134,5 @@ function onSelect(id: string) {
   width: 22px;
   height: 22px;
   flex-shrink: 0;
-}
-
-.workspace__drawer-item--logout {
-  color: var(--sa-destructive, #ff3b30);
 }
 </style>

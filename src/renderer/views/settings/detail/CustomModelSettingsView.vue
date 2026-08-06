@@ -42,12 +42,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useModelStore } from '@/stores/model-store'
-import type { CustomModelInfo, SystemProvider } from '@/defines/models/model'
+import type { CustomModelInfo, SystemProvider } from '@/renderer/api/types'
 import { SaSection, SaLoading, SaEmpty, SaCardRow } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
+import { modelsApi } from '@/renderer/api/models-api'
 
-const modelStore = useModelStore()
 const router = useRouter()
 
 const providers = ref<SystemProvider[]>([])
@@ -63,7 +62,7 @@ const loading = ref(false)
 async function loadModels() {
   loading.value = true
   try {
-    const res = await modelStore.listCustomModels()
+    const res = await modelsApi.listCustomModels('default')
     models.value = res ?? []
   } catch {
     models.value = []
@@ -78,7 +77,16 @@ const deletingId = ref<string | null>(null)
 
 async function testModel(m: CustomModelInfo) {
   testingId.value = m.id
-  try { await modelStore.testCustomModel(m.id); await loadModels()
+  try {
+    const result = await modelsApi.testCustomModel('default', m.id)
+    // 模型测试的业务结果嵌套在 data 内（外层 success=true），inv 拦截不适用——
+    // 由前端根据返回结果手动吊起全局提示
+    if (result && !result.success) {
+      window.dispatchEvent(new CustomEvent('global-tip', {
+        detail: { type: 'error', code: 'MODEL_TEST', message: result.message || '模型测试失败' }
+      }))
+    }
+    await loadModels()
   } catch { /* ignore */
   } finally { testingId.value = null }
 }
@@ -87,7 +95,7 @@ async function deleteModel(m: CustomModelInfo) {
   if (deletingId.value) return
   deletingId.value = m.id
   try {
-    await modelStore.deleteCustomModel(m.id)
+    await modelsApi.deleteCustomModel('default', m.id)
     await loadModels()
   } catch { /* ignore */
   } finally {
@@ -96,7 +104,7 @@ async function deleteModel(m: CustomModelInfo) {
 }
 
 onMounted(async () => {
-  providers.value = await modelStore.listProviders()
+  providers.value = await modelsApi.listProviders()
   await loadModels()
 })
 </script>

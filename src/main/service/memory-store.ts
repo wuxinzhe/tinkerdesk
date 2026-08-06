@@ -1,7 +1,7 @@
 /**
  * memory-store.ts — 文件系统记忆存储
  *
- * 复刻 showing-agent MemoryStore（Redis → 文件系统 JSON）：
+ * 复刻 tinker-agent MemoryStore（Redis → 文件系统 JSON）：
  * 本地客户端无 Redis，用 userData/memory/{profile}.json 持久化。
  * 原子写（tmp + rename）保证崩溃安全，等价 Redis Lua 的原子性。
  *
@@ -12,18 +12,11 @@
  *   removeEntry  1 已删除 / 0 未找到 / -2 多条匹配
  *   applyBatch   >0 成功条目数 / -N 操作 N 未找到 / -(100+N) 多条匹配 / -200 超限
  */
-import {mkdirSync, readFileSync, renameSync, writeFileSync} from 'fs'
-import {join} from 'path'
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import type { MemoryOperation } from './types'
 
-/** 记忆操作（对齐 MemoryOperation） */
-export interface MemoryOperation {
-  /** 操作类型：'add' | 'replace' | 'remove' */
-  action: 'add' | 'replace' | 'remove'
-  /** entry 内容（add/replace 必填） */
-  content: string
-  /** replace/remove 时匹配的子串 */
-  oldText: string
-}
+export type { MemoryOperation } from './types'
 
 /** 文件系统记忆存储 */
 export class MemoryStore {
@@ -39,7 +32,7 @@ export class MemoryStore {
 
   constructor(userDataDir: string) {
     this.dir = join(userDataDir, 'memory')
-    mkdirSync(this.dir, {recursive: true})
+    mkdirSync(this.dir, { recursive: true })
   }
 
   // ── Public API ──
@@ -48,7 +41,7 @@ export class MemoryStore {
   readAll(target: string, profile: string): string[] {
     try {
       const file = this.filePath(target, profile)
-      const raw = JSON.parse(readFileSync(file, 'utf-8')) as {entries?: string[]}
+      const raw = JSON.parse(readFileSync(file, 'utf-8')) as { entries?: string[] }
       return Array.isArray(raw.entries) ? raw.entries : []
     } catch {
       return []
@@ -84,7 +77,7 @@ export class MemoryStore {
    */
   replaceEntry(target: string, profile: string, oldText: string, newContent: string, charLimit: number): number {
     const items = this.readAll(target, profile)
-    const {matchIdx, distinctVals} = this.findMatches(items, oldText)
+    const { matchIdx, distinctVals } = this.findMatches(items, oldText)
     if (matchIdx === -1) {
       return 0
     }
@@ -106,7 +99,7 @@ export class MemoryStore {
    */
   removeEntry(target: string, profile: string, oldText: string): number {
     const items = this.readAll(target, profile)
-    const {matchIdx, distinctVals} = this.findMatches(items, oldText)
+    const { matchIdx, distinctVals } = this.findMatches(items, oldText)
     if (matchIdx === -1) {
       return 0
     }
@@ -133,7 +126,7 @@ export class MemoryStore {
           items.push(op.content)
         }
       } else if (op.action === 'replace') {
-        const {matchIdx, distinctVals} = this.findMatches(items, op.oldText)
+        const { matchIdx, distinctVals } = this.findMatches(items, op.oldText)
         if (matchIdx === -1) {
           return -idx
         }
@@ -142,7 +135,7 @@ export class MemoryStore {
         }
         items[matchIdx] = op.content
       } else if (op.action === 'remove') {
-        const {matchIdx, distinctVals} = this.findMatches(items, op.oldText)
+        const { matchIdx, distinctVals } = this.findMatches(items, op.oldText)
         if (matchIdx === -1) {
           return -idx
         }
@@ -173,7 +166,7 @@ export class MemoryStore {
   private writeAll(target: string, profile: string, items: string[]): void {
     const file = this.filePath(target, profile)
     const tmp = file + '.tmp'
-    writeFileSync(tmp, JSON.stringify({entries: items}, null, 2), 'utf-8')
+    writeFileSync(tmp, JSON.stringify({ entries: items }, null, 2), 'utf-8')
     renameSync(tmp, file)
   }
 
@@ -183,7 +176,7 @@ export class MemoryStore {
   }
 
   /** 查找匹配子串的条目：返回 {matchIdx, distinctVals} */
-  private findMatches(items: string[], oldText: string): {matchIdx: number; distinctVals: Set<string>} {
+  private findMatches(items: string[], oldText: string): { matchIdx: number; distinctVals: Set<string> } {
     let matchIdx = -1
     const distinctVals = new Set<string>()
     for (let i = 0; i < items.length; i++) {
@@ -194,6 +187,6 @@ export class MemoryStore {
         distinctVals.add(items[i])
       }
     }
-    return {matchIdx, distinctVals}
+    return { matchIdx, distinctVals }
   }
 }

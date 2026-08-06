@@ -1,13 +1,13 @@
-import {randomUUID} from 'crypto';
-import {getDatabase} from './database';
+import { randomUUID } from 'crypto';
+import { getDatabase } from './database';
 import {
+  CreateCustomModelInput,
+  CUSTOM_MODEL_BOOLEAN_COLS,
+  CUSTOM_MODEL_NUMBER_COLS,
+  CUSTOM_MODEL_STRING_COLS,
   CustomModelEntity,
   CustomModelRow,
-  CreateCustomModelInput,
   UpdateCustomModelInput,
-  CUSTOM_MODEL_STRING_COLS,
-  CUSTOM_MODEL_NUMBER_COLS,
-  CUSTOM_MODEL_BOOLEAN_COLS,
 } from './types';
 
 /**

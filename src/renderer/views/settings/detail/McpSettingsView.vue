@@ -59,12 +59,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToolCenterStore, type McpServerState } from '@/stores/tool-center-store'
+import { getToolCenterApi, type McpServerState } from '@/renderer/api/tool-center-api'
 import { SaLoading, SaEmpty } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 
 const router = useRouter()
-const toolCenterStore = useToolCenterStore()
+const mcpApi = getToolCenterApi()
 
 const servers = ref<McpServerState[]>([])
 const loading = ref(true)
@@ -72,7 +72,7 @@ const loading = ref(true)
 async function load() {
   loading.value = true
   try {
-    const state = await toolCenterStore.getState()
+    const state = await mcpApi.getState()
     servers.value = state.mcpServers
   } finally {
     loading.value = false
@@ -80,7 +80,8 @@ async function load() {
 }
 
 async function onDelete(name: string) {
-  const state = await toolCenterStore.removeMcpServer(name)
+  await mcpApi.removeMcpServer(name)
+  const state = await mcpApi.getState()
   servers.value = state.mcpServers
 }
 

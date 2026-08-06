@@ -75,20 +75,19 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useModelStore } from '@/stores/model-store'
-import type { CustomModelInfo, SceneModelDetail } from '@/defines/models/model'
+import type { CustomModelInfo, SceneModelDetail } from '@/renderer/api/types'
 import { SaSection, SaLoading, SaActionBtn, L3PageLayout } from '@/renderer/components'
+import { modelsApi } from '@/renderer/api/models-api'
 
 const route = useRoute()
 const profile = computed(() => route.params.profile as string)
-const modelStore = useModelStore()
 
 // ── Models (for dropdown) ──
 const models = ref<CustomModelInfo[]>([])
 
 async function loadModels() {
   try {
-    const res = await modelStore.listCustomModels()
+    const res = await modelsApi.listCustomModels(profile.value)
     models.value = res ?? []
   } catch {
     models.value = []
@@ -124,7 +123,7 @@ async function addFallback(sceneId: string) {
   if (!mid) return
   addingFallback[sceneId] = true
   try {
-    await modelStore.bindSceneModel({ sceneId, modelId: mid, profile: profile.value })
+    await modelsApi.bindSceneModel(profile.value, { sceneId, modelId: mid })
     await loadScenes()
     addFallbackModel[sceneId] = null
   } catch { /* ignore */
@@ -135,7 +134,7 @@ async function removeBinding(sceneId: string, priority: number) {
   const key = `${sceneId}:${priority}`
   removingBindings.add(key)
   try {
-    await modelStore.unbindSceneModel(sceneId, priority, profile.value)
+    await modelsApi.unbindSceneModel(profile.value, sceneId, priority)
     await loadScenes()
   } catch { /* ignore */
   } finally { removingBindings.delete(key) }
@@ -144,7 +143,7 @@ async function removeBinding(sceneId: string, priority: number) {
 async function loadScenes() {
   scenesLoading.value = true
   try {
-    const res = await modelStore.listSceneModels(profile.value)
+    const res = await modelsApi.listSceneModels(profile.value)
     scenes.value = res ?? []
     for (const s of res ?? []) {
       if (!(s.sceneId in addFallbackModel)) addFallbackModel[s.sceneId] = null

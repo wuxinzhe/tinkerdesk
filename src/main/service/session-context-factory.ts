@@ -1,0 +1,97 @@
+/**
+ * session-context-factory.ts — SessionContext 构建工厂
+ *
+ * 对齐 tinker-agent StompController.buildSessionContext：
+ * 对话启动前装载全部配置（AgentConfig + ClientEnv + YOLO + sender），
+ * 产出一个完整的 SessionContext，作为 AgentLoop 的唯一入口参数。
+ *
+ * 本地客户端：
+ * - profile 从会话表解析（session.profile ?? 'default'，对齐 resolveProfile）
+ * - yolo 从会话表读取（session.yolo）
+ * - connectId 已删除（本地无连接概念）
+ */
+import type { SessionContext, SessionContextBuildOptions } from '../core/loop/types'
+import type { AgentConfigService } from './agent-config-service'
+import type { SessionService } from './session-service'
+import type { AgentService } from './agent-service'
+import type { AgentModeRegistry } from '../core/mode/agent-mode-registry'
+
+/** 会话上下文工厂 */
+export class SessionContextFactory {
+  constructor(
+    private readonly agentConfigService: AgentConfigService,
+    private readonly sessionService: SessionService,
+    private readonly agentModeRegistry: AgentModeRegistry,
+    private readonly agentService: AgentService
+  ) {}
+
+  /**
+   * 构建会话上下文（对齐 Java buildSessionContext）：
+   * 1. 会话存在则加载，不存在则创建（用 profile 或默认）
+   * 2. profile 从会话表解析（对齐 resolveProfile）
+   * 3. yolo 从会话表读取（对齐 Java 查 sessionEntity.yolo）
+   * 4. 读 agent 的 agent_mode_id → AgentModeRegistry 取模式 → getDefaultConfig 兜底
+   * 5. 装载 AgentConfig（DB 无行时用模式的默认配置）
+   * 6. 装载 ClientEnv（客户端环境探测）
+   * 7. 装配 sender + 回调
+   */
+  build(options: SessionContextBuildOptions): SessionContext {
+    // ── 1. 会话：存在则加载，不存在则创建（profile 必传） ──
+    let sessionId = options.sessionId
+    if (!sessionId) {
+      const created = this.sessionService.create(options.profile)
+      sessionId = created.id
+    }
+    sessionId = sessionId as string
+    const sessionEntity = this.sessionService.findById(sessionId, options.profile)
+    if (!sessionEntity) {
+      throw new Error(`会话不存在: ${sessionId}`)
+    }
+
+    // ── 2. profile：显式传入优先；会话已存在时校验一致（防串 Agent） ──
+    const profile = options.profile || sessionEntity.profile || 'default'
+    if (sessionEntity.profile && sessionEntity.profile !== profile) {
+      throw new Error(`会话 ${sessionId} 属于 Agent(${sessionEntity.profile})，与请求的 Agent(${profile}) 不一致`)
+    }
+
+    // ── 3. yolo：从会话表读取（对齐 Java 查 sessionEntity.yolo） ──
+    const yolo = sessionEntity.yolo
+
+    // ── 4. Agent Mode：读 agent 的 mode 引用 → registry 取模式（对齐 Java buildSessionContext） ──
+    const agent = this.agentService.getAgentInfo(profile)
+    const agentModeId = agent?.agentModeId || 'default'
+    const agentModeVersion = agent?.agentModeVersion || '1.0'
+    const agentMode = this.agentModeRegistry.getAgentMode(agentModeId) ?? this.agentModeRegistry.getAgentMode('default')
+
+    // ── 5. Agent 运行参数（配置缺失即报错——不静默兜底，异常可见） ──
+    const agentConfig = this.agentConfigService.get(profile)
+
+    // ── 6. 客户端环境（对齐 Java ClientEnv） ──
+    const clientEnv: SessionContext['clientEnv'] = {
+      os: process.platform,
+      clientType: 'desktop',
+      shell: process.platform === 'win32' ? 'cmd' : 'bash',
+      homeDir: process.env.HOME ?? '',
+      pathFormat: process.platform === 'win32' ? 'native' : 'unix',
+    }
+
+    // ── 7. 装配完整上下文（send* 快捷方法委托 sender，对齐 Java SessionContext） ──
+    const sender = options.sender
+    return {
+      sessionId,
+      profile,
+      yolo,
+      agentConfig,
+      agentModeId,
+      agentModeVersion,
+      agentMode: agentMode ?? undefined,
+      clientEnv,
+      sender,
+      sendTips: (eventType, content) => sender.sendTips(sessionId, eventType, content),
+      sendAction: (eventType, payload) => sender.sendAction(sessionId, eventType, payload),
+      sendMessage: (eventType, payload) => sender.sendMessage(sessionId, eventType, payload),
+      sendToken: (chunk) => sender.sendToken(sessionId, chunk),
+      sendApprovalRequest: (data) => sender.sendApprovalRequest(sessionId, data),
+    }
+  }
+}

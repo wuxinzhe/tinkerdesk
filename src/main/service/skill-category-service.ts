@@ -1,16 +1,16 @@
 /**
  * skill-category-service.ts — 技能分类服务层
  *
- * 复刻 showing-agent ISkillCategoryService（本地单用户版）：
+ * 复刻 tinker-agent ISkillCategoryService（本地单用户版）：
  * 分类列表/详情/创建/更新/删除。
  */
-import {randomUUID} from 'crypto'
-import {SkillCategoryRepository} from '../repository/skill-category-repository'
-import type {SkillCategoryEntity} from '../repository/types'
+import { randomUUID } from 'crypto'
+import { SkillCategoryRepository } from '../repository/skill-category-repository'
+import type { SkillCategoryEntity } from '../repository/types'
 
 /** 技能分类服务 */
 export class SkillCategoryService {
-  constructor(private readonly categoryRepo: SkillCategoryRepository) {}
+  constructor(private readonly categoryRepo: SkillCategoryRepository) { }
 
   /** 查询全部分类 */
   findAll(): SkillCategoryEntity[] {
@@ -33,7 +33,7 @@ export class SkillCategoryService {
   }
 
   /** 创建分类（名称冲突时返回 null） */
-  create(input: Omit<SkillCategoryEntity, 'id'> & {id?: string}): SkillCategoryEntity | null {
+  create(input: Omit<SkillCategoryEntity, 'id'> & { id?: string }): SkillCategoryEntity | null {
     const existing = this.categoryRepo.findByName(input.name)
     if (existing) {
       return null

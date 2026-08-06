@@ -1,0 +1,106 @@
+/**
+ * tool-auth-service.ts — 工具授权服务层
+ *
+ * 复刻 tinker-agent ToolAuthServiceImpl（本地单用户版）：
+ * 匹配工具参数字符串中的危险命令模式，命中后返回 ASK 触发用户审批。
+ * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
+ */
+import { AuthzDecision } from './types'
+export { AuthzDecision } from './types'
+
+/** 危险参数模式列表 — 命中后触发 ASK（需用户审批） */
+const DANGEROUS_ARG_PATTERNS: RegExp[] = [
+  // ── 文件系统破坏 ────────────────────────────
+  /rm\s+-[^\s]*r/i,                                        // recursive delete
+  /rm\s+--recursive\b/i,                                   // recursive delete (long flag)
+
+  // ── Windows 破坏性操作 ──────────────────────
+  /cmd(\.exe)?\s+\/(c|k)\s+.*\b(del|erase|rd|rmdir)\b/i,
+  /(powershell|pwsh)(\.exe)?\b.*\s(remove-item|rmdir|erase|del|rd|ri|rm)\b/i,
+  /(powershell|pwsh)(\.exe)?\b.*\s-(encodedcommand|enc|e)\b/i,
+
+  // ── 权限修改 ────────────────────────────────
+  /chmod\s+(-[^\s]*\s+)*(777|666|o\+[rwx]*w|a\+[rwx]*w)/,
+  /chmod\s+--recursive\b.*(777|666|o\+[rwx]*w|a\+[rwx]*w)/,
+  /chmod\s+\+x\b.*[;&|]+\s*\.\//,
+  /chown\s+(-[^\s]*)?R\s+root/,
+  /chown\s+--recur[a-z]*\b.*root/,
+
+  // ── SQL 破坏 ────────────────────────────────
+  /DROP\s+(TABLE|DATABASE)\b/i,
+  /DELETE\s+FROM\b(?!.*\bWHERE\b)/is,
+  /TRUNCATE\s+(TABLE\s+)?\w+/i,
+
+  // ── 进程/系统操作 ──────────────────────────
+  /systemctl\s+(-[^\s]+\s+)*(stop|restart|disable|mask)\b/,
+  /kill\s*-9\s+-1\b/,
+  /pkill\s*-9\b/,
+  /killall\s+(-[^\s]*\s+)*-(9|KILL|SIGKILL)\b/,
+  /killall\s+(-[^\s]*\s+)*-s\s+(KILL|SIGKILL|9)\b/,
+  /xargs\s+.*\brm\b/,
+
+  // ── find + 删除组合 ─────────────────────────
+  /find\b.*-exec(dir)?\s+(\/\S*\/)?rm\b/,
+  /find\b.*-delete\b/,
+
+  // ── 远程内容执行 ────────────────────────────
+  /(curl|wget)\b.*\|\s*(\/\w*\/)?(ba)?sh\b/,
+  /(bash|sh|zsh|ksh)\s+<\s*<?\s*\(\s*(curl|wget)\b/,
+  /(eval|source|\.)\s*(\$\(\s*|`\s*)(curl|wget)\b/,
+
+  // ── 编码混淆执行 ────────────────────────────
+  /(base64|base32|base16)\s+(-[dD]|--decode)\b.*\|\s*(bash|sh|zsh|ksh|dash)\b/,
+  /xxd\s+-r\b.*\|\s*(bash|sh|zsh|ksh|dash)\b/,
+  /echo\b[^|]*\|\s*tr\b[^|]*\|\s*(bash|sh|zsh|ksh|dash)\b/,
+
+  // ── heredoc 脚本执行 ────────────────────────
+  /(bash|sh|zsh|ksh)\s+<</,
+
+  // ── Git 破坏性操作 ─────────────────────────
+  /git\s+reset\s+--hard\b/,
+  /git\s+push\b.*--force\b/,
+  /git\s+push\b.*-f\b/,
+  /git\s+clean\s+-[^\s]*f/,
+  /git\s+branch\s+-D\b/,
+
+  // ── 覆盖敏感文件 ────────────────────────────
+  />>?\s*["']?(\/etc\/|~\/\.ssh\/|~\/\.bashrc|~\/\.bash_profile|~\/\.zshrc|~\/\.env|~\/\.hermes\/config\.yaml)/,
+  /tee\b.*["']?(\/etc\/|~\/\.ssh\/|~\/\.bashrc|~\/\.bash_profile|~\/\.zshrc|~\/\.env|~\/\.hermes\/config\.yaml)/,
+  /(cp|mv|install)\b.*\s["']?(\/etc\/|~\/\.ssh\/|~\/\.hermes\/config\.yaml)/,
+  /sed\s+-[^\s]*i.*(\/etc\/|~\/\.ssh\/|~\/\.bashrc|~\/\.bash_profile|~\/\.zshrc|~\/\.env|~\/\.hermes\/config\.yaml)/,
+
+  // ── Docker 容器生命周期 ────────────────────
+  /docker\s+compose\s+(restart|stop|kill|down)\b/,
+  /docker\s+(restart|stop|kill)\b/,
+
+  // ── sudo 特权操作 ───────────────────────────
+  /sudo\b[^;|&\n]*?\s+(-s\b|--stdin|--askpass|-a\b)/,
+  /sudo\b[^;|&\n]*?\s+-[a-z]*[sa][a-z]*\b/,
+
+  // ── 系统磁盘/设备操作 ──────────────────────
+  /dd\s+.*if=/i,
+  />\s*\/dev\/sd/i,
+]
+
+/** 工具授权服务 */
+export class ToolAuthService {
+  /** 检查工具调用是否需要审批（命中危险模式 → ASK） */
+  check(toolName: string, args: Record<string, unknown>): AuthzDecision {
+    // 仅对终端类工具做参数危险检测（其它工具参数非命令语义）
+    const isTerminalLike = toolName === 'terminal'
+      || toolName === 'desktop_tinker_terminal'
+      || toolName.endsWith('_terminal')
+
+    if (!isTerminalLike) {
+      return AuthzDecision.ALLOW
+    }
+
+    const argsStr = JSON.stringify(args ?? {})
+    for (const pattern of DANGEROUS_ARG_PATTERNS) {
+      if (pattern.test(argsStr)) {
+        return AuthzDecision.ASK
+      }
+    }
+    return AuthzDecision.ALLOW
+  }
+}

@@ -1,7 +1,7 @@
 <template>
   <div class="json-tree">
     <template v-for="(entry, i) in entries" :key="i">
-      <div class="json-tree__row" :style="{ paddingLeft: `${depth * 16}px` }">
+      <div class="json-tree__row" :style="{ paddingLeft: `${(depth ?? 0) * 16}px` }">
         <button
           v-if="isObj(entry.v)"
           class="json-tree__toggle"
@@ -12,12 +12,12 @@
         <span v-else class="json-tree__toggle json-tree__toggle--empty" />
         <span class="json-tree__key">{{ entry.k }}</span>
         <span v-if="isObj(entry.v)" class="json-tree__meta">
-          {{ Array.isArray(entry.v) ? `Array(${entry.v.length})` : `Object(${Object.keys(entry.v).length})` }}
+          {{ Array.isArray(entry.v) ? `Array(${entry.v.length})` : `Object(${Object.keys(entry.v as object).length})` }}
         </span>
         <span v-else class="json-tree__val" :class="`json-tree__val--${valType(entry.v)}`">{{ valText(entry.v) }}</span>
       </div>
       <template v-if="isObj(entry.v) && entry.open">
-        <JsonTree :value="entry.v" :depth="depth + 1" />
+        <JsonTree :value="entry.v" :depth="(depth ?? 0) + 1" />
       </template>
     </template>
   </div>
@@ -31,6 +31,7 @@
  * - 嵌套 JSON 字符串（如 toolCall.arguments = "{\"query\":...}"）自动二次解析展开
  */
 import { computed } from 'vue'
+import { deepParseJson } from '@/renderer/utils/json-utils'
 
 defineOptions({ name: 'JsonTree' })
 
@@ -45,31 +46,7 @@ interface Entry {
   open: boolean
 }
 
-/** 深度解析：若某值是 JSON 字符串则继续 parse（如 toolCall 的 arguments 嵌套） */
-function deepParse(v: unknown): unknown {
-  if (typeof v === 'string') {
-    const t = v.trim()
-    if ((t.startsWith('{') || t.startsWith('['))) {
-      try {
-        return deepParse(JSON.parse(t))
-      } catch {
-        return v
-      }
-    }
-    return v
-  }
-  if (Array.isArray(v)) return v.map(deepParse)
-  if (v && typeof v === 'object') {
-    const out: Record<string, unknown> = {}
-    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-      out[k] = deepParse(val)
-    }
-    return out
-  }
-  return v
-}
-
-const parsed = computed<unknown>(() => deepParse(props.value))
+const parsed = computed<unknown>(() => deepParseJson(props.value))
 
 const entries = computed<Entry[]>(() => {
   const v = parsed.value

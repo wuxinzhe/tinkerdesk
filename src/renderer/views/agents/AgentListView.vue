@@ -113,17 +113,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAgentStore } from '@/stores/agent-store'
-import type { AgentInfo } from '@/defines/models/agent'
-import { useSessionStore } from '@/stores/session-store'
+import type { AgentInfo } from '@/renderer/api/types'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
+import { agentsApi } from '@/renderer/api/agents-api'
 import { SaSkeleton } from '@/renderer/components'
 
 const router = useRouter()
 const route = useRoute()
 const sessionStore = useSessionStore()
 const chatStore = useChatStore()
-const agentStore = useAgentStore()
 
 const agents = ref<AgentInfo[]>([])
 const loading = ref(true)
@@ -134,7 +133,7 @@ const selectedProfile = ref<string | null>(null)
 async function loadAgents(skipLoading = false) {
   if (!skipLoading) loading.value = true
   try {
-    agents.value = await agentStore.list()
+    agents.value = await agentsApi.list()
   } catch {
     agents.value = []
   } finally {
@@ -149,7 +148,6 @@ function selectAgent(a: AgentInfo) {
 function startConversation(a: AgentInfo) {
   sessionStore.setSessionId(null)
   sessionStore.setProfile(a.profile)
-  // @ts-expect-error: reset internal messages for clean slate
   chatStore.resetLocalState?.()
   router.replace({ path: '/workspace/chat' })
 }

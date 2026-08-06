@@ -7,15 +7,8 @@
       <!-- MCP 工具设置 -->
       <McpSettingsView v-else-if="section === 'mcp'" />
 
-      <!-- 账户设置 -->
-      <div v-else-if="section === 'account'" class="settings-page">
-        <p class="settings-page__placeholder">账户设置 — 即将推出</p>
-      </div>
-
-      <!-- 主题设置 -->
-      <div v-else-if="section === 'theme'" class="settings-page">
-        <p class="settings-page__placeholder">主题设置 — 即将推出</p>
-      </div>
+      <!-- 插件设置 -->
+      <PluginSettingsView v-else-if="section === 'plugins'" />
 
       <!-- 占位 -->
       <div v-else class="settings-placeholder">
@@ -39,6 +32,7 @@ import { useRoute } from 'vue-router'
 import { L3PageLayout } from '@/renderer/components'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
+import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'
 
 const route = useRoute()
 

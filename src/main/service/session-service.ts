@@ -1,21 +1,23 @@
 /**
  * session-service.ts — 会话服务层
  *
- * 复刻 showing-agent ISessionService（本地单用户版）：
+ * 复刻 tinker-agent ISessionService（本地单用户版）：
  * create / listSessions / updateTitle / findById / toggleYolo / browseRich。
+ * DTO 定义集中在 ./types.ts（对齐 dto/session/*）。
  */
-import {randomUUID} from 'crypto'
-import {SessionRepository} from '../repository/session-repository'
-import type {SessionEntity, SessionSummaryDTO} from '../repository/types'
-import type {MessageRepository} from '../repository/message-repository'
-import {nowDb, nowIso, nowTs, todayDate} from '../utils/time'
+import { randomUUID } from 'crypto'
+import type { MessageRepository } from '../repository/message-repository'
+import { SessionRepository } from '../repository/session-repository'
+import type { SessionEntity, SessionSummaryDTO } from '../repository/types'
+import { nowDb } from '../utils/time'
+import type { DiscoverHitDTO, ReadResultDTO, ScrollResultDTO } from './types'
 
 /** 会话服务 */
 export class SessionService {
   constructor(
     private readonly sessionRepo: SessionRepository,
     private readonly messageRepo?: MessageRepository
-  ) {}
+  ) { }
 
   /** 创建会话 */
   create(profile: string, title = ''): SessionEntity {
@@ -49,8 +51,8 @@ export class SessionService {
   }
 
   /** 更新会话标题 */
-  updateTitle(sessionId: string, title: string): void {
-    const session = this.sessionRepo.findById(sessionId)
+  updateTitle(sessionId: string, title: string, profile: string): void {
+    const session = this.sessionRepo.findById(sessionId, profile)
     if (!session) {
       return
     }
@@ -58,9 +60,9 @@ export class SessionService {
     this.sessionRepo.save(session)
   }
 
-  /** 按 ID 查找会话 */
-  findById(sessionId: string): SessionEntity | null {
-    return this.sessionRepo.findById(sessionId)
+  /** 按 ID 查找会话（profile 限定） */
+  findById(sessionId: string, profile: string): SessionEntity | null {
+    return this.sessionRepo.findById(sessionId, profile)
   }
 
   /** 切换 YOLO 模式 */
@@ -73,15 +75,16 @@ export class SessionService {
     return this.sessionRepo.browseRich(profile, excludeSessionId, limit)
   }
 
-  /** 更新会话 token 统计（累计） */
+  /** 更新会话 token 统计（累计，profile 限定） */
   accumulateTokens(
     sessionId: string,
+    profile: string,
     inputTokens: number,
     outputTokens: number,
     cacheReadTokens: number,
     cacheWriteTokens: number
   ): void {
-    const session = this.sessionRepo.findById(sessionId)
+    const session = this.sessionRepo.findById(sessionId, profile)
     if (!session) {
       return
     }
@@ -95,35 +98,97 @@ export class SessionService {
 
   // ── 会话搜索（session_search 工具用，本地 LIKE 实现） ──
 
-  /** 标题精确匹配（DISCOVER 模式第 1 步） */
-  matchSessionTitle(query: string, profile: string): {sessionId: string; title: string} | null {
+  /** 标题精确匹配（DISCOVER 模式第 1 步，对齐 DiscoverHitDTO） */
+  matchSessionTitle(query: string, profile: string): DiscoverHitDTO | null {
     const session = this.sessionRepo.findByTitleLike(query, profile)
-    return session ? {sessionId: session.id, title: session.title} : null
+    if (!session) return null
+    return {
+      sessionId: session.id,
+      when: '',
+      source: 'local',
+      title: session.title,
+      matchedRole: '',
+      matchMessageId: 0,
+      snippet: '',
+      bookendStart: [],
+      messages: [],
+      bookendEnd: [],
+      messagesBefore: 0,
+      messagesAfter: 0,
+    }
   }
 
-  /** 全文搜索命中（DISCOVER 模式第 2 步，标题 LIKE 匹配） */
-  discoverHits(query: string, limit: number, _roleFilter: string | null, _sort: string | null, profile: string): Array<{sessionId: string; title: string; snippet: string}> {
+  /**
+   * 全文搜索命中（DISCOVER 模式第 2 步，对齐 Java FTS）：
+   * 标题 LIKE 匹配 + 消息内容 LIKE 匹配合并，role 过滤 + profile 限定。
+   */
+  discoverHits(query: string, limit: number, roleFilter: string | null, sort: string | null, profile: string): DiscoverHitDTO[] {
+    // 标题匹配（本地实现：标题 LIKE）
     const sessions = this.sessionRepo.findByTitleLikeAll(query, profile, limit)
-    return sessions.map((s) => ({sessionId: s.id, title: s.title, snippet: ''}))
+    const titleHits = sessions.map((s) => ({
+      sessionId: s.id,
+      when: '',
+      source: 'local',
+      title: s.title,
+      matchedRole: '',
+      matchMessageId: 0,
+      snippet: '',
+      bookendStart: [],
+      messages: [],
+      bookendEnd: [],
+      messagesBefore: 0,
+      messagesAfter: 0,
+    }))
+
+    // 消息内容匹配（对齐 Java messageRepo.discoverHits：role 过滤 + 排除 tool 会话）
+    if (this.messageRepo) {
+      const roles = roleFilter
+        ? roleFilter.split(',').map((r) => r.trim()).filter((r) => r.length > 0)
+        : ['user', 'assistant']
+      const contentHits = this.messageRepo.discoverHits(query, roles, sort, profile, limit)
+      // 合并：标题命中优先，内容命中去重后追加
+      const seen = new Set(titleHits.map((h) => h.sessionId))
+      for (const hit of contentHits) {
+        if (seen.has(hit.sessionId)) continue
+        seen.add(hit.sessionId)
+        titleHits.push({
+          sessionId: hit.sessionId,
+          when: hit.when,
+          source: 'local',
+          title: hit.title,
+          matchedRole: hit.matchedRole,
+          matchMessageId: hit.id,
+          snippet: hit.snippet,
+          bookendStart: [],
+          messages: [],
+          bookendEnd: [],
+          messagesBefore: 0,
+          messagesAfter: 0,
+        })
+      }
+    }
+    return titleHits.slice(0, limit)
   }
 
-  /** 读取会话（READ 模式：前 N + 后 M 条） */
-  readSession(sessionId: string, head: number, tail: number, _profile: string): {sessionId: string; title: string; messageCount: number; truncated: boolean; messages: Array<{id: number; role: string; content: string}>} | null {
-    const session = this.sessionRepo.findById(sessionId)
+  /** 读取会话（READ 模式：前 N + 后 M 条，对齐 ReadResultDTO） */
+  readSession(sessionId: string, head: number, tail: number, profile: string): ReadResultDTO | null {
+    const session = this.sessionRepo.findById(sessionId, profile)
     if (!session) {
       return null
     }
     // 简化：读取全部消息（本地量小），标记 truncated
-    const messages = this.messageRepo?.listAllBySession(sessionId) ?? []
+    const messages = this.messageRepo?.listAllBySession(sessionId, profile) ?? []
     const total = messages.length
     const truncated = total > head + tail
     const selected = truncated ? [...messages.slice(0, head), ...messages.slice(total - tail)] : messages
     return {
       sessionId,
+      source: 'local',
       title: session.title,
+      when: '',
       messageCount: total,
       truncated,
-      messages: selected.map((m) => ({id: m.id ?? 0, role: m.role, content: m.content})),
+      messages: selected.map((m) => ({ id: m.id ?? 0, role: m.role, content: m.content })),
     }
   }
 
@@ -132,24 +197,24 @@ export class SessionService {
     return sessionId
   }
 
-  /** 消息窗口滚动（SCROLL 模式：around id ± window） */
-  scrollWithCounts(sessionId: string, aroundId: number, window: number, _profile: string): {window: Array<{id: number; role: string; content: string}>; messagesBefore: number; messagesAfter: number} {
-    const all = this.messageRepo?.listAllBySession(sessionId) ?? []
+  /** 消息窗口滚动（SCROLL 模式：around id ± window，对齐 ScrollResultDTO） */
+  scrollWithCounts(sessionId: string, aroundId: number, window: number, profile: string): ScrollResultDTO {
+    const all = this.messageRepo?.listAllBySession(sessionId, profile) ?? []
     const idx = all.findIndex((m) => m.id === aroundId)
     if (idx === -1) {
-      return {window: [], messagesBefore: 0, messagesAfter: 0}
+      return { window: [], messagesBefore: 0, messagesAfter: 0 }
     }
     const start = Math.max(0, idx - window)
     const end = Math.min(all.length, idx + window + 1)
     return {
-      window: all.slice(start, end).map((m) => ({id: m.id ?? 0, role: m.role, content: m.content})),
+      window: all.slice(start, end).map((m) => ({ id: m.id ?? 0, role: m.role, content: m.content })),
       messagesBefore: idx,
       messagesAfter: all.length - idx - 1,
     }
   }
 
   /** scroll rebind（本地无子 session，直接返回空） */
-  scrollRebind(_sessionId: string, _aroundId: number, _window: number, _profile: string): {window: Array<{id: number; role: string; content: string}>; messagesBefore: number; messagesAfter: number} {
-    return {window: [], messagesBefore: 0, messagesAfter: 0}
+  scrollRebind(_sessionId: string, _aroundId: number, _window: number, _profile: string): ScrollResultDTO {
+    return { window: [], messagesBefore: 0, messagesAfter: 0 }
   }
 }

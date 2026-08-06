@@ -1,0 +1,47 @@
+/**
+ * core/mode/types.ts — Agent Mode 包类型定义
+ *
+ * Agent Mode SPI + DTO 统一归位，实现文件（agent-mode-registry）从本文件导入。
+ */
+import type { AgentConfig } from '../loop/types'
+
+/** Agent Mode 元数据（对齐 Java ModeInfoDTO 基础字段 + promptTemplate） */
+export interface AgentModeMeta {
+  /** 模式 ID（唯一标识，agent 表 agent_mode_id 引用） */
+  id: string
+  /** 模式版本（agent 表 agent_mode_version 引用） */
+  version: string
+  /** 显示名称 */
+  name: string
+  /** 描述 */
+  description: string
+  /** 模式提示词模板名（AgentModePromptModule 渲染用，如 'agent-mode-default'） */
+  promptTemplate: string
+}
+
+/** Agent Mode SPI（组合元数据 + 模块顺序 + 默认配置） */
+export interface IAgentMode {
+  /** 模式元数据 */
+  readonly meta: AgentModeMeta
+
+  /** 动态提示词模块渲染顺序（对应 PromptModule 的 id 列表） */
+  getModuleList(): string[]
+
+  /** agent_configs 无行时的默认配置（对齐 Java getDefaultConfig） */
+  getDefaultConfig(): AgentConfig
+}
+
+/** 模式元数据 DTO（对齐 ModeInfoDTO） */
+export interface ModeInfoDTO {
+  id: string
+  version: string
+  name: string
+  description: string
+  promptTemplate: string
+}
+
+/** 模式选项（对齐 ModeOptionDTO：id → [versions...]，前端下拉用） */
+export interface ModeOptionDTO {
+  id: string
+  versions: string[]
+}

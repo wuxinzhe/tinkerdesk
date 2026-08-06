@@ -1,12 +1,20 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import { join } from 'path'
-import { detectDesktopTools } from './tool-detector'
-import { registerToolHandlers } from './ipc-handlers'
-import { registerToolCenterHandlers } from './tool-center'
-import { registerModelIpcHandlers } from './model-ipc'
 import { initDatabase, closeDatabase } from './repository/database'
 import { bootstrap } from './bootstrap'
-import { registerAgentController } from './agent-controller'
+import { AgentController } from './controller/agent-controller'
+import { AgentModeController } from './controller/agent-mode-controller'
+import { SessionController } from './controller/session-controller'
+import { MessageController } from './controller/message-controller'
+import { AgentCrudController } from './controller/agent-manager-controller'
+import { AgentConfigController } from './controller/agent-config-controller'
+import { ToolController } from './controller/tool-controller'
+import { SkillController } from './controller/skill-controller'
+import { PromptModuleController } from './controller/prompt-module-controller'
+import { SandboxController } from './controller/sandbox-controller'
+import { ModelController } from './controller/model-controller'
+import { AccountController } from './controller/account-controller'
+import { McpController } from './controller/mcp-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -48,13 +56,21 @@ app.whenReady().then(() => {
 
   // ── Agent 会话（本地 AgentLoop）：组装依赖 + 注册 IPC ──
   const desk = bootstrap([], [])
-  registerAgentController(desk.agentLoop)
+  new AgentController(desk.agentLoop, desk.sessionContextFactory).register()
+  new SessionController(desk.sessionService).register()
+  new MessageController(desk.messageService).register()
+  new AgentCrudController(desk.agentService).register()
+  new AgentConfigController(desk.agentConfigService).register()
+  new ToolController(desk.toolManager).register()
+  new SkillController(desk.privateSkillService, desk.skillCategoryService).register()
+  new PromptModuleController(desk.promptService).register()
+  new SandboxController(desk.sandboxWhitelistService).register()
 
   // 注册 IPC handlers
-  ipcMain.handle('detect-tools', () => detectDesktopTools())
-  registerToolHandlers()
-  registerToolCenterHandlers()
-  registerModelIpcHandlers()
+  new McpController(desk.mcpToolCenter).register()
+  new ModelController(desk.customModelService, desk.sceneModelService, desk.systemProviderService).register()
+  new AgentModeController(desk.agentModeService).register()
+  new AccountController(desk.accountService).register()
 
   // ── 窗口控制 IPC ──
   ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })

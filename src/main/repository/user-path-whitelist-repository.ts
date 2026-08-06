@@ -1,6 +1,6 @@
 
-import type {UserPathWhitelistEntity} from './types'
-import {getDatabase} from './database'
+import { getDatabase } from './database'
+import type { UserPathWhitelistEntity } from './types'
 
 /** 用户路径白名单仓库 */
 export class UserPathWhitelistRepository {

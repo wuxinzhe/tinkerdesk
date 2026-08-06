@@ -42,12 +42,11 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { L3PageLayout } from '@/renderer/components'
-import { useToolsStore } from '@/stores/tools-store'
-import type { ToolItem } from '@/defines/tools/types'
-import { parseDisplayName } from '@/tools/ui/bridge'
+import type { ToolItem } from '@/renderer/api/types'
+import { parseDisplayName } from '@/renderer/utils/tool-name'
+import { toolsApi } from '@/renderer/api/tools-api'
 
 const route = useRoute()
-const toolsStore = useToolsStore()
 
 const detailProfile = computed(() => route.params.profile as string)
 
@@ -86,7 +85,7 @@ async function loadTools() {
   if (!profile) return
   toolsLoading.value = true
   try {
-    const res = await toolsStore.list(profile)
+    const res = await toolsApi.list(profile)
     toolsList.value = res ?? []
   } catch {
     toolsList.value = []
@@ -100,7 +99,7 @@ async function toggleTool(tool: ToolItem) {
   toolsToggling.value = new Set(toolsToggling.value).add(tool.name)
   try {
     const newDisabled = !tool.disabled
-    await toolsStore.toggle(tool.name, newDisabled, detailProfile.value)
+    await toolsApi.toggle(tool.name, newDisabled, detailProfile.value)
     tool.disabled = newDisabled
   } catch { /* silent */ } finally {
     const next = new Set(toolsToggling.value)

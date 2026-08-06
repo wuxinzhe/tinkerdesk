@@ -23,7 +23,6 @@
       :active-tab="activeTab"
       @close="drawerOpen = false"
       @select="onNavSelect"
-      @logout="handleLogout"
     />
 
     <!-- ── 一级：功能导航栏（桌面端 ≥1024px） ── -->
@@ -72,9 +71,6 @@
         <router-view name="level3" class="workspace__l3-col" />
       </div>
     </div>
-
-    <!-- 连接状态指示器 -->
-    <ConnectionBadge :connecting="connecting" />
   </div>
 </template>
 
@@ -84,17 +80,13 @@ import { useRoute, useRouter } from 'vue-router'
 import WorkspaceToolbar from '@/renderer/components/workspace/WorkspaceToolbar.vue'
 import NavSidebarComponent from '@/renderer/components/workspace/NavSidebarComponent.vue'
 import MobileDrawer from '@/renderer/components/workspace/MobileDrawer.vue'
-import ConnectionBadge from '@/renderer/components/workspace/ConnectionBadge.vue'
-import { useSessionStore } from '@/stores/session-store'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
-import { viewingSkill } from '@/stores/skill-detail-store'
-import { useAuthStore } from '@/stores/auth-store'
 
 const route = useRoute()
 const router = useRouter()
 const sessionStore = useSessionStore()
 const chatStore = useChatStore()
-const authStore = useAuthStore()
 
 /* ── 当前 tab（从路由路径提取） ── */
 const activeTab = computed(() => {
@@ -127,7 +119,6 @@ const navCollapsed = ref(false)
 const drawerOpen = ref(false)
 const sidebarCollapsed = ref(false)
 provide('sidebar-collapsed', sidebarCollapsed)
-const connecting = computed(() => sessionStore.connectionStatus === 'connecting')
 
 /* ── 上下文检测：L2 = 汉堡菜单，L3 = 返回按钮 ── */
 const inDetail = computed(() => hasLevel3.value)
@@ -144,6 +135,12 @@ function getAgentSubMode(): string | undefined {
   return undefined
 }
 
+/** 技能详情页标题：读列表页经 router.push({ state }) 传入的 skill 对象 */
+function getSkillDetailTitle(): string {
+  const s = (history.state as { skill?: { displayName?: string; name?: string } } | null)?.skill
+  return s?.displayName || s?.name || '技能详情'
+}
+
 /* ── L3 工具栏标题 ── */
 const l3ToolbarTitle = computed(() => {
   if (inConversationDetail.value) return '对话详情'
@@ -156,8 +153,7 @@ const l3ToolbarTitle = computed(() => {
     const section = route.params.section as string
     if (section === 'model') return '模型设置'
     if (section === 'mcp') return 'MCP 工具'
-    if (section === 'account') return '账户设置'
-    if (section === 'theme') return '主题设置'
+    if (section === 'plugins') return '插件设置'
     return '系统设置'
   }
 
@@ -175,12 +171,13 @@ const l3ToolbarTitle = computed(() => {
       return '提示词模块'
     }
     if (subMode === 'skill') {
-      return viewingSkill.value?.displayName || viewingSkill.value?.name || '技能详情'
+      return getSkillDetailTitle()
     }
     if (route.path.includes('/agents/create')) return '创建 Agent'
   }
 
   if (activeTab.value === 'agent-chat') {
+    if (route.path.includes('/history')) return '历史预览'
     return sessionStore.currentSession?.title || '对话'
   }
 
@@ -193,8 +190,7 @@ const l3ToolbarTitle = computed(() => {
 const sessionTitle = computed(() => sessionStore.currentSession?.title ?? '')
 
 const SECTION_TITLES: Record<string, string> = {
-  model: '模型设置', mcp: 'MCP 工具',
-  account: '账户设置', theme: '主题设置',
+  model: '模型设置', mcp: 'MCP 工具', plugins: '插件设置',
 }
 const AGENT_SUB_TITLES: Record<string, string> = {
   skills: '技能管理', tools: '工具配置',
@@ -216,7 +212,7 @@ const topbarTitle = computed(() => {
     const subMode = getAgentSubMode()
     if (subMode && AGENT_SUB_TITLES[subMode]) return AGENT_SUB_TITLES[subMode]
     if (subMode === 'skill') {
-      return viewingSkill.value?.displayName || viewingSkill.value?.name || '技能详情'
+      return getSkillDetailTitle()
     }
     if (route.path.endsWith('/agents/create')) return '创建 Agent'
   }
@@ -277,13 +273,6 @@ function goBack() {
   router.back()
 }
 
-function handleLogout() {
-  authStore.logout()
-  sessionStore.$reset()
-  chatStore.$reset()
-  router.replace({ name: 'splash' })
-}
-
 /* ── Lifecycle ── */
 onMounted(() => {
   nextTick(() => {
@@ -300,10 +289,6 @@ onMounted(() => {
       router.replace(pathMap[tab] || '/workspace/chat')
     }
   })
-})
-
-onUnmounted(() => {
-  sessionStore.setConnectionStatus('disconnected')
 })
 </script>
 

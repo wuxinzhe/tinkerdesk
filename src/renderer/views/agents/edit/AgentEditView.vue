@@ -126,12 +126,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAgentStore } from '@/stores/agent-store'
-import type { AgentInfo, ModeOptionVO } from '@/defines/models/agent'
+import type { AgentInfo, ModeOptionVO } from '@/renderer/api/types'
+import { agentsApi } from '@/renderer/api/agents-api'
 
 const route = useRoute()
 const router = useRouter()
-const agentStore = useAgentStore()
 
 const isCreate = computed(() => route.path.includes('/agents/create'))
 const detailProfile = computed(() => route.params.profile as string | undefined)
@@ -147,7 +146,7 @@ let agentCache = new Map<string, AgentInfo>()
 async function ensureAgent(profile: string): Promise<AgentInfo | null> {
   if (agentCache.has(profile)) return agentCache.get(profile)!
   try {
-    const agent = await agentStore.get(profile)
+    const agent = await agentsApi.get(profile)
     if (agent) {
       agentCache.set(profile, agent)
       return agent
@@ -215,7 +214,7 @@ const createModeVersions = computed(() => {
 
 async function loadModeOptions() {
   try {
-    const res = await agentStore.listModes()
+    const res = (await agentsApi.listModes(true)) as ModeOptionVO[]
     modeOptions.value = res ?? []
   } catch { /* silent */ }
 }
@@ -227,7 +226,7 @@ async function saveEdit() {
   saving.value = true
   editError.value = ''
   try {
-    const updated = await agentStore.update(editingAgent.value.profile, {
+    const updated = await agentsApi.update(editingAgent.value.profile, {
       displayName: form.value.displayName || undefined,
       description: form.value.description || undefined,
       avatar: form.value.avatar || undefined,
@@ -236,8 +235,8 @@ async function saveEdit() {
     })
     if (updated) editingAgent.value = updated
     backToList()
-  } catch (e: any) {
-    editError.value = e?.message ?? '保存失败'
+  } catch (e) {
+    editError.value = (e as Error).message ?? '保存失败'
   } finally {
     saving.value = false
   }
@@ -251,17 +250,17 @@ async function saveCreate() {
   saving.value = true
   editError.value = ''
   try {
-    const created = await agentStore.create({
+    const created = await agentsApi.create({
       profile: createForm.value.profile.trim(),
-      displayName: createForm.value.displayName || undefined,
+      displayName: createForm.value.displayName || createForm.value.profile.trim(),
       description: createForm.value.description || undefined,
       avatar: createForm.value.avatar || undefined,
       agentModeId: createForm.value.agentModeId || undefined,
       agentModeVersion: createForm.value.agentModeVersion || undefined
     })
     backToList()
-  } catch (e: any) {
-    editError.value = e?.message ?? '创建失败'
+  } catch (e) {
+    editError.value = (e as Error).message ?? '创建失败'
   } finally {
     saving.value = false
   }
@@ -272,7 +271,7 @@ async function deleteAgent(a: AgentInfo) {
   if (!confirm(`确定删除 Agent "${a.displayName}"？此操作不可撤销。`)) return
   deleting.value = true
   try {
-    await agentStore.remove(a.profile)
+    await agentsApi.delete(a.profile)
     agentCache.delete(a.profile)
     backToList()
   } catch { /* silent */

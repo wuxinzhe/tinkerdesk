@@ -14,12 +14,12 @@
     </transition>
 
     <ChatAreaComponent
-      v-if="!previewMode"
       :messages="chatStore.getMessages(sessionId)"
       :streaming-content="pendingBuffer"
       :streaming-reasoning="chatStore.getStreamingReasoning(sessionId)"
       :is-streaming="!!chatStore.getMessages(sessionId).find(m => m.isStreaming)"
       :session-id="sessionId"
+      :profile="profile"
       :has-more="hasMoreMessages"
       :loading-more="loadingMessages"
       :pending-buffer="pendingBuffer"
@@ -28,12 +28,7 @@
       @approve="onApprove"
       @reject="onReject"
       @deleted="onDeleted"
-    />
-
-    <!-- 对话历史快速预览（P1：API 拉取 + 无限滚动） -->
-    <ConversationPreviewView
-      v-else
-      :session-id="sessionId"
+      @history-preview="goHistoryPreview"
     />
 
     <!-- 打断对话按钮 + 预览/气泡切换按钮（横向并排，teleport 到 L3 顶栏右侧） -->
@@ -45,23 +40,9 @@
         :title="isStreamingActive ? '打断对话' : '对话空闲'"
         @click="onInterrupt"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-          <rect x="6" y="6" width="12" height="12" rx="2" />
-        </svg>
-      </button>
-      <button
-        :class="['preview-toggle-btn', { 'preview-toggle-btn--active': previewMode }]"
-        :title="previewMode ? '返回气泡视图' : '历史预览'"
-        @click="previewMode = !previewMode"
-      >
-        <svg v-if="!previewMode" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="7" height="9" rx="1.5" />
-          <rect x="14" y="3" width="7" height="5" rx="1.5" />
-          <rect x="14" y="12" width="7" height="9" rx="1.5" />
-          <rect x="3" y="16" width="7" height="5" rx="1.5" />
-        </svg>
-        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <svg width="14" height="14" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="2" />
+          <rect x="8" y="8" width="8" height="8" rx="1.5" fill="currentColor" stroke="none" />
         </svg>
       </button>
     </ToolbarActions>
@@ -90,12 +71,11 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChatAreaComponent from '@/renderer/components/workspace/ChatAreaComponent.vue'
-import ConversationPreviewView from '@/renderer/components/workspace/ConversationPreviewView.vue'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { useChatStore } from '@/renderer/stores/chat-store'
-import { useSessionStore } from '@/stores/session-store'
-import { useAgentStore } from '@/stores/agent-store'
+import { useSessionStore } from '@/renderer/stores/session-store'
+import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useMobile } from '@/renderer/composables/use-mobile'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
 
@@ -134,17 +114,19 @@ function onInterrupt() {
   chatStore.stopProcessing(sessionId.value)
 }
 
+/** 打开历史预览：入栈新页面（独立路由），顶部标题由 WorkspaceView 识别 /history */
+function goHistoryPreview() {
+  if (!sessionId.value) return
+  router.push({ path: `/workspace/chat/${sessionId.value}/history` })
+}
+
 const showAgentCard = ref(false)
-
-/** 预览模式：气泡视图 ↔ 对话历史快速预览 */
-const previewMode = ref(false)
-
 /* ── Message loading ── */
 const loadingMessages = ref(false)
 const hasMoreMessages = ref(true)
 
 watch(sessionId, (newId, oldId) => {
-  if (newId && newId !== oldId) {
+  if (newId && oldId && newId !== oldId) {
     // 清理旧 session 的流式 chunks（不中断后台 buffer 累积）
     chatStore.clearConvChunks(oldId, chatStore.getActiveStreamingConvId(oldId))
     sessionStore.setSessionId(newId)
@@ -327,32 +309,6 @@ onUnmounted(() => {
 
 .stop-toggle-btn--active:hover:not(:disabled) {
   background: color-mix(in srgb, #ff3b30 10%, transparent);
-}
-
-/* ── 预览/气泡切换按钮 ── */
-
-.preview-toggle-btn {
-  all: unset;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: var(--sa-text-secondary, #86868b);
-  transition: background 0.12s;
-  line-height: 0;
-  padding: 0;
-}
-
-.preview-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.preview-toggle-btn--active {
-  color: var(--sa-accent, #007aff);
-  background: color-mix(in srgb, var(--sa-accent, #007aff) 10%, transparent);
 }
 
 /* ── Thinking 态：呼吸动效 ── */

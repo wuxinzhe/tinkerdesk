@@ -18,17 +18,19 @@
     <ChatInputComponent
       :model-value="inputText"
       :session-id="sessionId"
+      :profile="profile"
       :yolo="yoloEnabled"
       @send="onSend"
       @update:model-value="inputText = $event"
       @update:yolo="yoloEnabled = $event"
+      @history-preview="$emit('history-preview')"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { Message } from '@/defines/models/message'
+import type { Message } from '@/renderer/api/types'
 import MessageListComponent from './MessageListComponent.vue'
 import ChatInputComponent from './ChatInputComponent.vue'
 
@@ -38,6 +40,8 @@ defineProps<{
   streamingReasoning: string
   isStreaming: boolean
   sessionId: string | null
+  /** Agent 画像标识（透传给 ChatInput 做 YOLO 限定） */
+  profile?: string
   hasMore: boolean
   loadingMore: boolean
   pendingBuffer: string
@@ -49,6 +53,7 @@ const emit = defineEmits<{
   approve: [toolCallId: string]
   reject: [toolCallId: string]
   deleted: []
+  'history-preview': []
 }>()
 
 const inputText = ref('')

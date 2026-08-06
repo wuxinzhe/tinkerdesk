@@ -7,7 +7,7 @@
 
 // ── custom_models 表 ──────────────────────────────────────────────
 
-/** 自定义模型实体（对应 custom_models 表，参考 showing-agent UserCustomModelEntity 去掉 user_id） */
+/** 自定义模型实体（对应 custom_models 表，参考 tinker-agent UserCustomModelEntity 去掉 user_id） */
 export interface CustomModelEntity {
   id: string
   profile: string
@@ -74,7 +74,7 @@ export const CUSTOM_MODEL_BOOLEAN_COLS = ['enabled', 'test_passed'] as const
 
 // ── providers 表 ─────────────────────────────────────────────────────
 
-/** 预置供应商（对应 providers 表，复制自 showing-agent system_providers） */
+/** 预置供应商（对应 providers 表，复制自 tinker-agent system_providers） */
 export interface ProviderEntity {
   id: string
   name: string
@@ -342,6 +342,14 @@ export interface FilteredSkillDTO {
   version: string
   author: string
   isDeleted: boolean
+  /** 逗号分隔的标签（对齐 Java String[] tags） */
+  tags: string
+  /** API key 是否配置（readiness 判断：available / setup_needed） */
+  apiKey: string | null
+  /** 平台筛选（逗号分隔，对齐 Java oss） */
+  platforms: string
+  /** 客户端类型筛选（逗号分隔，对齐 Java clientTypes） */
+  requiresToolsets: string
 }
 
 // ── private_skill_files 表 ─────────────────────────────────────────
@@ -428,4 +436,40 @@ export interface SceneModelBinding {
   providerName: string
   apiMode: string
   priority: number
+}
+
+// ── tool-center 持久化（表 tool_registry / mcp_servers） ──
+
+/** 内置工具检测快照行 */
+export interface ToolRegistryRow {
+  id: string
+  source: string
+  available: number
+  reason: string | null
+  schemaJson: string
+  checkedAt: string
+}
+
+/** MCP 服务器配置行 */
+export interface McpServerRow {
+  name: string
+  transport: string
+  command: string | null
+  argsJson: string
+  url: string | null
+  enabled: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** MCP 工具定义行（首次发现后持久化） */
+export interface McpToolRow {
+  name: string
+  serverName: string
+  toolName: string
+  description: string
+  inputSchema: string
+  enabled: number
+  createdAt: string
+  updatedAt: string
 }

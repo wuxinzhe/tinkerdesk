@@ -1,12 +1,13 @@
 /**
  * compression-cooldown-store.ts — 压缩冷却 + 无效/fallback 检测存储
  *
- * 复刻 showing-agent CompressionCooldownStore（Redis → 本地内存）：
+ * 复刻 tinker-agent CompressionCooldownStore（Redis → 本地内存）：
  * - 冷却（cooldown）：LLM 调用失败后暂停重试，TTL 自动过期（阶梯 60/300/900s）
  * - 无效压缩检测（ineffective）：连续多次无可压缩内容时停止触发
  * - fallback 连续抑制（fallback）：连续多次用静态占位符时停止主动压缩
  */
-import {nowTs} from '../utils/time'
+import { nowTs } from '../utils/time'
+import type { CooldownEntry } from './types'
 
 /** 冷却阶梯（秒）：首次 / 第 2 次 / 第 3 次及以上 */
 const COOLDOWN_LADDER_BASE = 60
@@ -18,12 +19,6 @@ const INEFFECTIVE_BLOCK_THRESHOLD = 2
 
 /** 连续 >= 2 次 fallback 后阻止自动压缩 */
 const FALLBACK_BLOCK_THRESHOLD = 2
-
-/** 冷却条目：失败计数 + 过期时间戳 */
-interface CooldownEntry {
-  failCount: number
-  expiresAt: number
-}
 
 /** 压缩冷却存储（本地内存版） */
 export class CompressionCooldownStore {
@@ -54,7 +49,7 @@ export class CompressionCooldownStore {
     const current = this.cooldowns.get(sessionId)?.failCount ?? 0
     const failCount = current + 1
     const ttl = cooldownFor(failCount)
-    this.cooldowns.set(sessionId, {failCount, expiresAt: nowTs() + ttl * 1000})
+    this.cooldowns.set(sessionId, { failCount, expiresAt: nowTs() + ttl * 1000 })
   }
 
   /** 压缩成功后清除冷却 */

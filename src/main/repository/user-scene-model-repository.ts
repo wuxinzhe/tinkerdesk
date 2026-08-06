@@ -1,20 +1,19 @@
 
-import type {SceneModelBinding, UserSceneModelEntity} from './types'
-import {getDatabase} from './database'
-
-
+import { getDatabase } from './database'
+import type { SceneModelBinding, UserSceneModelEntity } from './types'
+import { SCENE_CHAT } from '../core/llm/types'
 
 /** 用户场景模型仓库 */
 export class UserSceneModelRepository {
-  /** 主对话场景（scene_id='chat'）是否已配置模型 */
+  /** 主对话场景是否已配置模型 */
   countConfiguredForMainConversation(profile: string): number {
     const db = getDatabase()
     const row = db
       .prepare(
         `SELECT COUNT(*) AS cnt FROM user_scene_models
-         WHERE profile = ? AND scene_id = 'chat' AND priority = 0`
+         WHERE profile = ? AND scene_id = ? AND priority = 0`
       )
-      .get(profile) as {cnt: number}
+      .get(profile, SCENE_CHAT) as { cnt: number }
     return row.cnt
   }
 
@@ -42,18 +41,17 @@ export class UserSceneModelRepository {
     return rows.map(toEntity)
   }
 
-  /** 查询全部绑定（含模型/供应商详情） */
+  /** 查询全部绑定（含模型/供应商详情；场景名由 service 层从 LlmOperationManager 映射） */
   findAllWithProviderDetails(profile: string): SceneModelBinding[] {
     const db = getDatabase()
     const rows = db
       .prepare(
-        `SELECT usm.scene_id, s.name AS scene_name, usm.model_id,
+        `SELECT usm.scene_id, usm.scene_id AS scene_name, usm.model_id,
                 cm.alias AS model_alias, cm.model_name, cm.provider_id,
                 p.name AS provider_name, p.api_mode, usm.priority
          FROM user_scene_models usm
-         JOIN scenes s ON usm.scene_id = s.id
          JOIN custom_models cm ON usm.model_id = cm.id
-         JOIN providers p ON cm.provider_id = p.id
+         JOIN system_providers p ON cm.provider_id = p.id
          WHERE usm.profile = ?
          ORDER BY usm.scene_id, usm.priority`
       )
@@ -107,7 +105,7 @@ export class UserSceneModelRepository {
     const db = getDatabase()
     const row = db
       .prepare('SELECT COALESCE(MAX(priority), -1) AS max_p FROM user_scene_models WHERE profile = ? AND scene_id = ?')
-      .get(profile, sceneId) as {max_p: number}
+      .get(profile, sceneId) as { max_p: number }
     return row.max_p
   }
 

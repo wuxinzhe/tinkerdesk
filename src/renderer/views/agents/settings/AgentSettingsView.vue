@@ -294,8 +294,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { agentConfigApi } from '@/api/agent-config-api'
-import type { AgentConfigData } from '@/defines/models/agent-config'
+import { agentConfigApi } from '@/renderer/api/agent-config-api'
+import type { AgentConfigData } from '@/renderer/api/types'
 
 const route = useRoute()
 const profile = computed(() => (route.params.profile as string) || 'default')
@@ -346,8 +346,8 @@ async function saveSettings() {
       tailRatio: (config.tailRatio ?? 0) / 100,
     }
     await agentConfigApi.update(profile.value, payload)
-  } catch (e: any) {
-    error.value = e.message ?? '保存失败'
+  } catch (e) {
+    error.value = (e as Error).message ?? '保存失败'
   } finally {
     saving.value = false
   }
@@ -362,8 +362,8 @@ async function resetDefaults() {
     Object.assign(config, data)
     config.thresholdPercent = Math.round((data.thresholdPercent ?? 0) * 100)
     config.tailRatio = Math.round((data.tailRatio ?? 0) * 100)
-  } catch (e: any) {
-    error.value = e.message ?? '重置失败'
+  } catch (e) {
+    error.value = (e as Error).message ?? '重置失败'
   } finally {
     saving.value = false
   }

@@ -8,18 +8,11 @@
  * - 每张卡片 = 该轮对话的用户消息 + 助手回复摘要
  */
 import { ref } from 'vue'
-import { messagesApi } from '@/api/messages-api'
-import type { Message } from '@/defines/models/message'
-
-/** 预览卡片 */
-export interface ConversationCard {
-  conversationId: string
-  userContent: string
-  replyPreview: string
-  messageCount: number
-  hasToolCalls: boolean
-  timestamp: number
-}
+import { messagesApi } from '@/renderer/api/messages-api'
+import type { Message } from '@/renderer/api/types'
+import type { ConversationCard } from './types'
+import { truncateText } from '@/renderer/utils/string-utils'
+export type { ConversationCard } from './types'
 
 /** 跳过非对话类型的消息 */
 const NON_DIALOG_TYPES = new Set([
@@ -38,11 +31,6 @@ function shouldIncludeInPreview(m: Message): boolean {
   return true
 }
 
-function truncate(text: string, max = 200): string {
-  const t = (text || '').trim()
-  return t.length > max ? `${t.slice(0, max)}...` : t
-}
-
 /** 单条消息 → 卡片 */
 function buildCard(convId: string, msgs: Message[]): ConversationCard {
   const ordered = [...msgs].sort((a, b) => a.timestamp - b.timestamp)
@@ -51,8 +39,8 @@ function buildCard(convId: string, msgs: Message[]): ConversationCard {
 
   return {
     conversationId: convId,
-    userContent: truncate(userMsg?.content ?? ''),
-    replyPreview: truncate(assistantMsg?.content ?? ''),
+    userContent: truncateText(userMsg?.content ?? ''),
+    replyPreview: truncateText(assistantMsg?.content ?? ''),
     messageCount: ordered.length,
     hasToolCalls: msgs.some(m => m.messageType === 'tool_call' || !!m.toolCallId),
     timestamp: userMsg?.timestamp ?? msgs[0]?.timestamp ?? Date.now(),
@@ -64,6 +52,7 @@ export function groupByConversation(messages: Message[]): ConversationCard[] {
   const map = new Map<string, Message[]>()
   for (const msg of messages) {
     if (!shouldIncludeInPreview(msg)) continue
+    if (!msg.conversationId) continue
     if (!map.has(msg.conversationId)) map.set(msg.conversationId, [])
     map.get(msg.conversationId)!.push(msg)
   }

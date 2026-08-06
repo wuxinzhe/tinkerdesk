@@ -1,12 +1,12 @@
 /**
  * session-repository.ts — sessions 表仓库
  *
- * 复刻 showing-agent SessionRepository：
+ * 复刻 tinker-agent SessionRepository：
  * 会话 CRUD、用户会话列表、标题搜索、浏览摘要、YOLO 切换。
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
-import {getDatabase} from './database'
-import type {SessionEntity, SessionSummaryDTO} from './types'
+import { getDatabase } from './database'
+import type { SessionEntity, SessionSummaryDTO } from './types'
 
 /** 会话实体（对应 SessionEntity） */
 
@@ -94,10 +94,10 @@ export class SessionRepository {
     return Number(result.changes)
   }
 
-  /** 根据 ID 查询会话 */
-  findById(id: string): SessionEntity | null {
+  /** 根据 ID 查询会话（profile 限定） */
+  findById(id: string, profile: string): SessionEntity | null {
     const db = getDatabase()
-    const row = db.prepare(`SELECT ${COLS} FROM sessions WHERE id = ?`).get(id) as Record<string, unknown> | undefined
+    const row = db.prepare(`SELECT ${COLS} FROM sessions WHERE id = ? AND profile = ?`).get(id, profile) as Record<string, unknown> | undefined
     return row ? toEntity(row) : null
   }
 
@@ -124,7 +124,7 @@ export class SessionRepository {
          WHERE profile = ? AND archived = 0 AND system_prompt IS NOT NULL AND system_prompt != ''
          LIMIT 1000`
       )
-      .all(profile) as Array<{id: string}>
+      .all(profile) as Array<{ id: string }>
     return rows.map((r) => r.id)
   }
 
@@ -173,13 +173,13 @@ export class SessionRepository {
          LIMIT ?`
       )
       .all(profile, excludeSessionId, limit) as Array<{
-      session_id: string
-      title: string
-      preview: string
-      source: string
-      last_activity: string
-      message_count: number
-    }>
+        session_id: string
+        title: string
+        preview: string
+        source: string
+        last_activity: string
+        message_count: number
+      }>
     return rows.map((r) => ({
       sessionId: r.session_id,
       title: r.title,
@@ -198,7 +198,7 @@ export class SessionRepository {
       profile
     )
     const row = db.prepare('SELECT yolo FROM sessions WHERE id = ? AND profile = ?').get(sessionId, profile) as
-      | {yolo: number}
+      | { yolo: number }
       | undefined
     return (row?.yolo ?? 0) === 1
   }

@@ -2,11 +2,11 @@
 /**
  * private-skill-file-repository.ts — 私有技能文件仓库
  *
- * 复刻 showing-agent PrivateSkillFileRepository：
+ * 复刻 tinker-agent PrivateSkillFileRepository：
  * 表 private_skill_files — 技能文件（SKILL.md 等），FK → private_skills。
  */
-import {getDatabase} from './database'
-import type {SkillFileEntity} from './types'
+import { getDatabase } from './database'
+import type { SkillFileEntity } from './types'
 
 /** 私有技能文件仓库 */
 export class PrivateSkillFileRepository {

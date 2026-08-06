@@ -14,7 +14,7 @@
  */
 
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { useSessionStore } from '@/stores/session-store'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
 
 /* ═══════════════════════════════════════════

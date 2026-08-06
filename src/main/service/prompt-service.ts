@@ -1,15 +1,15 @@
 /**
  * prompt-service.ts — 提示词模块服务层
  *
- * 复刻 showing-agent UserPromptModuleService（本地单用户版，去 userId/User 前缀）：
+ * 复刻 tinker-agent UserPromptModuleService（本地单用户版，去 userId/User 前缀）：
  * 模块列表（含启用态过滤）、创建（自动排序）、更新、启用/停用、删除。
  */
-import {PromptModuleRepository} from '../repository/prompt-module-repository'
-import type {UserPromptModuleEntity} from '../repository/types'
+import { PromptModuleRepository } from '../repository/prompt-module-repository'
+import type { UserPromptModuleEntity } from '../repository/types'
 
 /** 提示词模块服务 */
 export class PromptService {
-  constructor(private readonly moduleRepo: PromptModuleRepository) {}
+  constructor(private readonly moduleRepo: PromptModuleRepository) { }
 
   /** 查询 profile 下全部模块（按 sort_order 升序） */
   listByProfile(profile: string): UserPromptModuleEntity[] {
@@ -21,9 +21,9 @@ export class PromptService {
     return this.moduleRepo.findByProfile(profile).filter((m) => m.enabled)
   }
 
-  /** 按 ID 查询 */
-  findById(id: number): UserPromptModuleEntity | null {
-    return this.moduleRepo.findById(id)
+  /** 按 ID 查询（profile 限定） */
+  findById(id: number, profile: string): UserPromptModuleEntity | null {
+    return this.moduleRepo.findById(id, profile)
   }
 
   /** 创建模块（自动分配下一个 sort_order） */
@@ -33,22 +33,22 @@ export class PromptService {
     }
     const existing = this.moduleRepo.findByProfile(profile)
     const nextOrder = existing.reduce((max, m) => Math.max(max, m.sortOrder), 0) + 1
-    const id = this.moduleRepo.insert({profile, name, content, sortOrder: nextOrder, enabled})
-    return this.moduleRepo.findById(id)
+    const id = this.moduleRepo.insert({ profile, name, content, sortOrder: nextOrder, enabled })
+    return this.moduleRepo.findById(id, profile)
   }
 
-  /** 更新模块内容/名称/排序 */
+  /** 更新模块内容/名称/排序（profile 限定） */
   update(entity: UserPromptModuleEntity): boolean {
     return this.moduleRepo.update(entity) > 0
   }
 
-  /** 设置启用状态 */
-  setEnabled(id: number, enabled: boolean): boolean {
-    return this.moduleRepo.setEnabled(id, enabled) > 0
+  /** 设置启用状态（profile 限定） */
+  setEnabled(id: number, enabled: boolean, profile: string): boolean {
+    return this.moduleRepo.setEnabled(id, enabled, profile) > 0
   }
 
-  /** 删除模块 */
-  deleteById(id: number): boolean {
-    return this.moduleRepo.deleteById(id) > 0
+  /** 删除模块（profile 限定） */
+  deleteById(id: number, profile: string): boolean {
+    return this.moduleRepo.deleteById(id, profile) > 0
   }
 }

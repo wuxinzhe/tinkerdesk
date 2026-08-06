@@ -19,7 +19,7 @@
           <span class="approval-card__code-lang">参数</span>
           <button class="approval-card__copy" @click.stop="copyArgs">复制</button>
         </div>
-        <pre class="approval-card__code-body"><code>{{ formatArgs(approvalArguments) }}</code></pre>
+        <pre class="approval-card__code-body"><code>{{ prettyJson(approvalArguments) }}</code></pre>
       </div>
     </div>
 
@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getShortName } from '@/renderer/utils/tool-display'
+import { prettyJson } from '@/renderer/utils/json-utils'
 
 const props = withDefaults(defineProps<{
   interactionStatus?: string
@@ -80,24 +81,9 @@ defineEmits<{
   reject: [toolCallId: string]
 }>()
 
-/** 将参数格式化为带缩进的 JSON，兼容新旧格式 */
-function formatArgs(args: unknown): string {
-  if (args === null || args === undefined) return ''
-  // 旧数据：后端曾返回 JSON 字符串 → 尝试解析后缩进
-  if (typeof args === 'string') {
-    try {
-      return JSON.stringify(JSON.parse(args), null, 2)
-    } catch {
-      return args
-    }
-  }
-  // 新数据：直接是对象
-  return JSON.stringify(args, null, 2)
-}
-
 function copyArgs() {
   if (!props.approvalArguments) return
-  const text = formatArgs(props.approvalArguments)
+  const text = prettyJson(props.approvalArguments)
   navigator.clipboard.writeText(text).catch(() => {})
 }
 </script>

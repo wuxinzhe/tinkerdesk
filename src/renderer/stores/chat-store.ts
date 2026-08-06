@@ -2,54 +2,41 @@
  * chat-store.ts — 对话状态管理
  *
  * 消息按 sessionId 隔离存储，互不干扰。
- * 服务端有消息队列，客户端不做任何操作阻断。
+ * 本地 AgentLoop（IPC）：消息流通过 agentApi.chat() 的 onToken 回调 + 返回 MessageVO 驱动。
  *
- * 消息路由：Backend onMessage → setBackend 内直接 switch(event) 路由到各个 handler，
- * 不经过 EventBus，保持 View → Store → API 单向依赖。
+ * 消息路由：agentApi.onMessage → 路由到各个 handler，保持 View → Store → API 单向依赖。
  */
-import type { Backend, BackendEvent } from '@/api/backend'
-import { messagesApi } from '@/api/messages-api'
-import { useSessionStore } from '@/stores/session-store'
-import type { Message as ApiMessage, ToolCall } from '@/defines/models/message'
-import type {
-  ChatMergedPayload,
-  AgentResponsePayload,
-  AgentResponseTokenPayload,
-  ApprovalRequestPayload,
-  ClarifyRequestPayload,
-  ClarifyStatusPayload,
-  ThinkingPayload,
-  ActionMergedPayload,
-  ExecuteToolPayload,
-  SessionTitleUpdatedPayload,
-  ErrorPayload,
-  TipsPayload,
-  MessageVOData
-} from '@/defines/events/event-types'
+import { createLocalAgentApi } from '@/renderer/api/agent-local'
+import { messagesApi } from '@/renderer/api/messages-api'
+import type { AgentApi, AgentApprovalEvent, AgentMessageVO, AgentStreamEvent, Message as ApiMessage, ToolCall } from '@/renderer/api/types'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { playMessageNotification } from '@/renderer/utils/audio-utils'
 import { showInfoToast } from '@/renderer/utils/notification-utils'
-import { toolRegistry } from '@/services/registry/tool-registry'
+import { isValidTokenValue } from '@/renderer/utils/streaming/token-validate'
+import { mergeToolCallChunks, type ToolCallChunk } from '@/renderer/utils/streaming/tool-call-merge'
+import { extractCompleted } from '@/renderer/utils/streaming/useParagraphSegmenter'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { extractCompleted } from '@/renderer/utils/streaming/useParagraphSegmenter'
+import type {
+  ActionMergedPayload,
+  AgentResponseTokenPayload,
+  ApprovalRequestPayload,
+  ChatMergedPayload,
+  ClarifyRequestPayload,
+  ErrorPayload,
+  ExecuteToolPayload,
+  MessageVOData,
+  SessionTitleUpdatedPayload,
+  ThinkingPayload,
+  TipsPayload
+} from './types'
 
-/**
- * 流式 token 有效性校验（防御性编程）。
- * 服务端/LLM 可能把"空值"序列化成各种形态，一律视为无效不接收：
- * - null / undefined
- * - 空字符串 ''
- * - 纯空白 '   '
- * - 字面量字符串 'null' / 'undefined'（DeepSeek 思考结束会把空思考序列化成 "null"）
- */
-function isValidTokenValue(v: unknown): v is string {
-  if (v === null || v === undefined) return false
-  if (typeof v !== 'string') return false
-  const t = v.trim()
-  return t.length > 0 && t !== 'null' && t !== 'undefined'
-}
 
 export const useChatStore = defineStore('chat', () => {
   // ── 状态（按 sessionId 隔离）──
+
+  /** 会话 store（Agent 画像 profile 来源） */
+  const sessionStore = useSessionStore()
 
   /** 每个 session 的消息列表 */
   const messagesBySession = ref<Record<string, ApiMessage[]>>({})
@@ -71,17 +58,13 @@ export const useChatStore = defineStore('chat', () => {
   /** 每个 session 是否正在处理中（用于 UI 指示器，不阻断操作） */
   const isProcessingBySession = ref<Record<string, boolean>>({})
 
-  // Backend 引用（由 WorkspaceView 或 LoadingView 注入）
-  let backend: Backend | null = null
+  // AgentApi 引用（本地 AgentLoop IPC，由 initAgentApi 创建）
+  let agentApi: AgentApi | null = null
 
   // ── 按 session 获取数据 ──
 
   function getMessages(sessionId: string): ApiMessage[] {
     return messagesBySession.value[sessionId] ?? []
-  }
-
-  function getStreamingContent(sessionId: string): string {
-    return streamingContentBySession.value[sessionId] ?? ''
   }
 
   function getStreamingReasoning(sessionId: string): string {
@@ -93,64 +76,34 @@ export const useChatStore = defineStore('chat', () => {
   let initialized = false
 
   /**
-   * 注入 Backend 实例并建立消息路由。
-   * 由 LoadingView 在初始化时调用。
-   * 直接在 onMessage 回调中按 event 字段路由到各 handler，不经过 EventBus。
+   * 初始化本地 AgentApi（IPC）并建立消息路由。
+   * 由 SplashView / WorkspaceView 在初始化时调用。
+   * 本地 AgentLoop：流式 token 在 sendMessage 的 chat 回调中处理；
+   * onApprovalRequest 处理审批请求等事件。
    */
-  function setBackend(b: Backend): void {
-    if (initialized) return
+  function initAgentApi(): AgentApi {
+    if (initialized && agentApi) return agentApi
     initialized = true
-    backend = b
+    agentApi = createLocalAgentApi()
 
-    // 连接生命周期 → 同步到 session-store
-    const sessionStore = useSessionStore()
-    backend.onEvent((event: BackendEvent) => {
-      switch (event.type) {
-        case 'connected':
-          sessionStore.setConnectionStatus('connected')
-          break
-        case 'disconnected':
-          sessionStore.setConnectionStatus('disconnected')
-          break
-        case 'reconnecting':
-          sessionStore.setConnectionStatus('connecting')
-          break
-      }
+    // 审批请求事件 → 弹审批卡片
+    agentApi.onApprovalRequest((payload: AgentApprovalEvent) => {
+      const tc = payload as AgentApprovalEvent
+      addApprovalMessage({
+        sessionId: '',
+        data: {
+          toolCallId: tc.toolCallId,
+          toolName: tc.name,
+          approvalArguments: tc.arguments as Record<string, unknown>,
+        } as unknown as MessageVOData,
+      } as ApprovalRequestPayload)
     })
 
-    backend.onMessage((rawMsg) => {
-      const msg = rawMsg as { event: string; sessionId?: string; conversationId?: string; payload?: Record<string, unknown> }
-      const event = msg.event
-      const payload = msg.payload
-      if (!payload) return
-      const sessionId = msg.sessionId ?? ''
-      const conversationId = msg.conversationId
-
-      // 事件处理入口日志（每个服务端事件打一条；payload 只打规模，不刷屏）
-      const envelope = { ...payload, sessionId, conversationId }
-
-      switch (event) {
-        case 'chat':
-          handleChatEvent(envelope as ChatMergedPayload)
-          break
-        case 'thinking':
-          handleThinkingEvent(envelope as ThinkingPayload)
-          break
-        case 'action':
-          handleActionEvent(envelope as ActionMergedPayload)
-          break
-        case 'error':
-          handleErrorEvent(envelope as ErrorPayload)
-          break
-        case 'tips':
-          handleTipsEvent(envelope as TipsPayload)
-          break
-      }
-    })
+    return agentApi
   }
 
-  function getBackend(): Backend | null {
-    return backend
+  function getAgentApi(): AgentApi | null {
+    return agentApi
   }
 
   /** 处理 chat 通道事件：agent_response / approval_request / interaction_status_update */
@@ -163,7 +116,7 @@ export const useChatStore = defineStore('chat', () => {
       case 'agent_response': {
         // 已废弃：文本内容通过 agent_response_token 流式下发，不再通过 agent_response 一次性推送
         // 保留 handler 仅用于非流式兜底（后端已不再发送）
-        log.debug('agent_response 事件已废弃（流式取代），sessionId=%s', sessionId)
+        console.debug('agent_response 事件已废弃（流式取代），sessionId=%s', sessionId)
         break
       }
       case 'agent_response_token': {
@@ -236,14 +189,14 @@ export const useChatStore = defineStore('chat', () => {
 
     // ── 新流到来 → 清理上一轮残留 + 创建占位消息 ──
     const isNewStream = !streamingContentByConversation.value[compositeKey]
-        && !toolCallArgsBufferByConversation.value[compositeKey]
+      && !toolCallArgsBufferByConversation.value[compositeKey]
     if (isNewStream && (isValidTokenValue(data.token) || isValidTokenValue(data.toolCallArgs) || isValidTokenValue(data.reasoning))) {
-        // 清理上一轮工具调用记录
-        delete toolCallsBySession.value[sessionId]
-        // 清理上一轮推理内容
-        delete streamingReasoningBySession.value[sessionId]
-        // 清理旧的占位消息（如果仍在）
-        removeStreamingPlaceholder(sessionId)
+      // 清理上一轮工具调用记录
+      delete toolCallsBySession.value[sessionId]
+      // 清理上一轮推理内容
+      delete streamingReasoningBySession.value[sessionId]
+      // 清理旧的占位消息（如果仍在）
+      removeStreamingPlaceholder(sessionId)
     }
 
     // 1. 文本内容 → 追加到文本缓冲区（占位 content 由 runSegmentation 定期追加）
@@ -376,6 +329,39 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** 本地 AgentLoop 返回最终 MessageVO 时：写入或更新占位消息 */
+  function finalizeAgentMessage(sid: string, msg: AgentMessageVO): void {
+    const msgs = messagesBySession.value[sid] ?? []
+    if (!messagesBySession.value[sid]) {
+      messagesBySession.value[sid] = []
+    }
+    const placeholder = msgs.find(m => m.isStreaming)
+    if (placeholder) {
+      // 占位消息已在流式中 → 更新
+      placeholder.content = msg.content || placeholder.content
+      placeholder.messageType = msg.messageType ?? 'assistant_text'
+      placeholder.reasoningContent = msg.reasoningContent || placeholder.reasoningContent
+      placeholder.isStreaming = false
+      placeholder.status = 'completed'
+      placeholder.timestamp = Date.now()
+    } else if (msg.content || msg.reasoningContent) {
+      // 无占位（非流式或纯工具调用）→ 追加新消息
+      messagesBySession.value[sid].push({
+        id: `msg_${Date.now()}`,
+        sessionId: sid,
+        conversationId: msg.conversationId,
+        role: 'assistant',
+        messageType: msg.messageType ?? 'assistant_text',
+        content: msg.content,
+        reasoningContent: msg.reasoningContent,
+        toolCall: msg.toolCall as ToolCall | undefined,
+        toolCallId: msg.toolCallId,
+        timestamp: Date.now(),
+        status: 'completed',
+      } as ApiMessage)
+    }
+  }
+
   /** 启动 3.5 秒分段轮询 */
   function startPolling(sessionId: string, conversationId: string): void {
     const compositeKey = `${sessionId}:${conversationId}`
@@ -501,7 +487,7 @@ export const useChatStore = defineStore('chat', () => {
         break
       }
       case 'tool_done': {
-        const donePayload = payload as any
+        const donePayload = payload as { data?: { toolCallId?: string; toolName?: string } }
         const doneData = donePayload.data ?? {}
         const doneId = doneData.toolCallId ?? ''
         if (doneId) {
@@ -531,9 +517,6 @@ export const useChatStore = defineStore('chat', () => {
         if (!cachedCall) {
           console.warn(`[chat-store] toolCallId=${toolCallId} 未命中 toolCallsByConversation 缓存，回退事件 arguments`)
         }
-        // ── STAGE2 缓存取出：exe_client_tool 按 id 取到的参数 ──
-        console.log(`[dbg-args] STAGE2 取出 id=${toolCallId} hit=${!!cachedCall} toolArgs=` +
-          JSON.stringify(toolArgs))
 
         // 记录到 toolCallsBySession
         const tcArray = toolCallsBySession.value[sessionId] ?? []
@@ -543,47 +526,21 @@ export const useChatStore = defineStore('chat', () => {
         }
 
         const sendResult = (id: string, result: string) => {
-          backend?.send({ type: 'tool_result', toolCallId: id, result, sessionId, toolName })
+          agentApi?.toolResult({ profile: sessionStore.profile ?? 'default', sessionId, toolCallId: id, result }).catch(() => { /* 本地调用失败静默 */ })
         }
 
-        // ── STAGE3 registry 执行：工具名 + 最终参数 ──
-        console.log(`[dbg-args] STAGE3 registry 执行 tool=${toolName} toolArgs=` +
-          JSON.stringify(toolArgs))
-        // 先走 registry：内建 UI 工具 + 外部桥接器
-        const handled = toolRegistry.execute(toolName, toolCallId, toolArgs, sendResult)
+        // ── 本地 AgentLoop：工具已在主进程执行，renderer 只需处理 UI 类工具（clarify） ──
+        console.log(`[chat-store] exe_client_tool 事件（本地模式忽略）tool=${toolName}`)
 
         // clarify 工具：往聊天框添加消息，渲染 ClarifyCard
-        if (toolName === 'server_showing_clarify') {
+        if (toolName === 'builtin_tinker_clarify') {
+          const args = (toolArgs ?? {}) as Record<string, unknown>
           addClarifyMessage({
             toolCallId,
             sessionId,
-            question: (toolArgs.question as string) || '',
-            choices: toolArgs.choices as string[] | undefined | null
+            question: (args.question as string) || '',
+            choices: args.choices as string[] | undefined | null
           })
-        }
-
-        if (!handled) {
-          // 未处理 → 尝试 IPC 桌面工具
-          if ((window as any).api) {
-            // ⚠️ toolArgs 来自 ref 缓存是 Vue reactive Proxy，Electron IPC 无法克隆 Proxy
-            // （"An object could not be cloned"）——传参前剥离响应式为纯 JSON 对象
-            const rawArgs = toolArgs !== null && typeof toolArgs === 'object'
-              ? JSON.parse(JSON.stringify(toolArgs))
-              : toolArgs
-            // ── STAGE4 IPC 执行：剥离 Proxy 后的纯 JSON 参数（IPC 前一刻） ──
-            console.log(`[dbg-args] STAGE4 IPC 执行 tool=${toolName} rawArgs=` +
-              JSON.stringify(rawArgs))
-            ;(window as any).api.executeTool(toolName, rawArgs).then((res: any) => {
-              // ⚠️ 不要 JSON.stringify(res) — IPC 返回的已经是 JS 对象
-              // 工具返回 {ok, data}：data 可能是 string（JSON 文本）或 {output: string}
-              // 直接取原始文本，避免 result 字段嵌套 JSON 字符串导致多层转义膨胀
-              const text = (typeof res?.data === 'string' ? res.data : res?.data?.output)
-                ?? res?.error ?? JSON.stringify(res)
-              sendResult(toolCallId, text)
-            })
-          } else {
-            console.warn(`[chat-store] Unsupported client tool: ${toolName}`)
-          }
         }
         break
       }
@@ -596,22 +553,8 @@ export const useChatStore = defineStore('chat', () => {
         const toolArgs = toolData.arguments ?? {}
         if (!toolCallId || !toolName) break
 
-        const sendResult = (id: string, result: string) => {
-          backend?.send({ type: 'tool_result', toolCallId: id, result, sessionId, toolName })
-        }
-
-        // MCP 工具 → 走 IPC 调用主进程 McpManager
-        if ((window as any).api?.toolCenter?.executeMcpTool) {
-          ;(window as any).api.toolCenter.executeMcpTool(toolName, toolArgs).then((res: any) => {
-            const content = res?.content ?? []
-            const text = content.map((c: any) => c.text ?? '').join('\n')
-            sendResult(toolCallId, text)
-          }).catch((err: Error) => {
-            sendResult(toolCallId, JSON.stringify({ error: err.message }))
-          })
-        } else {
-          console.warn(`[chat-store] MCP execution requires desktop app: ${toolName}`)
-        }
+        // 本地 AgentLoop：工具已在主进程执行（含 MCP 工具），renderer 无需处理
+        console.log(`[chat-store] exe_client_tool 事件（本地模式忽略）tool=${toolName}`)
         break
       }
     }
@@ -640,7 +583,10 @@ export const useChatStore = defineStore('chat', () => {
 
   function sendMessage(sessionId: string, content: string, profile?: string): void {
     if (!content.trim()) return
-    if (!backend) return
+    const api = agentApi ?? initAgentApi()
+    if (!api) return
+
+    const activeProfile = profile ?? sessionStore.profile ?? 'default'
 
     const userMsg: ApiMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -661,11 +607,33 @@ export const useChatStore = defineStore('chat', () => {
     streamingContentBySession.value[sessionId] = ''
     streamingReasoningBySession.value[sessionId] = ''
 
-    backend.send({
-      type: 'user_message',
-      sessionId,
-      content,
-      profile
+    // 本地 AgentLoop：chat + onToken 流式回调
+    api.chat({ sessionId, profile: activeProfile, content }, (evt: AgentStreamEvent) => {
+      // 流式 token → 复用 handleTokenEvent 的格式
+      // 本地会话无 conversationId（AgentLoop 返回结果才有），用 sessionId 兜底作流式 key
+      const convId = (evt as unknown as { conversationId?: string }).conversationId ?? `local:${sessionId}`
+      handleTokenEvent({
+        sessionId,
+        conversationId: convId,
+        data: {
+          token: evt.text ?? '',
+          reasoning: evt.reasoning ?? '',
+          toolCallArgs: evt.toolCallArgs ?? '',
+          isFinish: evt.isFinish,
+        },
+      } as unknown as AgentResponseTokenPayload)
+    }).then((msg: AgentMessageVO) => {
+      // 流式结束后：以最终 MessageVO 补齐（占位消息由 handleTokenEvent 处理）
+      userMsg.status = 'sent'
+      isProcessingBySession.value[sessionId] = false
+      if (msg) {
+        finalizeAgentMessage(sessionId, msg)
+      }
+    }).catch((e: Error) => {
+      userMsg.status = 'sent'
+      isProcessingBySession.value[sessionId] = false
+      // 错误提示已由 preload inv 拦截统一派发（GlobalTipToast），此处不再重复
+      void e
     })
 
     userMsg.status = 'sent'
@@ -838,23 +806,18 @@ export const useChatStore = defineStore('chat', () => {
       console.warn('[chat-store] submitClarify: toolCallId is empty, skipping send')
       return
     }
-    backend?.send({ type: 'tool_result', toolCallId, result, sessionId })
+    agentApi?.toolResult({ profile: sessionStore.profile ?? 'default', sessionId, toolCallId, result }).catch(() => { /* 本地调用失败静默 */ })
   }
 
   function resolveApproval(toolCallId: string, approved: boolean): void {
-    if (!backend) return
+    if (!agentApi) return
 
     // 找到对应的审批消息获取 sessionId
     for (const [sid, msgs] of Object.entries(messagesBySession.value)) {
       const msg = msgs.find(m => m.role === 'approval' && m.toolCallId === toolCallId)
       if (!msg) continue
 
-      backend.send({
-        type: 'approval_response',
-        toolCallId,
-        approved,
-        sessionId: sid
-      })
+      agentApi.approval({ profile: sessionStore.profile ?? 'default', sessionId: sid, toolCallId, approved }).catch(() => { /* 本地调用失败静默 */ })
 
       msg.interactionStatus = approved ? 'approved' : 'rejected'
       msg.content = approved ? '✅ 已批准' : '❌ 已拒绝'
@@ -890,10 +853,6 @@ export const useChatStore = defineStore('chat', () => {
 
   // ── API：对话管理 ──
 
-  async function listByConversation(conversationId: string): Promise<ApiMessage[]> {
-    return messagesApi.listByConversation(conversationId)
-  }
-
   /** 原文模式专用：未 normalize 的原始消息（保留完整 toolCall map） */
   async function listByConversationRaw(conversationId: string): Promise<ApiMessage[]> {
     return messagesApi.listByConversationRaw(conversationId)
@@ -904,24 +863,11 @@ export const useChatStore = defineStore('chat', () => {
     messagesBySession.value[sessionId] = []
   }
 
-  /**
-   * 撤销消息（WebSocket）。
-   * 封装 revoke 协议发送，UI 层后续实现交互入口。
-   * TODO: 实现 UI 层 revoke 入口（消息长按/右键菜单 → 撤销）
-   */
-  function revokeMessage(sessionId: string, messageId: string): void {
-    if (!backend) {
-      console.warn('[chat-store] revokeMessage: backend not ready')
-      return
-    }
-    backend.send({ type: 'revoke', sessionId, messageId })
-  }
-
   // ── Action: 中断 ──
 
   function stopProcessing(sessionId: string): void {
-    if (!backend) return
-    backend.send({ type: 'stop', sessionId })
+    if (!agentApi) return
+    agentApi.interrupt(sessionStore.profile ?? 'default', sessionId).catch(() => { /* 本地调用失败静默 */ })
     streamingContentBySession.value[sessionId] = ''
     streamingReasoningBySession.value[sessionId] = ''
     isProcessingBySession.value[sessionId] = false
@@ -936,18 +882,6 @@ export const useChatStore = defineStore('chat', () => {
     isProcessingBySession.value = {}
   }
 
-  // ── Action: 清理流式状态（按 session）──
-
-  function clearStreaming(sessionId?: string): void {
-    if (sessionId) {
-      streamingContentBySession.value[sessionId] = ''
-      streamingReasoningBySession.value[sessionId] = ''
-    } else {
-      streamingContentBySession.value = {}
-      streamingReasoningBySession.value = {}
-    }
-  }
-
   // ── Action: 重置全部 ──
 
   function resetLocalState(): void {
@@ -959,10 +893,7 @@ export const useChatStore = defineStore('chat', () => {
 
   function $reset(): void {
     resetLocalState()
-    if (backend) {
-      try { backend.disconnect() } catch { /* ignore */ }
-    }
-    backend = null
+    agentApi = null
     initialized = false
   }
 
@@ -976,7 +907,10 @@ export const useChatStore = defineStore('chat', () => {
 
     if (sessionId) isProcessingBySession.value[sessionId] = false
 
-    showInfoToast(`错误: ${message}`)
+    // 事件通道错误（非 IPC invoke）→ 派发全局通知队列（error 样式）
+    window.dispatchEvent(new CustomEvent('global-tip', {
+      detail: { type: 'error', code: code || 'AGENT_ERROR', message: message || '操作失败，请重试' }
+    }))
   }
 
   /** 清理 per-conversation token 队列 */
@@ -995,49 +929,14 @@ export const useChatStore = defineStore('chat', () => {
    * id/name 只出现在首 chunk）。必须按 index 合并所有片段的 arguments 再整体 parse，
    * 不能取第一个含 id 的对象（否则拿到空/截断片段 → 工具参数丢失）。
    */
-  function assembleToolCalls(arr: any[], sessionId: string, compositeKey: string): void {
-    // 按 index 合并：id/name 取首次出现，arguments 增量拼接
-    const byIndex = new Map<number, { id?: string; name?: string; args: string; argsObj?: unknown }>()
-    for (const item of arr) {
-      const idx = typeof item?.index === 'number' ? item.index : 0
-      const cur = byIndex.get(idx) ?? { args: '' }
-      if (item.id) cur.id = item.id
-      if (item.name) cur.name = item.name
-      if (typeof item.arguments === 'string') {
-        cur.args += item.arguments
-      } else if (item.arguments && typeof item.arguments === 'object' && cur.argsObj === undefined) {
-        // 非流式/已 parse 的完整对象——只在未设置时使用（流式首 chunk 可能是空对象，后续字符串增量才是真参数）
-        cur.argsObj = item.arguments
-      }
-      byIndex.set(idx, cur)
-    }
-
-    const seen = new Set<string>()
+  function assembleToolCalls(arr: ToolCallChunk[], sessionId: string, compositeKey: string): void {
+    // 纯合并逻辑在 utils/streaming/tool-call-merge（按 index 合并 + JSON.parse）
+    const byId = mergeToolCallChunks(arr)
     const tcArray = toolCallsBySession.value[sessionId] ?? []
-    const byId: Record<string, { name: string; arguments: unknown }> = {}
-    for (const { id, name, args, argsObj } of byIndex.values()) {
-      if (!id || !name || seen.has(id)) continue
-      seen.add(id)
-      // 优先用拼接的字符串（流式增量）——parse 成功即为完整参数；
-      // argsObj 仅在没有任何字符串片段时兜底（避免空对象覆盖真实增量）
-      let parsed: unknown = {}
-      if (args) {
-        try {
-          parsed = JSON.parse(args)
-        } catch {
-          // 解析失败保留原串（工具层会给出参数校验错误，便于排查）
-          parsed = args
-        }
-      } else if (argsObj) {
-        parsed = argsObj
-      }
-      // ── STAGE1 缓存写入：每个工具 id 写入 byId 时的 name + arguments ──
-      console.log(`[dbg-args] STAGE1 写入 id=${id} name=${name} arguments=` +
-        JSON.stringify(parsed) + ' (argsStr=' + JSON.stringify(args.slice(0, 120)) + ')')
-      byId[id] = { name, arguments: parsed }
-      tcArray.push({ toolCallId: id, toolName: name, status: 'pending' })
+    for (const [id, call] of Object.entries(byId)) {
+      tcArray.push({ toolCallId: id, toolName: call.name, status: 'pending' })
     }
-    if (seen.size > 0) {
+    if (Object.keys(byId).length > 0) {
       toolCallsByConversation.value[compositeKey] = byId
       toolCallsBySession.value[sessionId] = tcArray
     }
@@ -1056,7 +955,6 @@ export const useChatStore = defineStore('chat', () => {
 
     // 按 session 获取
     getMessages,
-    getStreamingContent,
     getStreamingReasoning,
 
     // streaming chunks
@@ -1065,8 +963,8 @@ export const useChatStore = defineStore('chat', () => {
     clearConvChunks,
 
     // Actions
-    setBackend,
-    getBackend,
+    initAgentApi,
+    getAgentApi,
     sendMessage,
     switchSession,
     loadMessages,
@@ -1080,18 +978,12 @@ export const useChatStore = defineStore('chat', () => {
     resolveApproval,
     stopProcessing,
     clearMessages,
-    clearStreaming,
     resetLocalState,
     $reset,
     // API
     loadMessagesFromApi,
     loadOlderMessages,
-    listByConversation,
     listByConversationRaw,
     deleteConversation,
-    // WS Actions (封装 WebSocket 消息发送，UI 层可直接调用)
-    revokeMessage,
-    // TODO: 实现 UI 层 revoke 交互入口（消息长按/右键菜单 → 撤销）
-    // TODO: 实现 UI 层中断/恢复连接状态提示（tips/CONVERSATION_INTERRUPTED 已有 handler）
   }
 })

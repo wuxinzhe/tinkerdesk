@@ -118,8 +118,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useChatStore } from '@/renderer/stores/chat-store'
-import { showInfoToast } from '@/renderer/utils/notification-utils'
 import { getShortName } from '@/renderer/utils/tool-display'
+import { formatClockTime } from '@/renderer/utils/date-utils'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import JsonTree from '@/renderer/components/JsonTree.vue'
@@ -195,8 +195,8 @@ async function loadMessages() {
       toolName: m.toolName ? String(m.toolName) : null,
       status: String(m.status ?? '')
     }))
-  } catch (err: any) {
-    error.value = err.message || '加载失败'
+  } catch (err) {
+    error.value = (err as Error).message || '加载失败'
   } finally {
     loading.value = false
   }
@@ -208,8 +208,9 @@ async function deleteConversation() {
   try {
     await chatStore.deleteConversation(conversationId, sessionId)
     router.back()
-  } catch (err: any) {
-    showInfoToast(err.response?.data?.message || err.message || '删除失败')
+  } catch (err) {
+    // 错误提示已由 preload inv 拦截统一派发（GlobalTipToast），此处不再重复
+    void err
     deleting.value = false
   }
 }
@@ -284,7 +285,7 @@ function toolCallSummary(tc: string): string {
   // 数组格式
   if (Array.isArray(parsed)) {
     if (parsed.length === 0) return '空工具调用'
-    const names = parsed.map(t => (t && typeof t === 'object' && (t as any).name) ? String((t as any).name) : '?')
+    const names = parsed.map(t => (t && typeof t === 'object' && 'name' in t && typeof (t as {name?: unknown}).name === 'string') ? String((t as {name: string}).name) : '?')
     return parsed.length > 1 ? `共 ${parsed.length} 个工具调用: ${names.join(', ')}` : `工具调用: ${names[0]}`
   }
   if (parsed && typeof parsed === 'object') {

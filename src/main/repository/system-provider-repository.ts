@@ -1,6 +1,6 @@
 
-import type {SystemProviderEntity} from './types'
-import {getDatabase} from './database'
+import { getDatabase } from './database'
+import type { SystemProviderEntity } from './types'
 
 const COLS = 'id, name, base_url, api_mode, description, sort_order'
 

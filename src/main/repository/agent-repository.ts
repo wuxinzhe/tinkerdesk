@@ -1,12 +1,12 @@
 /**
  * agent-repository.ts — agents 表仓库
  *
- * 复刻 showing-agent AgentRepository：
+ * 复刻 tinker-agent AgentRepository：
  * Agent 配置（角色设定、显示信息、模式绑定）CRUD。
  * 本地单用户：主键从 (user_id, profile) 简化为 profile。
  */
-import {getDatabase} from './database'
-import type {AgentEntity, AgentModeInfoDTO} from './types'
+import { getDatabase } from './database'
+import type { AgentEntity, AgentModeInfoDTO } from './types'
 
 /** Agent 实体（对应 AgentEntity） */
 
@@ -48,8 +48,8 @@ export class AgentRepository {
         `SELECT agent_mode_id, agent_mode_version FROM agents
          WHERE is_default = 1 AND is_active = 1 AND deleted_at IS NULL LIMIT 1`
       )
-      .get() as {agent_mode_id: string; agent_mode_version: string} | undefined
-    return row ? {agentModeId: row.agent_mode_id, agentModeVersion: row.agent_mode_version} : null
+      .get() as { agent_mode_id: string; agent_mode_version: string } | undefined
+    return row ? { agentModeId: row.agent_mode_id, agentModeVersion: row.agent_mode_version } : null
   }
 
   /** 查询所有 Agent（未删除，默认优先） */
@@ -68,7 +68,7 @@ export class AgentRepository {
   /** 统计未删除 Agent 总数 */
   countByUser(): number {
     const db = getDatabase()
-    const row = db.prepare('SELECT COUNT(*) AS cnt FROM agents WHERE deleted_at IS NULL').get() as {cnt: number}
+    const row = db.prepare('SELECT COUNT(*) AS cnt FROM agents WHERE deleted_at IS NULL').get() as { cnt: number }
     return row.cnt
   }
 

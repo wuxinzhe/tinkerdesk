@@ -1,6 +1,6 @@
-import {DatabaseSync} from 'node:sqlite';
-import {app} from 'electron';
-import {join} from 'path';
+import { app } from 'electron';
+import { DatabaseSync } from 'node:sqlite';
+import { join } from 'path';
 
 // 单例数据库连接（主进程生命周期内保持）
 let db: DatabaseSync | null = null;
@@ -12,7 +12,7 @@ function dbPath(): string {
 
 /**
  * 初始化数据库：打开连接 + 建表 + 种子数据（幂等）
- * 参考 showing-agent schema：custom_models 去掉 user_id，providers 沿用 system_providers
+ * 参考 tinker-agent schema：custom_models 去掉 user_id，providers 沿用 system_providers
  */
 export function initDatabase(): DatabaseSync {
   if (db) {
@@ -45,7 +45,7 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_custom_models_profile ON custom_models(profile);
 
-    CREATE TABLE IF NOT EXISTS providers (
+    CREATE TABLE IF NOT EXISTS system_providers (
       id          TEXT PRIMARY KEY,
       name        TEXT NOT NULL,
       base_url    TEXT NOT NULL DEFAULT '',
@@ -54,9 +54,9 @@ function createTables(database: DatabaseSync): void {
       sort_order  INTEGER NOT NULL DEFAULT 0,
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
-    CREATE INDEX IF NOT EXISTS idx_providers_sort ON providers(sort_order);
+    CREATE INDEX IF NOT EXISTS idx_system_providers_sort ON system_providers(sort_order);
 
-    -- ── sessions（复刻 showing-agent sessions 表，去掉 user_id 维度本地单用户） ──
+    -- ── sessions（复刻 tinker-agent sessions 表，去掉 user_id 维度本地单用户） ──
     CREATE TABLE IF NOT EXISTS sessions (
       id                 TEXT PRIMARY KEY,
       profile            TEXT NOT NULL DEFAULT 'default',
@@ -79,7 +79,7 @@ function createTables(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_sessions_profile ON sessions(profile, started_at DESC);
     CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id);
 
-    -- ── conversations（复刻 showing-agent conversations 表） ──
+    -- ── conversations（复刻 tinker-agent conversations 表） ──
     CREATE TABLE IF NOT EXISTS conversations (
       id                TEXT PRIMARY KEY,
       session_id        TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -94,7 +94,7 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_conversations_session ON conversations(session_id, started_at DESC);
 
-    -- ── messages（复刻 showing-agent messages 表） ──
+    -- ── messages（复刻 tinker-agent messages 表） ──
     CREATE TABLE IF NOT EXISTS messages (
       id                 INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id         TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
@@ -116,7 +116,7 @@ function createTables(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 
-    -- ── agents（复刻 showing-agent agents 表） ──
+    -- ── agents（复刻 tinker-agent agents 表） ──
     CREATE TABLE IF NOT EXISTS agents (
       profile            TEXT NOT NULL,
       display_name       TEXT NOT NULL DEFAULT '',
@@ -131,7 +131,7 @@ function createTables(database: DatabaseSync): void {
       PRIMARY KEY (profile)
     );
 
-    -- ── agent_configs（复刻 showing-agent agent_configs 表） ──
+    -- ── agent_configs（复刻 tinker-agent agent_configs 表） ──
     CREATE TABLE IF NOT EXISTS agent_configs (
       profile                    TEXT NOT NULL,
       max_iterations             INTEGER NOT NULL DEFAULT 90,
@@ -156,7 +156,7 @@ function createTables(database: DatabaseSync): void {
       FOREIGN KEY (profile) REFERENCES agents(profile) ON DELETE CASCADE
     );
 
-    -- ── skill_categories（复刻 showing-agent，去 user_id 无关） ──
+    -- ── skill_categories（复刻 tinker-agent，去 user_id 无关） ──
     CREATE TABLE IF NOT EXISTS skill_categories (
       id           TEXT PRIMARY KEY,
       name         TEXT NOT NULL UNIQUE,
@@ -170,7 +170,7 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_skill_categories_active ON skill_categories(is_active, sort_order, name);
 
-    -- ── private_skills（复刻 showing-agent，去 user_id，UNIQUE(profile, name)） ──
+    -- ── private_skills（复刻 tinker-agent，去 user_id，UNIQUE(profile, name)） ──
     CREATE TABLE IF NOT EXISTS private_skills (
       id                    TEXT PRIMARY KEY,
       name                  TEXT NOT NULL,
@@ -272,29 +272,51 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_upm_profile ON prompt_modules(profile);
 
-    -- ── scenes（复刻 showing-agent） ──
-    CREATE TABLE IF NOT EXISTS scenes (
-      id          TEXT PRIMARY KEY,
-      name        TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      sort_order  INTEGER NOT NULL DEFAULT 0,
-      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-
-    -- ── user_scene_models（去 user_id，PK(profile, scene_id, priority)） ──
+    -- ── user_scene_models（场景 = 代码注册的 LlmOperation，不建 scenes 表；scene_id 仅存绑定关系） ──
     CREATE TABLE IF NOT EXISTS user_scene_models (
       profile   TEXT NOT NULL DEFAULT 'default',
-      scene_id  TEXT NOT NULL REFERENCES scenes(id),
+      scene_id  TEXT NOT NULL,
       model_id  TEXT NOT NULL REFERENCES custom_models(id) ON DELETE CASCADE,
       priority  INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (profile, scene_id, priority)
     );
+
+    -- ── tool-center 持久化（原 tool-center/db.ts，统一并入主库） ──
+    CREATE TABLE IF NOT EXISTS tool_registry (
+      id          TEXT PRIMARY KEY,
+      source      TEXT NOT NULL DEFAULT 'builtin',
+      available   INTEGER NOT NULL DEFAULT 1,
+      reason      TEXT,
+      schema_json TEXT NOT NULL,
+      checked_at  TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS mcp_servers (
+      name        TEXT PRIMARY KEY,
+      transport   TEXT NOT NULL DEFAULT 'stdio',
+      command     TEXT,
+      args_json   TEXT,
+      url         TEXT,
+      enabled     INTEGER NOT NULL DEFAULT 1,
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
+    -- MCP 工具定义（首次发现后持久化，重启从库加载避免反复 discover）
+    CREATE TABLE IF NOT EXISTS mcp_tools (
+      name            TEXT PRIMARY KEY,
+      server_name     TEXT NOT NULL,
+      tool_name       TEXT NOT NULL,
+      description     TEXT NOT NULL DEFAULT '',
+      input_schema    TEXT NOT NULL DEFAULT '{}',
+      enabled         INTEGER NOT NULL DEFAULT 1,
+      created_at      TEXT NOT NULL,
+      updated_at      TEXT NOT NULL
+    );
   `);
 }
 
 /**
- * 预置供应商种子数据（复制自 showing-agent system_providers 种子数据）
+ * 预置供应商种子数据（复制自 tinker-agent system_providers 种子数据）
  * 首次启动导入，幂等（ON CONFLICT DO NOTHING）
  */
 function seedProviders(database: DatabaseSync): void {
@@ -333,7 +355,7 @@ function seedProviders(database: DatabaseSync): void {
   ];
 
   const insert = database.prepare(
-    `INSERT OR IGNORE INTO providers (id, name, base_url, api_mode, description, sort_order)
+    `INSERT OR IGNORE INTO system_providers (id, name, base_url, api_mode, description, sort_order)
      VALUES (?, ?, ?, ?, ?, ?)`
   );
   for (const p of providers) {

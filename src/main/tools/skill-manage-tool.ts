@@ -1,21 +1,21 @@
 /**
  * skill-manage-tool.ts — 技能管理工具
  *
- * 复刻 showing-agent SkillManageTool：
+ * 复刻 tinker-agent SkillManageTool：
  * create / patch / edit / delete / write_file / remove_file 六种操作。
  */
-import type {PromptRenderer} from '../prompt/renderer'
-import {BaseTool} from './base-tool'
-import type {ToolExecutionContext} from './types'
-import {ToolResult} from './tool-result'
-import type {PrivateSkillService} from '../service/private-skill-service'
-import {PrivateSkillFileRepository} from '../repository/private-skill-file-repository'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
+import type { PrivateSkillService } from '../service/private-skill-service'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { ToolContext } from '../core/loop/types'
 
 /** 工具名 */
-export const TOOL_NAME = 'server_showing_skill_manage'
+export const TOOL_NAME = 'builtin_tinker_skill_manage'
 
 /** 技能内容最大字符数（对齐 MAX_SKILL_CHARS） */
-const MAX_SKILL_CHARS = 50000
+const MAX_SKILL_CHARS = 100000
 
 /** 技能管理工具 */
 export class SkillManageTool extends BaseTool {
@@ -28,7 +28,7 @@ export class SkillManageTool extends BaseTool {
     this.fileRepo = fileRepo
   }
 
-  async execute(ctx: ToolExecutionContext): Promise<ToolResult> {
+  async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as Record<string, unknown>
     const action = String(args.action ?? '')
     const name = String(args.name ?? '')
@@ -89,7 +89,7 @@ export class SkillManageTool extends BaseTool {
     if (!created) {
       return this.jsonError(`Skill already exists: ${name}.`)
     }
-    return JSON.stringify({success: true, message: `Skill '${name}' created.`, id: created.id})
+    return JSON.stringify({ success: true, message: `Skill '${name}' created.`, id: created.id })
   }
 
   private handlePatch(name: string, args: Record<string, unknown>, profile: string): string {
@@ -116,7 +116,7 @@ export class SkillManageTool extends BaseTool {
       return this.jsonError('Patch did not change anything.')
     }
     this.skillService.updateSkillBody(profile, detail.id, newBody)
-    return JSON.stringify({success: true, message: `Skill '${name}' patched.`, id: detail.id})
+    return JSON.stringify({ success: true, message: `Skill '${name}' patched.`, id: detail.id })
   }
 
   private handleEdit(name: string, args: Record<string, unknown>, profile: string): string {
@@ -132,7 +132,7 @@ export class SkillManageTool extends BaseTool {
       return this.jsonError(`Skill content exceeds ${MAX_SKILL_CHARS} characters.`)
     }
     this.skillService.updateSkillBody(profile, detail.id, body)
-    return JSON.stringify({success: true, message: `Skill '${name}' edited.`, id: detail.id})
+    return JSON.stringify({ success: true, message: `Skill '${name}' edited.`, id: detail.id })
   }
 
   private handleDelete(name: string, profile: string): string {
@@ -141,7 +141,7 @@ export class SkillManageTool extends BaseTool {
       return this.jsonError(`Skill not found: ${name}.`)
     }
     this.skillService.softDelete(profile, detail.id)
-    return JSON.stringify({success: true, message: `Skill '${name}' deleted.`})
+    return JSON.stringify({ success: true, message: `Skill '${name}' deleted.` })
   }
 
   private handleWriteFile(name: string, args: Record<string, unknown>, profile: string): string {
@@ -156,8 +156,8 @@ export class SkillManageTool extends BaseTool {
     if (!fileType) {
       return this.jsonError("file_type is required for 'write_file'.")
     }
-    this.fileRepo.save({skillId: detail.id, fileType, content, language, sortOrder})
-    return JSON.stringify({success: true, message: `File '${fileType}' written to skill '${name}'.`})
+    this.fileRepo.save({ skillId: detail.id, fileType, content, language, sortOrder })
+    return JSON.stringify({ success: true, message: `File '${fileType}' written to skill '${name}'.` })
   }
 
   private handleRemoveFile(name: string, args: Record<string, unknown>, profile: string): string {
@@ -170,7 +170,7 @@ export class SkillManageTool extends BaseTool {
       return this.jsonError("file_type is required for 'remove_file'.")
     }
     this.fileRepo.deleteBySkillIdAndFileType(detail.id, fileType)
-    return JSON.stringify({success: true, message: `File '${fileType}' removed from skill '${name}'.`})
+    return JSON.stringify({ success: true, message: `File '${fileType}' removed from skill '${name}'.` })
   }
 
   // ── 工具方法 ──
@@ -180,8 +180,8 @@ export class SkillManageTool extends BaseTool {
     if (!name || !name.trim()) {
       return 'Skill name is required.'
     }
-    if (!/^[a-z0-9][a-z0-9-_]*$/.test(name)) {
-      return 'Skill name must start with a lowercase letter or digit, and contain only lowercase letters, digits, hyphens, and underscores.'
+    if (!/^[a-z0-9][a-z0-9._-]*$/.test(name)) {
+      return 'Skill name must start with a lowercase letter or digit, and contain only lowercase letters, digits, dots, hyphens, and underscores.'
     }
     if (name.length > 64) {
       return 'Skill name must be 64 characters or fewer.'
@@ -190,6 +190,6 @@ export class SkillManageTool extends BaseTool {
   }
 
   private jsonError(msg: string): string {
-    return JSON.stringify({success: false, error: msg})
+    return JSON.stringify({ success: false, error: msg })
   }
 }

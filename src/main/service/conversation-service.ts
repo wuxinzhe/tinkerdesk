@@ -1,17 +1,17 @@
 /**
  * conversation-service.ts — 对话服务层
  *
- * 复刻 showing-agent IConversationService（本地单用户版）。
+ * 复刻 tinker-agent IConversationService（本地单用户版）。
  */
-import {randomUUID} from 'crypto'
-import {ConversationRepository} from '../repository/conversation-repository'
-import type {ConversationEntity, ConversationStatusUpdate} from '../repository/types'
-import {nowDb} from '../utils/time'
-import {CONV_IN_PROGRESS} from '../loop/types'
+import { randomUUID } from 'crypto'
+import { CONV_IN_PROGRESS } from '../core/loop/types'
+import { ConversationRepository } from '../repository/conversation-repository'
+import type { ConversationEntity, ConversationStatusUpdate } from '../repository/types'
+import { nowDb } from '../utils/time'
 
 /** 对话服务 */
 export class ConversationService {
-  constructor(private readonly conversationRepo: ConversationRepository) {}
+  constructor(private readonly conversationRepo: ConversationRepository) { }
 
   /**
    * 新建对话周期：生成 convId + 默认字段 + 落库，返回实体。

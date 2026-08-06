@@ -3,16 +3,16 @@
  * 自动更新模块。启动时自动检查，发现更新后后台下载，
  * 通过 IPC 通知 renderer 更新状态。
  *
- * 更新服务器：update.showing-ai.com/releases/
+ * 更新服务器：update.tinker-ai.com/releases/
  * Nginx 反向代理，后续切换存储不需改客户端。
  */
 import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, ipcMain, app } from 'electron'
-import type { ToolResult } from '../tools/desktop/index'
+import { nowDb } from './utils/time'
 
 // ── 常量 ──
 
-const UPDATE_FEED_URL = 'https://update.showing-ai.com/releases/'
+const UPDATE_FEED_URL = 'https://update.tinker-ai.com/releases/'
 
 // ── 日志 ──
 
@@ -84,32 +84,32 @@ export function initUpdater(): void {
 
 export function registerUpdaterHandlers(): void {
   // 检查更新
-  ipcMain.handle('update:check', async (_event, manual: boolean = false): Promise<ToolResult> => {
+  ipcMain.handle('update:check', async (_event, manual: boolean = false): Promise<{ok: boolean; error?: string}> => {
     try {
       log(`检查更新 (manual=${manual})`)
       autoUpdater.autoDownload = !manual // 手动检查时只通知不下发
       autoUpdater.checkForUpdates()
       return { ok: true }
-    } catch (err: any) {
-      return { ok: false, error: err.message }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
     }
   })
 
   // 安装更新
-  ipcMain.handle('update:install', async (): Promise<ToolResult> => {
+  ipcMain.handle('update:install', async (): Promise<{ok: boolean; error?: string}> => {
     try {
       log('安装更新...')
       setImmediate(() => {
         autoUpdater.quitAndInstall(true, true)
       })
       return { ok: true }
-    } catch (err: any) {
-      return { ok: false, error: err.message }
+    } catch (err) {
+      return { ok: false, error: (err as Error).message }
     }
   })
 
   // 获取当前版本
-  ipcMain.handle('app:version', async (): Promise<ToolResult> => {
+  ipcMain.handle('app:version', async (): Promise<{ok: boolean; error?: string; data?: {version: string}}> => {
     return { ok: true, data: { version: app.getVersion() } }
   })
 }

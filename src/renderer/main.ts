@@ -19,15 +19,8 @@ import { naiveThemeOverrides } from './styles/naive-theme'
 const app = createApp(App)
 const pinia = createPinia()
 
-// 工具链路日志：主进程 [tool] 日志转发到 renderer console（CDP 控制台可观察）
-if (window.api?.onToolLog) {
-  window.api.onToolLog((line: string) => {
-    console.log(`[renderer] ${line}`)
-  })
-}
-
 app.use(pinia)
 app.use(router)
-app.use(naive, { themeOverrides: naiveThemeOverrides })
+app.use(naive, { themeOverrides: naiveThemeOverrides } as never)
 
 app.mount('#app')

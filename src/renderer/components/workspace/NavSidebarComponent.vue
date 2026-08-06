@@ -13,24 +13,6 @@
           <span class="nav-sidebar__label">{{ item.label }}</span>
         </button>
       </div>
-
-      <!-- 退出登录（固定在底部） -->
-      <div class="nav-sidebar__bottom">
-        <button
-          class="nav-sidebar__item"
-          title="退出登录"
-          @click="handleLogout"
-        >
-          <span class="nav-sidebar__icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </span>
-          <span class="nav-sidebar__label">退出</span>
-        </button>
-      </div>
     </nav>
 
     <!-- 折叠切换按钮（浮动在右侧边缘） -->
@@ -49,11 +31,6 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { logoutAndClear } from '@/api/auth-api'
-import { useSessionStore } from '@/stores/session-store'
-import { useChatStore } from '@/renderer/stores/chat-store'
-
 defineProps<{
   active: string
   collapsed?: boolean
@@ -63,17 +40,6 @@ defineEmits<{
   select: [id: string]
   'update:collapsed': [value: boolean]
 }>()
-
-const router = useRouter()
-const sessionStore = useSessionStore()
-const chatStore = useChatStore()
-
-function handleLogout() {
-  logoutAndClear()
-  sessionStore.$reset()
-  chatStore.$reset()
-  router.replace({ name: 'splash' })
-}
 
 const navItems = [
   {
@@ -143,11 +109,6 @@ const navItems = [
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 100%;
-}
-
-.nav-sidebar__bottom {
-  margin-top: auto;
   width: 100%;
 }
 

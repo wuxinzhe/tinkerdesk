@@ -16,12 +16,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useModelStore } from '@/stores/model-store'
 import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
 import CustomModelForm from '@/renderer/components/settings/CustomModelForm.vue'
+import { modelsApi } from '@/renderer/api/models-api'
 
 const router = useRouter()
-const modelStore = useModelStore()
 
 const form = reactive({
   alias: '', providerId: 'deepseek', modelName: '', apiKey: '', baseUrl: '', contextLimit: 128000
@@ -37,14 +36,14 @@ async function save() {
   saving.value = true
   formError.value = ''
   try {
-    await modelStore.createCustomModel({
+    await modelsApi.createCustomModel('default', {
       alias: form.alias, modelName: form.modelName,
       providerId: form.providerId, apiKey: form.apiKey || undefined,
       baseUrl: form.baseUrl || undefined, contextLimit: form.contextLimit || 128000
     })
     router.back()
-  } catch (e: any) {
-    formError.value = e?.message ?? '保存失败'
+  } catch (e) {
+    formError.value = (e as Error).message ?? '保存失败'
   } finally {
     saving.value = false
   }

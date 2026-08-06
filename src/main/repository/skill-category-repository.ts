@@ -1,6 +1,6 @@
 
-import type {SkillCategoryEntity} from './types'
-import {getDatabase} from './database'
+import { getDatabase } from './database'
+import type { SkillCategoryEntity } from './types'
 
 const COLS = 'id, name, display_name, description, icon, sort_order, is_active, created_at, updated_at'
 

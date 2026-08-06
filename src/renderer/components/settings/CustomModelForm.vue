@@ -19,7 +19,30 @@
       </SaFormGroup>
     </div>
 
-    <!-- Row 2: 模型名 + 上下文窗口 -->
+    <!-- Row 2: API Key -->
+    <SaFormGroup label="API Key" class="cm-form__group">
+      <div class="cm-key-wrap">
+        <input
+          v-model="form.apiKey"
+          class="cm-input cm-input--key"
+          :type="showApiKey ? 'text' : 'password'"
+          :placeholder="mode === 'edit' ? '输入新 Key 以更新（留空不修改）' : 'sk-...'"
+        />
+        <button class="cm-key-toggle" @click="showApiKey = !showApiKey" type="button">
+          <svg v-if="showApiKey" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      </div>
+    </SaFormGroup>
+
+    <!-- Row 3: 模型名 + 上下文窗口 -->
     <div class="cm-form__row">
       <SaFormGroup label="模型名" required class="cm-form__group">
         <div class="cm-model-row">
@@ -54,29 +77,6 @@
       </SaFormGroup>
     </div>
 
-    <!-- Row 3: API Key -->
-    <SaFormGroup label="API Key" class="cm-form__group">
-      <div class="cm-key-wrap">
-        <input
-          v-model="form.apiKey"
-          class="cm-input cm-input--key"
-          :type="showApiKey ? 'text' : 'password'"
-          :placeholder="mode === 'edit' ? '输入新 Key 以更新（留空不修改）' : 'sk-...'"
-        />
-        <button class="cm-key-toggle" @click="showApiKey = !showApiKey" type="button">
-          <svg v-if="showApiKey" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-            <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-            <line x1="1" y1="1" x2="23" y2="23" />
-          </svg>
-          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
-      </div>
-    </SaFormGroup>
-
     <!-- Row 4: Base URL -->
     <SaFormGroup label="Base URL" class="cm-form__group">
       <input
@@ -102,11 +102,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useModelStore } from '@/stores/model-store'
-import type { SystemProvider } from '@/defines/models/model'
+import type { SystemProvider } from '@/renderer/api/types'
 import { SaFormGroup } from '@/renderer/components'
+import { modelsApi } from '@/renderer/api/models-api'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   form: {
     alias: string
     providerId: string
@@ -119,12 +119,11 @@ withDefaults(defineProps<{
   errorMessage?: string
 }>(), { mode: 'add', errorMessage: '' })
 
-const modelStore = useModelStore()
 
 const providers = ref<SystemProvider[]>([])
 
 onMounted(async () => {
-  providers.value = await modelStore.listProviders()
+  providers.value = await modelsApi.listProviders()
 })
 
 // ── Show/hide API key ──
@@ -137,26 +136,26 @@ const modelsFetched = ref(false)
 const formTestResult = ref<{ success: boolean; message: string } | null>(null)
 
 function onProviderChange() {
-  form.modelName = ''
-  form.apiKey = ''
+  props.form.modelName = ''
+  props.form.apiKey = ''
   fetchedModels.value = []
   modelsFetched.value = false
   formTestResult.value = null
 }
 
 async function fetchModelList() {
-  if (!form.providerId || !form.apiKey) return
+  if (!props.form.providerId || !props.form.apiKey) return
   fetchingModels.value = true
   formTestResult.value = null
   try {
-    const models = await modelStore.fetchModels(form.providerId, form.apiKey, form.baseUrl || undefined)
+    const models = await modelsApi.fetchModels(props.form.providerId, props.form.apiKey, props.form.baseUrl || undefined)
     fetchedModels.value = models ?? []
     modelsFetched.value = true
-    if (form.modelName && !fetchedModels.value.some(m => m.id === form.modelName)) {
-      form.modelName = ''
+    if (props.form.modelName && !fetchedModels.value.some(m => m.id === props.form.modelName)) {
+      props.form.modelName = ''
     }
-  } catch (e: any) {
-    formTestResult.value = { success: false, message: e?.message ?? '获取模型列表失败' }
+  } catch (e) {
+    formTestResult.value = { success: false, message: (e as Error).message ?? '获取模型列表失败' }
   } finally {
     fetchingModels.value = false
   }

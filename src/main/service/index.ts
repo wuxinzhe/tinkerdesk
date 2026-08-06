@@ -4,39 +4,40 @@
  * 三层结构：repository（repository/）→ service（本层）→ 上层（AgentLoop/controller）
  * 本地业务无 controller，服务直接接入 AgentLoop。
  */
-export {MessageService, MessageFactory, entityToApiMessage} from './message-service'
-export type {MessageEntity} from '../repository/types'
-export {
-  MSG_TYPE_USER,
-  MSG_TYPE_ASSISTANT_TEXT,
-  MSG_TYPE_ASSISTANT_TOOL_CALL,
-  MSG_TYPE_ASSISTANT_THINKING,
-  MSG_TYPE_TOOL_RESULT,
-  MSG_TYPE_APPROVAL_REQUEST,
-  MSG_TYPE_SUMMARY,
-} from './message-service'
-export {ConversationService} from './conversation-service'
-export type {ConversationEntity, ConversationStatusUpdate} from '../repository/types'
-export {SessionService} from './session-service'
-export type {SessionEntity, SessionSummaryDTO} from '../repository/types'
-export {CompactionService} from './compaction-service'
-export {CompressionCooldownStore} from './compression-cooldown-store'
-export {MemoryStore} from './memory-store'
-export type {MemoryOperation} from './memory-store'
-export {TodoService} from './todo-service'
-export type {TodoItem} from './todo-service'
+export type { ConversationEntity, ConversationStatusUpdate, MessageEntity, SessionEntity, SessionSummaryDTO } from '../repository/types'
+export { CompactionService } from './compaction-service'
+export { CompressionCooldownStore } from './compression-cooldown-store'
+export { ConversationService } from './conversation-service'
+export { MemoryStore } from './memory-store'
+export { entityToApiMessage, MessageFactory, MessageService, MSG_TYPE_APPROVAL_REQUEST, MSG_TYPE_ASSISTANT_TEXT, MSG_TYPE_ASSISTANT_THINKING, MSG_TYPE_ASSISTANT_TOOL_CALL, MSG_TYPE_SUMMARY, MSG_TYPE_TOOL_RESULT, MSG_TYPE_USER } from './message-service'
+export { SessionService } from './session-service'
+export { TodoService } from './todo-service'
+export type { CooldownEntry, MemoryOperation, TodoItem } from './types'
+export type { TodoListResponse, TodoSummary, DiscoverHitDTO, ReadResultDTO, ScrollResultDTO, SkillSummaryDTO, SkillDetailDTO } from './types'
 
 // ── 技能/供应商/白名单/场景模型/禁用工具 服务层 ──
-export {PrivateSkillService} from './private-skill-service'
-export type {PrivateSkillEntity, FilteredSkillDTO, SkillFileEntity, SkillRelatedEntity} from '../repository/types'
-export {SkillCategoryService} from './skill-category-service'
-export type {SkillCategoryEntity} from '../repository/types'
-export {SystemProviderService} from './system-provider-service'
-export type {SystemProviderEntity} from '../repository/types'
-export {PromptService} from './prompt-service'
-export type {UserPromptModuleEntity} from '../repository/types'
-export {SceneModelService} from './scene-model-service'
-export type {SceneModelBinding, UserSceneModelEntity} from '../repository/types'
-export {SandboxWhitelistService} from './sandbox-whitelist-service'
-export type {UserUrlWhitelistEntity, UserPathWhitelistEntity} from '../repository/types'
-export {UserDisabledToolService} from './user-disabled-tool-service'
+export type { FilteredSkillDTO, PrivateSkillEntity, SceneModelBinding, SkillCategoryEntity, SkillFileEntity, SkillRelatedEntity, SystemProviderEntity, UserPathWhitelistEntity, UserPromptModuleEntity, UserSceneModelEntity, UserUrlWhitelistEntity } from '../repository/types'
+export { PrivateSkillService } from './private-skill-service'
+export { PromptService } from './prompt-service'
+export { SandboxWhitelistService } from './sandbox-whitelist-service'
+export { ToolAuthService } from './tool-auth-service'
+export { MessageQueueStore, type UserMessageQueueItem } from './message-queue-store'
+export {
+  ToolLoopGuardrail,
+  GuardrailAction,
+  classifyToolFailure,
+  appendGuardrailGuidance,
+  syntheticGuardrailResult,
+} from './tool-loop-guardrail-service'
+export { SceneModelService } from './scene-model-service'
+export { ModelConfigService } from './model-config-service'
+export { SessionContextFactory } from './session-context-factory'
+export { AgentModeService } from './agent-mode-service'
+export { DefaultAgentMode } from './agent/default-agent-mode'
+export { SkillCategoryService } from './skill-category-service'
+export { SystemProviderService } from './system-provider-service'
+export { UserDisabledToolService } from './user-disabled-tool-service'
+export { UserCustomModelService, toCustomModelInfoDTO } from './user-custom-model-service'
+export { AgentService, toAgentInfoDTO } from './agent-service'
+export { AgentConfigService } from './agent-config-service'
+

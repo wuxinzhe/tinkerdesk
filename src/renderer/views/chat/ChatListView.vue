@@ -24,7 +24,7 @@
       :title="collapsed ? '展开会话列表' : '折叠会话列表'"
       @click="collapsed = !collapsed"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polyline v-if="!collapsed" points="15 18 9 12 15 6" />
         <polyline v-else points="9 18 15 12 9 6" />
       </svg>
@@ -38,9 +38,9 @@ import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import SessionList from '@/renderer/components/chat/SessionList.vue'
-import { useSessionStore } from '@/stores/session-store'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
-import { useAgentStore } from '@/stores/agent-store'
+import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
 
 const router = useRouter()
@@ -139,13 +139,13 @@ async function onNewSession() {
   width: 20px;
   height: 40px;
   border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
   background: var(--sa-bg-primary, #ffffff);
   color: var(--sa-text-tertiary, #aeaeb2);
   cursor: pointer;
   padding: 0;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-  border-left: none;
 }
 
 .sidebar-toggle:hover {
@@ -155,9 +155,9 @@ async function onNewSession() {
 }
 
 .sidebar-toggle.collapsed {
-  border-radius: 6px 0 0 6px;
-  border-left: 1px solid var(--sa-border, #d2d2d7);
-  border-right: none;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+  border-right: 1px solid var(--sa-border, #d2d2d7);
 }
 
 @media (max-width: 1023px) {

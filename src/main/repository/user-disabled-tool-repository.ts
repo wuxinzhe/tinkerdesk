@@ -1,17 +1,17 @@
 /**
  * user-disabled-tool-repository.ts — 用户禁用工具黑名单仓库
  *
- * 复刻 showing-agent UserDisabledToolRepository（去 user_id）：
+ * 复刻 tinker-agent UserDisabledToolRepository（去 user_id）：
  * 表 user_disabled_tools — 纯黑名单，PK(profile, tool_name)。默认空表 = 全部可用。
  */
-import {getDatabase} from './database'
+import { getDatabase } from './database'
 
 /** 用户禁用工具仓库 */
 export class UserDisabledToolRepository {
   /** 查询 profile 下禁用的工具名集合 */
   findByProfile(profile: string): string[] {
     const db = getDatabase()
-    const rows = db.prepare('SELECT tool_name FROM user_disabled_tools WHERE profile = ?').all(profile) as Array<{tool_name: string}>
+    const rows = db.prepare('SELECT tool_name FROM user_disabled_tools WHERE profile = ?').all(profile) as Array<{ tool_name: string }>
     return rows.map((r) => r.tool_name)
   }
 

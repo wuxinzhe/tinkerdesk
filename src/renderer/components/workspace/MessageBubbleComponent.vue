@@ -82,8 +82,10 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import ApprovalCard from '@/renderer/components/chat/ApprovalCard.vue'
-import type { Message } from '@/defines/models/message'
+import type { Message } from '@/renderer/api/types'
 import ClarifyCard from '@/renderer/components/chat/ClarifyCard.vue'
+import { formatSmartTime } from '@/renderer/utils/date-utils'
+import { inferMessageTypeFromRole } from '@/renderer/utils/message-utils'
 
 const router = useRouter()
 
@@ -148,17 +150,8 @@ watch(() => props.pendingBuffer, () => {
 
 /** 当前消息的 messageType（兜底从 role 推断） */
 const effectiveType = computed(() =>
-  props.message.messageType || inferTypeFromRole(props.message.role)
+  props.message.messageType || inferMessageTypeFromRole(props.message.role)
 )
-
-function inferTypeFromRole(role: string): string {
-  if (role === 'user') return 'user_normal'
-  if (role === 'assistant') return 'assistant_text'
-  if (role === 'approval') return 'approval_request'
-  if (role === 'system') return 'assistant_text'
-  if (role === 'tool') return 'tool_result'
-  return ''
-}
 
 // ── 渲染分类标志位 ──
 

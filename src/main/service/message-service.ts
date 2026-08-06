@@ -1,17 +1,17 @@
 /**
  * message-service.ts — 消息服务层
  *
- * 复刻 showing-agent IMessageService（本地单用户版）：
+ * 复刻 tinker-agent IMessageService（本地单用户版）：
  * - 两层存储：进行中消息暂存（内存）+ 完成后落库（SQLite）
  * - loadContextMessages：合并历史 + 当前暂存，供 LLM 上下文构建
  * - 审批状态更新、对话删除、摘要保存
  */
-import {MessageRepository} from '../repository/message-repository'
-import type {MessageEntity} from '../repository/types'
-import {ConversationRepository} from '../repository/conversation-repository'
-import type {ApiMessage} from '../llm/types'
+import { MessageRepository } from '../repository/message-repository'
+import type { MessageEntity } from '../repository/types'
+import { ConversationRepository } from '../repository/conversation-repository'
+import type { ApiMessage } from '../core/llm/types'
 
-/** 消息类型常量（对齐 showing-agent MessageConstants） */
+/** 消息类型常量（对齐 tinker-agent MessageConstants） */
 export const MSG_TYPE_USER = 'user_message'
 export const MSG_TYPE_ASSISTANT_TEXT = 'assistant_text'
 export const MSG_TYPE_ASSISTANT_TOOL_CALL = 'assistant_tool_call'
@@ -63,7 +63,7 @@ export class MessageFactory {
     sessionId: string,
     profile: string,
     reasoningContent: string,
-    toolCalls: Record<string, {name: string; arguments: unknown}>
+    toolCalls: Record<string, { name: string; arguments: unknown }>
   ): MessageEntity {
     return {
       sessionId,
@@ -127,7 +127,7 @@ export class MessageService {
   constructor(
     private readonly messageRepo: MessageRepository,
     private readonly conversationRepo: ConversationRepository
-  ) {}
+  ) { }
 
   /** 保存消息到暂存（对话进行中） */
   saveTempMessage(entity: MessageEntity): void {
@@ -168,7 +168,7 @@ export class MessageService {
 
   /** 按 conversation 查询全部消息 */
   listMessagesByConversation(conversationId: string, profile: string): MessageEntity[] {
-    return this.messageRepo.findByConditions({conversationId, profile})
+    return this.messageRepo.findByConditions({ conversationId, profile })
   }
 
   /** 合并历史 + 当前暂存，按时间排序，转为 ApiMessage（LLM 上下文） */
@@ -214,6 +214,16 @@ export class MessageService {
     this.conversationRepo.updateStatus(convId, sessionId, 'DELETED')
   }
 
+  /** 按对话 ID 删除（controller 入口，内部解析 sessionId） */
+  deleteConversationMessages(conversationId: string, profile: string): boolean {
+    const conv = this.conversationRepo.findById(conversationId)
+    if (!conv) {
+      return false
+    }
+    this.deleteConversation(conv.sessionId, conversationId, profile)
+    return true
+  }
+
   /** 按对话 ID 列表加载消息（压缩用） */
   loadConversationsMessages(convIds: string[], sessionId: string, profile: string): ApiMessage[] {
     const entities = this.messageRepo.findByConversationIds(convIds, sessionId, profile)
@@ -256,7 +266,7 @@ export class MessageService {
     })
     for (const m of existing) {
       if (m.messageType === MSG_TYPE_SUMMARY) {
-        this.messageRepo.save({...m, deleted: true})
+        this.messageRepo.save({ ...m, deleted: true })
       }
     }
     // 摘要消息挂在 session 级（无 conversation）

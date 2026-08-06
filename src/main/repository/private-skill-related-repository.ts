@@ -2,12 +2,12 @@
 /**
  * private-skill-related-repository.ts — 私有技能关联仓库
  *
- * 复刻 showing-agent PrivateSkillRelatedRepository：
+ * 复刻 tinker-agent PrivateSkillRelatedRepository：
  * 表 private_skill_related — 技能关联（related/prerequisite 等）。
  */
-import {randomUUID} from 'crypto'
-import {getDatabase} from './database'
-import type {SkillRelatedEntity} from './types'
+import { randomUUID } from 'crypto'
+import { getDatabase } from './database'
+import type { SkillRelatedEntity } from './types'
 
 /** 私有技能关联仓库 */
 export class PrivateSkillRelatedRepository {
@@ -16,7 +16,7 @@ export class PrivateSkillRelatedRepository {
     const db = getDatabase()
     const existing = db
       .prepare('SELECT id FROM private_skill_related WHERE skill_id = ? AND related_skill_id = ? AND relation_type = ?')
-      .get(skillId, relatedSkillId, relationType) as {id: string} | undefined
+      .get(skillId, relatedSkillId, relationType) as { id: string } | undefined
     if (existing) {
       return 0
     }

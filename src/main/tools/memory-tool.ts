@@ -1,19 +1,19 @@
 /**
  * memory-tool.ts — 记忆工具
  *
- * 复刻 showing-agent MemoryTool：
+ * 复刻 tinker-agent MemoryTool：
  * 读取/添加/替换/删除/批量操作持久记忆（文件系统 MemoryStore）。
  * 全部返回 JSON 字符串，语义对齐 Java 版 7 种响应。
  */
-import type {PromptRenderer} from '../prompt/renderer'
-import {BaseTool} from './base-tool'
-import type {ToolExecutionContext} from './types'
-import {ToolResult} from './tool-result'
-import {MemoryStore} from '../service/memory-store'
-import type {MemoryOperation} from '../service/memory-store'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { MemoryOperation } from '../service/memory-store'
+import { MemoryStore } from '../service/memory-store'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { ToolContext } from '../core/loop/types'
 
 /** 工具名（对齐 @AgentTool(name)） */
-export const TOOL_NAME = 'server_showing_memory'
+export const TOOL_NAME = 'builtin_tinker_memory'
 
 /** 单轮最多 consolidation 失败次数（对齐 MAX_CONSOLIDATION_FAILURES_PER_TURN） */
 const MAX_CONSOLIDATION_FAILURES = 3
@@ -25,17 +25,21 @@ export class MemoryTool extends BaseTool {
   private readonly maxMemory: number
   private readonly maxUser: number
 
-  constructor(renderer: PromptRenderer, memoryStore: MemoryStore, maxMemory = 20000, maxUser = 1375) {
+  constructor(renderer: PromptRenderer, memoryStore: MemoryStore) {
     super(renderer, TOOL_NAME)
     this.memoryStore = memoryStore
-    this.maxMemory = maxMemory
-    this.maxUser = maxUser
+    this.maxMemory = 20000
+    this.maxUser = 1375
   }
 
-  async execute(ctx: ToolExecutionContext): Promise<ToolResult> {
+  async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as Record<string, unknown>
     const sessionId = ctx.sessionId
     const profile = ctx.profile
+
+    // 记忆上限：优先 AgentConfig 动态配置（对齐 Java ctx.getMemoryMaxChars/getUserMaxChars）
+    const memoryMaxChars = ctx.agentConfig?.memoryMaxChars ?? this.maxMemory
+    const userMaxChars = ctx.agentConfig?.userMaxChars ?? this.maxUser
 
     const target = (args.target as string) || 'memory'
     const action = (args.action as string) || ''
@@ -51,31 +55,31 @@ export class MemoryTool extends BaseTool {
       // ── Batch 路径 ──
       const opsNode = args.operations
       if (Array.isArray(opsNode) && opsNode.length > 0) {
-        return ToolResult.sync(this.handleBatch(target, opsNode as Array<Record<string, unknown>>, profile, this.maxMemory, this.maxUser))
+        return ToolResult.sync(this.handleBatch(target, opsNode as Array<Record<string, unknown>>, profile, memoryMaxChars, userMaxChars))
       }
 
       // ── 单操作路径 ──
       if (!action) {
         // 未指定 action → 返回当前条目（读取模式）
         const entries = this.memoryStore.readAll(target, profile)
-        const maxChars = target === 'user' ? this.maxUser : this.maxMemory
+        const maxChars = target === 'user' ? userMaxChars : memoryMaxChars
         return ToolResult.sync(this.jsonSuccess(target, 'Current entries.', entries, maxChars))
       }
 
       switch (action) {
         case 'add':
-          return ToolResult.sync(this.handleAdd(target, content, sessionId, profile))
+          return ToolResult.sync(this.handleAdd(target, content, sessionId, profile, memoryMaxChars, userMaxChars))
         case 'replace':
-          return ToolResult.sync(this.handleReplace(target, oldText, content, sessionId, profile))
+          return ToolResult.sync(this.handleReplace(target, oldText, content, sessionId, profile, memoryMaxChars, userMaxChars))
         case 'remove':
-          return ToolResult.sync(this.handleRemove(target, oldText, sessionId, profile))
+          return ToolResult.sync(this.handleRemove(target, oldText, sessionId, profile, memoryMaxChars, userMaxChars))
         default:
           return ToolResult.sync(this.jsonError(`Unknown action '${action}'. Use: add, replace, remove`))
       }
     } catch {
       return ToolResult.sync(this.consolidationCatch(sessionId, target, profile, () => {
         const entries = this.memoryStore.readAll(target, profile)
-        const limit = target === 'user' ? this.maxUser : this.maxMemory
+        const limit = target === 'user' ? userMaxChars : memoryMaxChars
         return this.overflowResponse(target, this.currentChars(entries), limit, entries)
       }))
     }
@@ -83,12 +87,12 @@ export class MemoryTool extends BaseTool {
 
   // ── 操作处理器 ──
 
-  private handleAdd(target: string, content: string | null, sessionId: string, profile: string): string {
+  private handleAdd(target: string, content: string | null, sessionId: string, profile: string, memoryMaxChars: number, userMaxChars: number): string {
     if (!content || !content.trim()) {
       return this.jsonError("Content is required for 'add' action.")
     }
     content = content.trim()
-    const limit = target === 'user' ? this.maxUser : this.maxMemory
+    const limit = target === 'user' ? userMaxChars : memoryMaxChars
     const added = this.memoryStore.addEntry(target, profile, content, limit, 0)
     this.resetConsolidation(sessionId)
     const entries = this.memoryStore.readAll(target, profile)
@@ -96,8 +100,8 @@ export class MemoryTool extends BaseTool {
     return this.jsonSuccess(target, msg, entries, limit)
   }
 
-  private handleReplace(target: string, oldText: string | null, newContent: string | null, sessionId: string, profile: string): string {
-    const limit = target === 'user' ? this.maxUser : this.maxMemory
+  private handleReplace(target: string, oldText: string | null, newContent: string | null, sessionId: string, profile: string, memoryMaxChars: number, userMaxChars: number): string {
+    const limit = target === 'user' ? userMaxChars : memoryMaxChars
     if (!oldText) {
       return this.missingOldTextError(target, 'replace', profile, limit)
     }
@@ -123,8 +127,8 @@ export class MemoryTool extends BaseTool {
     return this.jsonSuccess(target, 'Entry replaced.', entries, limit)
   }
 
-  private handleRemove(target: string, oldText: string | null, sessionId: string, profile: string): string {
-    const limit = target === 'user' ? this.maxUser : this.maxMemory
+  private handleRemove(target: string, oldText: string | null, sessionId: string, profile: string, memoryMaxChars: number, userMaxChars: number): string {
+    const limit = target === 'user' ? userMaxChars : memoryMaxChars
     if (!oldText) {
       return this.missingOldTextError(target, 'remove', profile, limit)
     }
@@ -228,7 +232,7 @@ export class MemoryTool extends BaseTool {
   }
 
   private jsonTerminal(errorMsg: string): string {
-    return JSON.stringify({success: false, done: true, error: errorMsg})
+    return JSON.stringify({ success: false, done: true, error: errorMsg })
   }
 
   private missingOldTextError(target: string, action: string, profile: string, maxChars: number): string {
@@ -248,7 +252,7 @@ export class MemoryTool extends BaseTool {
   }
 
   private jsonError(errorMsg: string): string {
-    return JSON.stringify({success: false, error: errorMsg})
+    return JSON.stringify({ success: false, error: errorMsg })
   }
 
   private currentChars(entries: string[]): number {

@@ -19,13 +19,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useToolCenterStore } from '@/stores/tool-center-store'
+import { getToolCenterApi } from '@/renderer/api/tool-center-api'
 import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
 import McpServerForm from '@/renderer/components/settings/McpServerForm.vue'
 
 const route = useRoute()
 const router = useRouter()
-const toolCenterStore = useToolCenterStore()
+const mcpApi = getToolCenterApi()
 
 const serverName = computed(() => route.params.name as string)
 const saving = ref(false)
@@ -39,7 +39,7 @@ const form = ref({
 
 async function loadServer() {
   try {
-    const state = await toolCenterStore.getState()
+    const state = await mcpApi.getState()
     const server = state.mcpServers.find(s => s.name === serverName.value)
     if (!server) { error.value = '服务器不存在'; return }
     form.value.name = server.name
@@ -47,8 +47,8 @@ async function loadServer() {
     form.value.command = server.command ?? ''
     form.value.argsStr = (server.args ?? []).join(' ')
     form.value.url = server.url ?? ''
-  } catch (e: any) {
-    error.value = e.message || '加载失败'
+  } catch (e) {
+    error.value = (e as Error).message || '加载失败'
   }
 }
 
@@ -56,7 +56,7 @@ async function onSave() {
   saving.value = true
   error.value = ''
   try {
-    await toolCenterStore.upsertMcpServer({
+    await mcpApi.upsertMcpServer({
       name: form.value.name,
       transport: form.value.transport,
       command: form.value.command || undefined,
@@ -65,8 +65,8 @@ async function onSave() {
       enabled: true
     })
     router.back()
-  } catch (e: any) {
-    error.value = e.message || '保存失败'
+  } catch (e) {
+    error.value = (e as Error).message || '保存失败'
   } finally {
     saving.value = false
   }
@@ -76,7 +76,7 @@ async function onDelete() {
   if (deleting.value) return
   deleting.value = true
   try {
-    await toolCenterStore.removeMcpServer(serverName.value)
+    await mcpApi.removeMcpServer(serverName.value)
     router.back()
   } catch { /* ignore */
   } finally { deleting.value = false }

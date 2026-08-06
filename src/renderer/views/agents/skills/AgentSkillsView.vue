@@ -101,18 +101,17 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import type { HistoryState } from 'vue-router'
 import { NSelect, NSwitch } from 'naive-ui'
-import { useAgentStore } from '@/stores/agent-store'
-import { useSkillStore } from '@/stores/skill-store'
-import type { SkillInfo, SkillCategory } from '@/defines/models/skill'
-import { viewingSkill } from '@/stores/skill-detail-store'
+import { useAgentStore } from '@/renderer/stores/agent-store'
+import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { L3PageLayout } from '@/renderer/components'
+import { skillsApi } from '@/renderer/api/skills-api'
 
 const route = useRoute()
 const router = useRouter()
 const agentStore = useAgentStore()
-const skillStore = useSkillStore()
 
 const detailProfile = computed(() => route.params.profile as string)
 
@@ -151,7 +150,7 @@ async function loadSkills(page: number) {
   skillsLoading.value = true
   skillsPage.value = page
   try {
-    const res = await skillStore.installed({
+    const res = await skillsApi.installed({
       profile,
       offset: page * skillsPageSize.value,
       limit: skillsPageSize.value,
@@ -169,8 +168,7 @@ async function loadSkills(page: number) {
 }
 
 function openSkillDetail(skill: SkillInfo) {
-  viewingSkill.value = skill
-  router.push(`/workspace/agents/${detailProfile.value}/skill/${skill.id}`)
+  router.push({ path: `/workspace/agents/${detailProfile.value}/skill/${skill.id}`, state: { skill } as unknown as HistoryState })
 }
 
 async function toggleSkill(skill: SkillInfo, enabled: boolean) {
@@ -178,9 +176,9 @@ async function toggleSkill(skill: SkillInfo, enabled: boolean) {
   togglingIds.value = new Set(togglingIds.value).add(skill.id)
   try {
     if (enabled) {
-      await skillStore.activate(skill.id, detailProfile.value)
+      await skillsApi.activate(skill.id, detailProfile.value)
     } else {
-      await skillStore.deactivate(skill.id, detailProfile.value)
+      await skillsApi.deactivate(skill.id, detailProfile.value)
     }
     skill.isEnabled = enabled
   } catch (e) {
@@ -197,7 +195,7 @@ watch(() => route.params.profile, () => {
   skillsCategory.value = ''
   skillsName.value = ''
   if (skillCategories.value.length === 0) {
-    skillStore.categories().then(res => {
+    skillsApi.categories().then(res => {
       skillCategories.value = res ?? []
     }).catch(() => { skillCategories.value = [] })
   }
@@ -205,7 +203,7 @@ watch(() => route.params.profile, () => {
 })
 
 onMounted(() => {
-  skillStore.categories().then(res => {
+  skillsApi.categories().then(res => {
     skillCategories.value = res ?? []
   }).catch(() => { skillCategories.value = [] })
   loadSkills(0)

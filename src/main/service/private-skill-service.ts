@@ -1,14 +1,14 @@
 /**
  * private-skill-service.ts — 私有技能服务层
  *
- * 复刻 showing-agent IPrivateSkillService（本地单用户版，去 userId）：
+ * 复刻 tinker-agent IPrivateSkillService（本地单用户版，去 userId）：
  * 技能 CRUD（含软删/恢复）、技能文件、技能关联、过滤查询。
  */
-import {randomUUID} from 'crypto'
-import {PrivateSkillRepository} from '../repository/private-skill-repository'
-import {PrivateSkillFileRepository} from '../repository/private-skill-file-repository'
-import {PrivateSkillRelatedRepository} from '../repository/private-skill-related-repository'
-import type {PrivateSkillEntity, FilteredSkillDTO, SkillFileEntity, SkillRelatedEntity} from '../repository/types'
+import { randomUUID } from 'crypto'
+import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
+import { PrivateSkillRelatedRepository } from '../repository/private-skill-related-repository'
+import { PrivateSkillRepository } from '../repository/private-skill-repository'
+import type { FilteredSkillDTO, PrivateSkillEntity, SkillFileEntity, SkillRelatedEntity } from '../repository/types'
 
 /** 私有技能服务 */
 export class PrivateSkillService {
@@ -16,7 +16,7 @@ export class PrivateSkillService {
     private readonly skillRepo: PrivateSkillRepository,
     private readonly fileRepo: PrivateSkillFileRepository,
     private readonly relatedRepo: PrivateSkillRelatedRepository
-  ) {}
+  ) { }
 
   /** 按名称查询技能 */
   findByName(profile: string, name: string): PrivateSkillEntity | null {
@@ -52,7 +52,7 @@ export class PrivateSkillService {
    * 保存技能（新建生成 ID，已存在按 name UPSERT）。
    * 返回技能实体。
    */
-  save(profile: string, skill: Omit<PrivateSkillEntity, 'id' | 'profile' | 'isDeleted' | 'deletedAt'> & {id?: string}): PrivateSkillEntity {
+  save(profile: string, skill: Omit<PrivateSkillEntity, 'id' | 'profile' | 'isDeleted' | 'deletedAt'> & { id?: string }): PrivateSkillEntity {
     const entity: PrivateSkillEntity = {
       id: skill.id ?? randomUUID(),
       profile,
@@ -78,7 +78,7 @@ export class PrivateSkillService {
 
   /** 保存技能文件 */
   saveSkillFile(skillId: string, fileType: string, content: string, language: string, sortOrder: number): void {
-    this.fileRepo.save({skillId, fileType, content, language, sortOrder})
+    this.fileRepo.save({ skillId, fileType, content, language, sortOrder })
   }
 
   /** 删除技能下指定类型的文件 */
@@ -120,7 +120,7 @@ export class PrivateSkillService {
   // ── 技能创建/更新（skill_manage 用） ──
 
   /** 创建技能（body 必填，重名返回 null） */
-  createSkill(profile: string, input: {name: string; displayName?: string; description?: string; category?: string; body: string; apiKey?: string | null}): PrivateSkillEntity | null {
+  createSkill(profile: string, input: { name: string; displayName?: string; description?: string; category?: string; body: string; apiKey?: string | null }): PrivateSkillEntity | null {
     if (this.skillRepo.countByName(profile, input.name) > 0) {
       return null
     }
@@ -157,7 +157,7 @@ export class PrivateSkillService {
     if (!existing) {
       return false
     }
-    this.skillRepo.save({...existing, body})
+    this.skillRepo.save({ ...existing, body })
     return true
   }
 }

@@ -1,20 +1,16 @@
 /**
  * todo-service.ts — 待办事项服务
  *
- * 复刻 showing-agent TodoService（Redis → 文件系统 JSON）：
+ * 复刻 tinker-agent TodoService（Redis → 文件系统 JSON）：
  * - write：全量替换 或 字段级合并（按 id）
  * - read：读取 session 的待办列表
  * - 持久化：userData/todo/{sessionId}.json（原子写）
  */
-import {mkdirSync, readFileSync, renameSync, writeFileSync} from 'fs'
-import {join} from 'path'
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import type { TodoItem } from './types'
 
-/** 待办项 */
-export interface TodoItem {
-  id: string
-  content: string
-  status: string
-}
+export type { TodoItem } from './types'
 
 /** 有效状态集合 */
 const VALID_STATUSES = new Set(['pending', 'in_progress', 'completed', 'cancelled'])
@@ -25,13 +21,13 @@ export class TodoService {
 
   constructor(userDataDir: string) {
     this.dir = join(userDataDir, 'todo')
-    mkdirSync(this.dir, {recursive: true})
+    mkdirSync(this.dir, { recursive: true })
   }
 
   /** 读取 session 的待办列表 */
   read(sessionId: string): TodoItem[] {
     try {
-      const raw = JSON.parse(readFileSync(this.filePath(sessionId), 'utf-8')) as {items?: TodoItem[]}
+      const raw = JSON.parse(readFileSync(this.filePath(sessionId), 'utf-8')) as { items?: TodoItem[] }
       return Array.isArray(raw.items) ? raw.items : []
     } catch {
       return []
@@ -80,7 +76,7 @@ export class TodoService {
   private writeAll(sessionId: string, items: TodoItem[]): void {
     const file = this.filePath(sessionId)
     const tmp = file + '.tmp'
-    writeFileSync(tmp, JSON.stringify({items}, null, 2), 'utf-8')
+    writeFileSync(tmp, JSON.stringify({ items }, null, 2), 'utf-8')
     renameSync(tmp, file)
   }
 }

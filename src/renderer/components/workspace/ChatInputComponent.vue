@@ -48,6 +48,21 @@
     <Transition name="panel-slide">
       <div v-if="panelOpen" class="chat-input__panel">
         <div class="chat-input__panel-icons">
+          <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
+          <button
+            class="chat-input__panel-icon"
+            :title="'历史预览'"
+            @click="$emit('history-preview')"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="3" y="3" width="7" height="9" rx="1.5" />
+              <rect x="14" y="3" width="7" height="5" rx="1.5" />
+              <rect x="14" y="12" width="7" height="9" rx="1.5" />
+              <rect x="3" y="16" width="7" height="5" rx="1.5" />
+            </svg>
+            <span>历史预览</span>
+          </button>
+
           <button
             class="chat-input__panel-icon"
             :class="{ 'chat-input__panel-icon--active': yoloView }"
@@ -59,7 +74,7 @@
               <line x1="9" y1="9" x2="9.01" y2="9" />
               <line x1="15" y1="9" x2="15.01" y2="9" />
             </svg>
-            <span>YOLO 模式</span>
+            <span>YOLO</span>
           </button>
         </div>
 
@@ -90,19 +105,22 @@
 
 <script setup lang="ts">
 import { ref, nextTick, watch } from 'vue'
-import { http } from '@/api/http-client'
+import '@/renderer/api/types'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
   disabled?: boolean
   placeholder?: string
   sessionId?: string | null
+  /** Agent 画像标识（YOLO 查询/切换需 profile 限定） */
+  profile?: string
   yolo?: boolean
 }>(), {
   modelValue: '',
   disabled: false,
   placeholder: '输入消息...',
   sessionId: null,
+  profile: 'default',
   yolo: false
 })
 
@@ -110,6 +128,7 @@ const emit = defineEmits<{
   send: [content: string]
   'update:modelValue': [value: string]
   'update:yolo': [value: boolean]
+  'history-preview': []
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -133,13 +152,8 @@ watch(
   async () => {
     if (!yoloView.value || !props.sessionId) return
     try {
-      const res = await http.get<boolean>(`/sessions/${props.sessionId}/yolo`)
-      // ApiResponse 没有 code 字段，只有 success/data/error——必须用 res.success 判断
-      if (res.success) {
-        yoloEnabled.value = res.data ?? false
-      } else {
-        console.warn(`[yolo] 查询状态失败 error=${res.error ?? ''}`)
-      }
+      const data = await window.api.sessions.getYolo(props.profile ?? 'default', props.sessionId)
+      yoloEnabled.value = (data as boolean) ?? false
     } catch (err) {
       // 查询失败不能静默——否则开关永远显示默认 false 且无法排查
       console.warn('[yolo] 查询状态异常', err)
@@ -157,14 +171,9 @@ function togglePanel() {
 async function toggleYolo() {
   if (!props.sessionId) return
   try {
-    const res = await http.put<boolean>(`/sessions/${props.sessionId}/yolo`)
-    // ApiResponse 没有 code 字段——用 res.success 判断
-    if (res.success) {
-      yoloEnabled.value = res.data ?? !yoloEnabled.value
-      emit('update:yolo', yoloEnabled.value)
-    } else {
-      console.warn(`[yolo] 切换状态失败 error=${res.error ?? ''}`)
-    }
+    const data = await window.api.sessions.toggleYolo(props.profile ?? 'default', props.sessionId)
+    yoloEnabled.value = (data as boolean) ?? !yoloEnabled.value
+    emit('update:yolo', yoloEnabled.value)
   } catch {
     // 静默失败
   }
@@ -357,10 +366,13 @@ defineExpose({ focus })
 
 .chat-input__panel-icons {
   display: flex;
+  flex-wrap: wrap;      /* 宽度不足时换行排布 */
   gap: 8px;
+  width: 100%;
 }
 
 .chat-input__panel-icon {
+  flex: 1 1 120px;      /* 均分剩余宽度；最小基底 120px，不够就换行 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -372,6 +384,7 @@ defineExpose({ focus })
   color: var(--sa-text-primary, #1d1d1f);
   cursor: pointer;
   font-size: 11px;
+  white-space: nowrap;
   transition: border-color 0.15s, background 0.15s;
 }
 

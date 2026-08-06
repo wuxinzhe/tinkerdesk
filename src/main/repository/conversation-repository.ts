@@ -1,11 +1,11 @@
 /**
  * conversation-repository.ts — conversations 表仓库
  *
- * 复刻 showing-agent ConversationRepository：
+ * 复刻 tinker-agent ConversationRepository：
  * 对话 CRUD、状态变更、压缩选择。
  */
-import {getDatabase} from './database'
-import type {ConversationEntity, ConversationStatusUpdate} from './types'
+import { getDatabase } from './database'
+import type { ConversationEntity, ConversationStatusUpdate } from './types'
 
 /** 对话实体（对应 ConversationEntity） */
 
@@ -89,7 +89,7 @@ export class ConversationRepository {
            LIMIT 1
          ) AS ex`
       )
-      .get(profile) as {ex: number}
+      .get(profile) as { ex: number }
     return row.ex === 1
   }
 
@@ -117,7 +117,7 @@ export class ConversationRepository {
          WHERE n.rn > (SELECT split_rn FROM split)
          ORDER BY n.rn DESC`
       )
-      .all(sessionId, tailTokenBudget) as Array<{id: string}>
+      .all(sessionId, tailTokenBudget) as Array<{ id: string }>
     return rows.map((r) => r.id)
   }
 
