@@ -60,11 +60,13 @@ function submit(): void {
 
 /** file 字段：调系统文件对话框选择 */
 async function pickFile(key: string, filters?: { name: string; extensions: string[] }[]): Promise<void> {
+  console.log(`[config-form] pickFile 触发: ${key}`)
   try {
     const path = await window.api.plugins.pickFile(filters)
+    console.log(`[config-form] pickFile 返回: ${path ?? 'null'}`)
     if (path) form[key] = path
-  } catch {
-    // 取消/失败：静默
+  } catch (e) {
+    console.error('[config-form] pickFile 失败:', e)
   }
 }
 </script>

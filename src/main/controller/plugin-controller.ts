@@ -78,6 +78,7 @@ export class PluginController {
         ? payload.filters.map((f) => ({ name: f.name ?? '文件', extensions: f.extensions ?? ['*'] }))
         : undefined
       const win = this.getWindow()
+      console.log(`[plugin] pickFile 调用（win=${!!win}, filters=${JSON.stringify(filters ?? [])}）`)
       const options: Electron.OpenDialogOptions = {
         title: '选择文件',
         properties: ['openFile'],
