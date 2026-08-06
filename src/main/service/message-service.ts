@@ -11,15 +11,23 @@ import type { MessageEntity } from '../repository/types'
 import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
 import { ROLE_SYSTEM } from '../core/loop/constants'
+import { STATUS_APPROVED, STATUS_REJECTED } from '../core/loop/constants'
 
 /** 消息类型常量（对齐 showing-agent MessageConstants：TYPE_USER_NORMAL 等） */
 export const MSG_TYPE_USER = 'user_normal'
+export const MSG_TYPE_USER_CONTINUE = 'user_continue'
 export const MSG_TYPE_ASSISTANT_TEXT = 'assistant_text'
 export const MSG_TYPE_ASSISTANT_TOOL_CALL = 'assistant_tool_call'
+export const MSG_TYPE_ASSISTANT_HYBRID = 'assistant_hybrid'
 export const MSG_TYPE_ASSISTANT_THINKING = 'assistant_thinking'
 export const MSG_TYPE_TOOL_RESULT = 'tool_result'
 export const MSG_TYPE_APPROVAL_REQUEST = 'approval_request'
-export const MSG_TYPE_SUMMARY = 'summary'
+export const MSG_TYPE_CLARIFY_REQUEST = 'clarify_request'
+export const MSG_TYPE_SYSTEM_SUMMARY = 'system_summary'
+
+/** 完成原因（对齐 showing-agent MessageConstants：FINISH_COMPLETE/FINISH_LENGTH） */
+export const FINISH_COMPLETE = 'complete'
+export const FINISH_LENGTH = 'length'
 
 /** 消息实体构建器（对应 MessageEntity.buildXxx 静态工厂） */
 export class MessageFactory {
@@ -34,7 +42,7 @@ export class MessageFactory {
       toolCall: null,
       toolCallId: '',
       toolName: '',
-      finishReason: 'complete',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_USER,
       deleted: false,
@@ -52,7 +60,7 @@ export class MessageFactory {
       toolCall: null,
       toolCallId: '',
       toolName: '',
-      finishReason: 'complete',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_TEXT,
       deleted: false,
@@ -76,7 +84,7 @@ export class MessageFactory {
       toolCall: JSON.stringify(toolCalls),
       toolCallId: '',
       toolName: '',
-      finishReason: 'tool_calls',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_TOOL_CALL,
       deleted: false,
@@ -94,7 +102,7 @@ export class MessageFactory {
       toolCall: null,
       toolCallId: '',
       toolName: '',
-      finishReason: 'complete',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_THINKING,
       deleted: false,
@@ -112,7 +120,7 @@ export class MessageFactory {
       toolCall: null,
       toolCallId,
       toolName: '',
-      finishReason: 'complete',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_TOOL_RESULT,
       deleted: false,
@@ -144,7 +152,7 @@ export class MessageService {
     const list = this.tempMessages.get(convId) ?? []
     for (const m of list) {
       if (m.role === 'approval' && m.toolCallId === toolCallId) {
-        m.interactionStatus = approved ? 'approved' : 'rejected'
+        m.interactionStatus = approved ? STATUS_APPROVED : STATUS_REJECTED
         m.content = approved ? '用户批准执行' : '用户拒绝执行'
       }
     }
@@ -266,7 +274,7 @@ export class MessageService {
       roles: [ROLE_SYSTEM],
     })
     for (const m of existing) {
-      if (m.messageType === MSG_TYPE_SUMMARY) {
+      if (m.messageType === MSG_TYPE_SYSTEM_SUMMARY) {
         this.messageRepo.save({ ...m, deleted: true })
       }
     }
@@ -281,9 +289,9 @@ export class MessageService {
       toolCall: null,
       toolCallId: '',
       toolName: '',
-      finishReason: 'complete',
+      finishReason: FINISH_COMPLETE,
       interactionStatus: '',
-      messageType: MSG_TYPE_SUMMARY,
+      messageType: MSG_TYPE_SYSTEM_SUMMARY,
       deleted: false,
     })
   }

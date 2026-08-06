@@ -440,16 +440,18 @@ export type AgentMessageRole = 'user' | 'assistant' | 'system' | 'tool'
 /** 交互状态（对齐 tinker-agent MessageConstants） */
 export type InteractionStatus = 'pending' | 'approved' | 'rejected' | 'timed_out' | ''
 
-/** 消息类型（对齐 tinker-agent MessageConstants） */
+/** 消息类型（对齐 showing-agent MessageConstants） */
 export type AgentMessageType =
-  | 'user_message'
+  | 'user_normal'
+  | 'user_continue'
   | 'assistant_text'
   | 'assistant_tool_call'
+  | 'assistant_hybrid'
   | 'assistant_thinking'
   | 'tool_result'
   | 'approval_request'
   | 'clarify_request'
-  | 'summary'
+  | 'system_summary'
 
 /** MessageVO — 渲染层统一消息结构（本地/远端同源） */
 export interface AgentMessageVO {

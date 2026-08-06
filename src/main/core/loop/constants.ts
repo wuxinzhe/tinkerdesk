@@ -29,8 +29,12 @@ export const ROLE_SYSTEM = 'system'
 export const ROLE_USER = 'user'
 export const ROLE_ASSISTANT = 'assistant'
 export const ROLE_TOOL = 'tool'
+export const ROLE_APPROVAL = 'approval'
 
-/** 交互状态（INTERACTION_STATUS_UPDATE 的 payload.status） */
+/** 交互状态（对齐 showing-agent MessageConstants：STATUS_PENDING/APPROVED/REJECTED/TIMED_OUT） */
+export const STATUS_PENDING = 'pending'
+export const STATUS_APPROVED = 'approved'
+export const STATUS_REJECTED = 'rejected'
 export const STATUS_TIMED_OUT = 'timed_out'
 
 /** 审批拒绝返回文案（工具执行中止原因） */

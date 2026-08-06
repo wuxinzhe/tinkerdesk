@@ -7,6 +7,7 @@
  */
 import { getDatabase } from './database'
 import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
+import { STATUS_PENDING, STATUS_TIMED_OUT } from '../core/loop/constants'
 
 /** 消息实体（对应 MessageEntity） */
 
@@ -287,11 +288,11 @@ export class MessageRepository {
     const db = getDatabase()
     const result = db
       .prepare(
-        `UPDATE messages SET interaction_status = 'timed_out', content = '⏳ 已过期', updated_at = datetime('now')
-         WHERE role = 'approval' AND tool_call_id = ? AND interaction_status = 'pending'
+        `UPDATE messages SET interaction_status = ?, content = '⏳ 已过期', updated_at = datetime('now')
+         WHERE role = 'approval' AND tool_call_id = ? AND interaction_status = ?
            AND profile = ? AND session_id = ?`
       )
-      .run(toolCallId, profile, sessionId)
+      .run(STATUS_TIMED_OUT, toolCallId, STATUS_PENDING, profile, sessionId)
     return Number(result.changes)
   }
 

@@ -57,6 +57,7 @@ import { SaSpinner } from '@/renderer/components'
 const DISPLAY_TYPES = new Set([
   'user_normal',
   'assistant_text',
+  'assistant_hybrid',
   'approval_request',
   'clarify_request'
 ])
