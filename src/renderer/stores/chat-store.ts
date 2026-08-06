@@ -14,7 +14,6 @@ import { playMessageNotification } from '@/renderer/utils/audio-utils'
 import { showInfoToast } from '@/renderer/utils/notification-utils'
 import { isValidTokenValue } from '@/renderer/utils/streaming/token-validate'
 import { mergeToolCallChunks, type ToolCallChunk } from '@/renderer/utils/streaming/tool-call-merge'
-import { extractCompleted } from '@/renderer/utils/streaming/useParagraphSegmenter'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
@@ -52,7 +51,6 @@ export const useChatStore = defineStore('chat', () => {
    * isFinish 时从 toolCallArgs 组装；exe_client_tool 只下发 id，执行时按 id 从本缓存取完整参数。 */
   const toolCallsByConversation = ref<Record<string, Record<string, { name: string; arguments: unknown }>>>({})
   /** 每个 conversation 的 2 秒轮询定时器（用于清理） */
-  const pollingTimersByConversation: Record<string, ReturnType<typeof setInterval>> = {}
   /** 每个 session 的推理内容 */
   const streamingReasoningBySession = ref<Record<string, string>>({})
   /** 每个 session 是否正在处理中（用于 UI 指示器，不阻断操作） */
@@ -200,11 +198,11 @@ export const useChatStore = defineStore('chat', () => {
       removeStreamingPlaceholder(sessionId)
     }
 
-    // 1. 文本内容 → 追加到文本缓冲区（占位 content 由 runSegmentation 定期追加）
+    // 1. 文本内容 → 追加到文本缓冲区（流式期间不渲染，isFinish 后完整 Markdown 渲染）
     if (isValidTokenValue(data.token)) {
       const current = streamingContentByConversation.value[compositeKey] ?? ''
       streamingContentByConversation.value[compositeKey] = current + data.token
-      // 确保占位消息存在（content 暂为空，等待分段追加）
+      // 确保占位消息存在（content 暂为空，isFinish 后一次填充）
       ensureStreamingPlaceholder(sessionId, conversationId, compositeKey)
     }
 
@@ -224,23 +222,18 @@ export const useChatStore = defineStore('chat', () => {
       toolCallArgsBufferByConversation.value[compositeKey] = arr
     }
 
-    // 首次收到 token → 启动 2 秒轮询
-    if (!pollingTimersByConversation[compositeKey] && !data.isFinish) {
-      startPolling(sessionId, conversationId)
-    }
-
-    // isFinish → 最后一次 flush + 停止轮询 + 清理 + 完成占位消息
+    // isFinish → 完整文本一次填充占位消息（不做分批渲染）+ 清理
     if (data.isFinish) {
       const accumulated = streamingContentByConversation.value[compositeKey] ?? ''
       const fullText = accumulated || (isValidTokenValue(data.token) ? data.token : '')
       if (fullText) {
-        flushToChunks(sessionId, conversationId)
-        // 完成占位消息（原地更新，不 push 新消息）
         finalizeStreamingPlaceholder(sessionId, conversationId, {
           content: fullText,
           messageType: 'assistant_text'
         })
       }
+      // 清空文本缓冲区（接收区随之隐藏，Markdown 区显示完整回复）
+      delete streamingContentByConversation.value[compositeKey]
 
       // 清理推理缓冲区（isFinish 后不再需要）
       delete streamingReasoningBySession.value[sessionId]
@@ -266,7 +259,6 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
-      stopPolling(compositeKey)
       cleanupConversationToken(sessionId, conversationId)
       isProcessingBySession.value[sessionId] = false
 
@@ -318,8 +310,8 @@ export const useChatStore = defineStore('chat', () => {
     if (!msgs) return
     const placeholder = msgs.find(m => m.isStreaming)
     if (!placeholder) return
-    // content 已由 flushToChunks 追加完毕；兜底场景（无分段）用完整文本
-    placeholder.content = placeholder.content || info.content
+    // 完整文本一次填充（流式期间 content 为空，不分批渲染）
+    placeholder.content = info.content
     placeholder.messageType = info.messageType ?? 'assistant_text'
     placeholder.isStreaming = false
     placeholder.status = 'completed'
@@ -348,81 +340,9 @@ export const useChatStore = defineStore('chat', () => {
     placeholder.timestamp = Date.now()
   }
 
-  /** 启动 3.5 秒分段轮询 */
-  function startPolling(sessionId: string, conversationId: string): void {
-    const compositeKey = `${sessionId}:${conversationId}`
-    if (pollingTimersByConversation[compositeKey]) return
-
-    pollingTimersByConversation[compositeKey] = setInterval(() => {
-      runSegmentation(sessionId, conversationId)
-    }, 3500)
-  }
-
-  /** 停止指定 conversation 的轮询 */
-  function stopPolling(compositeKey: string): void {
-    if (pollingTimersByConversation[compositeKey]) {
-      clearInterval(pollingTimersByConversation[compositeKey])
-      delete pollingTimersByConversation[compositeKey]
-    }
-  }
-
-  /** 2 秒轮询：全量扫描 buffer，提取已封闭段落追加到占位消息 content，提取部分从 buffer 裁剪掉 */
-  function runSegmentation(sessionId: string, conversationId: string): void {
-    const compositeKey = `${sessionId}:${conversationId}`
-    const buffer = streamingContentByConversation.value[compositeKey]
-    if (!buffer) return
-
-    // 全量扫描（buffer 是暂存区：提取走的裁剪掉，未封闭的留在原地）
-    const { chunks, rest } = extractCompleted(buffer, 0, { nextId: 0 })
-
-    if (chunks.length > 0) {
-      // 追加到占位消息 content（可渲染的完整段落）
-      appendToPlaceholderContent(sessionId, chunks.map(c => c.text).join('\n\n'))
-      // 裁剪：只保留未提取的剩余文本
-      streamingContentByConversation.value[compositeKey] = rest
-    }
-  }
-
-  /** 追加文本到当前流式占位消息的 content 尾部 */
-  function appendToPlaceholderContent(sid: string, text: string): void {
-    if (!text) return
-    const msgs = messagesBySession.value[sid]
-    if (!msgs) return
-    const placeholder = msgs.find(m => m.isStreaming)
-    if (!placeholder) return
-    placeholder.content = placeholder.content
-      ? `${placeholder.content}\n\n${text}`
-      : text
-  }
-
-  /** isFinish 时：把缓冲区剩余内容全部提取为 chunks 并追加到 content */
-  function flushToChunks(sessionId: string, conversationId: string): void {
-    // 提取所有已封闭段落（buffer 内部裁剪）
-    runSegmentation(sessionId, conversationId)
-    // 再跑一次：覆盖 isFinish 时边界刚闭合的段落
-    runSegmentation(sessionId, conversationId)
-
-    // 剩余未封闭文本（buffer 已被裁剪，剩下的必然是未提取的）直接追加，保证完整
-    const compositeKey = `${sessionId}:${conversationId}`
-    const remaining = streamingContentByConversation.value[compositeKey]
-    if (remaining) {
-      appendToPlaceholderContent(sessionId, remaining)
-    }
-
-    // 清空缓冲区（不再需要了）
-    delete streamingContentByConversation.value[compositeKey]
-  }
-
-  /**
-   * 切换 conversation 时调用：停止旧 conv 的轮询，清空临时渲染块。
-   * buffer 不清空——切回来时可以继续累积。
-   */
+  /** 切换 conversation 时调用：清理临时状态（缓冲区分段已移除，无轮询可停） */
   function clearConvChunks(prevSessionId: string, prevConvId: string): void {
     if (!prevConvId) return
-    const compositeKey = `${prevSessionId}:${prevConvId}`
-
-    // 停止轮询（该 conv 不再需要 UI 更新）
-    stopPolling(compositeKey)
   }
 
   /** 获取指定 conversation 的未分段原始缓冲区文本（供接收区显示） */
@@ -436,7 +356,6 @@ export const useChatStore = defineStore('chat', () => {
     if (!sessionId || !conversationId) return false
     const key = `${sessionId}:${conversationId}`
     return streamingContentByConversation.value[key] !== undefined
-      && pollingTimersByConversation[key] !== undefined
   }
 
   /** 获取当前 session 活跃流式的 conversationId（无则返回空字符串） */
