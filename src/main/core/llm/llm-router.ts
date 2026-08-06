@@ -78,7 +78,7 @@ export class LlmRouter {
         case 'FATAL':
           return response
         case 'RETRYABLE':
-          console.warn(`模型 ${config.modelName} 返回 RETRYABLE（类型=${response.resType}），回退到下一个`)
+          console.warn(`模型 ${config.modelName} 返回 RETRYABLE（类型=${response.resType}${response.errorMessage ? `，原因=${response.errorMessage}` : ''}），回退到下一个`)
         // continue
       }
     }

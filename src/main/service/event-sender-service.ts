@@ -45,7 +45,8 @@ export class ElectronEventSender implements IEventSender {
   }
 
   /** 审批请求通道（对齐 Java APPROVAL_REQUEST：弹审批卡片） */
-  sendApprovalRequest(_sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string }): void {
-    webContents.fromId(this.senderId)?.send('agent:approvalRequest', data)
+  sendApprovalRequest(sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string }): void {
+    console.log(`[agent] 审批请求 sessionId=${sessionId} tool=${data.name} toolCallId=${data.toolCallId}`)
+    webContents.fromId(this.senderId)?.send('agent:approvalRequest', { ...data, sessionId })
   }
 }

@@ -53,6 +53,7 @@ import {
   EVT_TOOL_START,
   ROLE_SYSTEM,
   ROLE_TOOL,
+  ROLE_ASSISTANT,
   STATUS_TIMED_OUT,
 } from './constants'
 import { MSG_TYPE_APPROVAL_REQUEST, MSG_TYPE_TOOL_RESULT } from '../../service/message-service'
@@ -283,6 +284,12 @@ export class AgentLoop {
             )
             // 工具轮次开始：重置防护计数（对齐 Java guardrail.resetForTurn）
             guardrail.resetForTurn()
+            // 回填 LLM 上下文：assistant tool_calls 消息（tool 结果消息的前置，缺失会导致 API 400）
+            messages.push({
+              role: ROLE_ASSISTANT,
+              content: response.reasoningContent ?? '',
+              toolCall: JSON.stringify(response.toolCalls.map((tc) => ({ id: tc.id, name: tc.name, arguments: tc.arguments }))),
+            })
             for (const tc of response.toolCalls) {
               // 工具开始事件（对齐 Java sendAction(TOOL_START)）
               convCtx.sendAction(EVT_TOOL_START, { toolName: tc.name })

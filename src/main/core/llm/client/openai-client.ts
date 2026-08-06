@@ -4,6 +4,7 @@ import type { ToolSchema } from '../../../core/tool/tool-schema'
 import {
   ERROR_AUTH_FAILED,
   ERROR_CONTEXT_OVERFLOW,
+  ERROR_INVALID_REQUEST,
   ERROR_NETWORK_ERROR,
   ERROR_RATE_LIMITED,
   ERROR_SERVER_ERROR,
@@ -30,6 +31,26 @@ export class OpenAIClient implements LlmClient {
       if (m.role === 'tool') {
         return { ...base, tool_call_id: m.toolCallId ?? '' } as OpenAI.Chat.Completions.ChatCompletionMessageParam
       }
+      // assistant 工具调用：toolCall(JSON) → tool_calls 数组（缺失会导致 tool 结果消息 400）
+      if (m.role === 'assistant' && m.toolCall) {
+        try {
+          const calls = JSON.parse(m.toolCall) as Array<{ id: string; name: string; arguments: unknown }>
+          return {
+            ...base,
+            tool_calls: calls.map((c) => ({
+              id: c.id,
+              type: 'function' as const,
+              function: {
+                name: c.name,
+                arguments: typeof c.arguments === 'string' ? c.arguments : JSON.stringify(c.arguments),
+              },
+            })),
+          } as OpenAI.Chat.Completions.ChatCompletionMessageParam
+        } catch {
+          // toolCall JSON 解析失败 → 按普通消息发送（避免整个请求失败）
+          return base
+        }
+      }
       return base
     })
   }
@@ -51,8 +72,15 @@ export class OpenAIClient implements LlmClient {
         return errorResponse(ERROR_AUTH_FAILED, `认证失败: ${message}`)
       case 429:
         return errorResponse(ERROR_RATE_LIMITED, `请求被限流: ${message}`, retryAfter)
-      case 400:
-        return errorResponse(ERROR_CONTEXT_OVERFLOW, `请求无效或上下文超限: ${message}`)
+      case 400: {
+        const lower = message.toLowerCase()
+        if (lower.includes('context') || lower.includes('length') || lower.includes('token') || lower.includes('maximum')) {
+          console.error(`[llm] 400 上下文超限: ${message}`)
+          return errorResponse(ERROR_CONTEXT_OVERFLOW, `上下文超限: ${message}`)
+        }
+        console.error(`[llm] 400 请求无效: ${message}`)
+        return errorResponse(ERROR_INVALID_REQUEST, `请求无效: ${message}`)
+      }
       case 500:
       case 502:
       case 503:

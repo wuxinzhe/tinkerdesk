@@ -170,10 +170,10 @@ const api = {
       }
       return inv('agent:chat', req).then(unwrap)
     },
-    toolResult: (profile: string, sessionId: string, toolCallId: string, result: string) =>
-      inv('agent:toolResult', {profile, sessionId, toolCallId, result}).then(unwrap),
-    approval: (profile: string, sessionId: string, toolCallId: string, approved: boolean) =>
-      inv('agent:approval', {profile, sessionId, toolCallId, approved}).then(unwrap),
+    toolResult: (req: AgentToolResultRequestDTO) =>
+      inv('agent:toolResult', req).then(unwrap),
+    approval: (req: AgentApprovalRequestDTO) =>
+      inv('agent:approval', req).then(unwrap),
     revoke: (profile: string, sessionId: string, messageId: string) =>
       inv('agent:revoke', {profile, sessionId, messageId}).then(unwrap),
     interrupt: (profile: string, sessionId: string) =>

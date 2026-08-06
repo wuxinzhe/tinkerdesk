@@ -86,11 +86,11 @@ export const useChatStore = defineStore('chat', () => {
     initialized = true
     agentApi = createLocalAgentApi()
 
-    // 审批请求事件 → 弹审批卡片
+    // 审批请求事件 → 弹审批卡片（sessionId 由 main 随事件携带；兜底用当前会话）
     agentApi.onApprovalRequest((payload: AgentApprovalEvent) => {
       const tc = payload as AgentApprovalEvent
       addApprovalMessage({
-        sessionId: '',
+        sessionId: tc.sessionId ?? sessionStore.sessionId ?? '',
         data: {
           toolCallId: tc.toolCallId,
           toolName: tc.name,
@@ -714,7 +714,7 @@ export const useChatStore = defineStore('chat', () => {
       sessionId,
       conversationId: raw?.conversationId ?? data.conversationId,
       role: 'approval',
-      messageType: raw?.messageType,
+      messageType: raw?.messageType ?? 'approval_request',
       content: raw?.content ?? '等待审批',
       timestamp: raw?.timestamp ?? Date.now(),
       status: 'completed',
@@ -795,12 +795,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   function resolveApproval(toolCallId: string, approved: boolean): void {
+    console.log('[approval] resolveApproval called ' + JSON.stringify({ toolCallId, approved, hasApi: !!agentApi, sessions: Object.keys(messagesBySession.value).length }))
     if (!agentApi) return
 
     // 找到对应的审批消息获取 sessionId
     for (const [sid, msgs] of Object.entries(messagesBySession.value)) {
       const msg = msgs.find(m => m.role === 'approval' && m.toolCallId === toolCallId)
       if (!msg) continue
+      console.log('[approval] 找到审批消息 ' + JSON.stringify({ sid, msgToolCallId: msg.toolCallId }))
 
       agentApi.approval({ profile: sessionStore.profile ?? 'default', sessionId: sid, toolCallId, approved }).catch(() => { /* 本地调用失败静默 */ })
 

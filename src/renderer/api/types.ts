@@ -520,6 +520,7 @@ export interface AgentApprovalRequest {
 
 /** 审批请求事件（主进程 → 渲染层，弹审批卡片） */
 export interface AgentApprovalEvent {
+  sessionId?: string
   toolCallId: string
   name: string
   arguments?: unknown
