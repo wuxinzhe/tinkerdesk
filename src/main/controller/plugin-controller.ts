@@ -9,7 +9,7 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain } from 'electron'
+import { ipcMain, dialog } from 'electron'
 import { PluginManager } from '../core/plugin/plugin-manager'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
@@ -37,6 +37,9 @@ export class PluginController {
     ipcMain.handle('plugin:get-schema', (_event, payload: { id: string }) =>
       this.getPluginSchema(payload),
     )
+    ipcMain.handle('plugin:pick-file', (_event, payload: { filters?: { name: string; extensions: string[] }[] }) =>
+      this.pickFile(payload),
+    )
     ipcMain.handle('plugin:get-config', (_event, payload: { id: string }) =>
       this.getPluginConfig(payload),
     )
@@ -59,6 +62,23 @@ export class PluginController {
     try {
       if (!payload?.id) return fail('id 不能为空')
       return ok(await this.pluginManager.toggle(payload.id, !!payload.enabled))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 文件选择对话框（配置表单 file 字段用） */
+  private pickFile(payload: { filters?: { name: string; extensions: string[] }[] }): ApiResult<string | null> {
+    try {
+      const filters = payload?.filters?.length
+        ? payload.filters.map((f) => ({ name: f.name ?? '文件', extensions: f.extensions ?? ['*'] }))
+        : undefined
+      const result = dialog.showOpenDialogSync({
+        title: '选择文件',
+        properties: ['openFile'],
+        filters,
+      })
+      return ok(result?.[0] ?? null)
     } catch (e) {
       return fail((e as Error).message)
     }

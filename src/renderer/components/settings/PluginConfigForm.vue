@@ -57,6 +57,16 @@ function submit(): void {
   }
   emit('save', patch)
 }
+
+/** file 字段：调系统文件对话框选择 */
+async function pickFile(key: string, filters?: { name: string; extensions: string[] }[]): Promise<void> {
+  try {
+    const path = await window.api.plugins.pickFile(filters)
+    if (path) form[key] = path
+  } catch {
+    // 取消/失败：静默
+  }
+}
 </script>
 
 <template>
@@ -100,6 +110,18 @@ function submit(): void {
         :step="field.step ?? 1"
         :placeholder="field.placeholder"
       />
+
+      <!-- file：文件选择（输入框 + 浏览按钮 → 系统对话框） -->
+      <div v-else-if="field.type === 'file'" class="pcf__file">
+        <input
+          v-model="form[key]"
+          type="text"
+          class="pcf__input"
+          :placeholder="field.placeholder ?? '选择文件…'"
+          readonly
+        />
+        <button class="pcf__file-btn" @click="pickFile(key, field.filters)">浏览…</button>
+      </div>
 
       <!-- string / secret -->
       <input
@@ -167,9 +189,38 @@ function submit(): void {
 }
 
 .pcf__desc {
-  font-size: 11px;
+  margin-top: 4px;
+  font-size: 12px;
   color: var(--sa-text-tertiary, #aeaeb2);
-  margin: 0;
+}
+
+/* file 字段：输入框 + 浏览按钮 */
+.pcf__file {
+  display: flex;
+  gap: 8px;
+}
+
+.pcf__file .pcf__input {
+  flex: 1;
+  cursor: default;
+  color: var(--sa-text-secondary, #86868b);
+}
+
+.pcf__file-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid var(--sa-accent, #007aff);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pcf__file-btn:hover {
+  background: rgba(0, 122, 255, 0.12);
 }
 
 /* 开关（HIG 风格） */

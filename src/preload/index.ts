@@ -311,6 +311,9 @@ const api = {
     /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
     invoke: (id: string, channel: string, payload?: unknown) =>
       inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
+    /** 文件选择对话框（配置表单 file 字段） */
+    pickFile: (filters?: { name: string; extensions: string[] }[]) =>
+      inv('plugin:pick-file', { filters }).then(unwrap),
   },
 
   // ── 语音服务（系统固定接口，转发当前插件 provider） ──

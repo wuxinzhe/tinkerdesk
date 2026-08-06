@@ -666,7 +666,7 @@ export interface PluginInfo {
   status: PluginStatus
 }
 
-export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea'
+export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea' | 'file'
 
 export interface ConfigField {
   type: ConfigFieldType
@@ -679,6 +679,8 @@ export interface ConfigField {
   max?: number
   step?: number
   options?: { label: string; value: string }[]
+  /** file 专用：文件选择对话框过滤器（[{ name, extensions: ['wav','mp3'] }]） */
+  filters?: { name: string; extensions: string[] }[]
 }
 
 export interface ConfigSchema {
@@ -822,6 +824,8 @@ export interface WindowApi {
     saveConfig: (id: string, patch: Record<string, unknown>) => Promise<boolean>
     /** 调用插件注册的 IPC 能力 */
     invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
+    /** 文件选择对话框（配置表单 file 字段） */
+    pickFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
   }
 
   voice: {

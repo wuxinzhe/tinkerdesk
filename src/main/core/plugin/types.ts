@@ -45,7 +45,7 @@ export interface ModelDep {
 
 /* ── 配置 Schema（动态表单渲染协议，UI 不写死插件字段） ── */
 
-export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea'
+export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea' | 'file'
 
 export interface ConfigField {
   type: ConfigFieldType
@@ -60,6 +60,8 @@ export interface ConfigField {
   step?: number
   /** select 专用 */
   options?: { label: string; value: string }[]
+  /** file 专用：文件选择对话框过滤器（[{ name, extensions: ['wav','mp3'] }]） */
+  filters?: { name: string; extensions: string[] }[]
 }
 
 export interface ConfigSchema {
