@@ -29,7 +29,7 @@
 
     <!-- 消息列表（含流式占位消息） -->
     <TransitionGroup name="message">
-      <div v-for="(msg, idx) in visibleMessages" :key="msgKey(msg, idx)">
+      <div v-for="(msg, idx) in visibleMessages" :key="msgKey(msg, idx)" class="message-row">
         <MessageBubbleComponent
           :message="msg"
           :is-streaming="msg.isStreaming ?? false"
@@ -119,7 +119,10 @@ function scrollToBottom() {
   })
 }
 
-/** 根据最后一条消息的高度决定滚动位置 */
+/** 会话切换标记：切换后首批消息直接拉到底部（不做顶部对齐/动画） */
+let sessionJustSwitched = false
+
+/** 根据最后一条消息的高度决定滚动位置：超长回复滚动到气泡顶部（距视口 16px），否则底部 */
 function scrollToNewMessage() {
   nextTick(() => {
     const container = listRef.value
@@ -146,7 +149,8 @@ function scrollToNewMessage() {
     const viewportHeight = container.clientHeight
 
     if (bubbleHeight > viewportHeight * 0.7) {
-      lastRow.scrollIntoView({ block: 'start', behavior: 'smooth' })
+      // 超长回复：滚动到气泡顶部（scroll-margin-top: 16px 保证距顶部 16px），瞬时无动画
+      lastRow.scrollIntoView({ block: 'start' })
     } else {
       scrollToBottom()
     }
@@ -161,13 +165,28 @@ function onScroll() {
   userScrolledUp.value = !isAtBottom
 }
 
-// 新消息到达时自动滚动
+// 新消息到达时自动滚动（会话切换后的首批消息直接拉到底部，不触发顶部对齐）
 watch(
   () => props.messages.length,
   () => {
+    if (sessionJustSwitched) {
+      sessionJustSwitched = false
+      scrollToBottom()
+      return
+    }
     if (!userScrolledUp.value) {
       scrollToNewMessage()
     }
+  }
+)
+
+// 切换会话：直接拉到底部（无动画），标记跳过首批消息的顶部对齐
+watch(
+  () => props.sessionId,
+  () => {
+    sessionJustSwitched = true
+    userScrolledUp.value = false
+    scrollToBottom()
   }
 )
 
@@ -188,6 +207,9 @@ watch(
     if (v) {
       userScrolledUp.value = false
       scrollToBottom()
+    } else if (!userScrolledUp.value) {
+      // 流式结束：占位转正原地更新（messages.length 不变），需在此触发超长回复顶部对齐
+      scrollToNewMessage()
     }
   }
 )
@@ -211,6 +233,11 @@ defineExpose({
   flex-direction: column;
   min-height: 0;
   overscroll-behavior: contain;
+}
+
+/* 超长回复顶部对齐时，气泡距视口顶部 16px（配合 scrollIntoView block:start） */
+.message-row {
+  scroll-margin-top: 16px;
 }
 
 /* ── 加载更多 ── */

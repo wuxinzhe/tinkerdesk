@@ -12,6 +12,10 @@ import type { StreamToken } from '../controller/types'
 
 /** Electron WebContents 事件发送器 */
 export class ElectronEventSender implements IEventSender {
+  /** 待合并发送的 token 批（30ms 窗口，减少高频 IPC + 平滑渲染节奏） */
+  private tokenBuffer: Array<{ sessionId: string; evt: StreamToken }> = []
+  private tokenFlushTimer: ReturnType<typeof setTimeout> | null = null
+
   constructor(
     private readonly senderId: number,
     private readonly sessionId: string
@@ -32,7 +36,7 @@ export class ElectronEventSender implements IEventSender {
     webContents.fromId(this.senderId)?.send('agent:queueTip', { type, message, sessionId: this.sessionId })
   }
 
-  /** 流式 token 通道（LlmChunk → StreamToken 边界转换） */
+  /** 流式 token 通道（LlmChunk → StreamToken 边界转换；30ms 窗口攒批合并发送） */
   sendToken(_sessionId: string, chunk: LlmChunk): void {
     const evt: StreamToken = {
       text: chunk.text || undefined,
@@ -41,7 +45,44 @@ export class ElectronEventSender implements IEventSender {
       isFinish: chunk.isFinish,
       finishReason: chunk.finishReason,
     }
-    webContents.fromId(this.senderId)?.send('agent:token', evt)
+    // 攒批：同一窗口内的多个 chunk 合并为一次 IPC（减少高频消息 + 渲染节奏更均匀）
+    this.tokenBuffer.push({ sessionId: this.sessionId, evt })
+    if (!this.tokenFlushTimer) {
+      this.tokenFlushTimer = setTimeout(() => this.flushTokens(), 30)
+    }
+    // isFinish 立即 flush（最终 token 不延迟）
+    if (chunk.isFinish) {
+      this.flushTokens()
+    }
+  }
+
+  /** 合并发送攒批的 token（按 session 聚合 text/reasoning/toolCallArgs） */
+  private flushTokens(): void {
+    if (this.tokenFlushTimer) {
+      clearTimeout(this.tokenFlushTimer)
+      this.tokenFlushTimer = null
+    }
+    if (this.tokenBuffer.length === 0) return
+
+    const bySession = new Map<string, StreamToken>()
+    for (const { sessionId, evt } of this.tokenBuffer) {
+      const cur = bySession.get(sessionId) ?? {
+        text: undefined, reasoning: undefined, toolCallArgs: undefined,
+        isFinish: false, finishReason: undefined,
+      } as StreamToken
+      if (evt.text) cur.text = (cur.text ?? '') + evt.text
+      if (evt.reasoning) cur.reasoning = (cur.reasoning ?? '') + evt.reasoning
+      if (evt.toolCallArgs) cur.toolCallArgs = (cur.toolCallArgs ?? '') + evt.toolCallArgs
+      if (evt.isFinish) {
+        cur.isFinish = true
+        cur.finishReason = evt.finishReason
+      }
+      bySession.set(sessionId, cur)
+    }
+    this.tokenBuffer = []
+    for (const [sessionId, merged] of bySession) {
+      webContents.fromId(this.senderId)?.send('agent:token', { ...merged, sessionId })
+    }
   }
 
   /** 审批请求通道（对齐 Java APPROVAL_REQUEST：弹审批卡片） */
