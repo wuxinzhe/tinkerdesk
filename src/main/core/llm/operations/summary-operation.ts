@@ -8,6 +8,7 @@
  */
 import type { ApiMessage, LlmOperation, LlmResponse, OperationContext, OperationDecision } from '../types'
 import type { ToolSchema } from '../../tool/tool-schema'
+import { RES_TEXT } from '../llm-response'
 
 /** 摘要场景（对齐 Java SummaryOperation.SCENE） */
 export const SCENE = 'conversation_compression'
@@ -24,7 +25,7 @@ export class SummaryOperation implements LlmOperation {
 
   /** Phase 3: 文本即成功 */
   handle(response: LlmResponse, _ctx: OperationContext, _rawMessages: ApiMessage[], _tools: ToolSchema[]): OperationDecision {
-    if (response.resType === 'text') {
+    if (response.resType === RES_TEXT) {
       return { verdict: 'SUCCESS' }
     }
     return { verdict: 'RETRYABLE' }

@@ -8,6 +8,7 @@
  */
 import type { ApiMessage, LlmOperation, LlmResponse, OperationContext, OperationDecision } from '../types'
 import type { ToolSchema } from '../../tool/tool-schema'
+import { RES_TEXT, RES_TOOL_CALLS, RES_REASONING } from '../llm-response'
 
 /** 主对话场景（对齐 Java ChatOperation.SCENE） */
 export const SCENE = 'main_conversation'
@@ -24,7 +25,7 @@ export class ChatOperation implements LlmOperation {
 
   /** Phase 3: 成功即完成，其余交给 AgentLoop 分支处理 */
   handle(response: LlmResponse, _ctx: OperationContext, _rawMessages: ApiMessage[], _tools: ToolSchema[]): OperationDecision {
-    if (response.resType === 'text' || response.resType === 'tool_calls' || response.resType === 'reasoning') {
+    if (response.resType === RES_TEXT || response.resType === RES_TOOL_CALLS || response.resType === RES_REASONING) {
       return { verdict: 'SUCCESS' }
     }
     return { verdict: 'RETRYABLE' }
