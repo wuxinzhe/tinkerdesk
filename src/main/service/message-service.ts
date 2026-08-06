@@ -163,14 +163,29 @@ export class MessageService {
     this.messageRepo.updateApprovalStatusTimedOut(toolCallId, profile, sessionId)
   }
 
-  /** 按 session 分页查询消息 */
+  /** 按 session 分页查询消息（DB 已落库 + 拼上当前进行中对话的暂存消息） */
   listMessagesBySession(sessionId: string, profile: string, limit: number, offset: number): MessageEntity[] {
-    return this.messageRepo.findMessagesBySession({
+    const db = this.messageRepo.findMessagesBySession({
       sessionId,
       profile,
       sortOrder: 'ASC',
       limit,
-    }).slice(offset)
+    })
+    // 拼上暂存消息（进行中对话尚未落库：流式中的 assistant/工具结果/审批卡片）
+    // 场景：切 session 再回来 / 刷新页面时，进行中的对话消息不丢失
+    const temp: MessageEntity[] = []
+    for (const msgs of this.tempMessages.values()) {
+      for (const m of msgs) {
+        if (m.sessionId === sessionId && m.profile === profile && !m.deleted) {
+          temp.push(m)
+        }
+      }
+    }
+    if (temp.length === 0) return db.slice(offset)
+    const all = [...db, ...temp].sort((a, b) =>
+      (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0)
+    )
+    return all.slice(offset)
   }
 
   /** 按 conversation 查询全部消息 */
