@@ -40,16 +40,15 @@ async function load(): Promise<void> {
     const list = await pluginsApi.list()
     plugin.value = list.find((p) => p.manifest.id === pluginId.value) ?? null
     if (!plugin.value) return
-    const [checkResult, schemaResult, configResult, statusResult] = await Promise.all([
-      pluginsApi.check(pluginId.value).catch(() => ({ ok: false, checks: [] })),
-      pluginsApi.getSchema(pluginId.value),
-      pluginsApi.getConfig(pluginId.value),
-      pluginsApi.getStatus(pluginId.value),
-    ])
+    // 各数据独立容错：单个失败（如插件 getStatus 抛错）不拖垮整页
+    const checkResult = await pluginsApi.check(pluginId.value).catch(() => ({ ok: false, checks: [] }))
+    const schemaResult = await pluginsApi.getSchema(pluginId.value).catch(() => null)
+    const configResult = await pluginsApi.getConfig(pluginId.value).catch(() => ({}))
+    const statusResult = await pluginsApi.getStatus(pluginId.value).catch(() => undefined)
     check.value = checkResult
     schema.value = schemaResult
     config.value = configResult
-    if (plugin.value) plugin.value.status = statusResult
+    if (plugin.value && statusResult) plugin.value.status = statusResult
     await refreshModelsStatus()
   } finally {
     loading.value = false
