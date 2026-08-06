@@ -168,7 +168,8 @@ async function loadSkills(page: number) {
 }
 
 function openSkillDetail(skill: SkillInfo) {
-  router.push({ path: `/workspace/agents/${detailProfile.value}/skill/${skill.id}`, state: { skill } as unknown as HistoryState })
+  // 不通过 history state 传对象（pushState 无法克隆响应式 Proxy → DataCloneError）；详情页按 skillId 自行加载
+  router.push({ path: `/workspace/agents/${detailProfile.value}/skill/${skill.id}` })
 }
 
 async function toggleSkill(skill: SkillInfo, enabled: boolean) {

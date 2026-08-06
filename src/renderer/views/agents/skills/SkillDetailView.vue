@@ -128,24 +128,31 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
+import { skillsApi } from '@/renderer/api/skills-api'
 import type { SkillInfo } from '@/renderer/api/types'
 import { L3PageLayout } from '@/renderer/components'
 
 const router = useRouter()
+const route = useRoute()
 const skill = ref<SkillInfo | null>(null)
 const showRaw = ref(false)
 
-onMounted(() => {
-  // 列表页通过 router.push({ state }) 传入完整 skill 对象
-  const stateSkill = (history.state as { skill?: SkillInfo } | null)?.skill
-  if (stateSkill) {
-    skill.value = stateSkill
-  } else {
-    // 兜底：无数据返回上一页
-    goBack()
+onMounted(async () => {
+  // 按路由参数加载（不依赖 history state——pushState 无法克隆响应式对象；直达 URL 也能工作）
+  const skillId = route.params.skillId as string
+  const profile = route.params.profile as string
+  try {
+    const res = await skillsApi.detail(skillId, profile)
+    if (res) {
+      skill.value = res
+      return
+    }
+  } catch {
+    // 加载失败 → 返回上一页
   }
+  goBack()
 })
 
 function goBack() {

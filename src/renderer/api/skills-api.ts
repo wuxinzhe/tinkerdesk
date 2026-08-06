@@ -32,6 +32,12 @@ export class SkillsApi {
     return (data as { items: SkillInfo[]; total: number; offset: number; limit: number }) ?? { items: [], total: 0, offset: 0, limit: 0 }
   }
 
+  /** 私有技能详情（按 id 走 IPC 查询，不依赖路由 state） */
+  async detail(id: string, profile = 'default'): Promise<SkillInfo | null> {
+    const data = await window.api.skills.get(id, profile)
+    return (data as SkillInfo) ?? null
+  }
+
   /** 本地无官方技能安装 */
   async install(_skillId: string, _profile = 'default'): Promise<ApiResponse> {
     return { success: false, error: '本地客户端无官方技能市场' }
