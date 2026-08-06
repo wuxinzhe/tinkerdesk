@@ -76,14 +76,13 @@ export class PluginController {
     }
   }
 
-  /** 选择插件安装包：文件夹或 zip（openFile + openDirectory 组合） */
+  /** 选择插件安装包：文件夹或 zip（openFile + openDirectory 组合；不加 filters——Windows 上 filters 会隐藏文件） */
   private async pickInstallPackage(): Promise<ApiResult<string | null>> {
     try {
       const win = this.getWindow()
       const options: Electron.OpenDialogOptions = {
         title: '选择插件包（文件夹或 .zip）',
         properties: ['openFile', 'openDirectory'],
-        filters: [{ name: '插件包', extensions: ['zip'] }],
       }
       const result = win
         ? await dialog.showOpenDialog(win, options)
