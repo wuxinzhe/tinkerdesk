@@ -16,7 +16,7 @@
     <ChatAreaComponent
       :messages="chatStore.getMessages(sessionId)"
       :streaming-content="pendingBuffer"
-      :streaming-reasoning="chatStore.getStreamingReasoning(sessionId)"
+      :streaming-reasoning="streamingReasoning"
       :is-streaming="!!chatStore.getMessages(sessionId).find(m => m.isStreaming)"
       :session-id="sessionId"
       :profile="profile"
@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTypewriter } from '@/renderer/utils/streaming/useTypewriter'
 import ChatAreaComponent from '@/renderer/components/workspace/ChatAreaComponent.vue'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
@@ -88,9 +89,24 @@ const isMobile = useMobile()
 const sessionId = computed(() => route.params.sessionId as string)
 
 /** 当前流式的原始 buffer（isFinish 后无 buffer → 返回 ''） */
-const pendingBuffer = computed(() => {
+const pendingBufferRaw = computed(() => {
   const convId = chatStore.getActiveStreamingConvId(sessionId.value)
   return convId ? chatStore.getConvPendingBuffer(sessionId.value, convId) : ''
+})
+
+/** 打字机平滑：LLM 推流不均匀（150~900ms/包）时实时区（接收区/思考气泡）仍连续流动 */
+const { displayed: pendingBuffer, fastForward: ffPending } = useTypewriter(pendingBufferRaw)
+const { displayed: streamingReasoning, fastForward: ffReasoning } = useTypewriter(
+  computed(() => chatStore.getStreamingReasoning(sessionId.value))
+)
+
+/** 流式结束（isStreaming=false）→ 快进到完整内容（避免平滑器落后导致最后一段缺失） */
+const isStreamingNow = computed(() => !!chatStore.getMessages(sessionId.value).find(m => m.isStreaming))
+watch(isStreamingNow, (v) => {
+  if (!v) {
+    ffPending()
+    ffReasoning()
+  }
 })
 
 /* ── Agent 信息 ── */
