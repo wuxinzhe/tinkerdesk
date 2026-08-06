@@ -113,6 +113,18 @@ ipcRenderer.on('agent:queueTip', (_event, payload: { type?: string; message?: st
   }
 })
 
+// ── 插件事件转发：plugin:event → renderer（插件 emit() 的出口）──
+ipcRenderer.on('plugin:event', (_event, payload: { pluginId: string; event: string; data?: unknown } | null) => {
+  if (!payload) return
+  try {
+    window.dispatchEvent(new CustomEvent('plugin:event', {
+      detail: { pluginId: payload.pluginId, event: payload.event, data: payload.data },
+    }))
+  } catch {
+    // 事件转发失败静默（日志已由 main 侧打印）
+  }
+})
+
 const api = {
   // ── Window Controls ──
   windowMinimize: () => inv('window:minimize'),
@@ -284,6 +296,20 @@ const api = {
     list: (profile?: string) => inv('tool-config:list', {profile} satisfies ToolListQueryDTO).then(unwrap),
     toggle: (toolName: string, disabled: boolean, profile?: string) =>
       inv('tool-config:toggle', {toolName, disabled, profile} satisfies ToggleToolRequestDTO).then(unwrap),
+  },
+
+  // ── 插件系统 ──
+  plugins: {
+    list: () => inv('plugin:list').then(unwrap),
+    toggle: (id: string, enabled: boolean) => inv('plugin:toggle', {id, enabled}).then(unwrap),
+    getStatus: (id: string) => inv('plugin:get-status', {id}).then(unwrap),
+    getSchema: (id: string) => inv('plugin:get-schema', {id}).then(unwrap),
+    getConfig: (id: string) => inv('plugin:get-config', {id}).then(unwrap),
+    saveConfig: (id: string, patch: Record<string, unknown>) =>
+      inv('plugin:save-config', {id, patch}).then(unwrap),
+    /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
+    invoke: (id: string, channel: string, payload?: unknown) =>
+      inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
   },
 }
 

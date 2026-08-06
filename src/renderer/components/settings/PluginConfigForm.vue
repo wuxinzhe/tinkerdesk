@@ -1,0 +1,246 @@
+<script setup lang="ts">
+/**
+ * PluginConfigForm.vue — 插件配置动态表单渲染器
+ *
+ * 按插件返回的 ConfigSchema 动态渲染表单，UI 不写死任何插件字段。
+ * 字段类型：string / secret / number / boolean / select / textarea
+ */
+import { ref, reactive, watch, onMounted } from 'vue'
+import type { ConfigSchema } from '@/renderer/api/types'
+
+const props = defineProps<{
+  pluginId: string
+  schema: ConfigSchema
+  /** 初始配置（secret 已脱敏为 ***） */
+  initial: Record<string, unknown>
+}>()
+
+const emit = defineEmits<{
+  save: [patch: Record<string, unknown>]
+}>()
+
+// 动态 schema 表单：值类型由插件字段决定（string/number/boolean），运行时才知道，用宽松类型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const form = reactive<Record<string, any>>({})
+const loaded = ref(false)
+
+// schema / 初始值变化时重建表单
+watch(
+  () => [props.schema, props.initial],
+  () => {
+    rebuild()
+  },
+  { deep: true }
+)
+
+onMounted(() => rebuild())
+
+function rebuild(): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const next: Record<string, any> = {}
+  for (const [key, field] of Object.entries(props.schema.properties ?? {})) {
+    const initial = props.initial[key]
+    next[key] = initial !== undefined ? initial : field.default ?? (field.type === 'boolean' ? false : '')
+  }
+  Object.keys(form).forEach((k) => delete form[k])
+  Object.assign(form, next)
+  loaded.value = true
+}
+
+function submit(): void {
+  const patch: Record<string, unknown> = {}
+  for (const [key, field] of Object.entries(props.schema.properties ?? {})) {
+    const value = form[key]
+    // secret 未改（***）→ 不提交（保留原值）
+    if (field.type === 'secret' && (value === '***' || value === '')) continue
+    patch[key] = value
+  }
+  emit('save', patch)
+}
+</script>
+
+<template>
+  <div class="pcf">
+    <div v-for="(field, key) in schema.properties" :key="key" class="pcf__field">
+      <label class="pcf__label">
+        {{ field.title }}
+        <span v-if="field.required" class="pcf__required">*</span>
+      </label>
+
+      <!-- boolean：开关 -->
+      <label v-if="field.type === 'boolean'" class="pcf__switch">
+        <input v-model="form[key]" type="checkbox" />
+        <span class="pcf__switch-track"></span>
+      </label>
+
+      <!-- select：下拉 -->
+      <select v-else-if="field.type === 'select'" v-model="form[key]" class="pcf__input">
+        <option v-for="opt in field.options ?? []" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
+
+      <!-- textarea -->
+      <textarea
+        v-else-if="field.type === 'textarea'"
+        v-model="form[key]"
+        class="pcf__input pcf__input--textarea"
+        rows="3"
+        :placeholder="field.placeholder"
+      ></textarea>
+
+      <!-- number -->
+      <input
+        v-else-if="field.type === 'number'"
+        v-model.number="form[key]"
+        type="number"
+        class="pcf__input"
+        :min="field.min"
+        :max="field.max"
+        :step="field.step ?? 1"
+        :placeholder="field.placeholder"
+      />
+
+      <!-- string / secret -->
+      <input
+        v-else
+        v-model="form[key]"
+        :type="field.type === 'secret' ? 'password' : 'text'"
+        class="pcf__input"
+        :placeholder="field.placeholder"
+      />
+
+      <p v-if="field.description" class="pcf__desc">{{ field.description }}</p>
+    </div>
+
+    <div class="pcf__actions">
+      <button class="pcf__btn" :disabled="!loaded" @click="submit">保存配置</button>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.pcf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-4, 16px);
+}
+
+.pcf__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-1, 4px);
+}
+
+.pcf__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.pcf__required {
+  color: var(--sa-destructive, #ff3b30);
+  margin-left: 2px;
+}
+
+.pcf__input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--sa-bg-primary, #ffffff);
+  border: 1px solid var(--sa-border, #d2d2d7);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.pcf__input:focus {
+  border-color: var(--sa-accent, #007aff);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+.pcf__input--textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.pcf__desc {
+  font-size: 11px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  margin: 0;
+}
+
+/* 开关（HIG 风格） */
+.pcf__switch {
+  position: relative;
+  display: inline-flex;
+  width: 36px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.pcf__switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pcf__switch-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--sa-bg-tertiary, #e5e5ea);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.pcf__switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+}
+
+.pcf__switch input:checked + .pcf__switch-track {
+  background: var(--sa-accent, #007aff);
+}
+
+.pcf__switch input:checked + .pcf__switch-track::after {
+  transform: translateX(14px);
+}
+
+.pcf__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pcf__btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #ffffff;
+  background: var(--sa-accent, #007aff);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.pcf__btn:hover {
+  background: var(--sa-accent-hover, #0066d6);
+}
+
+.pcf__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+</style>

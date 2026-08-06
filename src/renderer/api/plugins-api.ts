@@ -1,0 +1,39 @@
+/**
+ * plugins-api.ts — 插件系统 API 封装
+ *
+ * 统一走 preload window.api.plugins（IPC 前缀 plugin:*）。
+ * 插件事件（plugin:event）由组件层监听 window CustomEvent。
+ */
+import type {
+  ConfigSchema,
+  PluginInfo,
+  PluginStatus,
+} from '@/renderer/api/types'
+
+export interface PluginApi {
+  list(): Promise<PluginInfo[]>
+  toggle(id: string, enabled: boolean): Promise<boolean>
+  getStatus(id: string): Promise<PluginStatus>
+  getSchema(id: string): Promise<ConfigSchema | null>
+  getConfig(id: string): Promise<Record<string, unknown>>
+  saveConfig(id: string, patch: Record<string, unknown>): Promise<boolean>
+}
+
+/** 监听插件事件（返回取消函数） */
+export function onPluginEvent(handler: (detail: { pluginId: string; event: string; data?: unknown }) => void): () => void {
+  const listener = (e: Event) => {
+    const detail = (e as CustomEvent<{ pluginId: string; event: string; data?: unknown }>).detail
+    if (detail) handler(detail)
+  }
+  window.addEventListener('plugin:event', listener)
+  return () => window.removeEventListener('plugin:event', listener)
+}
+
+export const pluginsApi: PluginApi = {
+  list: () => window.api.plugins.list(),
+  toggle: (id, enabled) => window.api.plugins.toggle(id, enabled),
+  getStatus: (id) => window.api.plugins.getStatus(id),
+  getSchema: (id) => window.api.plugins.getSchema(id),
+  getConfig: (id) => window.api.plugins.getConfig(id),
+  saveConfig: (id, patch) => window.api.plugins.saveConfig(id, patch),
+}

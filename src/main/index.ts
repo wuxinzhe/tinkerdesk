@@ -15,9 +15,13 @@ import { SandboxController } from './controller/sandbox-controller'
 import { ModelController } from './controller/model-controller'
 import { AccountController } from './controller/account-controller'
 import { McpController } from './controller/mcp-controller'
+import { PluginController } from './controller/plugin-controller'
+import { PluginManager } from './core/plugin/plugin-manager'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
+/** 插件管理器（扫描 %APPDATA%/tinkerdesk/plugins/） */
+const pluginManager = new PluginManager()
 
 function createWindow() {
   Menu.setApplicationMenu(null)
@@ -72,6 +76,10 @@ app.whenReady().then(() => {
   new AgentModeController(desk.agentModeService).register()
   new AccountController(desk.accountService).register()
 
+  // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
+  pluginManager.loadAll()
+  new PluginController(pluginManager).register()
+
   // ── 窗口控制 IPC ──
   ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
   ipcMain.handle('window:maximize', () => {
@@ -85,6 +93,8 @@ app.whenReady().then(() => {
   registerUpdaterHandlers()
 
   createWindow()
+  // 插件事件转发目标（窗口就绪后注入）
+  pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
   checkForUpdatesOnStartup()
 })
 

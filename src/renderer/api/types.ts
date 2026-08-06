@@ -605,6 +605,54 @@ export interface ToolCenterState {
 // ── window.api 接口（原 ipc-api-types.ts） ──
 
 /** window.api 完整结构（与 src/preload/index.ts 的 api 对象一一对应） */
+/* ── 插件系统类型（协议 v1，与 main/core/plugin/types.ts 对应） ── */
+
+export interface PluginManifest {
+  id: string
+  name: string
+  version: string
+  apiVersion: number
+  entry: string
+  requiresMain?: boolean
+  capabilities?: string[]
+  permissions?: string[]
+  description?: string
+  modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
+}
+
+export interface PluginStatus {
+  loaded: boolean
+  enabled: boolean
+  detail?: string
+}
+
+export interface PluginInfo {
+  manifest: PluginManifest
+  status: PluginStatus
+}
+
+export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea'
+
+export interface ConfigField {
+  type: ConfigFieldType
+  title: string
+  description?: string
+  default?: unknown
+  placeholder?: string
+  required?: boolean
+  min?: number
+  max?: number
+  step?: number
+  options?: { label: string; value: string }[]
+}
+
+export interface ConfigSchema {
+  type: 'object'
+  properties: Record<string, ConfigField>
+}
+
+/* ── 桌面 API（preload contextBridge 暴露） ── */
+
 export interface WindowApi {
   windowMinimize: () => Promise<void>
   windowMaximize: () => Promise<void>
@@ -727,6 +775,17 @@ export interface WindowApi {
   tools: {
     list: (profile?: string) => Promise<ToolItem[]>
     toggle: (toolName: string, disabled: boolean, profile?: string) => Promise<ToolItem>
+  }
+
+  plugins: {
+    list: () => Promise<PluginInfo[]>
+    toggle: (id: string, enabled: boolean) => Promise<boolean>
+    getStatus: (id: string) => Promise<PluginStatus>
+    getSchema: (id: string) => Promise<ConfigSchema | null>
+    getConfig: (id: string) => Promise<Record<string, unknown>>
+    saveConfig: (id: string, patch: Record<string, unknown>) => Promise<boolean>
+    /** 调用插件注册的 IPC 能力 */
+    invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
   }
 }
 

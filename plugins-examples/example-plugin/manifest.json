@@ -1,0 +1,12 @@
+{
+  "id": "example-plugin",
+  "name": "示例插件",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "entry": "index.js",
+  "requiresMain": true,
+  "capabilities": ["hello"],
+  "permissions": [],
+  "description": "插件协议验证示例：演示生命周期、配置 Schema、IPC 注册与事件",
+  "modelDeps": []
+}
