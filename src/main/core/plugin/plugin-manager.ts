@@ -111,6 +111,7 @@ export class PluginManager {
     const ctx: PluginContext = {
       pluginId: manifest.id,
       configDir: dir,
+      getManifest: () => manifest,
       emit: (event, data) => this.forwardEvent(manifest.id, event, data),
       registerIpc: (channel, handler) => this.registerPluginIpc(manifest.id, channel, handler),
       getConfig: <T>() => config as T,
@@ -137,9 +138,9 @@ export class PluginManager {
       console.warn(`[plugin] ${full} 已注册，跳过`)
       return
     }
-    ipcMain.handle(full, (_event, payload: unknown) => {
+    ipcMain.handle(full, async (_event, payload: unknown) => {
       try {
-        return { success: true, data: handler(payload) }
+        return { success: true, data: await handler(payload) }
       } catch (e) {
         return { success: false, error: (e as Error).message }
       }

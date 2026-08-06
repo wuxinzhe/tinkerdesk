@@ -69,6 +69,8 @@ export interface PluginContext {
   pluginId: string
   /** 插件目录（读模型/资源） */
   configDir: string
+  /** 插件 manifest（modelDeps 等） */
+  getManifest(): PluginManifest
   /** 插件 → 应用事件（转发 renderer，如 stt:on-text） */
   emit(event: string, data?: unknown): void
   /** 注册 IPC 能力（renderer 侧调用 plugin:<id>:<channel>） */
