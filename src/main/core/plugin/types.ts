@@ -93,8 +93,33 @@ export interface PluginStatus {
   detail?: string
 }
 
-/** 插件能力 API（入口 init() 返回） */
+/** 自检单项：name 检查项名称；action 引导动作（UI 据此提供"去下载/去配置"按钮） */
+export interface PluginCheckItem {
+  name: string
+  ok: boolean
+  hint?: string
+  action?: 'download-models' | 'open-config'
+}
+
+/** 自检结果：启用插件前必须全部通过 */
+export interface PluginCheckResult {
+  ok: boolean
+  checks: PluginCheckItem[]
+}
+
+/** 启停结果：启用被自检拦截时 ok=false + checks 引导项 */
+export interface ToggleResult {
+  ok: boolean
+  enabled: boolean
+  checks?: PluginCheckItem[]
+}
+
+/**
+ * 插件能力 API（入口 init() 返回）
+ * check() 为强制实现：启用前自检（配置完整性/模型就绪等），ok=false 时应用拒绝启用并引导修复
+ */
 export interface PluginApi {
+  check(): PluginCheckResult
   start?(): void | Promise<void>
   stop?(): void | Promise<void>
   dispose?(): void | Promise<void>

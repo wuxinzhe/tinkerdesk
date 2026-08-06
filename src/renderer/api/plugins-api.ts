@@ -6,13 +6,16 @@
  */
 import type {
   ConfigSchema,
+  PluginCheckResult,
   PluginInfo,
   PluginStatus,
+  ToggleResult,
 } from '@/renderer/api/types'
 
 export interface PluginApi {
   list(): Promise<PluginInfo[]>
-  toggle(id: string, enabled: boolean): Promise<boolean>
+  toggle(id: string, enabled: boolean): Promise<ToggleResult>
+  check(id: string): Promise<PluginCheckResult>
   getStatus(id: string): Promise<PluginStatus>
   getSchema(id: string): Promise<ConfigSchema | null>
   getConfig(id: string): Promise<Record<string, unknown>>
@@ -34,6 +37,7 @@ export function onPluginEvent(handler: (detail: { pluginId: string; event: strin
 export const pluginsApi: PluginApi = {
   list: () => window.api.plugins.list(),
   toggle: (id, enabled) => window.api.plugins.toggle(id, enabled),
+  check: (id) => window.api.plugins.check(id),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),
   getConfig: (id) => window.api.plugins.getConfig(id),

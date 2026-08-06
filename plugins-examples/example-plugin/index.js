@@ -23,6 +23,18 @@ module.exports = {
     })
 
     return {
+      /** 启用前自检（协议 v1 强制）：演示配置完整性检查 */
+      check() {
+        const cfg = ctx.getConfig()
+        const checks = []
+        if (!cfg.greeting) {
+          checks.push({ name: '问候语', ok: false, hint: '未填写问候语', action: 'open-config' })
+        } else {
+          checks.push({ name: '问候语', ok: true })
+        }
+        return { ok: checks.every((c) => c.ok), checks }
+      },
+
       start() {
         running = true
         console.log('[example-plugin] 已启动')

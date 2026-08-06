@@ -11,7 +11,7 @@
  */
 import { ipcMain } from 'electron'
 import { PluginManager } from '../core/plugin/plugin-manager'
-import type { PluginInfo, PluginStatus } from '../core/plugin/types'
+import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -28,8 +28,9 @@ export class PluginController {
   register(): void {
     ipcMain.handle('plugin:list', () => this.listPlugins())
     ipcMain.handle('plugin:toggle', (_event, payload: { id: string; enabled: boolean }) =>
-      this.togglePlugin(payload),
+      this.toggle(payload),
     )
+    ipcMain.handle('plugin:check', (_event, payload: { id: string }) => this.check(payload))
     ipcMain.handle('plugin:get-status', (_event, payload: { id: string }) =>
       this.getPluginStatus(payload),
     )
@@ -53,11 +54,21 @@ export class PluginController {
     }
   }
 
-  /** 启停插件 */
-  private async togglePlugin(payload: { id: string; enabled: boolean }): Promise<ApiResult<boolean>> {
+  /** 启停插件（启用前自检：不通过返回 checks 引导修复，不改变状态） */
+  private async toggle(payload: { id: string; enabled: boolean }): Promise<ApiResult<ToggleResult>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
       return ok(await this.pluginManager.toggle(payload.id, !!payload.enabled))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 插件自检（不改变状态；启用按钮点击时先调） */
+  private async check(payload: { id: string }): Promise<ApiResult<PluginCheckResult>> {
+    try {
+      if (!payload?.id) return fail('id 不能为空')
+      return ok(await this.pluginManager.check(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }

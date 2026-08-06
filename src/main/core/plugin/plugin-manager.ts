@@ -15,11 +15,13 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 
 import { join } from 'path'
 import type {
   PluginApi,
+  PluginCheckResult,
   PluginContext,
   PluginInfo,
   PluginManifest,
   PluginStatus,
   TinkerPlugin,
+  ToggleResult,
 } from './types'
 
 interface PluginRecord {
@@ -124,6 +126,10 @@ export class PluginManager {
     }
     record.ctx = ctx
     record.api = plugin.init(ctx)
+    // 强制契约：每个插件必须实现 check()（启用前自检）
+    if (typeof record.api.check !== 'function') {
+      throw new Error(`${manifest.id} 未实现 check() 自检接口（插件契约 v1 强制）`)
+    }
     this.registry.set(manifest.id, record)
     console.log(`[plugin] 已加载 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
   }
@@ -159,10 +165,10 @@ export class PluginManager {
     return (await handler(payload)) as T
   }
 
-  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider） */
+  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider）；只返回已启用的 */
   findByCapability(cap: string): PluginRecord[] {
     return Array.from(this.registry.values()).filter(
-      (r) => r.manifest.capabilities?.includes(cap) && r.api !== null
+      (r) => r.manifest.capabilities?.includes(cap) && r.api !== null && r.enabled
     )
   }
 
@@ -178,20 +184,37 @@ export class PluginManager {
     }))
   }
 
-  /** 启停插件 */
-  async toggle(id: string, enabled: boolean): Promise<boolean> {
+  /**
+   * 启停插件
+   * 启用前强制自检（check() 契约）：全部通过才启用；失败返回 { ok:false, checks } 由上层引导修复
+   */
+  async toggle(id: string, enabled: boolean): Promise<ToggleResult> {
     const record = this.registry.get(id)
     if (!record || !record.api) {
       throw new Error(`插件不存在或未加载: ${id}`)
     }
     if (enabled && !record.enabled) {
+      const check = await record.api.check()
+      if (!check || !check.ok) {
+        return { ok: false, enabled: false, checks: check?.checks ?? [] }
+      }
       await record.api.start?.()
       record.enabled = true
     } else if (!enabled && record.enabled) {
       await record.api.stop?.()
       record.enabled = false
     }
-    return record.enabled
+    return { ok: true, enabled: record.enabled }
+  }
+
+  /** 插件自检（启用前调用；不改变状态） */
+  async check(id: string): Promise<PluginCheckResult> {
+    const record = this.registry.get(id)
+    if (!record?.api) {
+      return { ok: false, checks: [{ name: '插件', ok: false, hint: '插件未加载' }] }
+    }
+    const result = await record.api.check()
+    return result ?? { ok: true, checks: [] }
   }
 
   /** 插件状态（实时查询） */

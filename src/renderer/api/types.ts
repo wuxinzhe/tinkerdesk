@@ -636,6 +636,26 @@ export interface PluginStatus {
   detail?: string
 }
 
+/** 自检单项（插件契约 v1 强制 check() 的返回结构） */
+export interface PluginCheckItem {
+  name: string
+  ok: boolean
+  hint?: string
+  action?: 'download-models' | 'open-config'
+}
+
+export interface PluginCheckResult {
+  ok: boolean
+  checks: PluginCheckItem[]
+}
+
+/** 启停结果：启用被自检拦截时 ok=false + checks 引导项 */
+export interface ToggleResult {
+  ok: boolean
+  enabled: boolean
+  checks?: PluginCheckItem[]
+}
+
 export interface PluginInfo {
   manifest: PluginManifest
   status: PluginStatus
@@ -789,7 +809,8 @@ export interface WindowApi {
 
   plugins: {
     list: () => Promise<PluginInfo[]>
-    toggle: (id: string, enabled: boolean) => Promise<boolean>
+    toggle: (id: string, enabled: boolean) => Promise<ToggleResult>
+    check: (id: string) => Promise<PluginCheckResult>
     getStatus: (id: string) => Promise<PluginStatus>
     getSchema: (id: string) => Promise<ConfigSchema | null>
     getConfig: (id: string) => Promise<Record<string, unknown>>

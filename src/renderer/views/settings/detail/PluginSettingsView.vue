@@ -8,7 +8,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { pluginsApi, onPluginEvent } from '@/renderer/api/plugins-api'
 import PluginConfigForm from '@/renderer/components/settings/PluginConfigForm.vue'
-import type { ConfigSchema, PluginInfo } from '@/renderer/api/types'
+import type { ConfigSchema, PluginCheckItem, PluginInfo } from '@/renderer/api/types'
 
 const loading = ref(false)
 const plugins = ref<PluginInfo[]>([])
@@ -63,10 +63,62 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
   const enabled = !p.status.enabled
   try {
     const result = await pluginsApi.toggle(p.manifest.id, enabled)
-    p.status.enabled = result
+    if (result.ok) {
+      p.status.enabled = result.enabled
+    } else if (result.checks?.length) {
+      // 启用被自检拦截：弹出引导修复（下载模型 / 打开配置）
+      showCheckGuide(p, result.checks)
+    }
   } catch {
     // 错误提示由 inv 拦截统一派发
   }
+}
+
+/** 自检引导弹层状态 */
+const guideOpen = ref(false)
+const guidePlugin = ref<PluginInfo | null>(null)
+const guideChecks = ref<PluginCheckItem[]>([])
+
+function showCheckGuide(p: PluginInfo, checks: PluginCheckItem[]): void {
+  guidePlugin.value = p
+  guideChecks.value = checks
+  guideOpen.value = true
+}
+
+function closeGuide(): void {
+  guideOpen.value = false
+  guidePlugin.value = null
+  guideChecks.value = []
+}
+
+/** 自检引导动作：下载缺失模型 */
+async function guideDownloadModels(): Promise<void> {
+  if (!guidePlugin.value) return
+  const p = guidePlugin.value
+  try {
+    await pluginsApi.invokePlugin(p.manifest.id, 'models:download')
+    await refreshModelsStatus(p.manifest.id)
+    // 下载完成后重跑自检
+    const check = await pluginsApi.check(p.manifest.id)
+    if (check.ok) {
+      closeGuide()
+      // 直接完成启用
+      const result = await pluginsApi.toggle(p.manifest.id, true)
+      if (result.ok) p.status.enabled = true
+    } else {
+      guideChecks.value = check.checks
+    }
+  } catch {
+    // 错误提示由 inv 拦截统一派发
+  }
+}
+
+/** 自检引导动作：打开配置表单 */
+function guideOpenConfig(): void {
+  if (!guidePlugin.value) return
+  const p = guidePlugin.value
+  closeGuide()
+  void openConfig(p)
 }
 
 async function openConfig(p: PluginInfo): Promise<void> {
@@ -231,6 +283,46 @@ onUnmounted(() => {
             :initial="configInitial"
             @save="saveConfig"
           />
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 启用自检引导弹层（check 不通过时弹出，引导下载模型/打开配置） -->
+    <Teleport to="body">
+      <div v-if="guideOpen" class="guide-overlay" @click.self="closeGuide">
+        <div class="guide-modal">
+          <div class="guide-modal__header">
+            <div class="guide-modal__title">「{{ guidePlugin?.manifest.name }}」启用前检查未通过</div>
+            <button class="guide-modal__close" title="关闭" @click="closeGuide">✕</button>
+          </div>
+          <div class="guide-modal__list">
+            <div v-for="c in guideChecks" :key="c.name" class="guide-item">
+              <span class="guide-item__icon" :class="c.ok ? 'ok' : 'no'">
+                {{ c.ok ? '✓' : '!' }}
+              </span>
+              <div class="guide-item__body">
+                <div class="guide-item__name">{{ c.name }}</div>
+                <div v-if="c.hint" class="guide-item__hint">{{ c.hint }}</div>
+              </div>
+              <button
+                v-if="!c.ok && c.action === 'download-models'"
+                class="guide-item__btn"
+                @click="guideDownloadModels"
+              >
+                下载模型
+              </button>
+              <button
+                v-if="!c.ok && c.action === 'open-config'"
+                class="guide-item__btn"
+                @click="guideOpenConfig"
+              >
+                去配置
+              </button>
+            </div>
+          </div>
+          <div class="guide-modal__footer">
+            <button class="guide-modal__cancel" @click="closeGuide">取消</button>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -576,5 +668,151 @@ onUnmounted(() => {
   color: var(--sa-text-tertiary, #aeaeb2);
   text-align: center;
   padding: var(--sa-space-5, 20px) 0;
+}
+
+/* ── 启用自检引导弹层 ── */
+
+.guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.guide-modal {
+  width: min(440px, calc(100vw - 48px));
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding: var(--sa-space-5, 20px);
+  background: var(--sa-bg-primary, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.guide-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sa-space-4, 16px);
+}
+
+.guide-modal__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.guide-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.guide-modal__close:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
+}
+
+.guide-modal__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sa-space-2, 8px);
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sa-space-3, 12px);
+  padding: var(--sa-space-3, 12px);
+  background: var(--sa-bg-secondary, #f5f5f7);
+  border-radius: 10px;
+}
+
+.guide-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.guide-item__icon.ok {
+  color: var(--sa-success, #34c759);
+  background: rgba(52, 199, 89, 0.12);
+}
+
+.guide-item__icon.no {
+  color: var(--sa-destructive, #ff3b30);
+  background: rgba(255, 59, 48, 0.12);
+}
+
+.guide-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-item__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.guide-item__hint {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--sa-text-secondary, #86868b);
+}
+
+.guide-item__btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid var(--sa-accent, #007aff);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.guide-item__btn:hover {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+.guide-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--sa-space-4, 16px);
+}
+
+.guide-modal__cancel {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--sa-text-secondary, #86868b);
+  background: var(--sa-bg-primary, #ffffff);
+  border: 1px solid var(--sa-border, #d2d2d7);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.guide-modal__cancel:hover {
+  border-color: var(--sa-text-secondary, #86868b);
 }
 </style>

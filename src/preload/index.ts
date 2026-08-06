@@ -302,6 +302,7 @@ const api = {
   plugins: {
     list: () => inv('plugin:list').then(unwrap),
     toggle: (id: string, enabled: boolean) => inv('plugin:toggle', {id, enabled}).then(unwrap),
+    check: (id: string) => inv('plugin:check', {id}).then(unwrap),
     getStatus: (id: string) => inv('plugin:get-status', {id}).then(unwrap),
     getSchema: (id: string) => inv('plugin:get-schema', {id}).then(unwrap),
     getConfig: (id: string) => inv('plugin:get-config', {id}).then(unwrap),
