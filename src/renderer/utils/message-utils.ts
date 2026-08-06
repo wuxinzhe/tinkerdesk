@@ -6,7 +6,7 @@
 
 /** role → messageType（对齐 showing-agent 消息类型命名） */
 export function inferMessageTypeFromRole(role: string): string {
-  if (role === 'user') return 'user_normal'
+  if (role === 'user') return 'user_message'
   if (role === 'assistant') return 'assistant_text'
   if (role === 'approval') return 'approval_request'
   if (role === 'system') return 'assistant_text'

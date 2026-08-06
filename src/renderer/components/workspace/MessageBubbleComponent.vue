@@ -24,7 +24,7 @@
           </Transition>
         </template>
 
-        <!-- user_normal / 兜底 → 纯文本 -->
+        <!-- user_message / 兜底 → 纯文本 -->
         <template v-else>
           {{ message.content }}
         </template>
@@ -39,7 +39,7 @@
         </button>
       </div>
 
-      <!-- ── 发送状态（仅 user_normal） ── -->
+      <!-- ── 发送状态（仅 user_message） ── -->
       <div v-if="isUserNormal" class="message-status">
         <template v-if="message.status === 'sending'">
           <span class="status-dot status-dot--sending" />
@@ -155,7 +155,7 @@ const effectiveType = computed(() =>
 
 // ── 渲染分类标志位 ──
 
-const isUserNormal = computed(() => effectiveType.value === 'user_normal')
+const isUserNormal = computed(() => effectiveType.value === 'user_message')
 const isAssistantText = computed(() => effectiveType.value === 'assistant_text')
 const isApprovalRequest = computed(() => effectiveType.value === 'approval_request')
 const isClarifyRequest = computed(() => effectiveType.value === 'clarify_request')

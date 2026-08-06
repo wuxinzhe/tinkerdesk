@@ -577,7 +577,7 @@ export const useChatStore = defineStore('chat', () => {
       id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       sessionId,
       role: 'user',
-      messageType: 'user_normal',
+      messageType: 'user_message',
       content,
       timestamp: Date.now(),
       status: 'sending'

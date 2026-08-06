@@ -55,7 +55,7 @@ import { SaSpinner } from '@/renderer/components'
 
 /** UI 中展示的消息类型白名单 */
 const DISPLAY_TYPES = new Set([
-  'user_normal',
+  'user_message',
   'assistant_text',
   'approval_request',
   'clarify_request'
