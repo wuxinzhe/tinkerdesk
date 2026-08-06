@@ -81,11 +81,12 @@
       </button>
     </div>
 
-    <!-- L3 工具栏动作 -->
+    <!-- L3 工具栏动作：技能安装（选文件 → 校验 → 安装） -->
     <ToolbarActions>
       <button
         class="toolbar-btn"
-        @click="router.push(`/workspace/agents/${detailProfile}/market`)"
+        :disabled="installing"
+        @click="installSkillFromFile"
         title="安装技能"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -188,6 +189,35 @@ async function toggleSkill(skill: SkillInfo, enabled: boolean) {
     const next = new Set(togglingIds.value)
     next.delete(skill.id)
     togglingIds.value = next
+  }
+}
+
+/** 技能安装中（防重复点击） */
+const installing = ref(false)
+
+/** 技能安装：选文件 → 后端校验格式 → 安装 → 刷新；格式不兼容提示交给 Agent 重写 */
+async function installSkillFromFile(): Promise<void> {
+  if (installing.value) return
+  installing.value = true
+  try {
+    const file = await window.api.skills.pickInstallFile()
+    if (!file) return
+    const info = await skillsApi.installFromMarkdown(file.content, detailProfile.value ?? 'default')
+    window.dispatchEvent(
+      new CustomEvent('global-tip', {
+        detail: { type: 'tip', code: 'skill:install', message: `技能「${info.displayName}」安装成功` },
+      }),
+    )
+    loadSkills(0)
+  } catch (e) {
+    // 格式不兼容等错误 → 统一提示（交给 Agent 重写）
+    window.dispatchEvent(
+      new CustomEvent('global-tip', {
+        detail: { type: 'error', code: 'skill:install', message: (e as Error).message ?? '技能安装失败' },
+      }),
+    )
+  } finally {
+    installing.value = false
   }
 }
 

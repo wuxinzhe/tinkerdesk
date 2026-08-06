@@ -235,6 +235,10 @@ export interface SkillListQueryDTO {
   profile?: string
   offset?: number
   limit?: number
+  /** 按分类过滤（name） */
+  category?: string
+  /** 按名称模糊过滤（name/displayName） */
+  name?: string
 }
 
 /** 技能分页响应 VO */

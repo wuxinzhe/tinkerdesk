@@ -71,7 +71,7 @@ app.whenReady().then(() => {
   new AgentCrudController(desk.agentService).register()
   new AgentConfigController(desk.agentConfigService).register()
   new ToolController(desk.toolManager).register()
-  new SkillController(desk.privateSkillService, desk.skillCategoryService).register()
+  new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
   new PromptModuleController(desk.promptService).register()
   new SandboxController(desk.sandboxWhitelistService).register()
 

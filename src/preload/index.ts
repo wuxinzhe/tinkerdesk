@@ -81,7 +81,7 @@ function inv<T>(channel: string, ...args: unknown[]): Promise<T> {
     const failed = r?.success === false
     const ms = Date.now() - t
     if (failed) {
-      console.error(`[IPC] ✗ ${r?.error ?? '操作失败'} | ${channel} ${ms}ms`, req)
+      console.error(`[IPC] ✗ ${channel} ${ms}ms`, r?.error ?? '操作失败', req)
       dispatchGlobalTip('error', channel, r?.error ?? '操作失败，请重试')
     } else {
       const resp = truncateLog(redactArgs(r?.data))
@@ -89,7 +89,7 @@ function inv<T>(channel: string, ...args: unknown[]): Promise<T> {
     }
     return res as T
   }).catch((e: Error) => {
-    console.error(`[IPC] ✗ ${e.message || '操作失败，请重试'} | ${channel} ${Date.now() - t}ms`, req)
+    console.error(`[IPC] ✗ ${channel} ${Date.now() - t}ms`, e.message || '操作失败，请重试', req)
     dispatchGlobalTip('error', channel, e.message || '操作失败，请重试')
     throw e
   })
@@ -260,6 +260,8 @@ const api = {
     categories: () => inv('skill:categories').then(unwrap),
     /** 安装外部技能（SKILL.md 全文；后端校验格式，不兼容会返回错误提示交给 Agent 重写） */
     install: (content: string, profile?: string) => inv('skill:install', { content, profile }).then(unwrap),
+    /** 选择技能文件并读取内容（技能管理页安装按钮用） */
+    pickInstallFile: () => inv('skill:pick-install-file').then(unwrap),
   },
 
   // ── 账号初始化（AccountController，4 步向导）──

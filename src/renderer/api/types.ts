@@ -783,6 +783,8 @@ export interface WindowApi {
     activate: (id: string, profile?: string) => Promise<void>
     categories: () => Promise<SkillCategory[]>
     install: (content: string, profile?: string) => Promise<SkillInfo>
+    /** 选择技能文件并读取内容（返回 { path, content }，取消返回 null） */
+    pickInstallFile: () => Promise<{ path: string; content: string } | null>
   }
 
   account: {

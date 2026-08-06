@@ -15,7 +15,7 @@ import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
 /** 会话消息查询条件（findMessagesBySession 参数） */
 
 // ── 列清单 ──
-const COLS = 'id, session_id, conversation_id, profile, role, content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason, interaction_status, message_type, deleted, created_at, updated_at'
+const COLS = 'm.id, m.session_id, m.conversation_id, m.profile, m.role, m.content, m.reasoning_content, m.tool_call, m.tool_call_id, m.tool_name, m.finish_reason, m.interaction_status, m.message_type, m.deleted, m.created_at, m.updated_at'
 
 /** 行 → 实体（强类型校验） */
 function toEntity(row: Record<string, unknown>): MessageEntity {
@@ -169,7 +169,7 @@ export class MessageRepository {
 
     const order = query.sortDesc ? 'DESC' : 'ASC'
     const rows = db
-      .prepare(`SELECT ${COLS} FROM messages WHERE ${where.join(' AND ')} ORDER BY created_at ${order}, id ASC LIMIT 2000`)
+      .prepare(`SELECT ${COLS} FROM messages m WHERE ${where.join(' AND ')} ORDER BY m.created_at ${order}, m.id ASC LIMIT 2000`)
       .all(...params) as Record<string, unknown>[]
     return rows.map(toEntity)
   }

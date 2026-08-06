@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { readFileSync } from 'fs'
 import type { PrivateSkillService } from '../service/private-skill-service'
 import type { SkillCategoryService } from '../service/skill-category-service'
 import type { PrivateSkillEntity } from '../repository/types'
@@ -35,7 +36,8 @@ export function toSkillInfoVO(s: PrivateSkillEntity, includeBody = false): Skill
 export class SkillController {
   constructor(
     private readonly privateSkillService: PrivateSkillService,
-    private readonly categoryService: SkillCategoryService
+    private readonly categoryService: SkillCategoryService,
+    private readonly getWindow: () => BrowserWindow | null = () => null
   ) { }
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
@@ -47,18 +49,28 @@ export class SkillController {
     ipcMain.handle('skill:activate', (_event, payload) => this.activateSkill(payload))
     ipcMain.handle('skill:categories', () => this.listSkillCategories())
     ipcMain.handle('skill:install', (_event, payload) => this.installSkill(payload))
+    ipcMain.handle('skill:pick-install-file', () => this.pickInstallFile())
   }
 
   // ══════════════════════════════════════════════════════════════
   // 各 IPC 方法（具名方法 + 完整入参出参类型）
   // ══════════════════════════════════════════════════════════════
 
-  /** 查询已安装技能列表（分页，按 profile 限定） */
+  /** 查询已安装技能列表（分页，按 profile 限定；支持分类 + 名称模糊过滤） */
   private listSkills(payload: SkillListQueryDTO): ApiResponse<SkillPageVO> {
     const profile = payload?.profile ?? 'default'
     const offset = payload?.offset ?? 0
     const limit = payload?.limit ?? 20
-    const all = this.privateSkillService.findByAgent(profile).filter((s) => !s.isDeleted)
+    const category = (payload?.category ?? '').trim()
+    const name = (payload?.name ?? '').trim()
+    let all = this.privateSkillService.findByAgent(profile).filter((s) => !s.isDeleted)
+    if (category) {
+      all = all.filter((s) => s.category === category)
+    }
+    if (name) {
+      const kw = name.toLowerCase()
+      all = all.filter((s) => s.name.toLowerCase().includes(kw) || s.displayName.toLowerCase().includes(kw))
+    }
     const items = all.slice(offset, offset + limit).map((s) => toSkillInfoVO(s))
     return ok({ items, total: all.length, offset, limit })
   }
@@ -91,6 +103,30 @@ export class SkillController {
   private activateSkill(payload: SkillOpRequestDTO): ApiResponse<null> {
     const restored = this.privateSkillService.restore(payload?.profile ?? 'default', payload?.id ?? '')
     return restored ? ok(null) : fail('技能不存在或已达到启用上限')
+  }
+
+  /**
+   * 选择技能文件（.md/.txt）并读取内容：技能管理页「技能安装」按钮用。
+   * 返回 { path, content }；取消返回 null。
+   */
+  private async pickInstallFile(): Promise<ApiResponse<{ path: string; content: string } | null>> {
+    try {
+      const win = this.getWindow()
+      const options: Electron.OpenDialogOptions = {
+        title: '选择技能文件（SKILL.md）',
+        properties: ['openFile'],
+        filters: [{ name: '技能文件', extensions: ['md', 'markdown', 'txt'] }],
+      }
+      const result = win
+        ? await dialog.showOpenDialog(win, options)
+        : await dialog.showOpenDialog(options)
+      if (result.canceled || !result.filePaths[0]) return ok(null)
+      const path = result.filePaths[0]
+      const content = readFileSync(path, 'utf-8')
+      return ok({ path, content })
+    } catch (e) {
+      return fail((e as Error).message)
+    }
   }
 
   /** 查询激活的技能分类列表 */
