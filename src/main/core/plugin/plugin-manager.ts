@@ -294,7 +294,7 @@ export class PluginManager {
     if (enabled && !record.enabled) {
       const check = await record.api.check()
       if (!check || !check.ok) {
-        return { ok: false, enabled: false, checks: check?.checks ?? [] }
+        return { ok: false, enabled: false, started: false, checks: check?.checks ?? [] }
       }
       await record.api.start?.()
       record.enabled = true
@@ -308,7 +308,7 @@ export class PluginManager {
       this.unregisterProviders(record)
       this.persistEnabled(record)
     }
-    return { ok: true, enabled: record.enabled }
+    return { ok: true, enabled: record.enabled, started: record.started }
   }
 
   /** 持久化启停状态到 config.json（与配置同文件） */

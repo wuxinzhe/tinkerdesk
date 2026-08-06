@@ -31,6 +31,7 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
     const result = await pluginsApi.toggle(p.manifest.id, enabled)
     if (result.ok) {
       p.status.enabled = result.enabled
+      p.status.started = result.started ?? false
     } else if (result.checks?.length) {
       // 自检未通过：去配置页完成配置（下载模型/填参数）
       void router.push(`/workspace/settings/plugins/${p.manifest.id}`)

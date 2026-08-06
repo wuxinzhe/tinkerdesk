@@ -652,10 +652,12 @@ export interface PluginCheckResult {
   checks: PluginCheckItem[]
 }
 
-/** 启停结果：启用被自检拦截时 ok=false + checks 引导项 */
+/** 启停结果：启用被自检拦截时 ok=false + checks 引导项；成功时含运行时注册状态 */
 export interface ToggleResult {
   ok: boolean
   enabled: boolean
+  /** 运行时实际注册状态（start 成功 → true；停用/自检拦截 → false） */
+  started?: boolean
   checks?: PluginCheckItem[]
 }
 
