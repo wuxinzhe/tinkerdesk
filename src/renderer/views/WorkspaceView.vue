@@ -155,6 +155,8 @@ const l3ToolbarTitle = computed(() => {
     if (section === 'mcp') return 'MCP 工具'
     if (section === 'plugins') return '插件设置'
     if (section === 'voice') return '语音设置'
+    // 插件配置页（/settings/plugins/:pluginId）
+    if (route.path.includes('/settings/plugins/')) return '插件配置'
     return '系统设置'
   }
 

@@ -43,17 +43,18 @@ export class VoiceProviderService {
     this.configFile = join(app.getPath('userData'), 'voice-config.json')
   }
 
-  /** 收集声明了语音接口的 provider */
+  /** 收集语音接口的 provider（从 PluginManager 的接口 provider 注册表读取） */
   providers(): { stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] } {
-    const stt: VoiceProviderInfo[] = []
-    const tts: VoiceProviderInfo[] = []
-    for (const record of this.pluginManager.findByCapability('stt')) {
-      stt.push(this.toInfo(record.manifest))
+    const toInfo = (r: { manifest: PluginManifest }): VoiceProviderInfo => ({
+      pluginId: r.manifest.id,
+      name: r.manifest.name,
+      version: r.manifest.version,
+      interfaceVersion: r.manifest.systemInterfaces?.find((i) => i.id.startsWith('voice.'))?.version ?? 1,
+    })
+    return {
+      stt: this.pluginManager.getProviders('voice.stt').map(toInfo),
+      tts: this.pluginManager.getProviders('voice.tts').map(toInfo),
     }
-    for (const record of this.pluginManager.findByCapability('tts')) {
-      tts.push(this.toInfo(record.manifest))
-    }
-    return { stt, tts }
   }
 
   /** 读取激活配置（默认取第一个可用 provider） */
@@ -113,15 +114,6 @@ export class VoiceProviderService {
       return !!result?.allReady
     } catch {
       return false
-    }
-  }
-
-  private toInfo(manifest: PluginManifest): VoiceProviderInfo {
-    return {
-      pluginId: manifest.id,
-      name: manifest.name,
-      version: manifest.version,
-      interfaceVersion: manifest.systemInterfaces?.find((i) => i.id.startsWith('voice.'))?.version ?? 1,
     }
   }
 

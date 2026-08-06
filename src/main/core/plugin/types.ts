@@ -89,7 +89,10 @@ export interface PluginContext {
 /** 插件状态 */
 export interface PluginStatus {
   loaded: boolean
+  /** 持久化的启用意图（config.json.enabled） */
   enabled: boolean
+  /** 运行时实际注册状态（自检通过并 start → 加入 provider 清单） */
+  started?: boolean
   detail?: string
 }
 

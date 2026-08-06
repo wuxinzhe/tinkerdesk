@@ -11,8 +11,9 @@
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */
 import { app, ipcMain } from 'electron'
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 'fs'
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync } from 'fs'
 import { join } from 'path'
+import { matchSystemInterfaces, findSystemInterface, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
   PluginApi,
   PluginCheckResult,
@@ -28,15 +29,26 @@ interface PluginRecord {
   manifest: PluginManifest
   api: PluginApi | null
   ctx: PluginContext | null
+  /** 持久化的启用意图（config.json.enabled） */
   enabled: boolean
+  /** 运行时实际注册状态（自检通过 + start 成功 → 加入 provider 清单） */
+  started: boolean
   error?: string
+}
+
+/** config.json 结构：启停状态 + 插件配置合一个文件 */
+interface PluginConfigFile {
+  enabled: boolean
+  config: Record<string, unknown>
 }
 
 export class PluginManager {
   private readonly pluginsDir: string
   private readonly registry = new Map<string, PluginRecord>()
-  /** 插件注册的 IPC handler（channel → handler），供应用内部转发（VoiceProviderService 等） */
+  /** 插件注册的 IPC handler（channel → handler），供应用内部转发（接口转发等） */
   private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
+  /** 系统开放接口的 provider 注册表：interfaceId → 已注册（started）插件 id 列表 */
+  private readonly interfaceProviders = new Map<string, string[]>()
   /** renderer 事件转发目标（由 index.ts 注入 mainWindow.webContents） */
   private emitTarget: Electron.WebContents | null = null
 
@@ -66,6 +78,7 @@ export class PluginManager {
           api: null,
           ctx: null,
           enabled: false,
+          started: false,
           error: (e as Error).message,
         })
       }
@@ -96,21 +109,15 @@ export class PluginManager {
     const plugin: TinkerPlugin = (entryModule as { default?: TinkerPlugin }).default ?? (entryModule as TinkerPlugin)
 
     const configFile = join(dir, 'config.json')
-    let config: Record<string, unknown> = {}
-    if (existsSync(configFile)) {
-      try {
-        config = JSON.parse(readFileSync(configFile, 'utf-8'))
-      } catch {
-        config = {}
-      }
-    }
+    const { enabled, config } = this.readConfigFile(configFile)
 
     // 上下文：插件通过 ctx 访问配置 / 注册 IPC / 发事件
     const record: PluginRecord = {
       manifest,
       api: null,
       ctx: null,
-      enabled: false,
+      enabled,
+      started: false,
     }
     const ctx: PluginContext = {
       pluginId: manifest.id,
@@ -120,8 +127,8 @@ export class PluginManager {
       registerIpc: (channel, handler) => this.registerPluginIpc(manifest.id, channel, handler),
       getConfig: <T>() => config as T,
       setConfig: (patch) => {
-        config = { ...config, ...patch }
-        writeFileSync(configFile, JSON.stringify(config, null, 2), 'utf-8')
+        Object.assign(config, patch)
+        this.writeConfigFile(configFile, { enabled: record.enabled, config })
       },
     }
     record.ctx = ctx
@@ -130,8 +137,98 @@ export class PluginManager {
     if (typeof record.api.check !== 'function') {
       throw new Error(`${manifest.id} 未实现 check() 自检接口（插件契约 v1 强制）`)
     }
+    // 接口契约校验：声明的系统开放接口必须注册了 requiredChannel
+    for (const def of matchSystemInterfaces(manifest.systemInterfaces)) {
+      if (!this.ipcHandlers.has(`plugin:${manifest.id}:${def.requiredChannel}`)) {
+        throw new Error(
+          `${manifest.id} 声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`
+        )
+      }
+    }
     this.registry.set(manifest.id, record)
     console.log(`[plugin] 已加载 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
+
+    // 启动时自动注册：配置文件里是启用状态 → 自检就绪 → start + 加入 provider 清单
+    if (record.enabled) {
+      this.autoRegister(record)
+    }
+  }
+
+  /** 启动时自动注册（持久化 enabled 且自检通过才真正 start；未就绪保持 enabled 标记等待修复） */
+  private autoRegister(record: PluginRecord): void {
+    if (!record.api) return
+    try {
+      const check = record.api.check()
+      if (check && check.ok) {
+        void record.api.start?.()
+        record.started = true
+        this.registerProviders(record)
+        console.log(`[plugin] 自动注册 ${record.manifest.id}（自检通过）`)
+      } else {
+        console.warn(`[plugin] ${record.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
+      }
+    } catch (e) {
+      console.error(`[plugin] 自动注册失败 ${record.manifest.id}:`, (e as Error).message)
+    }
+  }
+
+  /** 插件注册到其声明接口的 provider 清单 */
+  private registerProviders(record: PluginRecord): void {
+    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
+      const list = this.interfaceProviders.get(def.id) ?? []
+      if (!list.includes(record.manifest.id)) {
+        list.push(record.manifest.id)
+        this.interfaceProviders.set(def.id, list)
+        console.log(`[plugin] ${record.manifest.id} → 注册为接口 ${def.id} 的 provider`)
+      }
+    }
+  }
+
+  /** 插件从 provider 清单注销 */
+  private unregisterProviders(record: PluginRecord): void {
+    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
+      const list = this.interfaceProviders.get(def.id) ?? []
+      const next = list.filter((id) => id !== record.manifest.id)
+      this.interfaceProviders.set(def.id, next)
+    }
+  }
+
+  /**
+   * 查询某系统开放接口的 provider 清单（已注册的插件）
+   * 系统设置页（如语音设置）从清单中选择具体调用哪个 provider
+   */
+  getProviders(interfaceId: string): PluginRecord[] {
+    const ids = this.interfaceProviders.get(interfaceId) ?? []
+    return ids
+      .map((id) => this.registry.get(id))
+      .filter((r): r is PluginRecord => !!r && r.api !== null && r.started)
+  }
+
+  /** 系统开放接口定义（设置页展示用） */
+  getInterfaceDefinitions(): typeof import('./system-interfaces').SYSTEM_INTERFACES {
+    return SYSTEM_INTERFACES
+  }
+
+  /** 读取 config.json（兼容旧格式：纯配置对象 → 视为 { enabled: false, config }） */
+  private readConfigFile(configFile: string): PluginConfigFile {
+    if (!existsSync(configFile)) return { enabled: false, config: {} }
+    try {
+      const raw = JSON.parse(readFileSync(configFile, 'utf-8'))
+      if (raw && typeof raw === 'object' && 'config' in raw && 'enabled' in raw) {
+        return { enabled: !!raw.enabled, config: (raw.config as Record<string, unknown>) ?? {} }
+      }
+      // 旧格式：纯配置对象
+      return { enabled: false, config: raw }
+    } catch {
+      return { enabled: false, config: {} }
+    }
+  }
+
+  /** 写 config.json（原子：先写临时文件再改名） */
+  private writeConfigFile(configFile: string, data: PluginConfigFile): void {
+    const tmp = `${configFile}.tmp`
+    writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
+    renameSync(tmp, configFile)
   }
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
@@ -165,10 +262,10 @@ export class PluginManager {
     return (await handler(payload)) as T
   }
 
-  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider）；只返回已启用的 */
+  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider）；只返回已注册（started）的 */
   findByCapability(cap: string): PluginRecord[] {
     return Array.from(this.registry.values()).filter(
-      (r) => r.manifest.capabilities?.includes(cap) && r.api !== null && r.enabled
+      (r) => r.manifest.capabilities?.includes(cap) && r.api !== null && r.started
     )
   }
 
@@ -179,14 +276,15 @@ export class PluginManager {
       status: {
         loaded: r.api !== null,
         enabled: r.enabled,
+        started: r.started,
         detail: r.error,
       },
     }))
   }
 
   /**
-   * 启停插件
-   * 启用前强制自检（check() 契约）：全部通过才启用；失败返回 { ok:false, checks } 由上层引导修复
+   * 启停插件（启停状态持久化到 config.json，与插件配置合一个文件）
+   * 启用前强制自检（check() 契约）：全部通过才启用并注册到 provider 清单；失败返回引导项
    */
   async toggle(id: string, enabled: boolean): Promise<ToggleResult> {
     const record = this.registry.get(id)
@@ -200,11 +298,28 @@ export class PluginManager {
       }
       await record.api.start?.()
       record.enabled = true
+      record.started = true
+      this.registerProviders(record)
+      this.persistEnabled(record)
     } else if (!enabled && record.enabled) {
       await record.api.stop?.()
       record.enabled = false
+      record.started = false
+      this.unregisterProviders(record)
+      this.persistEnabled(record)
     }
     return { ok: true, enabled: record.enabled }
+  }
+
+  /** 持久化启停状态到 config.json（与配置同文件） */
+  private persistEnabled(record: PluginRecord): void {
+    if (!record.ctx) return
+    // ctx.setConfig 会写入 { enabled: record.enabled, config }——直接复用写文件
+    const configFile = join(record.ctx.configDir, 'config.json')
+    this.writeConfigFile(configFile, {
+      enabled: record.enabled,
+      config: record.ctx.getConfig<Record<string, unknown>>(),
+    })
   }
 
   /** 插件自检（启用前调用；不改变状态） */
@@ -221,10 +336,12 @@ export class PluginManager {
   async getStatus(id: string): Promise<PluginStatus> {
     const record = this.registry.get(id)
     if (!record || !record.api) {
-      return { loaded: false, enabled: false }
+      return { loaded: false, enabled: false, started: false }
     }
     const custom = await record.api.getStatus?.()
-    return custom ?? { loaded: true, enabled: record.enabled }
+    return custom
+      ? { ...custom, enabled: record.enabled, started: record.started }
+      : { loaded: true, enabled: record.enabled, started: record.started }
   }
 
   /** 配置 Schema（动态） */

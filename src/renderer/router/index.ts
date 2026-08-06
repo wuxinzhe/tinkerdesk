@@ -241,6 +241,16 @@ const router = createRouter({
             level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
             level3: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
           },
+          meta: { level3Placeholder: true },
+        },
+        {
+          path: 'settings/plugins/:pluginId',
+          components: {
+            default: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
+            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            level3: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
+          },
+          meta: { level3Placeholder: true },
         },
 
         // ── 工坊 ──
