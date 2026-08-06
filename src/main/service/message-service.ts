@@ -12,8 +12,8 @@ import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
 import { ROLE_SYSTEM } from '../core/loop/constants'
 
-/** 消息类型常量（对齐 tinker-agent MessageConstants） */
-export const MSG_TYPE_USER = 'user_message'
+/** 消息类型常量（对齐 showing-agent MessageConstants：TYPE_USER_NORMAL 等） */
+export const MSG_TYPE_USER = 'user_normal'
 export const MSG_TYPE_ASSISTANT_TEXT = 'assistant_text'
 export const MSG_TYPE_ASSISTANT_TOOL_CALL = 'assistant_tool_call'
 export const MSG_TYPE_ASSISTANT_THINKING = 'assistant_thinking'

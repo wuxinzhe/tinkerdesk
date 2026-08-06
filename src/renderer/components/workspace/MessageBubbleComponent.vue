@@ -155,7 +155,7 @@ const effectiveType = computed(() =>
 
 // ── 渲染分类标志位 ──
 
-const isUserNormal = computed(() => effectiveType.value === 'user_message')
+const isUserNormal = computed(() => effectiveType.value === 'user_normal')
 const isAssistantText = computed(() => effectiveType.value === 'assistant_text')
 const isApprovalRequest = computed(() => effectiveType.value === 'approval_request')
 const isClarifyRequest = computed(() => effectiveType.value === 'clarify_request')
