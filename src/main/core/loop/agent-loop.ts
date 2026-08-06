@@ -51,6 +51,7 @@ import {
   EVT_SESSION_TITLE_UPDATED,
   EVT_TOOL_DONE,
   EVT_TOOL_START,
+  EVT_CONVERSATION_COMPLETE,
   ROLE_SYSTEM,
   ROLE_TOOL,
   ROLE_ASSISTANT,
@@ -556,6 +557,8 @@ export class AgentLoop {
     }
     // 标题生成（异步，失败不影响主流程；对齐 Java generateTitleAsync）
     void this.generateTitleAsync(convCtx)
+    // 周期完成事件（对齐 Java sendAction(CONVERSATION_COMPLETE)：前端据此停止思考流光/处理中状态）
+    convCtx.sendAction(EVT_CONVERSATION_COMPLETE, null)
     return { response, sessionId, conversationId: convId }
   }
 

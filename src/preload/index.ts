@@ -186,6 +186,11 @@ const api = {
       const handler = (_event: Electron.IpcRendererEvent, payload: AgentApprovalEvent) => callback(payload)
       ipcRenderer.on('agent:approvalRequest', handler)
       return () => ipcRenderer.removeListener('agent:approvalRequest', handler)
+    },
+    onAction: (callback: (payload: { sessionId?: string; type?: string; data?: unknown }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: { sessionId?: string; type?: string; data?: unknown }) => callback(payload)
+      ipcRenderer.on('agent:action', handler)
+      return () => ipcRenderer.removeListener('agent:action', handler)
     }
   },
 

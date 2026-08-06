@@ -8,6 +8,7 @@ import type {
   AgentApi,
   AgentApprovalEvent,
   AgentApprovalRequest,
+  ActionMergedPayload,
   AgentIpcApi,
   AgentMessageVO,
   AgentSendRequest,
@@ -61,6 +62,11 @@ export class AgentLocal implements AgentApi {
   /** 监听审批请求（渲染层弹审批卡片） */
   onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void {
     return this.api.onApprovalRequest(cb)
+  }
+
+  /** 监听动作事件（conversation_complete / session_title_updated / tool_done 等） */
+  onAction(cb: (payload: ActionMergedPayload) => void): () => void {
+    return this.api.onAction(cb)
   }
 
   /** 监听消息事件 */

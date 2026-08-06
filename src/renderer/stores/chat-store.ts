@@ -98,6 +98,11 @@ export const useChatStore = defineStore('chat', () => {
       } as ApprovalRequestPayload)
     })
 
+    // 动作事件（conversation_complete / session_title_updated / tool_done / exe_client_tool）→ 路由处理
+    agentApi.onAction((payload: ActionMergedPayload) => {
+      handleActionEvent(payload)
+    })
+
     return agentApi
   }
 
@@ -733,6 +738,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /** 审批请求事件 → 弹审批卡片（sessionId/conversationId 由 main 随事件携带；兜底用当前会话） */
   function resolveApproval(toolCallId: string, approved: boolean): void {
     console.log('[approval] resolveApproval called ' + JSON.stringify({ toolCallId, approved, hasApi: !!agentApi, sessions: Object.keys(messagesBySession.value).length }))
     if (!agentApi) return

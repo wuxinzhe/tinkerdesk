@@ -23,8 +23,8 @@ export class ElectronEventSender implements IEventSender {
   }
 
   /** 动作通道 */
-  sendAction(_sessionId: string, type: string, data: unknown): void {
-    webContents.fromId(this.senderId)?.send('agent:action', { type, data })
+  sendAction(sessionId: string, type: string, data: unknown): void {
+    webContents.fromId(this.senderId)?.send('agent:action', { type, data, sessionId })
   }
 
   /** 提示信号通道 */

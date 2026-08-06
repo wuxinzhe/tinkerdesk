@@ -440,6 +440,10 @@ export type AgentMessageRole = 'user' | 'assistant' | 'system' | 'tool'
 /** 交互状态（对齐 tinker-agent MessageConstants） */
 export type InteractionStatus = 'pending' | 'approved' | 'rejected' | 'timed_out' | ''
 
+/** 动作事件合并载荷（conversation_complete / session_title_updated / tool_done / exe_client_tool） */
+import type { ActionMergedPayload } from '@/renderer/stores/types'
+export type { ActionMergedPayload } from '@/renderer/stores/types'
+
 /** 消息类型（对齐 showing-agent MessageConstants） */
 export type AgentMessageType =
   | 'user_normal'
@@ -546,6 +550,8 @@ export interface AgentApi {
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
   /** 监听审批请求事件（渲染层弹审批卡片） */
   onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void
+  /** 监听动作事件（conversation_complete / session_title_updated / tool_done 等） */
+  onAction(cb: (payload: ActionMergedPayload) => void): () => void
   /** 监听消息事件（远端推送 / 本地广播） */
   onMessage?(cb: (msg: AgentMessageVO) => void): void
 }
@@ -560,6 +566,7 @@ export interface AgentIpcApi {
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
   onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void
+  onAction(cb: (payload: ActionMergedPayload) => void): () => void
 }
 
 
