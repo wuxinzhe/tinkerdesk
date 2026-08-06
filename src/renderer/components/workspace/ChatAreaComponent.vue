@@ -12,6 +12,7 @@
       @load-more="$emit('load-more')"
       @approve="(id: string) => $emit('approve', id)"
       @reject="(id: string) => $emit('reject', id)"
+      @auto-approve="(id: string) => $emit('auto-approve', id)"
       @deleted="$emit('deleted')"
     />
 
@@ -52,6 +53,7 @@ const emit = defineEmits<{
   'load-more': []
   approve: [toolCallId: string]
   reject: [toolCallId: string]
+  'auto-approve': [toolCallId: string]
   deleted: []
   'history-preview': []
 }>()

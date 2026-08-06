@@ -521,6 +521,7 @@ export interface AgentApprovalRequest {
 /** 审批请求事件（主进程 → 渲染层，弹审批卡片） */
 export interface AgentApprovalEvent {
   sessionId?: string
+  conversationId?: string
   toolCallId: string
   name: string
   arguments?: unknown
@@ -535,6 +536,8 @@ export interface AgentApi {
   toolResult(req: AgentToolResultRequest): Promise<{ok: boolean}>
   /** 审批响应（用户同意/拒绝） */
   approval(req: AgentApprovalRequest): Promise<{ok: boolean}>
+  /** 本轮对话自动批准（当前挂起审批放行 + 本轮后续审批直接放行） */
+  autoApprove(conversationId: string): Promise<{ok: boolean}>
   /** 撤回消息 */
   revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}>
   /** 中断对话（stop） */
@@ -552,6 +555,7 @@ export interface AgentIpcApi {
   chat(req: AgentSendRequest, onToken?: (evt: AgentStreamEvent) => void): Promise<AgentMessageVO>
   toolResult(req: AgentToolResultRequest): Promise<{ok: boolean}>
   approval(req: AgentApprovalRequest): Promise<{ok: boolean}>
+  autoApprove(conversationId: string): Promise<{ok: boolean}>
   revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}>
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
@@ -720,6 +724,7 @@ export interface WindowApi {
     chat: (req: AgentSendRequest, onToken?: (evt: AgentStreamEvent) => void) => Promise<AgentMessageVO>
     toolResult: (sessionId: string, toolCallId: string, result: string) => Promise<void>
     approval: (sessionId: string, toolCallId: string, approved: boolean) => Promise<void>
+    autoApprove: (conversationId: string) => Promise<{ok: boolean}>
     revoke: (sessionId: string, messageId: string) => Promise<void>
     interrupt: (sessionId: string) => Promise<void>
     clearAll: (sessionId: string) => Promise<void>

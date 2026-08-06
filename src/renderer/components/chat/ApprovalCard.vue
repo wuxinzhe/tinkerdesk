@@ -34,6 +34,7 @@
       <div class="approval-card__expiry">⏱ 审批超时时间：10分钟</div>
       <div class="approval-card__actions">
         <button class="approval-card__btn approval-card__btn--reject" @click="$emit('reject', toolCallId)">拒绝</button>
+        <button class="approval-card__btn approval-card__btn--auto" @click="$emit('auto-approve', toolCallId)" title="当前挂起审批全部放行，本轮后续审批不再弹窗">本轮自动批准</button>
         <button class="approval-card__btn approval-card__btn--approve" @click="$emit('approve', toolCallId)">批准</button>
       </div>
     </template>
@@ -79,6 +80,7 @@ const displayName = computed(() => getShortName(props.toolName || ''))
 defineEmits<{
   approve: [toolCallId: string]
   reject: [toolCallId: string]
+  'auto-approve': [toolCallId: string]
 }>()
 
 function copyArgs() {
@@ -250,6 +252,17 @@ function copyArgs() {
 
 .approval-card__btn--reject:hover {
   background: rgba(255, 59, 48, 0.06);
+}
+
+.approval-card__btn--auto {
+  background: transparent;
+  color: var(--sa-text-secondary, #86868b);
+  border: 1px solid var(--sa-border, rgba(0, 0, 0, 0.08));
+}
+
+.approval-card__btn--auto:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--sa-text-primary, #1d1d1f);
 }
 
 .approval-card__btn--approve {

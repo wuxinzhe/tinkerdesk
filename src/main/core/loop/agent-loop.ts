@@ -88,6 +88,8 @@ export class AgentLoop {
   private readonly abortControllers = new Map<string, AbortController>()
   /** 审批挂起表：toolCallId → {resolve, timer}（超时自动拒绝） */
   private readonly approvalWaiters = new Map<string, { resolve: (approved: boolean) => void; timer: NodeJS.Timeout }>()
+  /** 本轮对话自动批准集合（conversationId → 有值则本轮所有审批直接放行） */
+  private readonly autoApproveConversations = new Set<string>()
   /** 工具结果挂起表：toolCallId → {resolve, timer}（超时返回超时结果） */
   private readonly toolResultWaiters = new Map<string, { resolve: (result: string) => void; timer: NodeJS.Timeout }>()
 
@@ -388,6 +390,19 @@ export class AgentLoop {
     return true
   }
 
+  /** 本轮对话自动批准：当前挂起审批全部放行 + 后续本轮审批直接放行（前端"本轮自动批准"按钮） */
+  setAutoApprove(conversationId: string): void {
+    this.autoApproveConversations.add(conversationId)
+    // 放行当前所有挂起审批
+    const pending = this.approvalWaiters.size
+    for (const [toolCallId, waiter] of this.approvalWaiters) {
+      this.approvalWaiters.delete(toolCallId)
+      clearTimeout(waiter.timer)
+      waiter.resolve(true)
+    }
+    console.log(`[agent] 本轮自动批准已开启 conversationId=${conversationId}（放行挂起审批 ${pending} 个）`)
+  }
+
   /**
    * 审批响应回调（onApprovalResponse）：用户同意/拒绝工具执行。
    * 对齐 Java onApprovalResponse：sender 发审批事件 → 用户答复 → 按 toolCallId 恢复挂起的 Promise。
@@ -522,6 +537,8 @@ export class AgentLoop {
   /** 周期结束：对话标记完成 + 消息落库 + token 统计 */
   private finishCycle(convCtx: ConversationContext, response: LlmResponse): AgentLoopResult {
     const { sessionId, conversationId: convId, profile } = convCtx
+    // 本轮自动批准标记随周期结束清除（下一次对话重新生效审批）
+    this.autoApproveConversations.delete(convId)
     // 对话完成
     this.conversationService.updateStatus(convId, sessionId, CONV_COMPLETED)
     // 暂存消息落库
@@ -645,6 +662,11 @@ export class AgentLoop {
    * 超时视为拒绝 + 发 INTERACTION_STATUS_UPDATE(timed_out) 事件（对齐 Java STATUS_TIMED_OUT）。
    */
   private requestApproval(convCtx: ConversationContext, toolCall: ToolCall, reason?: string): Promise<boolean> {
+    // 本轮自动批准：conversationId 在缓存中 → 直接放行（不弹审批、不挂起）
+    if (this.autoApproveConversations.has(convCtx.conversationId)) {
+      console.log(`[agent] 审批自动放行（本轮 auto-approve）tool=${toolCall.name} toolCallId=${toolCall.id}`)
+      return Promise.resolve(true)
+    }
     return new Promise<boolean>((resolve) => {
       const timer = setTimeout(() => {
         this.approvalWaiters.delete(toolCall.id)
@@ -671,6 +693,7 @@ export class AgentLoop {
         name: toolCall.name,
         arguments: toolCall.arguments,
         reason,
+        conversationId: convCtx.conversationId,
       })
     })
   }

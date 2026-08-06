@@ -38,6 +38,11 @@ export class AgentLocal implements AgentApi {
     return this.api.approval(req)
   }
 
+  /** 本轮对话自动批准 */
+  async autoApprove(conversationId: string): Promise<{ok: boolean}> {
+    return this.api.autoApprove(conversationId)
+  }
+
   /** 撤回消息 */
   async revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}> {
     return this.api.revoke(profile, sessionId, messageId)

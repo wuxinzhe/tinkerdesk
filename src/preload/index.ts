@@ -174,6 +174,8 @@ const api = {
       inv('agent:toolResult', req).then(unwrap),
     approval: (req: AgentApprovalRequestDTO) =>
       inv('agent:approval', req).then(unwrap),
+    autoApprove: (conversationId: string) =>
+      inv('agent:autoApprove', { conversationId }).then(unwrap),
     revoke: (profile: string, sessionId: string, messageId: string) =>
       inv('agent:revoke', {profile, sessionId, messageId}).then(unwrap),
     interrupt: (profile: string, sessionId: string) =>

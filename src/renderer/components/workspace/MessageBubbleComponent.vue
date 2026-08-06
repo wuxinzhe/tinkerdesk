@@ -60,6 +60,7 @@
         :tool-call-id="message.toolCallId ?? ''"
         @approve="emit('approve', $event)"
         @reject="emit('reject', $event)"
+        @auto-approve="emit('auto-approve', $event)"
       />
 
       <!-- ── Clarify 提问卡片 ── -->
@@ -108,6 +109,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   approve: [toolCallId: string]
   reject: [toolCallId: string]
+  'auto-approve': [toolCallId: string]
   deleted: []
 }>()
 

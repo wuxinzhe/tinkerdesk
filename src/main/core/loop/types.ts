@@ -120,7 +120,7 @@ export interface IEventSender {
   /** 流式 token 通道（text/reasoning/toolCallArgs 增量） */
   sendToken(sessionId: string, chunk: LlmChunk): void
   /** 审批请求通道（工具需审批时弹审批卡片，对齐 Java APPROVAL_REQUEST 事件） */
-  sendApprovalRequest(sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string }): void
+  sendApprovalRequest(sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string; conversationId?: string }): void
 }
 
 /** 会话级上下文（对话开始前一次性加载） */
@@ -153,7 +153,7 @@ export interface SessionContext {
   /** 发送流式 token（text/reasoning/toolCallArgs 增量） */
   sendToken(chunk: LlmChunk): void
   /** 发送审批请求（弹审批卡片） */
-  sendApprovalRequest(data: { toolCallId: string; name: string; arguments?: unknown; reason?: string }): void
+  sendApprovalRequest(data: { toolCallId: string; name: string; arguments?: unknown; reason?: string; conversationId?: string }): void
 }
 
 /** 对话周期级上下文（继承 SessionContext） */

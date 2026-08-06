@@ -27,6 +27,7 @@
       @load-more="onLoadMore"
       @approve="onApprove"
       @reject="onReject"
+      @auto-approve="onAutoApprove"
       @deleted="onDeleted"
       @history-preview="goHistoryPreview"
     />
@@ -187,6 +188,10 @@ function onApprove(toolCallId: string) {
 
 function onReject(toolCallId: string) {
   chatStore.resolveApproval(toolCallId, false)
+}
+
+function onAutoApprove(toolCallId: string) {
+  chatStore.resolveAutoApprove(toolCallId)
 }
 
 function onDeleted() {

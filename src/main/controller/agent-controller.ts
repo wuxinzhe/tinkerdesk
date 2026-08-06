@@ -33,6 +33,7 @@ export class AgentController {
     ipcMain.handle('agent:chat', (event, req) => this.sendChatMessage(event, req))
     ipcMain.handle('agent:toolResult', (_event, payload) => this.submitToolResult(_event, payload))
     ipcMain.handle('agent:approval', (_event, payload) => this.respondApproval(_event, payload))
+    ipcMain.handle('agent:autoApprove', (_event, payload) => this.autoApprove(_event, payload))
     ipcMain.handle('agent:revoke', (_event, payload) => this.revokeChatMessage(_event, payload))
     ipcMain.handle('agent:interrupt', (_event, payload) => this.interruptSession(_event, payload))
     ipcMain.handle('agent:clearAll', (_event, payload) => this.clearSessionState(_event, payload))
@@ -82,6 +83,15 @@ export class AgentController {
   /** 响应审批请求（onApproval）：用户同意/拒绝 */
   private respondApproval(_event: Electron.IpcMainInvokeEvent, payload: AgentApprovalRequestDTO): ApiResponse<null> {
     this.agentLoop.onApproval(payload.sessionId, payload.toolCallId, payload.approved)
+    return ok(null)
+  }
+
+  /** 本轮对话自动批准（onAutoApprove）：当前挂起审批放行 + 本轮后续审批直接放行 */
+  private autoApprove(_event: Electron.IpcMainInvokeEvent, payload: { conversationId: string }): ApiResponse<null> {
+    if (!payload?.conversationId) {
+      return fail('conversationId 不能为空')
+    }
+    this.agentLoop.setAutoApprove(payload.conversationId)
     return ok(null)
   }
 

@@ -37,6 +37,7 @@
           :pending-buffer="msg.isStreaming ? pendingBuffer : ''"
           @approve="(id: string) => $emit('approve', id)"
           @reject="(id: string) => $emit('reject', id)"
+          @auto-approve="(id: string) => $emit('auto-approve', id)"
           @deleted="$emit('deleted')"
         />
       </div>
@@ -94,6 +95,7 @@ defineEmits<{
   'load-more': []
   approve: [toolCallId: string]
   reject: [toolCallId: string]
+  'auto-approve': [toolCallId: string]
   deleted: []
 }>()
 

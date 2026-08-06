@@ -86,11 +86,12 @@ export const useChatStore = defineStore('chat', () => {
     initialized = true
     agentApi = createLocalAgentApi()
 
-    // 审批请求事件 → 弹审批卡片（sessionId 由 main 随事件携带；兜底用当前会话）
+    // 审批请求事件 → 弹审批卡片（sessionId/conversationId 由 main 随事件携带；兜底用当前会话）
     agentApi.onApprovalRequest((payload: AgentApprovalEvent) => {
       const tc = payload as AgentApprovalEvent
       addApprovalMessage({
         sessionId: tc.sessionId ?? sessionStore.sessionId ?? '',
+        conversationId: tc.conversationId ?? '',
         data: {
           toolCallId: tc.toolCallId,
           toolName: tc.name,
@@ -794,6 +795,25 @@ export const useChatStore = defineStore('chat', () => {
     agentApi?.toolResult({ profile: sessionStore.profile ?? 'default', sessionId, toolCallId, result }).catch(() => { /* 本地调用失败静默 */ })
   }
 
+  /** 本轮对话自动批准：找到当前审批消息的 conversationId → 后端放行当前挂起 + 本轮后续审批 */
+  function resolveAutoApprove(toolCallId: string): void {
+    if (!agentApi) return
+    for (const [sid, msgs] of Object.entries(messagesBySession.value)) {
+      const msg = msgs.find(m => m.role === 'approval' && m.toolCallId === toolCallId)
+      if (!msg) continue
+      const convId = msg.conversationId ?? ''
+      if (!convId) {
+        console.warn('[approval] autoApprove 缺 conversationId')
+        return
+      }
+      console.log('[approval] 本轮自动批准 ' + JSON.stringify({ convId, toolCallId }))
+      agentApi.autoApprove(convId).catch(() => { /* 本地调用失败静默 */ })
+      // 本地：已放行的审批消息标记为已批准
+      msg.interactionStatus = 'approved'
+      return
+    }
+  }
+
   function resolveApproval(toolCallId: string, approved: boolean): void {
     console.log('[approval] resolveApproval called ' + JSON.stringify({ toolCallId, approved, hasApi: !!agentApi, sessions: Object.keys(messagesBySession.value).length }))
     if (!agentApi) return
@@ -963,6 +983,7 @@ export const useChatStore = defineStore('chat', () => {
     addClarifyMessage,
     submitClarify,
     resolveApproval,
+    resolveAutoApprove,
     stopProcessing,
     clearMessages,
     resetLocalState,
