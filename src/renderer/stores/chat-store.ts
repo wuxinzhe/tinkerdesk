@@ -8,7 +8,7 @@
  */
 import { createLocalAgentApi } from '@/renderer/api/agent-local'
 import { messagesApi } from '@/renderer/api/messages-api'
-import type { AgentApi, AgentApprovalEvent, AgentMessageVO, AgentStreamEvent, Message as ApiMessage, ToolCall } from '@/renderer/api/types'
+import type { AgentApi, AgentApprovalEvent, AgentMessageVO, AgentStreamEvent, Message as ApiMessage } from '@/renderer/api/types'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { playMessageNotification } from '@/renderer/utils/audio-utils'
 import { showInfoToast } from '@/renderer/utils/notification-utils'
@@ -329,51 +329,22 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  /** 本地 AgentLoop 返回最终 MessageVO 时：写入或更新占位消息 */
+  /** 本地 AgentLoop 返回最终 MessageVO 时：只更新流式占位（走流式输出，不再追加新消息） */
   function finalizeAgentMessage(sid: string, msg: AgentMessageVO): void {
     const msgs = messagesBySession.value[sid] ?? []
     if (!messagesBySession.value[sid]) {
       messagesBySession.value[sid] = []
     }
     const placeholder = msgs.find(m => m.isStreaming)
-    if (placeholder) {
-      // 占位消息仍在流式中 → 更新（isFinish 未到或顺序竞态）
-      placeholder.content = msg.content || placeholder.content
-      placeholder.messageType = msg.messageType ?? 'assistant_text'
-      placeholder.reasoningContent = msg.reasoningContent || placeholder.reasoningContent
-      placeholder.isStreaming = false
-      placeholder.status = 'completed'
-      placeholder.timestamp = Date.now()
-    } else {
-      // 流式已由 isFinish 转正（占位 isStreaming=false）→ 找到本轮 assistant 消息原地补齐，
-      // 避免追加第二条相同消息（双渲染）
-      const localKey = `local:${sid}`
-      const lastAssistant = [...msgs].reverse().find(m =>
-        m.role === 'assistant' &&
-        (m.conversationId === msg.conversationId || m.conversationId === localKey)
-      )
-      if (lastAssistant) {
-        lastAssistant.content = msg.content || lastAssistant.content
-        lastAssistant.messageType = msg.messageType ?? lastAssistant.messageType
-        lastAssistant.reasoningContent = msg.reasoningContent || lastAssistant.reasoningContent
-        lastAssistant.status = 'completed'
-      } else if (msg.content || msg.reasoningContent) {
-        // 无占位且无本轮 assistant（非流式或纯异常）→ 追加新消息
-        messagesBySession.value[sid].push({
-          id: `msg_${Date.now()}`,
-          sessionId: sid,
-          conversationId: msg.conversationId,
-          role: 'assistant',
-          messageType: msg.messageType ?? 'assistant_text',
-          content: msg.content,
-          reasoningContent: msg.reasoningContent,
-          toolCall: msg.toolCall as ToolCall | undefined,
-          toolCallId: msg.toolCallId,
-          timestamp: Date.now(),
-          status: 'completed',
-        } as ApiMessage)
-      }
-    }
+    if (!placeholder) return
+    // 占位消息仍在流式中（isFinish 未到或顺序竞态）→ 更新；
+    // 流式已由 isFinish 转正（isStreaming=false）→ 占位已存在，无需追加
+    placeholder.content = msg.content || placeholder.content
+    placeholder.messageType = msg.messageType ?? 'assistant_text'
+    placeholder.reasoningContent = msg.reasoningContent || placeholder.reasoningContent
+    placeholder.isStreaming = false
+    placeholder.status = 'completed'
+    placeholder.timestamp = Date.now()
   }
 
   /** 启动 3.5 秒分段轮询 */
@@ -751,7 +722,7 @@ export const useChatStore = defineStore('chat', () => {
       toolName: raw?.toolName,
       toolCallId: raw?.toolCallId,
       approvalArguments: raw?.approvalArguments as unknown | undefined,
-      toolCall: raw?.toolCall as ToolCall | undefined
+      toolCall: raw?.toolCall as ApiMessage['toolCall'] | undefined
     }
 
     if (!messagesBySession.value[sessionId]) {

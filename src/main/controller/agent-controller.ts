@@ -55,14 +55,15 @@ export class AgentController {
       })
       const result = await this.agentLoop.chat(ctx, req.content)
 
-      // 返回统一的 MessageVO（同源）
+      // 返回统一的 MessageVO（同源）——走流式输出，全量回复已通过 agent:token 事件推送，
+      // 此处不再返回 content（前端只取会话标识，避免双渲染/重复消息）
       return ok({
         id: undefined,
         sessionId: result.sessionId,
         conversationId: result.conversationId,
         role: 'assistant',
-        content: result.response.text,
-        reasoningContent: result.response.reasoningContent,
+        content: '',
+        reasoningContent: '',
         finishReason: result.response.finishReason,
         messageType: 'assistant_text',
         createdAt: nowIso(),
