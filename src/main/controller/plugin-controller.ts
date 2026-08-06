@@ -144,10 +144,13 @@ export class PluginController {
     return null
   }
 
-  /** Windows 系统自带 tar（bsdtar，支持 zip/bz2） */
+  /** tar 命令：Windows 用 System32 自带 bsdtar（Electron PATH 的 tar 不可用）；Linux/macOS 用系统 tar */
   private tarBin(): string {
-    const sysRoot = process.env.SystemRoot ?? 'C:\\Windows'
-    return join(sysRoot, 'System32', 'tar.exe')
+    if (process.platform === 'win32') {
+      const sysRoot = process.env.SystemRoot ?? 'C:\\Windows'
+      return join(sysRoot, 'System32', 'tar.exe')
+    }
+    return 'tar'
   }
 
   /** 文件选择对话框（配置表单 file 字段用；必须关联主窗口，异步版） */
