@@ -35,7 +35,7 @@
           @pointerleave="onWaveboxLeave"
         >
           <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
-          <div class="chat-input__wave-hint">{{ recording ? '松开结束' : `按住开始录音（或按住 ${shortcutLabel}）` }}</div>
+          <div v-if="!recording" class="chat-input__wave-hint">按住开始录音（或按住 {{ shortcutLabel }}）</div>
         </div>
 
         <textarea
