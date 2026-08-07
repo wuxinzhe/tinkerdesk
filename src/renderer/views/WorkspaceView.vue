@@ -405,6 +405,13 @@ onMounted(() => {
   transition: opacity 0.2s ease;
 }
 
+/* 内容保持自然宽度：列折叠收缩时内容宽度不随容器重排（min-width 固定），
+   只被 inner 边界裁剪 + 淡出——避免 AgentList/Settings 等列表被挤压 */
+.workspace__l2-inner > * {
+  flex-shrink: 0;
+  min-width: 280px;
+}
+
 .workspace__l2-col--collapsed .workspace__l2-inner {
   opacity: 0;
   pointer-events: none;
