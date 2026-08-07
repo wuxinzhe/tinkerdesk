@@ -6,9 +6,7 @@
         v-if="isMobile && showAgentCard"
         :agent="agent"
         :thinking-active="isThinking"
-        :closable="true"
         class="chat-detail__agent-card"
-        @close="showAgentCard = false"
         @switch-agent="router.push('/workspace/agents')"
       />
     </transition>
