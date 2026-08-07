@@ -419,6 +419,14 @@ onMounted(async () => {
   }
 }
 
+/* 窄窗口（平板/手机布局——Electron 窗口 resize 后 hover 检测仍是 hover: hover，
+   需按窗口宽度覆盖）：按钮始终显示，不依赖悬停 */
+@media (max-width: 1023px) {
+  .agent-card-item__actions {
+    opacity: 1;
+  }
+}
+
 .agent-card-item__action {
   all: unset;
   display: inline-flex;
