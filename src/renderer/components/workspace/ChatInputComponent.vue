@@ -1,26 +1,43 @@
 <template>
   <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
     <div class="chat-input__row">
-      <!-- 语音输入（按住说话 → 松开识别 → 发送；录音是应用固有功能，STT 转发给语音 provider） -->
+      <!-- 语音输入（点击武装 → 按住音波框/快捷键录音 → 松开识别发送；录音是应用固有功能，STT 转发给语音 provider） -->
       <button
         v-if="sttAvailable"
         class="chat-input__voice"
-        :class="{ 'chat-input__voice--recording': recording }"
-        :title="recording ? '松开结束并识别' : '按住说话'"
-        @mousedown.prevent="startRecording"
-        @mouseup.prevent="stopRecording"
-        @mouseleave="onVoiceLeave"
+        :class="{
+          'chat-input__voice--armed': voiceMode && !recording,
+          'chat-input__voice--recording': recording,
+          'chat-input__voice--countdown': countdown > 0
+        }"
+        :title="voiceMode ? (recording ? '松开结束并识别' : '点击取消录音') : '点击开始语音输入'"
+        @click="onVoiceButtonClick"
       >
-        <svg v-if="!recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <svg v-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
           <path d="M19 10v2a7 7 0 01-14 0v-2" />
           <line x1="12" y1="19" x2="12" y2="23" />
           <line x1="8" y1="23" x2="16" y2="23" />
         </svg>
+        <span v-else-if="recording && countdown > 0" class="chat-input__countdown">{{ countdown }}</span>
         <span v-else class="chat-input__voice-dot"></span>
       </button>
 
+      <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音） -->
+      <div
+        v-if="voiceMode"
+        class="chat-input__wavebox"
+        :class="{ 'chat-input__wavebox--recording': recording }"
+        @pointerdown="onWaveboxDown"
+        @pointerup="onWaveboxUp"
+        @pointerleave="onWaveboxLeave"
+      >
+        <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
+        <div class="chat-input__wave-hint">{{ recording ? '松开结束' : '按住音波框开始录音' }}</div>
+      </div>
+
       <textarea
+        v-else
         ref="textareaRef"
         class="chat-input__textarea"
         :placeholder="placeholder"
@@ -34,7 +51,7 @@
       <div class="chat-input__btn-group">
         <button
           class="chat-input__send"
-          :disabled="disabled || !modelValue.trim()"
+          :disabled="disabled || voiceMode || !modelValue.trim()"
           @click="handleSend"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -123,8 +140,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
+import { showErrorToast } from '@/renderer/utils/notification-utils'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
@@ -156,25 +174,108 @@ const yoloView = ref(false)
 const yoloEnabled = ref(props.yolo)
 
 // ── 语音输入（应用固有录音；STT 由语音 provider 支持） ──
+// 状态机：idle（输入框）→ 点击按钮武装 voiceMode → 按住音波框/快捷键录音 → 松开 STT 发送 → idle
 const sttAvailable = ref(false)
+const voiceMode = ref(false)      // true=输入框切换为音波框（武装/录音中）
 const recording = ref(false)
+const countdown = ref(0)          // 110s 后剩余秒数（0=未进入倒计时）
+const waveCanvasRef = ref<HTMLCanvasElement | null>(null)
 let mediaRecorder: MediaRecorder | null = null
 let audioChunks: Blob[] = []
 let audioContext: AudioContext | null = null
+let analyser: AnalyserNode | null = null
+let waveRaf = 0
+let recordingStartedAt = 0
+let recordTimer: ReturnType<typeof setTimeout> | null = null
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+let waveHistory: Float32Array[] = []   // 历史波形帧（降采样 64 点/帧）
+let shortcutRecord = 'ctrl+backquote'  // 录音快捷键（从通用设置加载）
+let shortcutHeld = false               // 快捷键按住中
 
-/** 启动时检测是否安装了支持 STT 的语音 provider（无则不显示按钮） */
+const PX_PER_SEC = 60                  // 音波框时间轴：1 秒固定宽度
+const MAX_RECORD_SEC = 120             // 最长录音 120s
+const COUNTDOWN_AT_SEC = 110           // 110s 起按钮倒计时
+
+/** 启动时检测 STT provider + 加载快捷键配置 */
 async function checkSttAvailability(): Promise<void> {
   try {
     const { stt } = await window.api.voice.providers()
     sttAvailable.value = stt.length > 0
+    if (sttAvailable.value) {
+      const { settings } = await window.api.generalSettings.get()
+      shortcutRecord = settings['shortcut.record'] || 'ctrl+backquote'
+    }
   } catch {
     sttAvailable.value = false
   }
 }
 
-/** 按住：开始录音 */
+/** 解析快捷键字符串 → 匹配函数（如 'ctrl+backquote' / 'ctrl+shift+1'） */
+function parseShortcut(value: string): (e: KeyboardEvent) => boolean {
+  const parts = value.split('+')
+  const mods = {
+    ctrl: parts.includes('ctrl'),
+    shift: parts.includes('shift'),
+    alt: parts.includes('alt'),
+    meta: parts.includes('meta')
+  }
+  const key = parts[parts.length - 1]
+  return (e: KeyboardEvent) =>
+    e.ctrlKey === mods.ctrl &&
+    e.shiftKey === mods.shift &&
+    e.altKey === mods.alt &&
+    e.metaKey === mods.meta &&
+    (key === 'backquote' ? (e.key === '`' || e.key === 'Backquote') : e.key.toLowerCase() === key)
+}
+
+/** 快捷键监听（按住开始 / 松开结束） */
+function onGlobalKeyDown(e: KeyboardEvent): void {
+  if (!sttAvailable.value || voiceMode.value === false) return
+  if (parseShortcut(shortcutRecord)(e) && !shortcutHeld && !recording.value) {
+    shortcutHeld = true
+    e.preventDefault()
+    void startRecording()
+  }
+}
+function onGlobalKeyUp(e: KeyboardEvent): void {
+  if (!shortcutHeld) return
+  // 组合键任意一个松开即结束
+  if (parseShortcut(shortcutRecord)(e) || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta' || e.key === '`' || e.key === 'Backquote') {
+    shortcutHeld = false
+    if (recording.value) void stopRecording()
+  }
+}
+
+/** 点击麦克风按钮：idle → 武装；武装 → 取消；录音中忽略 */
+function onVoiceButtonClick(): void {
+  if (recording.value) return
+  if (voiceMode.value) {
+    exitVoiceMode()
+  } else {
+    voiceMode.value = true
+  }
+}
+
+/** 按住音波框 → 开始录音 */
+function onWaveboxDown(e: PointerEvent): void {
+  if (e.button !== 0) return
+  e.preventDefault()
+  if (!recording.value) void startRecording()
+}
+
+/** 松开音波框 → 结束录音 */
+function onWaveboxUp(): void {
+  if (recording.value) void stopRecording()
+}
+
+/** 按住期间指针滑出音波框 → 也结束（防漏录） */
+function onWaveboxLeave(): void {
+  if (recording.value) void stopRecording()
+}
+
+/** 开始录音 */
 async function startRecording(): Promise<void> {
-  if (recording.value || props.disabled) return
+  if (recording.value) return
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     audioChunks = []
@@ -183,45 +284,202 @@ async function startRecording(): Promise<void> {
       if (e.data.size > 0) audioChunks.push(e.data)
     }
     mediaRecorder.start()
+    // 实时音波：AnalyserNode
+    audioContext = audioContext ?? new AudioContext()
+    const source = audioContext.createMediaStreamSource(stream)
+    analyser = audioContext.createAnalyser()
+    analyser.fftSize = 256
+    analyser.smoothingTimeConstant = 0.6
+    source.connect(analyser)
+    waveHistory = []
+    recordingStartedAt = Date.now()
     recording.value = true
+    countdown.value = 0
+    startWaveLoop()
+    startTimers()
   } catch {
-    // 麦克风权限被拒等：静默（提示走全局 toast 由调用方决定）
+    // 麦克风权限被拒等：明确提示（不静默）
+    showErrorToast({ code: 'MIC_PERMISSION_DENIED', message: '无法访问麦克风，请在系统设置中允许应用使用麦克风' })
   }
 }
 
-/** 松开：停止录音 → 转文本 → 直接发送 */
+/** 停止录音 → STT → 发送 → 恢复输入框 */
 async function stopRecording(): Promise<void> {
   if (!recording.value || !mediaRecorder) return
   recording.value = false
+  clearTimers()
+  stopWaveLoop()
   const recorder = mediaRecorder
   const chunks = audioChunks
   mediaRecorder = null
   audioChunks = []
   try {
-    // 停止并收集音频
     const blob = await new Promise<Blob>((resolve) => {
       recorder.onstop = () => resolve(new Blob(chunks, { type: chunks[0]?.type ?? 'audio/webm' }))
       recorder.stop()
       recorder.stream.getTracks().forEach((t) => t.stop())
     })
-    // 解码 → 重采样 16k → Float32Array → STT
     const samples = await decodeToPcm16k(blob)
     if (samples.length === 0) return
     const { text } = await window.api.voice.sttTranscribe(samples)
     const trimmed = text.trim()
+    exitVoiceMode()
     if (trimmed) {
       emit('send', trimmed)
     }
   } catch {
     // STT 失败：inv 拦截统一提示
+    exitVoiceMode()
   }
 }
 
-/** 按住期间鼠标滑出：也结束（防漏录） */
-function onVoiceLeave(): void {
-  if (recording.value) {
-    void stopRecording()
+/** 退出武装/录音（恢复输入框） */
+function exitVoiceMode(): void {
+  voiceMode.value = false
+  recording.value = false
+  clearTimers()
+  stopWaveLoop()
+  waveHistory = []
+  if (mediaRecorder) {
+    mediaRecorder.stream.getTracks().forEach((t) => t.stop())
+    mediaRecorder = null
   }
+  audioChunks = []
+}
+
+/** 时长计时：120s 自动结束；110s 起按钮倒计时 */
+function startTimers(): void {
+  recordTimer = setTimeout(() => {
+    if (recording.value) void stopRecording()
+  }, MAX_RECORD_SEC * 1000)
+  countdownTimer = setInterval(() => {
+    if (!recording.value) return
+    const elapsed = (Date.now() - recordingStartedAt) / 1000
+    countdown.value = Math.max(0, MAX_RECORD_SEC - Math.floor(elapsed))
+  }, 1000)
+}
+
+function clearTimers(): void {
+  if (recordTimer) { clearTimeout(recordTimer); recordTimer = null }
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null }
+  countdown.value = 0
+}
+
+// ── 音波框绘制：均线时间轴 + 秒刻度 + 历史波形（1s=60px，超宽自动左滚，无滚动条禁拖拽） ──
+function startWaveLoop(): void {
+  const draw = () => {
+    drawWave()
+    waveRaf = requestAnimationFrame(draw)
+  }
+  waveRaf = requestAnimationFrame(draw)
+}
+
+function stopWaveLoop(): void {
+  if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = 0 }
+  drawWaveIdle()
+}
+
+function drawWave(): void {
+  const canvas = waveCanvasRef.value
+  const box = canvas?.parentElement
+  if (!canvas || !box) return
+  const dpr = window.devicePixelRatio || 1
+  const w = box.clientWidth
+  const h = box.clientHeight
+  if (w === 0 || h === 0) return
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+    canvas.width = w * dpr
+    canvas.height = h * dpr
+  }
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, w, h)
+
+  const midY = h / 2
+  // 均线
+  ctx.strokeStyle = 'rgba(0, 122, 255, 0.35)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(0, midY)
+  ctx.lineTo(w, midY)
+  ctx.stroke()
+
+  const elapsed = recording.value ? (Date.now() - recordingStartedAt) / 1000 : 0
+  // 当前帧波形入历史（降采样 64 点）
+  if (recording.value && analyser) {
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    analyser.getByteTimeDomainData(data)
+    const dec = new Float32Array(64)
+    for (let i = 0; i < 64; i++) {
+      dec[i] = (data[Math.floor((i / 64) * data.length)] - 128) / 128
+    }
+    waveHistory.push(dec)
+  }
+  const frameCount = waveHistory.length
+  const totalW = (frameCount / 60) * PX_PER_SEC
+  // 超出音波框宽度 → 自动左滚（offset = 超出量；不产生滚动条、不可拖拽）
+  const offset = Math.max(0, totalW - w)
+
+  // 时间刻度（1 秒一格）
+  ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
+  ctx.font = '10px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  const startSec = Math.floor(offset / PX_PER_SEC)
+  const endSec = Math.ceil((offset + w) / PX_PER_SEC)
+  for (let s = startSec; s <= endSec; s++) {
+    const x = s * PX_PER_SEC - offset
+    if (x < 0 || x > w) continue
+    ctx.strokeStyle = 'rgba(142, 142, 147, 0.25)'
+    ctx.beginPath()
+    ctx.moveTo(x, 4)
+    ctx.lineTo(x, h - 4)
+    ctx.stroke()
+    ctx.fillText(String(s), x, h - 6)
+  }
+
+  // 历史波形（从左滚位置绘制）
+  ctx.strokeStyle = 'rgba(0, 122, 255, 0.85)'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  for (let f = 0; f < frameCount; f++) {
+    const x = f * (PX_PER_SEC / 60) - offset
+    if (x < -1) continue
+    if (x > w + 1) break
+    const dec = waveHistory[f]
+    const amp = Math.max(0.02, Math.min(0.45, Math.abs(dec[0]) * 1.5))
+    ctx.moveTo(x, midY - amp * midY)
+    ctx.lineTo(x, midY + amp * midY)
+  }
+  ctx.stroke()
+}
+
+/** 空态（未录音）：均线 + 刻度 0 秒 */
+function drawWaveIdle(): void {
+  const canvas = waveCanvasRef.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  const box = canvas.parentElement
+  if (!ctx || !box) return
+  const w = box.clientWidth
+  const h = box.clientHeight
+  const dpr = window.devicePixelRatio || 1
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+    canvas.width = w * dpr
+    canvas.height = h * dpr
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, w, h)
+  ctx.strokeStyle = 'rgba(0, 122, 255, 0.35)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(0, h / 2)
+  ctx.lineTo(w, h / 2)
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
+  ctx.font = '10px system-ui, sans-serif'
+  ctx.textAlign = 'center'
+  ctx.fillText('0', 6, h - 6)
 }
 
 /** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
@@ -258,6 +516,14 @@ watch(
 
 onMounted(() => {
   void checkSttAvailability()
+  window.addEventListener('keydown', onGlobalKeyDown, true)
+  window.addEventListener('keyup', onGlobalKeyUp, true)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onGlobalKeyDown, true)
+  window.removeEventListener('keyup', onGlobalKeyUp, true)
+  exitVoiceMode()
 })
 
 // 打开 YOLO 面板或切换会话时，向后台查询该 session 的最新 yolo 状态
@@ -376,6 +642,26 @@ defineExpose({ focus })
   color: #ffffff;
 }
 
+/* 武装态（点击后待按住）：蓝色描边提示 */
+.chat-input__voice--armed {
+  border-color: var(--sa-accent, #007aff);
+  color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.06);
+}
+
+/* 110s 后：录音按钮内部 10 秒倒计时 */
+.chat-input__voice--countdown {
+  background: var(--sa-accent, #007aff);
+  border-color: var(--sa-accent, #007aff);
+  color: #ffffff;
+}
+
+.chat-input__countdown {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .chat-input__voice-dot {
   width: 12px;
   height: 12px;
@@ -387,6 +673,46 @@ defineExpose({ focus })
 @keyframes voice-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.75); opacity: 0.7; }
+}
+
+/* ── 音波框（武装/录音中替换输入框） ── */
+
+.chat-input__wavebox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid var(--sa-border, #d2d2d7);
+  border-radius: 8px;
+  background: var(--sa-bg-primary, #ffffff);
+  overflow: hidden; /* 无滚动条：canvas 内部绘制左滚，禁止拖拽滚动 */
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.chat-input__wavebox--recording {
+  border-color: var(--sa-accent, #007aff);
+  background: rgba(0, 122, 255, 0.03);
+}
+
+.chat-input__wave-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 不允许拖拽/交互（纯展示） */
+}
+
+.chat-input__wave-hint {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  pointer-events: none;
 }
 
 /* ── 输入框 ── */
