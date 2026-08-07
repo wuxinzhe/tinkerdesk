@@ -1,6 +1,7 @@
 <template>
   <div class="sidebar-wrapper">
-    <aside :class="['sidebar', { collapsed }]">
+    <!-- 折叠由外层 WorkspaceView 的 lv2-col 统一控制（动画也统一在外层） -->
+    <aside class="sidebar">
       <div class="sidebar__inner">
         <AgentCard
           :agent="agent"
@@ -21,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
@@ -35,8 +36,6 @@ const router = useRouter()
 const sessionStore = useSessionStore()
 const chatStore = useChatStore()
 const agentStore = useAgentStore()
-
-const collapsed = inject<Ref<boolean>>('sidebar-collapsed', ref(false))
 const sessionListRef = ref<InstanceType<typeof SessionList> | null>(null)
 
 /* ── Agent 信息 ── */
@@ -99,12 +98,6 @@ async function onNewSession() {
   height: 100%;
   flex-shrink: 0;
   overflow: hidden;
-  transition: width 0.2s ease;
-}
-
-.sidebar.collapsed {
-  width: 0;
-  border-right: none;
 }
 
 .sidebar__inner {

@@ -352,6 +352,8 @@ onMounted(() => {
   flex-direction: column;
   min-height: 0;
   position: relative;
+  /* 折叠动画统一在外层容器实现（子组件不再自实现） */
+  transition: width 0.2s ease;
 }
 
 /* 全局二级面板折叠按钮（对齐 ChatListView 的 sidebar-toggle 样式） */
