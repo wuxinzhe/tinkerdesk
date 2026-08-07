@@ -37,38 +37,39 @@
     <!-- ── 二级 + 三级 ── -->
     <div class="workspace__main">
       <div
-        ref="l2ColRef"
         class="workspace__l2-col"
         :class="{
           'workspace__l2-col--full': !hasLevel3,
           'workspace__l2-col--collapsed': sidebarCollapsed
         }"
       >
-        <!-- 平板端 Lv2 顶部工具栏 -->
-        <div class="workspace__lv2-toolbar">
-          <button class="workspace__lv2-hamburger" @click="drawerOpen = true">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 5h14M3 10h14M3 15h14" />
-            </svg>
-          </button>
-          <h1 class="workspace__lv2-title">{{ lv2Title }}</h1>
-        </div>
-        <router-view name="level2" class="workspace__l2-router" />
-      </div>
+        <!-- 全局二级面板折叠按钮（列内 absolute right:0——随列宽动画实时跟随；列 overflow visible 不裁剪它） -->
+        <button
+          class="sidebar-toggle"
+          :class="{ collapsed: sidebarCollapsed }"
+          :title="sidebarCollapsed ? '展开二级面板' : '收起二级面板'"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline v-if="!sidebarCollapsed" points="15 18 9 12 15 6" />
+            <polyline v-else points="9 18 15 12 9 6" />
+          </svg>
+        </button>
 
-      <!-- 全局二级面板折叠按钮（桌面端；独立于 lv2-col，避免被折叠裁剪——left 跟随列宽） -->
-      <button
-        class="sidebar-toggle"
-        :class="{ collapsed: sidebarCollapsed }"
-        :style="{ left: toggleLeft + 'px' }"
-        :title="sidebarCollapsed ? '展开二级面板' : '收起二级面板'"
-        @click="sidebarCollapsed = !sidebarCollapsed"
-      >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline v-if="!sidebarCollapsed" points="15 18 9 12 15 6" />
-          <polyline v-else points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+        <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉，按钮不受影响） -->
+        <div class="workspace__l2-inner">
+          <!-- 平板端 Lv2 顶部工具栏 -->
+          <div class="workspace__lv2-toolbar">
+            <button class="workspace__lv2-hamburger" @click="drawerOpen = true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 5h14M3 10h14M3 15h14" />
+              </svg>
+            </button>
+            <h1 class="workspace__lv2-title">{{ lv2Title }}</h1>
+          </div>
+          <router-view name="level2" class="workspace__l2-router" />
+        </div>
+      </div>
 
       <!-- ── 三级操作区 ── -->
       <div v-if="hasLevel3" class="workspace__l3-container">
@@ -134,29 +135,6 @@ const navCollapsed = ref(false)
 const drawerOpen = ref(false)
 const sidebarCollapsed = ref(false)
 provide('sidebar-collapsed', sidebarCollapsed)
-
-/* ── 全局折叠按钮位置：跟随 lv2-col 右边缘（展开时=列宽，折叠时=0） ── */
-const l2ColRef = ref<HTMLElement | null>(null)
-const toggleLeft = ref(280)
-
-function syncToggleLeft(): void {
-  const w = l2ColRef.value?.offsetWidth ?? 0
-  toggleLeft.value = sidebarCollapsed.value ? 0 : w
-}
-
-watch(sidebarCollapsed, () => {
-  // 等宽度动画（0.2s）结束后再同步按钮位置——nextTick 时列还在动画中（会取到中间值）
-  setTimeout(syncToggleLeft, 240)
-})
-
-onMounted(() => {
-  syncToggleLeft()
-  window.addEventListener('resize', syncToggleLeft)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', syncToggleLeft)
-})
 
 /* ── 上下文检测：L2 = 汉堡菜单，L3 = 返回按钮 ── */
 const inDetail = computed(() => hasLevel3.value)
@@ -383,11 +361,12 @@ onMounted(() => {
   transition: width 0.2s ease;
 }
 
-/* 全局二级面板折叠按钮（独立于 lv2-col——left 由 JS 跟随列宽，避免被折叠裁剪） */
+/* 全局二级面板折叠按钮（列内 absolute right:0——随列宽动画实时跟随；列不裁剪按钮） */
 .sidebar-toggle {
   position: absolute;
+  right: 0;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateX(50%);
   z-index: 10;
   display: flex;
   align-items: center;
@@ -395,12 +374,13 @@ onMounted(() => {
   width: 20px;
   height: 40px;
   border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px 0 0 6px;
+  border-right: none;
   background: var(--sa-bg-primary, #ffffff);
   color: var(--sa-text-tertiary, #aeaeb2);
   cursor: pointer;
   padding: 0;
-  transition: left 0.2s ease, background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .sidebar-toggle:hover {
@@ -410,7 +390,24 @@ onMounted(() => {
 }
 
 .sidebar-toggle.collapsed {
-  border-radius: 6px 0 0 6px;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+  border-right: 1px solid var(--sa-border, #d2d2d7);
+}
+
+.workspace__l2-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  /* 折叠时内容层自身执行淡出动画（非被外层挤压裁剪） */
+  transition: opacity 0.2s ease;
+}
+
+.workspace__l2-col--collapsed .workspace__l2-inner {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .workspace__l2-col--full {
@@ -422,7 +419,6 @@ onMounted(() => {
 
 .workspace__l2-col--collapsed {
   width: 0 !important;
-  overflow: hidden;
 }
 
 /* ── Lv3 列 ── */
