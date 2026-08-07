@@ -50,17 +50,14 @@
             <img v-else src="/default_avatar.png" alt="" class="agent-card-item__avatar-img" />
           </div>
           <div class="agent-card-item__info">
-            <div class="agent-card-item__name">
+            <div class="agent-card-item__name-row">
               <span class="agent-card-item__name-text">{{ a.displayName }}</span>
+              <span class="agent-card-item__profile-text">（{{ a.profile }}）</span>
+              <span class="agent-card-item__name-spacer" />
               <span v-if="a.isDefault" class="agent-card-item__tag tag-default">默认</span>
               <span v-else-if="!a.isActive" class="agent-card-item__tag tag-frozen">冻结</span>
             </div>
-            <div class="agent-card-item__profile">
-              <span class="agent-card-item__profile-text">{{ a.profile }}<template v-if="a.mainModelName"> · {{ a.mainModelName }}</template></span>
-            </div>
-          </div>
-        </div>
-        <div class="agent-card-item__actions">
+            <div class="agent-card-item__actions">
           <button class="agent-card-item__action" title="对话" @click.stop="startConversation(a)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -105,9 +102,11 @@
             </svg>
           </button>
         </div>
+        </div>
       </div>
     </div>
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -348,11 +347,12 @@ onMounted(async () => {
   min-width: 0;
 }
 
-.agent-card-item__name {
+/* name 行：名字（profile）… 默认tag靠右 */
+.agent-card-item__name-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 3px;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 .agent-card-item__name-text {
   font-size: 13px;
@@ -361,6 +361,20 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.agent-card-item__profile-text {
+  font-size: 11px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.agent-card-item__name-spacer {
+  flex: 1;
 }
 
 .agent-card-item__tag {
@@ -377,19 +391,6 @@ onMounted(async () => {
 .tag-frozen {
   background: #f2f2f7;
   color: #86868b;
-}
-
-.agent-card-item__profile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.agent-card-item__profile-text {
-  font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 
