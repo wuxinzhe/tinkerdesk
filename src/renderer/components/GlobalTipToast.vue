@@ -189,6 +189,7 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
   flex-direction: column;
   gap: var(--sa-space-1, 4px);
   min-width: 0;
+  padding-right: 20px; /* 给右上角关闭按钮让位 */
 }
 
 .gtoast__code {
@@ -207,13 +208,15 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
 }
 
 .gtoast__close {
+  position: absolute; /* 固定在卡片右上角 */
+  top: 6px;
+  right: 6px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 20px;
   height: 20px;
-  margin: -4px -6px 0 0;
   border: none;
   border-radius: 6px;
   background: transparent;
