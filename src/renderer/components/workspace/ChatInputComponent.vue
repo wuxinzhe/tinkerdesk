@@ -35,7 +35,7 @@
           @pointerleave="onWaveboxLeave"
         >
           <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
-          <div class="chat-input__wave-hint">{{ recording ? '松开结束' : '按住开始录音' }}</div>
+          <div class="chat-input__wave-hint">{{ recording ? '松开结束' : `按住开始录音（或按住 ${shortcutLabel}）` }}</div>
         </div>
 
         <textarea
@@ -43,7 +43,7 @@
           key="textarea"
           ref="textareaRef"
           class="chat-input__textarea"
-          :placeholder="placeholder"
+          :placeholder="'Enter发送消息，Ctrl+Enter换行'"
           :disabled="disabled"
           :value="modelValue"
           rows="1"
@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
 
@@ -193,8 +193,22 @@ let recordingStartedAt = 0
 let recordTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let waveHistory: Float32Array[] = []   // 历史波形帧（降采样 64 点/帧）
-let shortcutRecord = 'ctrl+backquote'  // 录音快捷键（从通用设置加载）
+let shortcutRecord = ref('ctrl+backquote')  // 录音快捷键（从通用设置加载）
 let shortcutHeld = false               // 快捷键按住中
+
+/** 快捷键显示文案（ctrl+backquote → Ctrl+`） */
+const shortcutLabel = computed(() =>
+  shortcutRecord.value
+    .split('+')
+    .map((part) => {
+      if (part === 'ctrl') return 'Ctrl'
+      if (part === 'shift') return 'Shift'
+      if (part === 'alt') return 'Alt'
+      if (part === 'backquote') return '`'
+      return part.length === 1 ? part.toUpperCase() : part
+    })
+    .join('+')
+)
 
 const PX_PER_SEC = 60                  // 音波框时间轴：1 秒固定宽度
 const MAX_RECORD_SEC = 120             // 最长录音 120s
@@ -207,7 +221,7 @@ async function checkSttAvailability(): Promise<void> {
     sttAvailable.value = stt.length > 0
     if (sttAvailable.value) {
       const { settings } = await window.api.generalSettings.get()
-      shortcutRecord = settings['shortcut.record'] || 'ctrl+backquote'
+      shortcutRecord.value = settings['shortcut.record'] || 'ctrl+backquote'
     }
   } catch {
     sttAvailable.value = false
@@ -234,8 +248,10 @@ function parseShortcut(value: string): (e: KeyboardEvent) => boolean {
 
 /** 快捷键监听（按住开始 / 松开结束） */
 function onGlobalKeyDown(e: KeyboardEvent): void {
+  // 快捷键仅在录音模式（武装/录音中）生效——输入框模式一律不响应，避免误触
   if (!sttAvailable.value || voiceMode.value === false) return
-  if (parseShortcut(shortcutRecord)(e) && !shortcutHeld && !recording.value) {
+  if (e.repeat) return // 按住重复 keydown 不重复触发
+  if (parseShortcut(shortcutRecord.value)(e) && !shortcutHeld && !recording.value) {
     shortcutHeld = true
     e.preventDefault()
     void startRecording()
@@ -244,7 +260,7 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
 function onGlobalKeyUp(e: KeyboardEvent): void {
   if (!shortcutHeld) return
   // 组合键任意一个松开即结束
-  if (parseShortcut(shortcutRecord)(e) || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta' || e.key === '`' || e.key === 'Backquote') {
+  if (parseShortcut(shortcutRecord.value)(e) || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta' || e.key === '`' || e.key === 'Backquote') {
     shortcutHeld = false
     if (recording.value) void stopRecording()
   }
@@ -314,6 +330,7 @@ async function stopRecording(): Promise<void> {
   clearTimers()
   stopWaveLoop()
   waveHistory = []
+  drawWaveIdle() // 录制结束停留音波框（武装态）：显示空态均线
   const recorder = mediaRecorder
   const chunks = audioChunks
   mediaRecorder = null
@@ -343,6 +360,7 @@ function exitVoiceMode(): void {
   recording.value = false
   clearTimers()
   stopWaveLoop()
+  clearWaveCanvas() // 清空 canvas——避免切换动画中时间轴蓝线闪现
   waveHistory = []
   if (mediaRecorder) {
     mediaRecorder.stream.getTracks().forEach((t) => t.stop())
@@ -380,7 +398,14 @@ function startWaveLoop(): void {
 
 function stopWaveLoop(): void {
   if (waveRaf) { cancelAnimationFrame(waveRaf); waveRaf = 0 }
-  drawWaveIdle()
+}
+
+/** 清空音波 canvas（离开音波框时——避免切换动画中时间轴蓝线闪现） */
+function clearWaveCanvas(): void {
+  const canvas = waveCanvasRef.value
+  if (!canvas) return
+  const ctx = canvas.getContext('2d')
+  if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height)
 }
 
 function drawWave(): void {
@@ -425,7 +450,7 @@ function drawWave(): void {
   // 超出音波框宽度 → 自动左滚（offset = 超出量；不产生滚动条、不可拖拽）
   const offset = Math.max(0, totalW - w)
 
-  // 时间刻度（1 秒一格）
+  // 时间刻度（1 秒一格——顶部短刻度，Apple HIG 风格）
   ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
   ctx.font = '10px system-ui, sans-serif'
   ctx.textAlign = 'center'
@@ -434,12 +459,13 @@ function drawWave(): void {
   for (let s = startSec; s <= endSec; s++) {
     const x = s * PX_PER_SEC - offset
     if (x < 0 || x > w) continue
-    ctx.strokeStyle = 'rgba(142, 142, 147, 0.25)'
+    ctx.strokeStyle = 'rgba(142, 142, 147, 0.3)'
+    ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(x, 4)
-    ctx.lineTo(x, h - 4)
+    ctx.moveTo(x, 6)
+    ctx.lineTo(x, 14)
     ctx.stroke()
-    ctx.fillText(String(s), x, h - 6)
+    ctx.fillText(String(s), x, 25)
   }
 
   // 历史波形（从左滚位置绘制）
@@ -483,7 +509,7 @@ function drawWaveIdle(): void {
   ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
   ctx.font = '10px system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText('0', 6, h - 6)
+  ctx.fillText('0', 24, 25)
 }
 
 /** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
@@ -679,7 +705,7 @@ defineExpose({ focus })
   50% { transform: scale(0.75); opacity: 0.7; }
 }
 
-/* ── 音波框（武装/录音中替换输入框） ── */
+/* ── 音波框（武装/录音中替换输入框）── Apple HIG：白底细边框、内容 16px 渐隐、刻度顶部短刻度 */
 
 .chat-input__wavebox {
   position: relative;
@@ -687,18 +713,19 @@ defineExpose({ focus })
   min-width: 0;
   height: 36px;
   border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--sa-bg-primary, #ffffff);
   overflow: hidden; /* 无滚动条：canvas 内部绘制左滚，禁止拖拽滚动 */
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
+  transition: border-color 0.2s ease;
 }
 
+/* 录音中：仅边框提示（无蓝色遮罩背景） */
 .chat-input__wavebox--recording {
   border-color: var(--sa-accent, #007aff);
-  background: rgba(0, 122, 255, 0.03);
 }
 
 .chat-input__wave-canvas {
@@ -707,6 +734,9 @@ defineExpose({ focus })
   width: 100%;
   height: 100%;
   pointer-events: none; /* 不允许拖拽/交互（纯展示） */
+  /* 时间轴/波形左右渐隐（等效 16px 内边距——内容不贴边） */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
 }
 
 .chat-input__wave-hint {
@@ -755,6 +785,11 @@ defineExpose({ focus })
 
 .chat-input__textarea::-webkit-scrollbar {
   display: none;
+}
+
+.chat-input__textarea::placeholder {
+  line-height: 1.4;
+  color: var(--sa-text-tertiary, #aeaeb2);
 }
 
 @media (max-width: 767px) {
