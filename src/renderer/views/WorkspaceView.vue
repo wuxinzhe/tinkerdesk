@@ -73,7 +73,9 @@
 
       <!-- ── 三级操作区 ── -->
       <div v-if="hasLevel3" class="workspace__l3-container">
+        <!-- 工坊页不渲染全局 toolbar（工坊 UI 自带导航，避免双头部） -->
         <WorkspaceToolbar
+          v-if="activeTab !== 'workshop'"
           class="workspace__l3-bar"
           variant="l3"
           :title="l3ToolbarTitle"
@@ -131,7 +133,7 @@ const hasLevel3 = computed(() => {
 })
 
 /* ── 状态 ── */
-const navCollapsed = ref(false)
+const navCollapsed = ref(true)
 const drawerOpen = ref(false)
 const sidebarCollapsed = ref(false)
 provide('sidebar-collapsed', sidebarCollapsed)

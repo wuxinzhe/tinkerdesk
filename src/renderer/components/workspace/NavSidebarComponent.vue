@@ -53,18 +53,22 @@ const navItems = [
     id: 'agents',
     label: 'Agents',
     icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-      <path d="M7 11V7a5 5 0 0110 0v4"/>
+      <rect x="4" y="8" width="16" height="12" rx="3"/>
+      <circle cx="9" cy="14" r="1.2"/>
+      <circle cx="15" cy="14" r="1.2"/>
+      <path d="M9 17.5h6"/>
+      <path d="M12 8V4"/>
+      <circle cx="12" cy="3" r="1.2"/>
     </svg>`
   },
   {
     id: 'workshop',
     label: '工坊',
     icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-      <circle cx="9" cy="7" r="4"/>
-      <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-      <path d="M16 3.13a4 4 0 010 7.75"/>
+      <rect x="3" y="3" width="8" height="8" rx="2"/>
+      <rect x="13" y="3" width="8" height="8" rx="2"/>
+      <rect x="3" y="13" width="8" height="8" rx="2"/>
+      <rect x="13" y="13" width="8" height="8" rx="2"/>
     </svg>`
   },
   {
