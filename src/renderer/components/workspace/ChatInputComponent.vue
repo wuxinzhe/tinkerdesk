@@ -24,30 +24,34 @@
       </button>
 
       <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音） -->
-      <div
-        v-if="voiceMode"
-        class="chat-input__wavebox"
-        :class="{ 'chat-input__wavebox--recording': recording }"
-        @pointerdown="onWaveboxDown"
-        @pointerup="onWaveboxUp"
-        @pointerleave="onWaveboxLeave"
-      >
-        <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
-        <div class="chat-input__wave-hint">{{ recording ? '松开结束' : '按住音波框开始录音' }}</div>
-      </div>
+      <Transition name="input-swap" mode="out-in">
+        <div
+          v-if="voiceMode"
+          key="wavebox"
+          class="chat-input__wavebox"
+          :class="{ 'chat-input__wavebox--recording': recording }"
+          @pointerdown="onWaveboxDown"
+          @pointerup="onWaveboxUp"
+          @pointerleave="onWaveboxLeave"
+        >
+          <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
+          <div class="chat-input__wave-hint">{{ recording ? '松开结束' : '按住开始录音' }}</div>
+        </div>
 
-      <textarea
-        v-else
-        ref="textareaRef"
-        class="chat-input__textarea"
-        :placeholder="placeholder"
-        :disabled="disabled"
-        :value="modelValue"
-        rows="1"
-        enterkeyhint="send"
-        @input="onInput"
-        @keydown="onKeydown"
-      />
+        <textarea
+          v-else
+          key="textarea"
+          ref="textareaRef"
+          class="chat-input__textarea"
+          :placeholder="placeholder"
+          :disabled="disabled"
+          :value="modelValue"
+          rows="1"
+          enterkeyhint="send"
+          @input="onInput"
+          @keydown="onKeydown"
+        />
+      </Transition>
       <div class="chat-input__btn-group">
         <button
           class="chat-input__send"
@@ -309,6 +313,7 @@ async function stopRecording(): Promise<void> {
   recording.value = false
   clearTimers()
   stopWaveLoop()
+  waveHistory = []
   const recorder = mediaRecorder
   const chunks = audioChunks
   mediaRecorder = null
@@ -323,13 +328,12 @@ async function stopRecording(): Promise<void> {
     if (samples.length === 0) return
     const { text } = await window.api.voice.sttTranscribe(samples)
     const trimmed = text.trim()
-    exitVoiceMode()
+    // 录制结束不退出录音模式：停留在音波框（武装态），用户手动点击按钮切回文字输入
     if (trimmed) {
       emit('send', trimmed)
     }
   } catch {
-    // STT 失败：inv 拦截统一提示
-    exitVoiceMode()
+    // STT 失败：inv 拦截统一提示（同样停留在录音模式）
   }
 }
 
@@ -707,12 +711,24 @@ defineExpose({ focus })
 
 .chat-input__wave-hint {
   position: absolute;
-  right: 8px;
+  left: 0;
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
   font-size: 11px;
   color: var(--sa-text-tertiary, #aeaeb2);
+  text-align: center;
   pointer-events: none;
+}
+
+/* 输入框 ↔ 音波框 切换动画 */
+.input-swap-enter-active,
+.input-swap-leave-active {
+  transition: opacity 0.18s ease;
+}
+.input-swap-enter-from,
+.input-swap-leave-to {
+  opacity: 0;
 }
 
 /* ── 输入框 ── */
@@ -722,17 +738,19 @@ defineExpose({ focus })
   resize: none;
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 7px 14px;
   font-size: 14px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.4;
   color: var(--sa-text-primary, #1d1d1f);
   background: var(--sa-bg-secondary, #f5f5f7);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 36px;
   max-height: 144px;
   overflow-y: auto;
   scrollbar-width: none;
+  box-sizing: border-box;
 }
 
 .chat-input__textarea::-webkit-scrollbar {
