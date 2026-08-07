@@ -40,9 +40,21 @@
         class="workspace__l2-col"
         :class="{
           'workspace__l2-col--full': !hasLevel3,
-          'workspace__l2-col--collapsed': sidebarCollapsed && activeTab === 'agent-chat'
+          'workspace__l2-col--collapsed': sidebarCollapsed
         }"
       >
+        <!-- 全局二级面板折叠按钮（桌面端；所有 lv2 页面共用） -->
+        <button
+          class="sidebar-toggle"
+          :class="{ collapsed: sidebarCollapsed }"
+          :title="sidebarCollapsed ? '展开二级面板' : '收起二级面板'"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline v-if="!sidebarCollapsed" points="15 18 9 12 15 6" />
+            <polyline v-else points="9 18 15 12 9 6" />
+          </svg>
+        </button>
         <!-- 平板端 Lv2 顶部工具栏 -->
         <div class="workspace__lv2-toolbar">
           <button class="workspace__lv2-hamburger" @click="drawerOpen = true">
@@ -339,6 +351,41 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
+}
+
+/* 全局二级面板折叠按钮（对齐 ChatListView 的 sidebar-toggle 样式） */
+.sidebar-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 40px;
+  border: 1px solid var(--sa-border, #d2d2d7);
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+  background: var(--sa-bg-primary, #ffffff);
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.sidebar-toggle:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--sa-accent, #007aff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-toggle.collapsed {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+  border-right: 1px solid var(--sa-border, #d2d2d7);
 }
 
 .workspace__l2-col--full {

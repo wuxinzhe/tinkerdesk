@@ -17,18 +17,6 @@
         />
       </div>
     </aside>
-
-    <button
-      class="sidebar-toggle"
-      :class="{ collapsed }"
-      :title="collapsed ? '展开会话列表' : '折叠会话列表'"
-      @click="collapsed = !collapsed"
-    >
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline v-if="!collapsed" points="15 18 9 12 15 6" />
-        <polyline v-else points="9 18 15 12 9 6" />
-      </svg>
-    </button>
   </div>
 </template>
 
@@ -125,39 +113,6 @@ async function onNewSession() {
   height: 100%;
   width: 280px;
   flex-shrink: 0;
-}
-
-.sidebar-toggle {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%) translateX(50%);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 40px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 6px 0 0 6px;
-  border-right: none;
-  background: var(--sa-bg-primary, #ffffff);
-  color: var(--sa-text-tertiary, #aeaeb2);
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-}
-
-.sidebar-toggle:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.sidebar-toggle.collapsed {
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-  border-right: 1px solid var(--sa-border, #d2d2d7);
 }
 
 @media (max-width: 1023px) {
