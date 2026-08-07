@@ -798,6 +798,10 @@ defineExpose({ focus })
   .chat-input__textarea {
     font-size: 16px;
   }
+  /* 手机模式：隐藏发送按钮（手机键盘 Enter 发送） */
+  .chat-input__send {
+    display: none;
+  }
 }
 
 .chat-input__textarea:focus {
