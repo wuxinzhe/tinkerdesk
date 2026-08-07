@@ -13,20 +13,57 @@
         </div>
       </div>
       <div class="agent-card__footer">
-        <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
-        <div class="agent-card__actions">
-          <button class="agent-card__btn" title="切换 Agent" @click="$emit('switch-agent')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 1l4 4-4 4" />
-              <path d="M3 11V9a4 4 0 014-4h14" />
-              <path d="M7 23l-4-4 4-4" />
-              <path d="M21 13v2a4 4 0 01-4 4H3" />
+        <div class="agent-card__footer-top">
+          <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
+          <div class="agent-card__actions">
+            <button class="agent-card__btn" title="切换 Agent" @click="$emit('switch-agent')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 1l4 4-4 4" />
+                <path d="M3 11V9a4 4 0 014-4h14" />
+                <path d="M7 23l-4-4 4-4" />
+                <path d="M21 13v2a4 4 0 01-4 4H3" />
+              </svg>
+            </button>
+            <button v-if="closable" class="agent-card__btn agent-card__btn--close" title="关闭" @click="$emit('close')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- 管理入口（对齐 AgentListView 操作按钮：技能/工具/提示词/设置/编辑） -->
+        <div class="agent-card__manage">
+          <button class="agent-card__manage-btn" title="技能" @click="goSkills">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
             </svg>
           </button>
-          <button v-if="closable" class="agent-card__btn agent-card__btn--close" title="关闭" @click="$emit('close')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+          <button class="agent-card__manage-btn" title="工具" @click="goTools">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+            </svg>
+          </button>
+          <button class="agent-card__manage-btn" title="提示词" @click="goPromptModules">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="9" y1="13" x2="15" y2="13" />
+              <line x1="9" y1="17" x2="13" y2="17" />
+            </svg>
+          </button>
+          <button class="agent-card__manage-btn" title="设置" @click="goSettings">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </button>
+          <button class="agent-card__manage-btn" title="编辑" @click="goEdit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+              <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />
             </svg>
           </button>
         </div>
@@ -53,6 +90,23 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSessionStore } from '@/renderer/stores/session-store'
+
+const router = useRouter()
+const sessionStore = useSessionStore()
+
+/** 管理入口跳转（对齐 AgentListView：/workspace/agents/:profile/<功能>） */
+function goManage(subPath: string): void {
+  const profile = sessionStore.profile
+  if (!profile) return
+  router.push(`/workspace/agents/${profile}/${subPath}`)
+}
+const goSkills = () => goManage('skills')
+const goTools = () => goManage('tools')
+const goPromptModules = () => goManage('prompt-modules')
+const goSettings = () => goManage('settings')
+const goEdit = () => goManage('edit')
 
 /** 组件私有 Agent 展示类型（完整 Agent 定义在 api/types.ts） */
 interface AgentInfo {
@@ -273,13 +327,46 @@ onUnmounted(() => {
 
 .agent-card__footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   border-top: 1px solid var(--sa-border, #d2d2d7);
   padding-top: 4px;
   min-height: 26px;
   position: relative;
   overflow: hidden;
+}
+
+.agent-card__footer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 管理入口（技能/工具/提示词/设置/编辑——对齐 AgentListView action 按钮） */
+.agent-card__manage {
+  display: flex;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.agent-card__manage-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.agent-card__manage-btn:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--sa-accent, #007aff);
 }
 
 /* ── Thinking 态：分割线蓝色流光 ── */
