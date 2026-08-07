@@ -4,10 +4,10 @@
 ### {{category}} ({{count}})
 
 {{#each skills}}
-- **{{name}}**{{#if readinessStatus}} ⚠️ {{readinessStatus}}{{/if}}{{#if description}}: {{description}}{{/if}}{{#if tags}} 🏷️ {{tags}}{{/if}}{{#if version}} v{{version}}{{/if}}
+- **{{name}}**{{#if id}} (id: `{{id}}`){{/if}}{{#if readinessStatus}} ⚠️ {{readinessStatus}}{{/if}}{{#if description}}: {{description}}{{/if}}{{#if tags}} 🏷️ {{tags}}{{/if}}{{#if version}} v{{version}}{{/if}}
 {{/each}}
 
 {{/each}}
 ---
-*{{totalCount}} skill(s){{#if categoryFilter}} in '{{categoryFilter}}'{{/if}}. Use **skill_view(name)** to load full content.*
+*{{totalCount}} skill(s){{#if categoryFilter}} in '{{categoryFilter}}'{{/if}}. Use **skill_view(id)** to load full content.*
 *Categories: {{categoriesList}}*

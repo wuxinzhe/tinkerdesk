@@ -93,6 +93,16 @@ export class SandboxWhitelistService {
     return false
   }
 
+  /** 暴露提取方法（审批通过后自动加白名单用） */
+  extractTargetUrls(args: Record<string, unknown>): string[] {
+    return this.extractUrls(args)
+  }
+
+  /** 暴露提取方法（审批通过后自动加白名单用） */
+  extractTargetPaths(args: Record<string, unknown>): string[] {
+    return this.extractPaths(args)
+  }
+
   /** 从工具参数提取所有目标 URL（url/urls/query 字段 + 递归扫描文本值） */
   private extractUrls(args: Record<string, unknown>): string[] {
     const result: string[] = []

@@ -31,8 +31,9 @@ export class PromptModuleBuilder {
   buildSystemPrompt(ctx: ConversationContext): string {
     const sessionId = ctx.sessionId
 
-    // 0) 运行时模块始终重新渲染（os/date 每次更新）
-    const runtimePrompt = this.buildRuntimePrompt(ctx)
+    // 0) 运行时模块：同一天内缓存（os 固定、date 当天一致）——对齐 Hermes 整串缓存保 LLM prompt 缓存热；
+    //    跨天自动重建（date 更新）。避免每个 chunk 轮次都重渲染导致上游 prompt 缓存失效。
+    const runtimePrompt = this.getRuntimePromptCached(ctx)
 
     // 1) 先查内存缓存
     let sessionPrompt = this.promptCache.get(sessionId)
@@ -101,6 +102,24 @@ export class PromptModuleBuilder {
   /** 仅渲染运行时模块（不进入缓存） */
   private buildRuntimePrompt(ctx: ConversationContext): string {
     return this.buildFromModules(ctx, PromptModuleBuilder.RUNTIME_MODULE_IDS)
+  }
+
+  /** 运行时模块缓存（按日期：同一天复用——os 固定/date 当天一致；跨天重建更新日期） */
+  private runtimeCache = new Map<string, string>()
+
+  private getRuntimePromptCached(ctx: ConversationContext): string {
+    const today = todayDate()
+    let p = this.runtimeCache.get(today)
+    if (p === undefined) {
+      p = this.buildRuntimePrompt(ctx)
+      // 只保留最近 2 天（避免长期运行日期键无限增长）
+      if (this.runtimeCache.size >= 2) {
+        const oldest = this.runtimeCache.keys().next().value
+        if (oldest !== undefined) this.runtimeCache.delete(oldest)
+      }
+      this.runtimeCache.set(today, p)
+    }
+    return p
   }
 
   /** 按模块 ID 列表依次渲染并拼接 */

@@ -24,21 +24,44 @@ export class SkillViewTool extends BaseTool {
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as Record<string, unknown>
-    const name = String(args.name ?? '').trim()
-    if (!name) {
-      return ToolResult.sync('Error: Skill name is required.')
+    // 唯一指向：skill id（skills_list 返回 id/name/description——view 按 id 查全貌）
+    const id = String(args.id ?? '').trim()
+    if (!id) {
+      return ToolResult.sync('Error: Skill id is required. Use skills_list to get the id.')
     }
 
-    const detail = this.skillService.viewSkill(ctx.profile, name)
+    // 按 fileId 加载单个技能文件内容（skill_view(id, fileId)——索引后按需取内容）
+    const fileId = args.fileId !== undefined && args.fileId !== null ? Number(args.fileId) : undefined
+    if (fileId !== undefined && !Number.isNaN(fileId)) {
+      const file = this.skillService.getSkillFileById(fileId)
+      if (!file) {
+        return ToolResult.sync(`Error: Skill file '${fileId}' not found. Use skill_view(id) to list files.`)
+      }
+      return ToolResult.sync(`# File: ${file.name || file.fileType} (id: ${file.id})\n\n${file.content}`)
+    }
+
+    const detail = this.skillService.viewSkillById(ctx.profile, id)
     if (!detail) {
-      return ToolResult.sync(`Error: Skill '${name}' not found. Use skills_list to see available skills.`)
+      return ToolResult.sync(`Error: Skill '${id}' not found. Use skills_list to see available skills.`)
     }
 
     // 渲染 skill-view.hbs（对齐 Java：全部字段 + metaLine 含 Category/Updated/Readiness）
-    const templateCtx: Record<string, unknown> = { name: detail.name }
+    const templateCtx: Record<string, unknown> = { name: detail.name, id: detail.id }
     if (detail.description) templateCtx.description = detail.description
     if (detail.body) templateCtx.body = detail.body
     if (detail.tags) templateCtx.tags = detail.tags
+    // 附件索引（按 sort_order 排序——id/name/fileType/language；content 用 fileId 按需加载）
+    if (detail.files && detail.files.length > 0) {
+      templateCtx.files = [...detail.files]
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((f) => ({
+          id: f.id,
+          name: f.name || f.fileType,
+          fileType: f.fileType,
+          language: f.language,
+          sortOrder: f.sortOrder,
+        }))
+    }
     const metaParts: string[] = []
     if (detail.category) metaParts.push(`**Category:** ${detail.category}`)
     if (detail.updatedAt) metaParts.push(`**Updated:** ${detail.updatedAt}`)

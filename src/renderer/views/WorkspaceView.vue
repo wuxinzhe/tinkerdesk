@@ -43,20 +43,7 @@
           'workspace__l2-col--collapsed': sidebarCollapsed
         }"
       >
-        <!-- 全局二级面板折叠按钮（列内 absolute right:0——随列宽动画实时跟随；列 overflow visible 不裁剪它） -->
-        <button
-          class="sidebar-toggle"
-          :class="{ collapsed: sidebarCollapsed }"
-          :title="sidebarCollapsed ? '展开二级面板' : '收起二级面板'"
-          @click="sidebarCollapsed = !sidebarCollapsed"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline v-if="!sidebarCollapsed" points="15 18 9 12 15 6" />
-            <polyline v-else points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-
-        <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉，按钮不受影响） -->
+        <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
         <div class="workspace__l2-inner">
           <!-- 平板端 Lv2 顶部工具栏 -->
           <div class="workspace__lv2-toolbar">
@@ -192,6 +179,9 @@ const l3ToolbarTitle = computed(() => {
       return '提示词模块'
     }
     if (subMode === 'skill') {
+      // 技能文件新增/编辑页
+      if (route.path.match(/\/file\/new$/)) return '新增文件'
+      if (route.path.match(/\/file\/\d+$/)) return '编辑文件'
       return getSkillDetailTitle()
     }
     if (route.path.includes('/agents/create')) return '创建 Agent'
@@ -233,6 +223,9 @@ const topbarTitle = computed(() => {
     const subMode = getAgentSubMode()
     if (subMode && AGENT_SUB_TITLES[subMode]) return AGENT_SUB_TITLES[subMode]
     if (subMode === 'skill') {
+      // 技能文件新增/编辑页
+      if (route.path.match(/\/file\/new$/)) return '新增文件'
+      if (route.path.match(/\/file\/\d+$/)) return '编辑文件'
       return getSkillDetailTitle()
     }
     if (route.path.endsWith('/agents/create')) return '创建 Agent'
@@ -295,7 +288,13 @@ function goBack() {
 }
 
 /* ── Lifecycle ── */
+/** 顶部 TitleBar 折叠按钮 → 切换 lv2 列（原 sidebar-toggle 控制移到这里） */
+function onToggleSidebar(): void {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
 onMounted(() => {
+  window.addEventListener('toggle-sidebar', onToggleSidebar)
   nextTick(() => {
     const sessionId = route.query.session as string | undefined
     const tab = route.query.tab as string | undefined
@@ -311,6 +310,10 @@ onMounted(() => {
     }
   })
 })
+
+onUnmounted(() => {
+  window.removeEventListener('toggle-sidebar', onToggleSidebar)
+})
 </script>
 
 <style scoped>
@@ -323,8 +326,14 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: linear-gradient(180deg, #fafafa 0%, #f5f5f7 100%);
+  /* 浅色渐变——为毛玻璃 blur 提供可穿透内容 */
+  background: linear-gradient(180deg, #f5f5f7 0%, #e9e9ef 100%);
   border-top: 1px solid var(--sa-border, #d2d2d7);
+}
+
+/* 深色：带蓝紫调的渐变（玻璃背后有色彩层次，blur 才可见） */
+html[data-theme='dark'] .workspace {
+  background: linear-gradient(180deg, #1d1d26 0%, #26262f 100%);
 }
 
 .workspace__main {
@@ -340,16 +349,34 @@ onMounted(() => {
 
 .workspace__sidebar {
   display: none;
+  /* Liquid Glass（功能层——lv1 图标栏：玻璃 + 右侧边缘） */
+  background: var(--sa-bg-glass);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(30px) saturate(200%);
+  border-right: 0.5px solid var(--sa-border, #e8e8ed);
+  box-shadow: inset -0.5px 0 0 var(--sa-glass-edge, rgba(255, 255, 255, 0.5));
 }
 
 /* ── 顶栏可见性（纯 CSS 控制） ── */
 
 .workspace__mobile-bar {
   display: none;
+  /* Liquid Glass（功能层——移动顶栏） */
+  background: var(--sa-bg-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--sa-shadow-hairline);
 }
 
 .workspace__l3-bar {
   display: none;
+  /* Liquid Glass（功能层——l3 工具条：玻璃 + 顶部高光边缘 + hairline） */
+  background: var(--sa-bg-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 0.5px 0 var(--sa-glass-edge, rgba(255, 255, 255, 0.5)),
+    0 0.5px 0 var(--sa-border, #e8e8ed);
 }
 
 /* ── Lv2 列 ── */
@@ -363,47 +390,67 @@ onMounted(() => {
   transition: width 0.2s ease;
 }
 
-/* 全局二级面板折叠按钮（列内 absolute right:0——随列宽动画实时跟随；列不裁剪按钮） */
-.sidebar-toggle {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%) translateX(50%);
-  z-index: 10;
+/* ── Lv2 工具栏（仅平板端可见） ── */
+
+.workspace__lv2-toolbar {
+  display: none;
+  align-items: center;
+  padding: 10px 12px;
+  height: 44px;
+  box-sizing: border-box;
+  background: var(--sa-bg-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--sa-shadow-hairline);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.workspace__lv2-hamburger {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 40px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 6px 0 0 6px;
-  border-right: none;
-  background: var(--sa-bg-primary, #ffffff);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 0;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  color: var(--sa-text-secondary, #86868b);
+  flex-shrink: 0;
+  position: absolute;
+  left: 12px;
 }
 
-.sidebar-toggle:hover {
+.workspace__lv2-hamburger:hover {
   background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-.sidebar-toggle.collapsed {
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-  border-right: 1px solid var(--sa-border, #d2d2d7);
+.workspace__lv2-hamburger svg {
+  width: 18px;
+  height: 18px;
 }
 
+.workspace__lv2-title {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sa-text-primary, #1d1d1f);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 40px;
+}
+
+/* 内容层：flex 布局 + overflow 裁剪（折叠时内容裁掉）；自身淡出动画 */
 .workspace__l2-inner {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  /* 折叠时内容层自身执行淡出动画（非被外层挤压裁剪） */
   transition: opacity 0.2s ease;
 }
 
@@ -448,66 +495,17 @@ onMounted(() => {
   min-width: 0;
   container-type: inline-size;
   container-name: l3-content;
-  background: var(--sa-bg-primary, #ffffff);
+  /* 透明——露出 workspace 渐变，玻璃工具条 blur 才有内容可透 */
+  background: transparent;
 }
 
-/* ── Lv2 工具栏（仅平板端可见） ── */
-
-.workspace__lv2-toolbar {
-  display: none;
-  align-items: center;
-  padding: 10px 12px;
-  height: 44px;
-  box-sizing: border-box;
-  background: #ffffff;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
-  flex-shrink: 0;
-  position: relative;
-  z-index: 100;
-}
+/* ── Lv2 内容路由区 ── */
 
 .workspace__l2-router {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-.workspace__lv2-hamburger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--sa-text-secondary, #86868b);
-  flex-shrink: 0;
-  position: absolute;
-  left: 12px;
-}
-
-.workspace__lv2-hamburger:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-}
-
-.workspace__lv2-hamburger svg {
-  width: 18px;
-  height: 18px;
-}
-
-.workspace__lv2-title {
-  flex: 1;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin: 0 40px;
 }
 
 /* ═══════════════════════════════════════════════════════

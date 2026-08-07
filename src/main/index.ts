@@ -70,9 +70,9 @@ app.whenReady().then(() => {
   // ── Agent 会话（本地 AgentLoop）：组装依赖 + 注册 IPC ──
   const desk = bootstrap([], [])
   new AgentController(desk.agentLoop, desk.sessionContextFactory).register()
-  new SessionController(desk.sessionService).register()
+  new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService).register()
   new MessageController(desk.messageService).register()
-  new AgentCrudController(desk.agentService).register()
+  new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
   new AgentConfigController(desk.agentConfigService).register()
   new ToolController(desk.toolManager).register()
   new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()

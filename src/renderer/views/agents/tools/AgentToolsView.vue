@@ -147,6 +147,14 @@ onMounted(() => loadTools())
   padding: 10px 14px;
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 8px;
+  /* 卡片辨识度：白底（深色 elevated）+ 轻阴影，与页面背景区分 */
+  background: var(--sa-bg-elevated, #ffffff);
+  box-shadow: var(--sa-shadow-sm);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.tool-row:hover {
+  border-color: var(--sa-accent, #007aff);
+  box-shadow: var(--sa-shadow-md);
 }
 .tool-row__info {
   flex: 1;

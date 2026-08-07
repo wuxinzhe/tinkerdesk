@@ -1,6 +1,27 @@
 <template>
   <L3PageLayout class="general-settings">
     <div class="general-settings__body">
+      <!-- ── 主题组（浅色/深色/跟随系统） ── -->
+      <div class="general-settings__group">
+        <div class="general-settings__group-header">
+          <span class="general-settings__group-title">主题</span>
+          <span class="general-settings__group-desc">选择应用外观</span>
+        </div>
+        <div class="theme-row">
+          <div class="theme-segmented" role="radiogroup" aria-label="主题">
+            <button
+              v-for="t in themeOptions"
+              :key="t.value"
+              class="theme-segmented__item"
+              :class="{ selected: theme === t.value }"
+              role="radio"
+              :aria-checked="theme === t.value"
+              @click="setTheme(t.value)"
+            >{{ t.label }}</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 快捷键配置组（未来其他快捷键放同一组） ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
@@ -32,6 +53,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { L3PageLayout } from '@/renderer/components'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
+import { applyTheme, type ThemePreference } from '@/renderer/utils/theme'
 
 interface ShortcutItem {
   key: string
@@ -44,6 +66,24 @@ const DEFAULT_RECORD = 'ctrl+b'
 
 const shortcuts = ref<ShortcutItem[]>([])
 const capturingKey = ref<string | null>(null)
+
+/* ── 主题 ── */
+const themeOptions: Array<{ value: ThemePreference; label: string }> = [
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
+  { value: 'system', label: '跟随系统' },
+]
+const theme = ref<ThemePreference>('light')
+
+async function setTheme(value: ThemePreference): Promise<void> {
+  theme.value = value
+  applyTheme(value)
+  try {
+    await window.api.generalSettings.set('theme', value)
+  } catch {
+    showErrorToast({ code: 'THEME_SAVE_ERROR', message: '主题保存失败' })
+  }
+}
 
 /** 格式化快捷键显示（ctrl+backquote → Ctrl + `） */
 function formatShortcut(value: string): string {
@@ -61,10 +101,14 @@ function formatShortcut(value: string): string {
 
 async function load(): Promise<void> {
   try {
-    const { shortcuts: list } = await window.api.generalSettings.get()
+    const { settings, shortcuts: list } = await window.api.generalSettings.get()
     shortcuts.value = list
+    const saved = settings['theme'] as ThemePreference | undefined
+    if (saved === 'dark' || saved === 'system' || saved === 'light') {
+      theme.value = saved
+    }
   } catch {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '读取快捷键配置失败' })
+    showErrorToast({ code: 'SHORTCUT_ERROR', message: '读取通用设置失败' })
   }
 }
 
@@ -143,6 +187,44 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 主题 Segmented（HIG Segmented Controls：容器 bg-secondary + 选中白底） */
+.theme-row {
+  padding: 8px 16px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.theme-segmented {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--sa-bg-secondary, #f5f5f7);
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.theme-segmented__item {
+  height: 28px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--sa-text-secondary, #48484a);
+  cursor: pointer;
+  transition: background 0.15s var(--sa-ease), color 0.15s var(--sa-ease);
+  font-family: inherit;
+}
+
+.theme-segmented__item:hover {
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.theme-segmented__item.selected {
+  background: var(--sa-bg-elevated, #ffffff);
+  color: var(--sa-text-primary, #1d1d1f);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+}
+
 /* ── Apple HIG：轻量设置分组（对齐 macOS System Settings） ── */
 .general-settings__body {
   padding: 20px;

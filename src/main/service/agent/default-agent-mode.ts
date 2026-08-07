@@ -22,7 +22,6 @@ const META = {
 /** 动态模块渲染顺序（对齐 Java MODULE_ORDER：pre → mid → post） */
 const MODULE_ORDER = [
   // pre
-  'agent-mode-prompt',
   'soul-prompt',
   'task-completion', 'tool-enforcement',
   // mid

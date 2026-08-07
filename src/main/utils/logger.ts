@@ -98,8 +98,3 @@ export function initLogger(): void {
   console.info = (...args: unknown[]) => { orig.info(...args); write('INFO', args) }
   console.debug = (...args: unknown[]) => { orig.debug(...args); write('DEBUG', args) }
 }
-
-/** 日志文件目录（设置页展示/打开用） */
-export function getLogDir(): string {
-  return logDir
-}

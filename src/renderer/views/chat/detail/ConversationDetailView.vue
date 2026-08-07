@@ -320,7 +320,7 @@ function toolCallSummary(tc: string): string {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  background: var(--sa-bg-primary, #ffffff);
+  background: transparent;
 }
 
 /* ── Status ── */

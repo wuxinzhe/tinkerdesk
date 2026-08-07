@@ -190,11 +190,6 @@ defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePend
   flex: 1;
   overflow-y: auto;
   padding-bottom: 8px;
-  scrollbar-width: none;
-}
-
-.sl-list::-webkit-scrollbar {
-  display: none;
 }
 
 .sl-empty {

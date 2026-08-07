@@ -27,6 +27,14 @@
       <p class="message-list__empty-hint">发送消息以开始与 AI 助手对话</p>
     </div>
 
+    <!-- 切换 session 加载覆盖层（淡出动画结束后，下方的消息才露出——避免一闪；独立于消息缓存） -->
+    <transition name="chat-loading">
+      <div v-if="switchingSession" class="message-list__loading">
+        <SaSpinner size="medium" />
+        <span class="message-list__loading-text">加载中…</span>
+      </div>
+    </transition>
+
     <!-- 消息列表（含流式占位消息） -->
     <TransitionGroup name="message">
       <div v-for="(msg, idx) in visibleMessages" :key="msgKey(msg, idx)" class="message-row">
@@ -72,6 +80,8 @@ const props = withDefaults(defineProps<{
   sessionId?: string | null
   hasMore?: boolean
   loadingMore?: boolean
+  /** 切换 session 加载态（独立于 loadingMore——不管有无缓存都显示覆盖层） */
+  switchingSession?: boolean
   pendingBuffer?: string
 }>(), {
   streamingContent: '',
@@ -226,6 +236,7 @@ defineExpose({
 
 <style scoped>
 .message-list {
+  position: relative;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -234,11 +245,49 @@ defineExpose({
   flex-direction: column;
   min-height: 0;
   overscroll-behavior: contain;
+  /* 滚动条隐藏（聊天框——简洁） */
+  scrollbar-width: none;
+}
+
+.message-list::-webkit-scrollbar {
+  display: none;
 }
 
 /* 超长回复顶部对齐时，气泡距视口顶部 16px（配合 scrollIntoView block:start） */
 .message-row {
   scroll-margin-top: 16px;
+}
+
+/* ── 切换 session 加载覆盖层 ── */
+.message-list__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--sa-bg-primary, #ffffff);
+  z-index: 5;
+}
+
+.message-list__loading-text {
+  font-size: 12px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+}
+
+/* 出现：立即全显示（避免淡入期间底下内容被看到——闪）；隐藏：淡出 0.3s */
+.chat-loading-enter-active {
+  transition: none;
+}
+
+.chat-loading-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.chat-loading-enter-from,
+.chat-loading-leave-to {
+  opacity: 0;
 }
 
 /* ── 加载更多 ── */

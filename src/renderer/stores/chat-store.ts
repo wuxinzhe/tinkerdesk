@@ -47,6 +47,8 @@ export const useChatStore = defineStore('chat', () => {
   const toolCallsBySession = ref<Record<string, { toolCallId: string; toolName: string; status: 'pending' | 'done' }[]>>({})
   /** 每个 conversation 的 tool call 累积片段（流式累积，isFinish 时 join 一次 JSON.parse） */
   const toolCallArgsBufferByConversation = ref<Record<string, string[]>>({})
+  /** 工具名缓存（工具轮次——main 随 token 下发，isFinish 拼工具卡片用） */
+  const toolCallNameByConversation = ref<Record<string, string>>({})
   /** 每个 conversation 的完整 toolCall 缓存：compositeKey → { toolCallId: {name, arguments} }。
    * isFinish 时从 toolCallArgs 组装；exe_client_tool 只下发 id，执行时按 id 从本缓存取完整参数。 */
   const toolCallsByConversation = ref<Record<string, Record<string, { name: string; arguments: unknown }>>>({})
@@ -117,12 +119,6 @@ export const useChatStore = defineStore('chat', () => {
     const subType = payload.type ?? ''
 
     switch (subType) {
-      case 'agent_response': {
-        // 已废弃：文本内容通过 agent_response_token 流式下发，不再通过 agent_response 一次性推送
-        // 保留 handler 仅用于非流式兜底（后端已不再发送）
-        console.debug('agent_response 事件已废弃（流式取代），sessionId=%s', sessionId)
-        break
-      }
       case 'agent_response_token': {
         handleTokenEvent(payload as AgentResponseTokenPayload)
         break
@@ -199,6 +195,10 @@ export const useChatStore = defineStore('chat', () => {
       delete toolCallsBySession.value[sessionId]
       // 清理上一轮推理内容
       delete streamingReasoningBySession.value[sessionId]
+      // 通知思考气泡：新一轮推理开始（清理旧 reasoning，只留本轮）
+      window.dispatchEvent(new CustomEvent('agent-reasoning-start', {
+        detail: { sessionId, conversationId }
+      }))
       // 清理旧的占位消息（如果仍在）
       removeStreamingPlaceholder(sessionId)
     }
@@ -225,16 +225,49 @@ export const useChatStore = defineStore('chat', () => {
       const arr = toolCallArgsBufferByConversation.value[compositeKey] ?? []
       arr.push(data.toolCallArgs)
       toolCallArgsBufferByConversation.value[compositeKey] = arr
+      // 工具轮次也确保占位消息（isFinish 时转工具卡片）
+      ensureStreamingPlaceholder(sessionId, conversationId, compositeKey)
+    }
+    // 3.5 工具名缓存（首次出现）
+    if (isValidTokenValue(data.toolCallName) && !toolCallNameByConversation.value[compositeKey]) {
+      toolCallNameByConversation.value[compositeKey] = data.toolCallName as string
     }
 
-    // isFinish → 完整文本一次填充占位消息（不做分批渲染）+ 清理
+    // isFinish → 判断是否工具轮次（finishReason 明确判断）+ 完整文本一次填充占位消息
     if (data.isFinish) {
       const accumulated = streamingContentByConversation.value[compositeKey] ?? ''
       const fullText = accumulated || (isValidTokenValue(data.token) ? data.token : '')
-      if (fullText) {
+      const buffers = toolCallArgsBufferByConversation.value[compositeKey]
+      // 工具轮次：finishReason === 'tool_calls'（或缓冲非空兜底）
+      const isToolTurn = data.finishReason === 'tool_calls' || (buffers && buffers.length > 0)
+
+      // 文本轮次：finalize 为 assistant_text
+      if (fullText && !isToolTurn) {
         finalizeStreamingPlaceholder(sessionId, conversationId, {
           content: fullText,
           messageType: 'assistant_text'
+        })
+      }
+
+      // 工具轮次：占位转 assistant_tool_call 卡片（content 过渡文本 + toolCall map）
+      if (isToolTurn) {
+        let toolCallJson: string | undefined
+        const toolName = toolCallNameByConversation.value[compositeKey]
+        if (buffers && buffers.length > 0) {
+          const raw = buffers.join('')
+          delete toolCallArgsBufferByConversation.value[compositeKey]
+          try {
+            const parsed = JSON.parse(raw)
+            // token 流只有参数片段——工具名从 toolCallName 缓存（main 随 token 下发）——
+            // 拼平铺结构（id 空串；前端 parseToolCallEntries 兼容）
+            toolCallJson = JSON.stringify({ id: '', name: toolName ?? '', arguments: parsed })
+          } catch { /* 参数解析失败——不拼 toolCall（只显示标题） */ }
+        }
+        delete toolCallNameByConversation.value[compositeKey]
+        finalizeStreamingPlaceholder(sessionId, conversationId, {
+          content: fullText,
+          messageType: 'assistant_tool_call',
+          toolCall: toolCallJson,
         })
       }
       // 清空文本缓冲区（接收区随之隐藏，Markdown 区显示完整回复）
@@ -242,27 +275,6 @@ export const useChatStore = defineStore('chat', () => {
 
       // 清理推理缓冲区（isFinish 后不再需要）
       delete streamingReasoningBySession.value[sessionId]
-
-      // 从 toolCallArgsBufferByConversation 提取工具调用列表
-      // → 组装完整 toolCall map（toolCallId → {name, arguments}）缓存，供 exe_client_tool 按 id 取参
-      const buffers = toolCallArgsBufferByConversation.value[compositeKey]
-      if (buffers && buffers.length > 0) {
-        const raw = buffers.join('')
-        delete toolCallArgsBufferByConversation.value[compositeKey]
-        try {
-          const parsed = JSON.parse(raw)
-          if (Array.isArray(parsed)) {
-            assembleToolCalls(parsed, sessionId, compositeKey)
-          } else if (parsed.id && parsed.name) {
-            assembleToolCalls([parsed], sessionId, compositeKey)
-          }
-        } catch {
-          try {
-            const wrapped = JSON.parse('[' + raw.replace(/}{/g, '},{') + ']')
-            assembleToolCalls(wrapped, sessionId, compositeKey)
-          } catch { /* 解析失败放弃 */ }
-        }
-      }
 
       cleanupConversationToken(sessionId, conversationId)
       isProcessingBySession.value[sessionId] = false
@@ -310,6 +322,7 @@ export const useChatStore = defineStore('chat', () => {
     content: string
     messageType?: string
     reasoningContent?: string
+    toolCall?: string
   }): void {
     const msgs = messagesBySession.value[sid]
     if (!msgs) return
@@ -324,6 +337,9 @@ export const useChatStore = defineStore('chat', () => {
     // id 保持流式期间生成的唯一 id——同一消息在 v-for 中 key 不变，DOM 原地更新
     if (isValidTokenValue(info.reasoningContent)) {
       placeholder.reasoningContent = info.reasoningContent
+    }
+    if (isValidTokenValue(info.toolCall)) {
+      placeholder.toolCall = info.toolCall
     }
   }
 
@@ -386,9 +402,16 @@ export const useChatStore = defineStore('chat', () => {
         playMessageNotification()
         isProcessingBySession.value[sessionId] = false
         window.dispatchEvent(new CustomEvent('conversation-complete', {
-          detail: { sessionId }
+          detail: { sessionId, data: (payload as ActionMergedPayload).data ?? null }
         }))
         break
+      case 'stats_update': {
+        // 每轮统计数据（数据面板——命中率/模型/上下文使用）
+        window.dispatchEvent(new CustomEvent('agent-stats-update', {
+          detail: { sessionId, data: (payload as ActionMergedPayload).data ?? null }
+        }))
+        break
+      }
       case 'session_title_updated': {
         const titleData = payload as SessionTitleUpdatedPayload
         window.dispatchEvent(new CustomEvent('session-title-updated', {
@@ -529,7 +552,9 @@ export const useChatStore = defineStore('chat', () => {
           token: evt.text ?? '',
           reasoning: evt.reasoning ?? '',
           toolCallArgs: evt.toolCallArgs ?? '',
+          toolCallName: evt.toolCallName,
           isFinish: evt.isFinish,
+          finishReason: evt.finishReason,
         },
       } as unknown as AgentResponseTokenPayload)
     }).then((msg: AgentMessageVO) => {

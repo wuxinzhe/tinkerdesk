@@ -6,6 +6,10 @@ export const EVT_TOOLS_REGISTERED = 'tools_registered'
 export const EVT_SESSION_CREATED = 'session_created'
 export const EVT_PONG = 'pong'
 export const EVT_MESSAGE_QUEUED = 'message_queued'
+/** 长任务进度提示（⏳ Working — X min — iteration i/max, tool） */
+export const EVT_WORKING = 'working'
+/** 错误提示（sendTips type：前端 GlobalTipToast 红色样式） */
+export const EVT_ERROR = 'error'
 export const EVT_CONVERSATION_INTERRUPTED = 'conversation_interrupted'
 export const EVT_STATUS = 'status'
 export const EVT_AGENT_RESPONSE = 'agent_response'
@@ -35,6 +39,8 @@ export const EVT_CLIENT_REGISTER = 'client_register'
 
 /** 动作通道事件名（本地特有：token 预算） */
 export const EVT_BUDGET_UPDATE = 'budget_update'
+/** 每轮对话统计数据（命中率/模型/上下文使用——前端数据面板） */
+export const EVT_STATS_UPDATE = 'stats_update'
 
 /** Agent 事件 action 联合类型（sendAction 第二参数类型约束） */
 export type AgentActionType =
@@ -44,3 +50,4 @@ export type AgentActionType =
   | typeof EVT_INTERACTION_STATUS_UPDATE
   | typeof EVT_MESSAGE_QUEUED
   | typeof EVT_BUDGET_UPDATE
+  | typeof EVT_STATS_UPDATE

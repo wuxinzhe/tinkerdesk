@@ -13,20 +13,22 @@
           <span class="nav-sidebar__label">{{ item.label }}</span>
         </button>
       </div>
-    </nav>
 
-    <!-- 折叠切换按钮（浮动在右侧边缘） -->
-    <button
-      class="nav-toggle"
-      :class="{ collapsed }"
-      :title="collapsed ? '展开导航栏' : '折叠导航栏'"
-      @click="$emit('update:collapsed', !collapsed)"
-    >
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline v-if="!collapsed" points="15 18 9 12 15 6" />
-        <polyline v-else points="9 18 15 12 9 6" />
-      </svg>
-    </button>
+      <!-- 折叠按钮（底部——与功能区按钮同款样式） -->
+      <button
+        class="nav-sidebar__item nav-sidebar__collapse"
+        :title="collapsed ? '展开导航栏' : '折叠导航栏'"
+        @click="$emit('update:collapsed', !collapsed)"
+      >
+        <span class="nav-sidebar__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline v-if="!collapsed" points="15 18 9 12 15 6" />
+            <polyline v-else points="9 18 15 12 9 6" />
+          </svg>
+        </span>
+        <span class="nav-sidebar__label">{{ collapsed ? '展开' : '折叠' }}</span>
+      </button>
+    </nav>
   </div>
 </template>
 
@@ -114,6 +116,7 @@ const navItems = [
   flex-direction: column;
   gap: 2px;
   width: 100%;
+  flex: 1; /* 撑满——折叠按钮固定在底部 */
 }
 
 .nav-sidebar__item {
@@ -162,38 +165,9 @@ const navItems = [
   transition: opacity 0.12s, width 0.2s;
 }
 
-/* ── Collapse toggle button ── */
+/* ── 折叠按钮（底部——复用 nav-sidebar__item 样式） ── */
 
-.nav-toggle {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%) translateX(50%);
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 40px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 6px 0 0 6px;
-  border-right: none;
-  background: var(--sa-bg-primary, #ffffff);
-  color: var(--sa-text-tertiary, #aeaeb2);
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-}
-
-.nav-toggle:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.nav-toggle.collapsed {
-  border-radius: 0 6px 6px 0;
-  border-left: none;
-  border-right: 1px solid var(--sa-border, #d2d2d7);
+.nav-sidebar__collapse {
+  margin-top: 8px;
 }
 </style>

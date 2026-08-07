@@ -8,6 +8,7 @@
       :session-id="sessionId"
       :has-more="hasMore"
       :loading-more="loadingMore"
+      :switching-session="switchingSession"
       :pending-buffer="pendingBuffer"
       @load-more="$emit('load-more')"
       @approve="(id: string) => $emit('approve', id)"
@@ -43,8 +44,10 @@ defineProps<{
   sessionId: string | null
   /** Agent 画像标识（透传给 ChatInput 做 YOLO 限定） */
   profile?: string
-  hasMore: boolean
-  loadingMore: boolean
+  hasMore?: boolean
+  loadingMore?: boolean
+  /** 切换 session 加载态（独立——覆盖层不看消息缓存，任何切换都显示） */
+  switchingSession?: boolean
   pendingBuffer: string
 }>()
 

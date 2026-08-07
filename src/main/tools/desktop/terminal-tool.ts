@@ -131,6 +131,13 @@ export class TerminalTool extends BaseTool {
       let stdout = ''
       let stderr = ''
       let settled = false
+      // Windows cmd 输出 GBK——用 TextDecoder gbk 流式解码（避免中文乱码）
+      const stdoutDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
+      const stderrDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
+      const flushDecoders = (): void => {
+        if (stdoutDecoder) stdout += stdoutDecoder.decode()
+        if (stderrDecoder) stderr += stderrDecoder.decode()
+      }
       const finish = (data: Record<string, unknown>) => {
         if (settled) return
         settled = true
@@ -140,13 +147,19 @@ export class TerminalTool extends BaseTool {
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
         setTimeout(() => { try { child.kill('SIGKILL') } catch {} }, KILL_GRACE_MS)
+        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: -1, error: `Command timed out after ${timeoutSec}s` })
       }, timeoutMs)
 
-      child.stdout?.on('data', (data: Buffer) => { stdout += data.toString() })
-      child.stderr?.on('data', (data: Buffer) => { stderr += data.toString() })
+      child.stdout?.on('data', (data: Buffer) => {
+        stdout += stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString()
+      })
+      child.stderr?.on('data', (data: Buffer) => {
+        stderr += stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString()
+      })
 
       child.on('close', (code) => {
+        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: code ?? -1, error: null })
       })
 

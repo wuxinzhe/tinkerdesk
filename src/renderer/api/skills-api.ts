@@ -3,7 +3,7 @@
  * 技能 API（本地 IPC，走 SkillController）
  * 本地无官方技能市场：listOfficial/get/install/upload 返回空/空实现
  */
-import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
+import type { SkillInfo, SkillFileInfo, SkillCategory } from '@/renderer/api/types'
 import type { ApiResponse } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
@@ -38,10 +38,34 @@ export class SkillsApi {
     return (data as SkillInfo) ?? null
   }
 
-  /** 安装外部技能（SKILL.md 全文；后端校验格式，不兼容抛错） */
-  async installFromMarkdown(content: string, profile = 'default'): Promise<SkillInfo> {
-    const data = await window.api.skills.install(content, profile)
+  /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
+  async installFromMarkdown(payload: {
+    profile?: string; name?: string; displayName?: string; description?: string; category?: string
+    version?: string; author?: string; license?: string; platforms?: string; tags?: string
+    dependencies?: string; requiresToolsets?: string; requiresTools?: string
+    fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+    config?: string; envVars?: string; commands?: string; body?: string
+    files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
+  }): Promise<SkillInfo> {
+    const data = await window.api.skills.install(payload)
     return data as SkillInfo
+  }
+
+  /** 编辑技能（全字段） */
+  async updateSkill(payload: {
+    id: string; profile?: string; displayName?: string; description?: string; category?: string
+    version?: string; author?: string; license?: string
+    tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
+    fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+    config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+  }): Promise<SkillInfo> {
+    const data = await window.api.skills.update(payload)
+    return data as SkillInfo
+  }
+
+  /** 删除技能（软删） */
+  async deleteSkill(id: string, profile = 'default'): Promise<void> {
+    await window.api.skills.delete(id, profile)
   }
 
   /** 本地无官方技能安装 */
@@ -70,6 +94,29 @@ export class SkillsApi {
   /** 本地无技能上传 */
   async upload(_file: File, _category?: string): Promise<{ id: string }> {
     throw new Error('本地客户端不支持技能上传')
+  }
+
+  // ── 技能文件 CRUD ──
+
+  /** 按技能 id 查文件列表 */
+  async listSkillFiles(skillId: string): Promise<SkillFileInfo[]> {
+    const data = await window.api.skills.fileList(skillId)
+    return data as SkillFileInfo[]
+  }
+
+  /** 新增技能文件（返回新 id） */
+  async addSkillFile(payload: { skillId: string; fileType: string; name?: string; content?: string; language?: string; sortOrder?: number }): Promise<number> {
+    return window.api.skills.fileSave(payload)
+  }
+
+  /** 更新技能文件 */
+  async updateSkillFile(payload: { id: number; fileType?: string; name?: string; content?: string; language?: string; sortOrder?: number }): Promise<void> {
+    await window.api.skills.fileUpdate(payload)
+  }
+
+  /** 删除技能文件 */
+  async deleteSkillFile(id: number): Promise<void> {
+    await window.api.skills.fileDelete(id)
   }
 }
 

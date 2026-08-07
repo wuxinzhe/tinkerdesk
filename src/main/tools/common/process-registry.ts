@@ -52,15 +52,22 @@ class ProcessRegistry {
       process: child
     }
 
+    // Windows cmd 输出 GBK——流式解码避免中文乱码
+    const stdoutDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
+    const stderrDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
+
     child.stdout?.on('data', (data: Buffer) => {
-      session.stdout = this.appendBuffered(session.stdout, data.toString())
+      session.stdout = this.appendBuffered(session.stdout, stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString())
     })
 
     child.stderr?.on('data', (data: Buffer) => {
-      session.stderr = this.appendBuffered(session.stderr, data.toString())
+      session.stderr = this.appendBuffered(session.stderr, stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString())
     })
 
     child.on('close', (code) => {
+      // flush 解码器余量（多字节字符末尾）
+      if (stdoutDecoder) session.stdout = this.appendBuffered(session.stdout, stdoutDecoder.decode())
+      if (stderrDecoder) session.stderr = this.appendBuffered(session.stderr, stderrDecoder.decode())
       session.done = true
       session.exitCode = code
       session.endTime = Date.now()

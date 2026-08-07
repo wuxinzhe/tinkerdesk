@@ -301,7 +301,10 @@ async function startRecording(): Promise<void> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     audioChunks = []
-    mediaRecorder = new MediaRecorder(stream)
+    // 显式指定纯音频 mimeType——默认可能录成 vp8/webm（含视频轨），decodeAudioData 无法解码报 "Unable to decode audio data"
+    const mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+    const mime = mimeCandidates.find((m) => typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(m)) ?? ''
+    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) audioChunks.push(e.data)
     }
@@ -344,15 +347,37 @@ async function stopRecording(): Promise<void> {
       recorder.stream.getTracks().forEach((t) => t.stop())
     })
     const samples = await decodeToPcm16k(blob)
-    if (samples.length === 0) return
+    if (samples.length === 0) {
+      console.warn('[voice] 录音解码后为空（未检测到声音？）')
+      window.dispatchEvent(
+        new CustomEvent('global-tip', {
+          detail: { type: 'error', code: 'voice:stt', message: '未检测到声音，请靠近麦克风重试' },
+        }),
+      )
+      return
+    }
+    console.log(`[voice] 录音 ${(samples.length / 16000).toFixed(1)}s → STT`)
     const { text } = await window.api.voice.sttTranscribe(samples)
     const trimmed = text.trim()
     // 录制结束不退出录音模式：停留在音波框（武装态），用户手动点击按钮切回文字输入
     if (trimmed) {
       emit('send', trimmed)
+    } else {
+      console.warn('[voice] STT 返回空文本')
+      window.dispatchEvent(
+        new CustomEvent('global-tip', {
+          detail: { type: 'error', code: 'voice:stt', message: '语音识别未返回文字，请重试或检查语音设置' },
+        }),
+      )
     }
-  } catch {
-    // STT 失败：inv 拦截统一提示（同样停留在录音模式）
+  } catch (e) {
+    // STT 失败：明确提示（不再静默）
+    console.error('[voice] STT 识别失败:', e)
+    window.dispatchEvent(
+      new CustomEvent('global-tip', {
+        detail: { type: 'error', code: 'voice:stt', message: (e as Error).message || '语音识别失败，请重试' },
+      }),
+    )
   }
 }
 
@@ -452,23 +477,7 @@ function drawWave(): void {
   // 超出音波框宽度 → 自动左滚（offset = 超出量；不产生滚动条、不可拖拽）
   const offset = Math.max(0, totalW - w)
 
-  // 时间刻度（1 秒一格——顶部短刻度，Apple HIG 风格）
-  ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
-  ctx.font = '10px system-ui, sans-serif'
-  ctx.textAlign = 'center'
-  const startSec = Math.floor(offset / PX_PER_SEC)
-  const endSec = Math.ceil((offset + w) / PX_PER_SEC)
-  for (let s = startSec; s <= endSec; s++) {
-    const x = s * PX_PER_SEC - offset
-    if (x < 0 || x > w) continue
-    ctx.strokeStyle = 'rgba(142, 142, 147, 0.3)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(x, 6)
-    ctx.lineTo(x, 14)
-    ctx.stroke()
-    ctx.fillText(String(s), x, 28) // 数字与刻度保持间距
-  }
+  // 时间刻度/数字已移除（用户要求——中轴线上不留数字和刻度）
 
   // 历史波形（从左滚位置绘制）
   ctx.strokeStyle = 'rgba(0, 122, 255, 0.85)'
@@ -517,6 +526,14 @@ function drawWaveIdle(): void {
 /** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
 async function decodeToPcm16k(blob: Blob): Promise<Float32Array> {
   if (!audioContext) audioContext = new AudioContext()
+  // 用户手势后 AudioContext 可能处于 suspended——先 resume 再解码，否则 decodeAudioData 失败
+  if (audioContext.state === 'suspended') {
+    try {
+      await audioContext.resume()
+    } catch {
+      // resume 失败继续尝试解码
+    }
+  }
   const arrayBuffer = await blob.arrayBuffer()
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
   const source = audioBuffer.getChannelData(0)
@@ -1002,7 +1019,7 @@ defineExpose({ focus })
   height: 22px;
   left: 2px;
   bottom: 2px;
-  background: #ffffff;
+  background: var(--sa-bg-primary, #ffffff);
   border-radius: 50%;
   transition: transform 0.2s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);

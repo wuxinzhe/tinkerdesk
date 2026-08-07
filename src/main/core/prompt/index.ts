@@ -21,7 +21,6 @@ export {SkillsIndexModule} from './modules/skills-index-module'
 export {MemorySnapshotModule} from './modules/memory-snapshot-module'
 export {SoulPromptModule} from './modules/soul-prompt-module'
 export {UserProfileModule} from './modules/user-profile-module'
-export {AgentModePromptModule} from './modules/agent-mode-prompt-module'
 export type {StaticPromptModule, IStaticPromptModuleRepository} from './prompt-module-builder'
 export type {
   IDynamicPromptModule,

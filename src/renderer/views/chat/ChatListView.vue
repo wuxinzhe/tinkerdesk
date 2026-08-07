@@ -94,7 +94,7 @@ async function onNewSession() {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-primary, #ffffff);
+  background: transparent;
   height: 100%;
   flex-shrink: 0;
   overflow: hidden;

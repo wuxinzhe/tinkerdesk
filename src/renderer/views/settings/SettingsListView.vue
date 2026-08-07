@@ -88,7 +88,7 @@ function isSelected(key: string): boolean {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background: var(--sa-bg-primary, #ffffff);
+  background: transparent;
 }
 
 /* ── Header ── */
@@ -130,7 +130,7 @@ function isSelected(key: string): boolean {
   background: var(--sa-bg-secondary, #f5f5f7);
 }
 .settings-row.selected {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
 }
 
 /* ── Icon ── */

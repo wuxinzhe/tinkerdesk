@@ -33,6 +33,15 @@
     <!-- 可拖拽区域 -->
     <div class="title-bar__drag"></div>
 
+    <!-- 侧栏折叠按钮（锁屏左侧） -->
+    <button class="title-bar__collapse" title="折叠/展开列表" @click="toggleSidebar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="13" height="16" rx="2" />
+        <path d="M20 4v16" />
+      </svg>
+    </button>
+
     <!-- 锁屏按钮（右侧） -->
     <button class="title-bar__lock" title="锁屏 (Ctrl+Shift+L)" @click="handleLock">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -57,6 +66,11 @@ const sessionStore = useSessionStore()
 
 function handleLock() {
   sessionStore.setLocked(true)
+}
+
+/** 侧栏折叠：通知 WorkspaceView 切换 lv2 列（原 sidebar-toggle 的控制移到这里） */
+function toggleSidebar() {
+  window.dispatchEvent(new CustomEvent('toggle-sidebar'))
 }
 
 async function handleMinimize() {
@@ -162,6 +176,34 @@ onUnmounted(() => {
 }
 
 /* ── 锁屏按钮（右侧） ── */
+.title-bar__collapse {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.title-bar__collapse:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+/* 手机模式（<768px）：折叠按钮隐藏（手机用抽屉导航，无 lv2 折叠需求） */
+@media (max-width: 767px) {
+  .title-bar__collapse {
+    display: none;
+  }
+}
+
 .title-bar__lock {
   -webkit-app-region: no-drag;
   display: flex;

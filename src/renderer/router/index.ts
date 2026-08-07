@@ -191,6 +191,22 @@ const router = createRouter({
             level3: () => import('@/renderer/views/agents/skills/SkillDetailView.vue'),
           },
         },
+        {
+          path: 'agents/:profile/skill/:skillId/file/:fileId',
+          components: {
+            default: () => import('@/renderer/views/agents/skills/SkillFileEditView.vue'),
+            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
+            level3: () => import('@/renderer/views/agents/skills/SkillFileEditView.vue'),
+          },
+        },
+        {
+          path: 'agents/:profile/skill/import',
+          components: {
+            default: () => import('@/renderer/views/agents/skills/SkillImportView.vue'),
+            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
+            level3: () => import('@/renderer/views/agents/skills/SkillImportView.vue'),
+          },
+        },
 
         // ── Settings ──
         {

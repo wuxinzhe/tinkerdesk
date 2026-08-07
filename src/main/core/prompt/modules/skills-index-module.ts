@@ -36,8 +36,8 @@ export class SkillsIndexModule extends HandlebarsPresetModule {
       if (!filtered || filtered.length === 0) {
         return null
       }
-      // 按 category 分组，描述截断 60 字符
-      const categories: Record<string, Array<{name: string; description: string}>> = {}
+      // 按 category 分组，描述截断 60 字符；id 随行（skill_view 唯一指向）
+      const categories: Record<string, Array<{name: string; id: string; description: string}>> = {}
       for (const skill of filtered) {
         const cat = skill.category || 'general'
         if (!categories[cat]) {
@@ -45,6 +45,7 @@ export class SkillsIndexModule extends HandlebarsPresetModule {
         }
         categories[cat].push({
           name: skill.name,
+          id: skill.id,
           description: this.truncate(skill.description, 60),
         })
       }

@@ -25,6 +25,8 @@
       <span class="skill-manage__count">共 {{ skillsTotal }} 个技能</span>
     </div>
 
+    <!-- 安装确认面板已废弃——安装走 SkillImportView（render 解析 + 可修改 + 结构化写入） -->
+
     <div v-if="skillsLoading" class="skill-manage__loading">加载中…</div>
     <div v-else-if="skillsList.length === 0" class="skill-manage__empty">
       <p>暂无技能</p>
@@ -85,7 +87,6 @@
     <ToolbarActions>
       <button
         class="toolbar-btn"
-        :disabled="installing"
         @click="installSkillFromFile"
         title="安装技能"
       >
@@ -192,33 +193,10 @@ async function toggleSkill(skill: SkillInfo, enabled: boolean) {
   }
 }
 
-/** 技能安装中（防重复点击） */
-const installing = ref(false)
-
-/** 技能安装：选文件 → 后端校验格式 → 安装 → 刷新；格式不兼容提示交给 Agent 重写 */
+/** 技能安装：跳转 SkillImportView（render 层解析 + 可手动修改 + 结构化写入） */
 async function installSkillFromFile(): Promise<void> {
-  if (installing.value) return
-  installing.value = true
-  try {
-    const file = await window.api.skills.pickInstallFile()
-    if (!file) return
-    const info = await skillsApi.installFromMarkdown(file.content, detailProfile.value ?? 'default')
-    window.dispatchEvent(
-      new CustomEvent('global-tip', {
-        detail: { type: 'tip', code: 'skill:install', message: `技能「${info.displayName}」安装成功` },
-      }),
-    )
-    loadSkills(0)
-  } catch (e) {
-    // 格式不兼容等错误 → 统一提示（交给 Agent 重写）
-    window.dispatchEvent(
-      new CustomEvent('global-tip', {
-        detail: { type: 'error', code: 'skill:install', message: (e as Error).message ?? '技能安装失败' },
-      }),
-    )
-  } finally {
-    installing.value = false
-  }
+  const profile = route.params.profile as string
+  router.push(`/workspace/agents/${profile}/skill/import`)
 }
 
 /* ── 初始化 ── */
@@ -305,6 +283,95 @@ onMounted(() => {
   font-size: 12px;
   opacity: 0.7;
 }
+
+/* ── 安装确认面板 ── */
+
+.install-panel {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: var(--sa-bg-elevated, #ffffff);
+  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.install-panel__heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sa-text-primary, #1d1d1f);
+}
+
+.install-panel__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sa-accent, #007aff);
+}
+
+.install-panel__desc {
+  font-size: 12px;
+  color: var(--sa-text-secondary, #86868b);
+  line-height: 1.5;
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.install-panel__meta {
+  font-size: 12px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+}
+
+.install-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.install-panel__label {
+  font-size: 12px;
+  color: var(--sa-text-secondary, #86868b);
+  flex-shrink: 0;
+}
+
+.install-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.action-btn {
+  padding: 7px 16px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid var(--sa-border, #d2d2d7);
+  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--sa-text-primary, #1d1d1f);
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  border-color: var(--sa-accent, #007aff);
+  color: var(--sa-accent, #007aff);
+}
+
+.action-btn--primary {
+  background: var(--sa-accent, #007aff);
+  border-color: var(--sa-accent, #007aff);
+  color: #fff;
+}
+
+.action-btn--primary:hover {
+  background: var(--sa-accent-hover, #0071e3);
+  color: #fff;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .skill-manage__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -330,11 +397,15 @@ onMounted(() => {
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 10px;
   cursor: pointer;
+  /* 卡片辨识度：白底（深色 elevated）+ 轻阴影，与页面背景区分 */
+  background: var(--sa-bg-elevated, #ffffff);
+  box-shadow: var(--sa-shadow-sm);
   transition: border-color 0.12s, box-shadow 0.12s;
   gap: 8px;
 }
 .skill-card:hover {
   border-color: var(--sa-accent, #007aff);
+  box-shadow: var(--sa-shadow-md);
 }
 .skill-card__body {
   flex: 1;

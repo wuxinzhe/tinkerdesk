@@ -82,7 +82,11 @@ export class SessionService {
     inputTokens: number,
     outputTokens: number,
     cacheReadTokens: number,
-    cacheWriteTokens: number
+    cacheWriteTokens: number,
+    durationMs = 0,
+    iterationCount = 0,
+    llmRequestCount = 0,
+    currentContextTokens?: number
   ): void {
     const session = this.sessionRepo.findById(sessionId, profile)
     if (!session) {
@@ -92,6 +96,13 @@ export class SessionService {
     session.outputTokens += outputTokens
     session.cacheReadTokens += cacheReadTokens
     session.cacheWriteTokens += cacheWriteTokens
+    session.totalDurationMs = (session.totalDurationMs ?? 0) + durationMs
+    session.totalIterations = (session.totalIterations ?? 0) + iterationCount
+    session.totalLlmRequests = (session.totalLlmRequests ?? 0) + llmRequestCount
+    // 当前上下文总量（冗余——最新一轮，直接覆盖）
+    if (currentContextTokens !== undefined) {
+      session.currentContextTokens = currentContextTokens
+    }
     session.messageCount += 1
     this.sessionRepo.save(session)
   }

@@ -130,7 +130,7 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--sa-text-secondary, #48484a);
 }
 
 .sa-modal__actions {

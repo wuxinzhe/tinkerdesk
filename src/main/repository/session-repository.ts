@@ -12,7 +12,7 @@ import type { SessionEntity, SessionSummaryDTO } from './types'
 
 /** 会话摘要 DTO（对应 SessionSummaryDTO） */
 
-const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo'
+const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests, current_context_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo'
 
 function toEntity(row: Record<string, unknown>): SessionEntity {
   return {
@@ -26,6 +26,10 @@ function toEntity(row: Record<string, unknown>): SessionEntity {
     outputTokens: row.output_tokens as number,
     cacheReadTokens: row.cache_read_tokens as number,
     cacheWriteTokens: row.cache_write_tokens as number,
+    totalDurationMs: row.total_duration_ms as number,
+    totalIterations: row.total_iterations as number,
+    totalLlmRequests: row.total_llm_requests as number,
+    currentContextTokens: row.current_context_tokens as number,
     estimatedCostUsd: row.estimated_cost_usd as number,
     messageCount: row.message_count as number,
     toolCallCount: row.tool_call_count as number,
@@ -44,26 +48,31 @@ export class SessionRepository {
     db.prepare(
       `INSERT INTO sessions (id, profile, source, system_prompt, parent_session_id,
           title, input_tokens, output_tokens,
-          cache_read_tokens, cache_write_tokens, estimated_cost_usd, message_count,
+          cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests,
+          current_context_tokens, estimated_cost_usd, message_count,
           tool_call_count, rewind_count, started_at, archived, yolo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET
-         profile = excluded.profile,
-         source = excluded.source,
-         system_prompt = excluded.system_prompt,
-         parent_session_id = excluded.parent_session_id,
-         title = excluded.title,
-         input_tokens = excluded.input_tokens,
-         output_tokens = excluded.output_tokens,
-         cache_read_tokens = excluded.cache_read_tokens,
-         cache_write_tokens = excluded.cache_write_tokens,
-         estimated_cost_usd = excluded.estimated_cost_usd,
-         message_count = excluded.message_count,
-         tool_call_count = excluded.tool_call_count,
-         rewind_count = excluded.rewind_count,
-         started_at = excluded.started_at,
-         archived = excluded.archived,
-         yolo = excluded.yolo`
+        profile = excluded.profile,
+        source = excluded.source,
+        system_prompt = excluded.system_prompt,
+        parent_session_id = excluded.parent_session_id,
+        title = excluded.title,
+        input_tokens = excluded.input_tokens,
+        output_tokens = excluded.output_tokens,
+        cache_read_tokens = excluded.cache_read_tokens,
+        cache_write_tokens = excluded.cache_write_tokens,
+        total_duration_ms = excluded.total_duration_ms,
+        total_iterations = excluded.total_iterations,
+        total_llm_requests = excluded.total_llm_requests,
+        current_context_tokens = excluded.current_context_tokens,
+        estimated_cost_usd = excluded.estimated_cost_usd,
+        message_count = excluded.message_count,
+        tool_call_count = excluded.tool_call_count,
+        rewind_count = excluded.rewind_count,
+        started_at = excluded.started_at,
+        archived = excluded.archived,
+        yolo = excluded.yolo`
     ).run(
       entity.id,
       entity.profile,
@@ -75,6 +84,10 @@ export class SessionRepository {
       entity.outputTokens,
       entity.cacheReadTokens,
       entity.cacheWriteTokens,
+      entity.totalDurationMs ?? 0,
+      entity.totalIterations ?? 0,
+      entity.totalLlmRequests ?? 0,
+      entity.currentContextTokens ?? 0,
       entity.estimatedCostUsd,
       entity.messageCount,
       entity.toolCallCount,

@@ -144,6 +144,12 @@ function createTables(database: DatabaseSync): void {
       message_count      INTEGER NOT NULL DEFAULT 0,
       tool_call_count    INTEGER NOT NULL DEFAULT 0,
       rewind_count       INTEGER NOT NULL DEFAULT 0,
+      -- 会话累计统计（数据面板：总运行时间/总循环/总请求）
+      total_duration_ms   INTEGER NOT NULL DEFAULT 0,
+      total_iterations    INTEGER NOT NULL DEFAULT 0,
+      total_llm_requests  INTEGER NOT NULL DEFAULT 0,
+      -- 当前上下文总量（冗余——最新一轮的 round_context_tokens，dashboard 直接拉）
+      current_context_tokens INTEGER NOT NULL DEFAULT 0,
       started_at         TEXT NOT NULL DEFAULT (datetime('now')),
       archived           INTEGER NOT NULL DEFAULT 0,
       yolo               INTEGER NOT NULL DEFAULT 0
@@ -161,6 +167,12 @@ function createTables(database: DatabaseSync): void {
       total_tokens      INTEGER NOT NULL DEFAULT 0,
       cache_read_tokens INTEGER NOT NULL DEFAULT 0,
       cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+      -- 单轮统计（数据面板：运行时间/循环次数/请求次数）
+      duration_ms       INTEGER NOT NULL DEFAULT 0,
+      iteration_count   INTEGER NOT NULL DEFAULT 0,
+      llm_request_count INTEGER NOT NULL DEFAULT 0,
+      -- 本轮上下文总量（该轮最后一条 assistant 消息的 prompt_tokens——flush 时写入）
+      round_context_tokens INTEGER NOT NULL DEFAULT 0,
       started_at        TEXT NOT NULL DEFAULT (datetime('now')),
       completed_at      TEXT
     );
@@ -182,9 +194,15 @@ function createTables(database: DatabaseSync): void {
       interaction_status TEXT NOT NULL DEFAULT '',
       message_type       TEXT NOT NULL DEFAULT '',
       deleted            INTEGER NOT NULL DEFAULT 0,
+      -- usage 统计（每轮每请求——命中率数据源；不向前端展示，仅记录）
+      prompt_tokens      INTEGER NOT NULL DEFAULT 0,
+      completion_tokens  INTEGER NOT NULL DEFAULT 0,
+      cache_read_tokens  INTEGER NOT NULL DEFAULT 0,
+      cache_write_tokens INTEGER NOT NULL DEFAULT 0,
       created_at         TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    -- 存量库迁移（messages 补 usage 列——JS 层检查列存在后执行，见下方 migrateMessagesUsage）
     CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 
@@ -228,23 +246,9 @@ function createTables(database: DatabaseSync): void {
       FOREIGN KEY (profile) REFERENCES agents(profile) ON DELETE CASCADE
     );
 
-    -- ── skill_categories（复刻 tinker-agent，去 user_id 无关） ──
-    CREATE TABLE IF NOT EXISTS skill_categories (
-      id           TEXT PRIMARY KEY,
-      name         TEXT NOT NULL UNIQUE,
-      display_name TEXT NOT NULL,
-      description  TEXT NOT NULL DEFAULT '',
-      icon         TEXT NOT NULL DEFAULT '',
-      sort_order   INTEGER NOT NULL DEFAULT 0,
-      is_active    INTEGER NOT NULL DEFAULT 1,
-      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-      updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-    CREATE INDEX IF NOT EXISTS idx_skill_categories_active ON skill_categories(is_active, sort_order, name);
-
     -- ── private_skills（复刻 tinker-agent，去 user_id，UNIQUE(profile, name)） ──
     CREATE TABLE IF NOT EXISTS private_skills (
-      id                    TEXT PRIMARY KEY,
+      id                    INTEGER PRIMARY KEY AUTOINCREMENT,
       name                  TEXT NOT NULL,
       display_name          TEXT NOT NULL,
       description           TEXT NOT NULL DEFAULT '',
@@ -280,8 +284,9 @@ function createTables(database: DatabaseSync): void {
     -- ── private_skill_files ──
     CREATE TABLE IF NOT EXISTS private_skill_files (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      skill_id   TEXT NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
+      skill_id   INTEGER NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
       file_type  TEXT NOT NULL,
+      name       TEXT NOT NULL DEFAULT '',
       content    TEXT NOT NULL,
       language   TEXT NOT NULL DEFAULT '',
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -293,7 +298,7 @@ function createTables(database: DatabaseSync): void {
     -- ── private_skill_related ──
     CREATE TABLE IF NOT EXISTS private_skill_related (
       id               TEXT PRIMARY KEY,
-      skill_id         TEXT NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
+      skill_id         INTEGER NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
       related_skill_id TEXT NOT NULL,
       relation_type    TEXT NOT NULL DEFAULT 'related',
       created_at       TEXT NOT NULL DEFAULT (datetime('now')),
@@ -392,6 +397,42 @@ function createTables(database: DatabaseSync): void {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // ── 存量库迁移：messages 补 usage 列（列不存在才 ALTER——幂等） ──
+  const msgCols = new Set(database.prepare('PRAGMA table_info(messages)').all().map((c) => String((c as { name: unknown }).name)))
+  for (const [col, def] of [
+    ['prompt_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+    ['completion_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+    ['cache_read_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+    ['cache_write_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+  ] as const) {
+    if (!msgCols.has(col)) {
+      database.exec(`ALTER TABLE messages ADD COLUMN ${col} ${def}`)
+    }
+  }
+  // conversations/sessions 补统计列（幂等）
+  const convCols = new Set(database.prepare('PRAGMA table_info(conversations)').all().map((c) => String((c as { name: unknown }).name)))
+  for (const [col, def] of [
+    ['duration_ms', 'INTEGER NOT NULL DEFAULT 0'],
+    ['iteration_count', 'INTEGER NOT NULL DEFAULT 0'],
+    ['llm_request_count', 'INTEGER NOT NULL DEFAULT 0'],
+    ['round_context_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+  ] as const) {
+    if (!convCols.has(col)) {
+      database.exec(`ALTER TABLE conversations ADD COLUMN ${col} ${def}`)
+    }
+  }
+  const sessCols = new Set(database.prepare('PRAGMA table_info(sessions)').all().map((c) => String((c as { name: unknown }).name)))
+  for (const [col, def] of [
+    ['total_duration_ms', 'INTEGER NOT NULL DEFAULT 0'],
+    ['total_iterations', 'INTEGER NOT NULL DEFAULT 0'],
+    ['total_llm_requests', 'INTEGER NOT NULL DEFAULT 0'],
+    ['current_context_tokens', 'INTEGER NOT NULL DEFAULT 0'],
+  ] as const) {
+    if (!sessCols.has(col)) {
+      database.exec(`ALTER TABLE sessions ADD COLUMN ${col} ${def}`)
+    }
+  }
 }
 
 /**

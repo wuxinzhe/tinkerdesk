@@ -60,7 +60,7 @@ function onSelect(id: string) {
   left: 0;
   bottom: 0;
   width: 280px;
-  background: #ffffff;
+  background: var(--sa-bg-primary, #ffffff);
   z-index: 300;
   transform: translateX(-100%);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);

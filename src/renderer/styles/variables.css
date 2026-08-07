@@ -1,6 +1,8 @@
 /* ============================================================
    Showing Ai — Global Design Variables
-   Apple HIG 风格 CSS 变量，与 core-principles.md 保持同步
+   Apple HIG 风格 CSS 变量（2026 版全量对齐）
+   深色模式 / Liquid Glass 材质 / 8pt 网格 / 语义色令牌
+   与 docs/ui-redesign-apple-hig.md 保持一致
    ============================================================ */
 
 :root {
@@ -12,21 +14,24 @@
   --sa-success: #34c759;
   --sa-warning: #ff9500;
 
-  /* ── Text ── */
+  /* ── Text（4 级） ── */
   --sa-text-primary: #1d1d1f;
-  --sa-text-secondary: #86868b;
-  --sa-text-tertiary: #aeaeb2;
-  --sa-text-quaternary: #c7c7cc;
+  --sa-text-secondary: #48484a;
+  --sa-text-tertiary: #86868b;
+  --sa-text-quaternary: #aeaeb2;
   --sa-text-link: #007aff;
 
   /* ── Backgrounds ── */
   --sa-bg-primary: #ffffff;
   --sa-bg-secondary: #f5f5f7;
   --sa-bg-tertiary: #fafafa;
-  --sa-bg-glass: rgba(255, 255, 255, 0.72);
-  --sa-bg-bubble-assistant: #ececed;
+  --sa-bg-elevated: #ffffff;
+  --sa-bg-glass: rgba(255, 255, 255, 0.55);
+  --sa-glass-edge: rgba(255, 255, 255, 0.5);
+  --sa-bg-bubble-assistant: #e0e0e5;
+  --sa-bg-selected: rgba(0, 122, 255, 0.08);
 
-  /* ── Border ── */
+  /* ── Border / Separator ── */
   --sa-border: #e8e8ed;
   --sa-border-focus: #007aff;
   --sa-border-error: #ff3b30;
@@ -34,19 +39,31 @@
   /* ── Overlay ── */
   --sa-overlay: rgba(0, 0, 0, 0.65);
 
-  /* ── Shadows ── */
+  /* ── Focus rings ── */
   --sa-shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.15);
   --sa-shadow-error: 0 0 0 3px rgba(255, 59, 48, 0.15);
+
+  /* ── Elevation（阴影层级——替代重阴影） ── */
+  --sa-shadow-hairline: 0 0.5px 0 rgba(0, 0, 0, 0.06);
+  --sa-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --sa-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
 
   /* ── Radii ── */
   --sa-radius-sm: 6px;
   --sa-radius-md: 8px;
   --sa-radius-lg: 12px;
 
+  /* ── Control sizes（控件高度档位） ── */
+  --sa-control-s: 28px;
+  --sa-control-m: 32px;
+  --sa-control-l: 36px;
+  --sa-control-xl: 44px;
+  --sa-hit-min: 36px; /* 桌面最小点击区 */
+
   /* ── Font ── */
-  --sa-font-stack: 'HarmonyOS Sans SC', -apple-system, BlinkMacSystemFont,
-    'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --sa-font-mono: 'SF Mono', 'SFMono-Regular', 'Menlo', 'Consolas', 'HarmonyOS Sans SC', monospace;
+  --sa-font-stack: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+  --sa-font-mono: 'SF Mono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
 
   /* ── Font sizes ── */
   --sa-fs-hero: 28px;
@@ -65,19 +82,50 @@
   --sa-space-7: 32px;
   --sa-space-8: 40px;
 
-  /* ── Duration ── */
-  --sa-duration-fast: 100ms;
+  /* ── Motion（统一 HIG 曲线） ── */
+  --sa-ease: cubic-bezier(0.25, 0.1, 0.25, 1); /* ease-in-out */
+  --sa-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 面板展开 */
+  --sa-duration-fast: 120ms;
   --sa-duration-normal: 200ms;
   --sa-duration-slow: 300ms;
 
   /* ── z-index layers ── */
   --sa-z-lock-screen: 9999;
+}
 
-  /* ── Scrollbar ── */
-  --sa-scrollbar-size: 6px;
-  --sa-scrollbar-track: #f5f5f7;
-  --sa-scrollbar-thumb: #e8e8ed;
-  --sa-scrollbar-thumb-hover: #c7c7cc;
+/* ════════════════════════════════════════════════════════
+   深色模式（由通用设置"主题"驱动——html[data-theme='dark']）
+   默认浅色；设置页可切 浅色/深色/跟随系统
+   ════════════════════════════════════════════════════════ */
+html[data-theme='dark'] {
+  --sa-accent: #0a84ff;
+  --sa-accent-hover: #2d95ff;
+  --sa-accent-active: #5ab0ff;
+
+  --sa-text-primary: #f5f5f7;
+  --sa-text-secondary: #ebebed;
+  --sa-text-tertiary: #98989d;
+  --sa-text-quaternary: #6e6e73;
+  --sa-text-link: #0a84ff;
+
+  --sa-bg-primary: #1e1e1e;   /* base */
+  --sa-bg-secondary: #2c2c2e; /* 组容器 */
+  --sa-bg-tertiary: #3a3a3c;  /* 次级组 */
+  --sa-bg-elevated: #2c2c2e;  /* 弹层/浮层前进 */
+  --sa-bg-glass: rgba(28, 28, 34, 0.55);
+  --sa-glass-edge: rgba(255, 255, 255, 0.12);
+  --sa-bg-bubble-assistant: #3a3a3c;
+  --sa-bg-selected: rgba(10, 132, 255, 0.2);
+
+  --sa-border: #48484a;
+
+  --sa-overlay: rgba(0, 0, 0, 0.72);
+
+  --sa-shadow-focus: 0 0 0 3px rgba(10, 132, 255, 0.3);
+  --sa-shadow-error: 0 0 0 3px rgba(255, 69, 58, 0.3);
+  --sa-shadow-hairline: 0 0.5px 0 rgba(255, 255, 255, 0.08);
+  --sa-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --sa-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Reset ── */
@@ -107,16 +155,33 @@ body {
   line-height: 1.55;
 }
 
-/* ── Hide scrollbar globally — scroll still works ── */
+/* ── 细滚动条（macOS 风格：窄 + 悬停显示） ── */
 ::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+:hover::-webkit-scrollbar-thumb,
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--sa-scrollbar-thumb, #c7c7cc);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sa-scrollbar-thumb-hover, #aeaeb2);
 }
 
 /* Firefox */
 * {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: var(--sa-scrollbar-thumb, #c7c7cc) transparent;
 }
 
 /* ── Utility classes ── */
@@ -130,10 +195,10 @@ body {
   border: 0;
 }
 
-/* ── Page transition ── */
+/* ── Page transition（统一 HIG 曲线） ── */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s var(--sa-ease);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -144,9 +209,8 @@ body {
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: all 0.3s cubic-bezier(0, 0, 0.2, 1);
+  transition: all 0.25s var(--sa-ease);
 }
-
 .slide-left-enter-from {
   opacity: 0;
   transform: translateX(30px);
@@ -155,7 +219,6 @@ body {
   opacity: 0;
   transform: translateX(-30px);
 }
-
 .slide-right-enter-from {
   opacity: 0;
   transform: translateX(-30px);
@@ -168,6 +231,25 @@ body {
 /* ── Spinner animation ── */
 @keyframes sa-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── 无障碍：键盘焦点可见（HIG：所有交互元素 focus ring） ── */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--sa-shadow-focus);
+  border-radius: 4px;
+}
+
+/* ── 无障碍：减弱动态效果 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ══════════════════════════════════════

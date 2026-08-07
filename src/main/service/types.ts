@@ -142,6 +142,15 @@ export interface AgentInfoDTO {
   createdAt?: string
   /** 对话场景主力模型名（详情展示用） */
   mainModelName?: string
+  /** 记忆占用（profile 级——与 AgentInfo 一起返回） */
+  memoryChars?: number
+  memoryEntries?: number
+  memoryMaxChars?: number
+  memoryPercent?: number
+  userChars?: number
+  userEntries?: number
+  userMaxChars?: number
+  userPercent?: number
 }
 
 /** 创建 Agent 请求 DTO（对齐 CreateAgentRequestDTO） */
@@ -303,10 +312,11 @@ export interface StepStatusDTO {
 
 // ── 门检决策枚举（对齐 ToolAuthService / SandboxWhitelistService / ToolLoopGuardrail） ──
 
-/** 授权决策（对齐 AuthzDecision） */
+/** 授权决策（对齐 AuthzDecision；DENY = 灾难性命令绝对不执行，不进审批） */
 export enum AuthzDecision {
   ALLOW = 'ALLOW',
   ASK = 'ASK',
+  DENY = 'DENY',
 }
 
 /** 沙盒决策（对齐 SandboxDecision） */

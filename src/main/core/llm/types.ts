@@ -100,6 +100,8 @@ export interface LlmChunk {
   reasoning: string
   /** 工具调用参数增量（delta.tool_calls[*].function.arguments），无工具调用时为空字符串 */
   toolCallArgs: string
+  /** 工具名（工具调用增量首次出现时携带——前端流式拼工具卡片用） */
+  toolCallName?: string
   /** 是否为流的最后一个信号 */
   isFinish: boolean
   /** 结束原因：stop / tool_calls / length / content_filter */

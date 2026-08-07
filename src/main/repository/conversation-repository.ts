@@ -8,14 +8,14 @@ import { getDatabase } from './database'
 import type { ConversationEntity, ConversationStatusUpdate } from './types'
 
 /** 对话状态常量（单一来源在 core/constants/conversation；此处 re-export 保持既有导入链） */
-export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED, CONV_DELETED, CONV_INTERRUPTED } from '../core/constants/conversation'
+export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED } from '../core/constants/conversation'
 import { CONV_IN_PROGRESS, CONV_COMPLETED } from '../core/constants/conversation'
 
 /** 对话实体（对应 ConversationEntity） */
 
 /** 更新状态参数 */
 
-const COLS = 'id, session_id, status, message_count, estimated_tokens, total_tokens, cache_read_tokens, cache_write_tokens, started_at, completed_at'
+const COLS = 'id, session_id, status, message_count, estimated_tokens, total_tokens, cache_read_tokens, cache_write_tokens, duration_ms, iteration_count, llm_request_count, round_context_tokens, started_at, completed_at'
 
 function toEntity(row: Record<string, unknown>): ConversationEntity {
   return {
@@ -27,6 +27,10 @@ function toEntity(row: Record<string, unknown>): ConversationEntity {
     totalTokens: row.total_tokens as number,
     cacheReadTokens: row.cache_read_tokens as number,
     cacheWriteTokens: row.cache_write_tokens as number,
+    durationMs: row.duration_ms as number,
+    iterationCount: row.iteration_count as number,
+    llmRequestCount: row.llm_request_count as number,
+    roundContextTokens: row.round_context_tokens as number,
     startedAt: row.started_at as string,
     completedAt: row.completed_at as string | null,
   }
@@ -39,18 +43,22 @@ export class ConversationRepository {
     const db = getDatabase()
     db.prepare(
       `INSERT INTO conversations (id, session_id, status, message_count,
-          estimated_tokens, total_tokens, cache_read_tokens, cache_write_tokens, started_at, completed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          estimated_tokens, total_tokens, cache_read_tokens, cache_write_tokens, duration_ms, iteration_count, llm_request_count, round_context_tokens, started_at, completed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET
-         session_id = excluded.session_id,
-         status = excluded.status,
-         message_count = excluded.message_count,
-         estimated_tokens = excluded.estimated_tokens,
-         total_tokens = excluded.total_tokens,
-         cache_read_tokens = excluded.cache_read_tokens,
-         cache_write_tokens = excluded.cache_write_tokens,
-         started_at = excluded.started_at,
-         completed_at = excluded.completed_at`
+        session_id = excluded.session_id,
+        status = excluded.status,
+        message_count = excluded.message_count,
+        estimated_tokens = excluded.estimated_tokens,
+        total_tokens = excluded.total_tokens,
+        cache_read_tokens = excluded.cache_read_tokens,
+        cache_write_tokens = excluded.cache_write_tokens,
+        duration_ms = excluded.duration_ms,
+        iteration_count = excluded.iteration_count,
+        llm_request_count = excluded.llm_request_count,
+        round_context_tokens = excluded.round_context_tokens,
+        started_at = excluded.started_at,
+        completed_at = excluded.completed_at`
     ).run(
       entity.id,
       entity.sessionId,
@@ -60,6 +68,10 @@ export class ConversationRepository {
       entity.totalTokens,
       entity.cacheReadTokens,
       entity.cacheWriteTokens,
+      entity.durationMs ?? 0,
+      entity.iterationCount ?? 0,
+      entity.llmRequestCount ?? 0,
+      entity.roundContextTokens ?? 0,
       entity.startedAt ?? new Date().toISOString().slice(0, 19).replace('T', ' '),
       entity.completedAt ?? null
     )
@@ -150,6 +162,22 @@ export class ConversationRepository {
     if (update?.cacheWriteTokens !== undefined) {
       sets.push('cache_write_tokens = ?')
       params.push(update.cacheWriteTokens)
+    }
+    if (update?.durationMs !== undefined) {
+      sets.push('duration_ms = ?')
+      params.push(update.durationMs)
+    }
+    if (update?.iterationCount !== undefined) {
+      sets.push('iteration_count = ?')
+      params.push(update.iterationCount)
+    }
+    if (update?.llmRequestCount !== undefined) {
+      sets.push('llm_request_count = ?')
+      params.push(update.llmRequestCount)
+    }
+    if (update?.roundContextTokens !== undefined) {
+      sets.push('round_context_tokens = ?')
+      params.push(update.roundContextTokens)
     }
 
     params.push(id, sessionId)

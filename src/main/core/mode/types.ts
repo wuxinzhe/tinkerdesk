@@ -15,7 +15,7 @@ export interface AgentModeMeta {
   name: string
   /** 描述 */
   description: string
-  /** 模式提示词模板名（AgentModePromptModule 渲染用，如 'agent-mode-default'） */
+  /** 模式提示词模板名（已废弃——persona 单一来源为 AgentConfig.agentSoulPrompt） */
   promptTemplate: string
 }
 

@@ -61,6 +61,8 @@ export interface StreamToken {
   reasoning?: string
   /** 工具参数增量 */
   toolCallArgs?: string
+  /** 工具名（工具调用增量首次出现时携带——前端流式拼工具卡片） */
+  toolCallName?: string
   /** 是否结束 */
   isFinish: boolean
   finishReason?: string
@@ -226,6 +228,19 @@ export interface SkillInfoVO {
   category: string
   version: string
   author: string
+  tags: string[]
+  platforms: string[]
+  dependencies: string[]
+  requiresToolsets: string[]
+  requiresTools: string[]
+  fallbackForToolsets: string[]
+  fallbackForTools: string[]
+  triggers: string[]
+  triggerConditions: string
+  config: string
+  envVars: string
+  commands: string
+  envs: string
   /** 启用状态（停用 = 软删） */
   isEnabled: boolean
   /** 详情返回（列表不返回，节省传输） */

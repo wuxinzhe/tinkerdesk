@@ -87,6 +87,7 @@ function onClick() {
 
 <style scoped>
 .session-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -101,8 +102,19 @@ function onClick() {
   background: var(--sa-bg-secondary, #f5f5f7);
 }
 
+/* 选中态（HIG Sidebars）：accent 8% 背景 + 左侧指示条 */
 .session-item--active {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
+}
+.session-item--active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--sa-accent, #007aff);
 }
 
 .session-item__icon {

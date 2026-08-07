@@ -165,6 +165,11 @@ export interface SessionEntity {
   outputTokens: number
   cacheReadTokens: number
   cacheWriteTokens: number
+  totalDurationMs?: number
+  totalIterations?: number
+  totalLlmRequests?: number
+  /** 当前上下文总量（冗余——最新一轮，dashboard 直接拉） */
+  currentContextTokens?: number
   estimatedCostUsd: number
   messageCount: number
   toolCallCount: number
@@ -196,6 +201,11 @@ export interface ConversationEntity {
   totalTokens: number
   cacheReadTokens: number
   cacheWriteTokens: number
+  durationMs?: number
+  iterationCount?: number
+  llmRequestCount?: number
+  /** 本轮上下文总量（flush 时取最后 assistant 消息的 prompt_tokens） */
+  roundContextTokens?: number
   startedAt?: string
   completedAt?: string | null
 }
@@ -207,6 +217,10 @@ export interface ConversationStatusUpdate {
   totalTokens?: number
   cacheReadTokens?: number
   cacheWriteTokens?: number
+  durationMs?: number
+  iterationCount?: number
+  llmRequestCount?: number
+  roundContextTokens?: number
   completedAt?: string | null
 }
 
@@ -227,6 +241,11 @@ export interface MessageEntity {
   toolName: string | null
   finishReason: string | null
   interactionStatus: string
+  /** usage 统计（每轮每请求——命中率数据源；仅记录不展示） */
+  promptTokens?: number
+  completionTokens?: number
+  cacheReadTokens?: number
+  cacheWriteTokens?: number
   messageType: string
   deleted: boolean
   createdAt?: string
@@ -266,7 +285,7 @@ export interface SessionMessageQuery {
   sortOrder?: 'ASC' | 'DESC'
 }
 
-// ── skill_categories 表 ────────────────────────────────────────────
+// ── 技能分类（JSON 文件源——无数据库表） ──────────────────────────
 
 /** 技能分类实体（对应 SkillCategoryEntity） */
 export interface SkillCategoryEntity {
@@ -359,6 +378,8 @@ export interface SkillFileEntity {
   id?: number
   skillId: string
   fileType: string
+  /** 文件名（安装时从文件路径提取） */
+  name?: string
   content: string
   language: string
   sortOrder: number

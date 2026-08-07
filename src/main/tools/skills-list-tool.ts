@@ -46,6 +46,7 @@ export class SkillsListTool extends BaseTool {
       const cat = s.category || 'uncategorized'
       if (!byCategory.has(cat)) byCategory.set(cat, [])
       const item: Record<string, unknown> = {
+        id: s.id,
         name: s.name,
       }
       // 非 available 才输出 readinessStatus（对齐 Java）

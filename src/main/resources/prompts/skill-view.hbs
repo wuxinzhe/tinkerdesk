@@ -1,4 +1,4 @@
-# {{name}}
+# {{name}}{{#if id}} (id: `{{id}}`){{/if}}
 
 {{#if description}}> {{description}}
 
@@ -23,4 +23,9 @@
 {{/if}}{{#if apiKey}}**API key:** {{apiKey}}
 {{/if}}{{#if envVars}}**Env vars:** {{envVars}}
 {{/if}}{{#if commands}}**Commands:** {{commands}}
+{{/if}}{{#if files}}
+**Files** (load content with skill_view(id, fileId: <id>)):
+{{#each files}}
+- `{{id}}` — {{name}} ({{fileType}}{{#if language}}/{{language}}{{/if}}) [sort: {{sortOrder}}]
+{{/each}}
 {{/if}}

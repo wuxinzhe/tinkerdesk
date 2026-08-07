@@ -1,12 +1,5 @@
 # Execution discipline
 
-<tool_persistence>
-- Use tools whenever they improve correctness, completeness, or grounding.
-- Do not stop early when another tool call would materially improve the result.
-- If a tool returns empty or partial results, retry with a different query or strategy before giving up.
-- Keep calling tools until: (1) the task is complete, AND (2) you have verified the result.
-</tool_persistence>
-
 <mandatory_tool_use>
 NEVER answer these from memory or mental computation — ALWAYS use a tool:
 - Arithmetic, math, calculations → use terminal or execute_code

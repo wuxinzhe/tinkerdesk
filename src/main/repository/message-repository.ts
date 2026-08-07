@@ -49,8 +49,8 @@ export class MessageRepository {
       .prepare(
         `INSERT INTO messages (session_id, conversation_id, profile, role,
             content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
-            interaction_status, message_type, deleted)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            interaction_status, message_type, deleted, prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         entity.sessionId,
@@ -65,7 +65,11 @@ export class MessageRepository {
         entity.finishReason ?? 'complete',
         entity.interactionStatus ?? '',
         entity.messageType ?? '',
-        entity.deleted ? 1 : 0
+        entity.deleted ? 1 : 0,
+        entity.promptTokens ?? 0,
+        entity.completionTokens ?? 0,
+        entity.cacheReadTokens ?? 0,
+        entity.cacheWriteTokens ?? 0
       )
     return Number(result.lastInsertRowid)
   }
@@ -76,8 +80,8 @@ export class MessageRepository {
     const stmt = db.prepare(
       `INSERT INTO messages (session_id, conversation_id, profile, role,
           content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
-          interaction_status, message_type, deleted)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          interaction_status, message_type, deleted, prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     let count = 0
     for (const e of entities) {
@@ -94,7 +98,11 @@ export class MessageRepository {
         e.finishReason ?? 'complete',
         e.interactionStatus ?? '',
         e.messageType ?? '',
-        e.deleted ? 1 : 0
+        e.deleted ? 1 : 0,
+        e.promptTokens ?? 0,
+        e.completionTokens ?? 0,
+        e.cacheReadTokens ?? 0,
+        e.cacheWriteTokens ?? 0
       )
       count++
     }

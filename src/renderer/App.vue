@@ -54,11 +54,23 @@ import TitleBar from '@/renderer/components/workspace/TitleBar.vue'
 import GlobalTipToast from '@/renderer/components/GlobalTipToast.vue'
 import ConfirmModal from '@/renderer/components/ConfirmModal.vue'
 import { setupAppHost, needsConsent, consentErrorSummary, resolveConsent } from '@/renderer/utils/app-init'
+import { applyTheme, type ThemePreference } from '@/renderer/utils/theme'
 import { NModal } from 'naive-ui'
 
 // ── Application Host 初始化 ──
 
 setupAppHost()
+
+// ── 主题：启动时读取通用设置（theme），应用浅色/深色/跟随系统 ──
+
+void (async () => {
+  try {
+    const { settings } = await window.api.generalSettings.get()
+    applyTheme((settings['theme'] as ThemePreference) || 'light')
+  } catch {
+    applyTheme('light')
+  }
+})()
 
 // ── 桌面端检测 ──
 

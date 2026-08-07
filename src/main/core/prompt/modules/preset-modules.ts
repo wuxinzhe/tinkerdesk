@@ -28,19 +28,33 @@ export class TaskCompletionModule extends HandlebarsPresetModule {
   }
 }
 
-/** OpenAI 执行规范（无条件加载） */
+/** OpenAI 执行规范（仅 OpenAI 系模型加载——gpt/o1/o3/o4 或 api.openai.com） */
 export class OpenAIExecutionModule extends HandlebarsPresetModule {
   readonly id = 'openai-execution'
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
+  override shouldLoad(ctx: ConversationContext): boolean {
+    const m = ctx.getMainModelConfig()
+    if (!m) return false
+    const name = m.modelName.toLowerCase()
+    const url = (m.baseUrl ?? '').toLowerCase()
+    return /^(gpt|o1|o3|o4)-/.test(name) || url.includes('api.openai.com')
+  }
 }
 
-/** Google 操作规范（无条件加载） */
+/** Google 操作规范（仅 Google 系模型加载——gemini 或 googleapis/generativelanguage） */
 export class GoogleOperationalModule extends HandlebarsPresetModule {
   readonly id = 'google-operational'
   constructor(renderer: PromptRenderer) {
     super(renderer)
+  }
+  override shouldLoad(ctx: ConversationContext): boolean {
+    const m = ctx.getMainModelConfig()
+    if (!m) return false
+    const name = m.modelName.toLowerCase()
+    const url = (m.baseUrl ?? '').toLowerCase()
+    return name.startsWith('gemini') || url.includes('googleapis') || url.includes('generativelanguage')
   }
 }
 

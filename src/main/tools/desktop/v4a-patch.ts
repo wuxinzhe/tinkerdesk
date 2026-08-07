@@ -122,8 +122,8 @@ function countOccurrences(text: string, pattern: string): number {
 function readFileRaw(p: string): { content: string; error: string | null } {
   try {
     return { content: readFileSync(p, 'utf-8'), error: null }
-  } catch (err: any) {
-    return { content: '', error: String(err?.message ?? err) }
+  } catch (err) {
+    return { content: '', error: err instanceof Error ? err.message : String(err) }
   }
 }
 
@@ -301,8 +301,8 @@ export function applyV4aOperations(operations: PatchOperation[]): PatchApplyResu
         if (result.success) { filesModified.push(op.filePath); allDiffs.push(result.diff) }
         else errors.push(`Failed to update ${op.filePath}: ${result.diff}`)
       }
-    } catch (err: any) {
-      errors.push(`Error processing ${op.filePath}: ${String(err?.message ?? err)}`)
+    } catch (err) {
+      errors.push(`Error processing ${op.filePath}: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

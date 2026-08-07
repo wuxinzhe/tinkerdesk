@@ -96,7 +96,10 @@ export class AnthropicClient implements LlmClient {
       }
 
       if (toolCalls.length > 0) {
-        return toolCallsResponse(toolCalls, { finishReason: message.stop_reason ?? 'stop' })
+        return toolCallsResponse(toolCalls, {
+          finishReason: message.stop_reason ?? 'stop',
+          text: text || undefined,
+        })
       }
       return textResponse(text, {
         finishReason: message.stop_reason ?? 'stop',
@@ -174,7 +177,7 @@ export class AnthropicClient implements LlmClient {
 
       const extra = { finishReason } as Partial<Omit<LlmResponse, 'resType' | 'text' | 'toolCalls'>>
       if (toolCalls.length > 0) {
-        return toolCallsResponse(toolCalls, { ...extra, reasoningContent: reasoning || undefined })
+        return toolCallsResponse(toolCalls, { ...extra, text: text || undefined, reasoningContent: reasoning || undefined })
       }
       if (text) {
         return textResponse(text, { ...extra, reasoningContent: reasoning || undefined })

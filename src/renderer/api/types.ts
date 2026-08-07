@@ -104,6 +104,15 @@ export interface AgentInfo {
   createdAt?: string
   /** 对话场景主力模型名 */
   mainModelName?: string
+  /** 记忆占用（profile 级——与 AgentInfo 一起返回） */
+  memoryChars?: number
+  memoryEntries?: number
+  memoryMaxChars?: number
+  memoryPercent?: number
+  userChars?: number
+  userEntries?: number
+  userMaxChars?: number
+  userPercent?: number
 }
 
 export interface CreateAgentRequest {
@@ -253,22 +262,39 @@ export interface SkillInfo {
   author?: string
   license?: string
   platforms?: string[]
-  envs?: string[]
+  /** 环境（文本，对应 DB envs） */
+  envs?: string
   /** 正文（详情返回，列表不返回） */
   body?: string
   tags?: string[]
   dependencies?: string[]
   requiresToolsets?: string[]
   requiresTools?: string[]
+  fallbackForToolsets?: string[]
+  fallbackForTools?: string[]
   triggers?: string[]
   triggerConditions?: string
   config?: string
+  envVars?: string
+  commands?: string
   isEnabled?: boolean
   isInstalled?: boolean
   updatedAt?: string
 }
 
 /** 技能分类 */
+/** 技能文件信息（private_skill_files） */
+export interface SkillFileInfo {
+  id: number
+  skillId: string
+  fileType: string
+  name: string
+  content: string
+  language: string
+  sortOrder: number
+  createdAt?: string
+}
+
 export interface SkillCategory {
   id: string
   name: string
@@ -492,6 +518,8 @@ export interface AgentStreamEvent {
   reasoning?: string
   /** 工具参数增量 */
   toolCallArgs?: string
+  /** 工具名（工具调用增量首次出现时携带） */
+  toolCallName?: string
   /** 是否结束 */
   isFinish: boolean
   finishReason?: string
@@ -744,6 +772,22 @@ export interface WindowApi {
     update: (sessionId: string, title: string, profile: string) => Promise<void>
     getYolo: (profile: string, sessionId: string) => Promise<boolean>
     toggleYolo: (profile: string, sessionId: string) => Promise<boolean>
+    /** 会话统计（数据面板：平均命中率 + memory 占用） */
+    stats: (profile: string, sessionId: string) => Promise<{
+      hitRate: number; promptTokens: number; totalTokens: number; rounds: number
+      durationMs: number; iterations: number; llmRequests: number
+      memoryChars: number; memoryEntries: number; memoryMaxChars: number; memoryPercent: number
+    }>
+    /** 数据面板整合（只读——上下文窗口/阈值/统计/memory 一口气给前端） */
+    dashboard: (profile: string, sessionId: string) => Promise<{
+      model: string
+      contextLimit: number; currentContextTokens: number; contextUsedPercent: number
+      thresholdPercent: number; protectedThreshold: number; maxThreshold: number
+      hitRate: number; totalTokens: number; promptTokens: number
+      durationMs: number; iterations: number; llmRequests: number; rounds: number
+      memoryChars: number; memoryEntries: number; memoryMaxChars: number; memoryPercent: number
+      userChars: number; userEntries: number; userMaxChars: number; userPercent: number
+    }>
   }
 
   messages: {
@@ -797,9 +841,33 @@ export interface WindowApi {
     deactivate: (id: string, profile?: string) => Promise<void>
     activate: (id: string, profile?: string) => Promise<void>
     categories: () => Promise<SkillCategory[]>
-    install: (content: string, profile?: string) => Promise<SkillInfo>
-    /** 选择技能文件并读取内容（返回 { path, content }，取消返回 null） */
-    pickInstallFile: () => Promise<{ path: string; content: string } | null>
+    /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
+    install: (payload: {
+      profile?: string; name?: string; displayName?: string; description?: string; category?: string
+      version?: string; author?: string; license?: string; platforms?: string; tags?: string
+      dependencies?: string; requiresToolsets?: string; requiresTools?: string
+      fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+      config?: string; envVars?: string; commands?: string; body?: string
+      files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
+    }) => Promise<SkillInfo>
+    /** 选择技能文件并读取内容（返回 { path, content, files, preview }，取消返回 null） */
+    pickInstallFile: () => Promise<{ path: string; content: string; files: Array<{ fileType: string; name: string; content: string; sortOrder: number }>; preview: { name: string; displayName: string; description: string; category: string } | null } | null>
+    update: (payload: {
+      id: string; profile?: string; displayName?: string; description?: string; category?: string
+      version?: string; author?: string; license?: string
+      tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
+      fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+      config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    }) => Promise<SkillInfo>
+    delete: (id: string, profile?: string) => Promise<null>
+    /** 按技能 id 查文件列表 */
+    fileList: (skillId: string) => Promise<SkillFileInfo[]>
+    /** 新增技能文件 */
+    fileSave: (payload: { skillId: string; fileType: string; name?: string; content?: string; language?: string; sortOrder?: number }) => Promise<number>
+    /** 更新技能文件 */
+    fileUpdate: (payload: { id: number; fileType?: string; name?: string; content?: string; language?: string; sortOrder?: number }) => Promise<null>
+    /** 删除技能文件 */
+    fileDelete: (id: number) => Promise<null>
   }
 
   account: {

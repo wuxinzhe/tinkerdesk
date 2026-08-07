@@ -7,11 +7,33 @@
           <img v-else src="/default_avatar.png" alt="" class="agent-card__avatar-img" />
         </div>
         <div class="agent-card__info">
-          <div class="agent-card__name">{{ agent.displayName || '默认 Agent' }}</div>
-          <div class="agent-card__model">{{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion"> · {{ agent.agentModeVersion }}</template></div>
-          <div v-if="agent.description" class="agent-card__desc">{{ agent.description }}</div>
+          <div class="agent-card__name">
+            {{ agent.displayName || '默认 Agent' }}
+            <span class="agent-card__profile">({{ agent.profile }})</span>
+            <span v-if="agent.isDefault" class="agent-card__badge" title="默认 Agent">默认</span>
+          </div>
+          <div v-if="agent.description" class="agent-card__model" :title="agent.description">{{ agent.description }}</div>
+          <div v-else class="agent-card__model">{{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion"> · {{ agent.agentModeVersion }}</template></div>
         </div>
       </div>
+      <!-- 记忆占用（profile 级——与 AgentInfo 一起返回；位于按钮上方） -->
+      <div class="agent-card__memory">
+        <div class="agent-card__memory-item">
+          <div class="agent-card__memory-row">
+            <span class="agent-card__memory-tag">Memory</span>
+            <span class="agent-card__memory-num">{{ formatKB(agent.memoryChars) }} / {{ formatKB(agent.memoryMaxChars) }}</span>
+          </div>
+          <div class="agent-card__memory-bar"><div class="agent-card__memory-fill agent-card__memory-fill--mem" :style="{ width: formatPercent(agent.memoryPercent) }"></div></div>
+        </div>
+        <div class="agent-card__memory-item">
+          <div class="agent-card__memory-row">
+            <span class="agent-card__memory-tag">User</span>
+            <span class="agent-card__memory-num">{{ formatKB(agent.userChars) }} / {{ formatKB(agent.userMaxChars) }}</span>
+          </div>
+          <div class="agent-card__memory-bar"><div class="agent-card__memory-fill agent-card__memory-fill--usr" :style="{ width: formatPercent(agent.userPercent) }"></div></div>
+        </div>
+      </div>
+
       <div class="agent-card__footer">
         <div class="agent-card__footer-top">
           <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
@@ -109,8 +131,27 @@ interface AgentInfo {
   agentModeId?: string
   agentModeVersion?: string
   isDefault?: boolean
+  profile?: string
   /** 对话场景主力模型名 */
   mainModelName?: string
+  /** 记忆占用（profile 级——与 AgentInfo 一起返回） */
+  memoryChars?: number
+  memoryMaxChars?: number
+  memoryPercent?: number
+  userChars?: number
+  userMaxChars?: number
+  userPercent?: number
+}
+
+/** 记忆体积统一 KB */
+function formatKB(chars: number | undefined): string {
+  if (chars === undefined) return '—'
+  return `${Math.round((chars / 1024) * 10) / 10}KB`
+}
+
+function formatPercent(v: number | undefined): string {
+  if (v === undefined || Number.isNaN(v)) return '0%'
+  return `${Math.round(v * 100)}%`
 }
 
 defineProps<{
@@ -130,11 +171,9 @@ defineEmits<{
 const thoughtActive = ref(false)
 const currentThought = ref('')
 const thoughtBodyRef = ref<HTMLElement | null>(null)
-let thoughtTimer: ReturnType<typeof setTimeout> | null = null
 let reasoningAccum = '' // 累积流式内容
 
 function showThought(text: string) {
-  if (thoughtTimer) clearTimeout(thoughtTimer)
   currentThought.value = text
   thoughtActive.value = true
 }
@@ -146,47 +185,38 @@ watch(currentThought, () => {
 })
 
 /**
- * 处理流式 reasoning token：持续追加到思考气泡
+ * 处理流式 reasoning token：持续追加到思考气泡（不自动隐藏——只有 conversation complete 才隐藏）
  */
 function handleReasoningToken(e: Event) {
   const { reasoning } = (e as CustomEvent).detail ?? {}
   if (!reasoning) return
   reasoningAccum += reasoning
   showThought(reasoningAccum)
-
-  // 刷新 3s 超时
-  if (thoughtTimer) clearTimeout(thoughtTimer)
-  thoughtTimer = setTimeout(() => {
-    thoughtActive.value = false
-    thoughtTimer = null
-  }, 3000)
 }
 
-function handleAgentResponse() {
-  if (thoughtTimer) clearTimeout(thoughtTimer)
-  thoughtTimer = null
-  thoughtActive.value = false
-  reasoningAccum = ''
-}
-
-function handleConversationStart(e: Event) {
-  // 新对话开始 → 清空累积
+/**
+ * 新一轮推理开始（isNewStream：新文本/工具轮次到来）→ 清理上一轮 reasoning，只留本轮
+ */
+function handleReasoningStart() {
   reasoningAccum = ''
 }
 
 function handleConversationComplete(e: Event) {
-  // controlled via prop
+  // 只有收到 conversation-complete 才隐藏思考气泡
+  thoughtActive.value = false
+  reasoningAccum = ''
 }
 
 onMounted(() => {
   window.addEventListener('agent-reasoning-token', handleReasoningToken)
-  window.addEventListener('agent-response-received', handleAgentResponse)
+  window.addEventListener('agent-reasoning-start', handleReasoningStart)
+  window.addEventListener('conversation-complete', handleConversationComplete)
 })
 
 onUnmounted(() => {
   window.removeEventListener('agent-reasoning-token', handleReasoningToken)
-  window.removeEventListener('agent-response-received', handleAgentResponse)
-  if (thoughtTimer) clearTimeout(thoughtTimer)
+  window.removeEventListener('agent-reasoning-start', handleReasoningStart)
+  window.removeEventListener('conversation-complete', handleConversationComplete)
 })
 </script>
 
@@ -250,6 +280,9 @@ onUnmounted(() => {
 }
 
 .agent-card__name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--sa-text-primary, #1d1d1f);
@@ -259,6 +292,26 @@ onUnmounted(() => {
   line-height: 1.3;
 }
 
+/* profile（名字右侧括号） */
+.agent-card__profile {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  flex-shrink: 0;
+}
+
+/* 默认角标（右上角） */
+.agent-card__badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--sa-accent, #007aff);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
 .agent-card__model {
   font-size: 11px;
   color: var(--sa-text-tertiary, #aeaeb2);
@@ -266,6 +319,57 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 1px;
+}
+
+/* ── 记忆占用（按钮下方） ── */
+.agent-card__memory {
+  border-top: 1px solid var(--sa-border, #d2d2d7);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agent-card__memory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.agent-card__memory-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sa-text-tertiary, #aeaeb2);
+}
+
+.agent-card__memory-num {
+  font-size: 10px;
+  color: var(--sa-text-secondary, #86868b);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-card__memory-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sa-bg-elevated, #ffffff);
+  border: 1px solid var(--sa-border-light, #e8e8ed);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.agent-card__memory-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.3s;
+}
+
+.agent-card__memory-fill--mem {
+  background: #34c759;
+}
+
+.agent-card__memory-fill--usr {
+  background: var(--sa-accent, #007aff);
 }
 
 /* ── 连接状态指示器 ── */
@@ -320,7 +424,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
   padding-top: 4px;
   min-height: 26px;
   position: relative;

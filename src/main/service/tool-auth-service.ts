@@ -8,6 +8,26 @@
 import { AuthzDecision } from './types'
 export { AuthzDecision } from './types'
 
+/** 灾难性命令模式 — 命中后返回 DENY（绝对不执行，不进审批，直接拦截） */
+const CATASTROPHIC_PATTERNS: RegExp[] = [
+  // ── 全盘/家目录递归删除 ────────────────────────
+  /rm\s+-[rf]+\s+\//,
+  /rm\s+-[rf]+\s+.*~\//,
+  // ── 磁盘/设备写入 ──────────────────────────────
+  /dd\s+if=/,
+  /mkfs\./,
+  // ── Windows 灾难性操作 ─────────────────────────
+  /format\s+\w:.*\/fs:/i,
+  /del\s+\/f\s+\/s\s+\/[a-z]:\\/i,
+  /rd\s+\/s\s+\/q\s+\/[a-z]:\\/i,
+  /(powershell|pwsh)(\.exe)?\b.*\s(clear-disk|format-volume|remove-driveletter|reset-computer|restore-computer)\b/i,
+  // ── 系统关机/重启 ──────────────────────────────
+  /shutdown\s+\/s\b/i,
+  /shutdown\s+-h\b/i,
+  // ── fork 炸弹 ──────────────────────────────────
+  /:\(\)\s*\{.*:.*\};/i,
+]
+
 /** 危险参数模式列表 — 命中后触发 ASK（需用户审批） */
 const DANGEROUS_ARG_PATTERNS: RegExp[] = [
   // ── 文件系统破坏 ────────────────────────────
@@ -84,7 +104,7 @@ const DANGEROUS_ARG_PATTERNS: RegExp[] = [
 
 /** 工具授权服务 */
 export class ToolAuthService {
-  /** 检查工具调用是否需要审批（命中危险模式 → ASK） */
+  /** 检查工具调用：灾难命令 → DENY（直接拦截）；危险模式 → ASK（审批）；其余 ALLOW */
   check(toolName: string, args: Record<string, unknown>): AuthzDecision {
     // 仅对终端类工具做参数危险检测（其它工具参数非命令语义）
     const isTerminalLike = toolName === 'terminal'
@@ -96,6 +116,13 @@ export class ToolAuthService {
     }
 
     const argsStr = JSON.stringify(args ?? {})
+    // 第一层：灾难性命令 → DENY（绝对不执行——不进审批，直接拦截返回）
+    for (const pattern of CATASTROPHIC_PATTERNS) {
+      if (pattern.test(argsStr)) {
+        return AuthzDecision.DENY
+      }
+    }
+    // 第二层：风险操作 → ASK（需用户审批）
     for (const pattern of DANGEROUS_ARG_PATTERNS) {
       if (pattern.test(argsStr)) {
         return AuthzDecision.ASK

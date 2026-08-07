@@ -109,7 +109,9 @@ function dispatchGlobalTip(type: 'error' | 'tip', code: string, message: string)
 ipcRenderer.on('agent:queueTip', (_event, payload: { type?: string; message?: string } | null) => {
   const message = payload?.message ?? ''
   if (message) {
-    dispatchGlobalTip('tip', payload?.type ?? 'TIP', message)
+    // type === 'error' → 错误提示（红色样式）；其余（working/message_queued 等）→ 普通 tip
+    const type = payload?.type === 'error' ? 'error' : 'tip'
+    dispatchGlobalTip(type, payload?.type ?? 'TIP', message)
   }
 })
 
@@ -201,6 +203,10 @@ const api = {
     update: (sessionId: string, title: string, profile: string) => inv('session:update', {sessionId, title, profile} satisfies UpdateSessionRequestDTO).then(unwrap),
     getYolo: (profile: string, sessionId: string) => inv('session:getYolo', {profile, sessionId}).then(unwrap),
     toggleYolo: (profile: string, sessionId: string) => inv('session:toggleYolo', {profile, sessionId}).then(unwrap),
+    /** 会话统计（数据面板：平均命中率 + memory 占用） */
+    stats: (profile: string, sessionId: string) => inv('session:stats', {profile, sessionId}).then(unwrap),
+    /** 数据面板整合（只读——上下文窗口/阈值/统计/memory 一口气给前端） */
+    dashboard: (profile: string, sessionId: string) => inv('dashboard:get', {profile, sessionId}).then(unwrap),
   },
 
   // ── 消息（MessageController）──
@@ -265,10 +271,35 @@ const api = {
     deactivate: (id: string, profile?: string) => inv('skill:deactivate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
     activate: (id: string, profile?: string) => inv('skill:activate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
     categories: () => inv('skill:categories').then(unwrap),
-    /** 安装外部技能（SKILL.md 全文；后端校验格式，不兼容会返回错误提示交给 Agent 重写） */
-    install: (content: string, profile?: string) => inv('skill:install', { content, profile }).then(unwrap),
+    /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
+    install: (payload: {
+      profile?: string; name?: string; displayName?: string; description?: string; category?: string
+      version?: string; author?: string; license?: string; platforms?: string; tags?: string
+      dependencies?: string; requiresToolsets?: string; requiresTools?: string
+      fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+      config?: string; envVars?: string; commands?: string; body?: string
+      files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
+    }) => inv('skill:install', payload).then(unwrap),
     /** 选择技能文件并读取内容（技能管理页安装按钮用） */
     pickInstallFile: () => inv('skill:pick-install-file').then(unwrap),
+    /** 编辑技能（全字段） */
+    update: (payload: {
+      id: string; profile?: string; displayName?: string; description?: string; category?: string
+      version?: string; author?: string; license?: string
+      tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
+      fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
+      config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    }) => inv('skill:update', payload).then(unwrap),
+    /** 删除技能（软删） */
+    delete: (id: string, profile?: string) => inv('skill:delete', { id, profile }).then(unwrap),
+    /** 按技能 id 查文件列表 */
+    fileList: (skillId: string) => inv('skill:file-list', { skillId }).then(unwrap),
+    /** 新增技能文件 */
+    fileSave: (payload: { skillId: string; fileType: string; name?: string; content?: string; language?: string; sortOrder?: number }) => inv('skill:file-save', payload).then(unwrap),
+    /** 更新技能文件 */
+    fileUpdate: (payload: { id: number; fileType?: string; name?: string; content?: string; language?: string; sortOrder?: number }) => inv('skill:file-update', payload).then(unwrap),
+    /** 删除技能文件 */
+    fileDelete: (id: number) => inv('skill:file-delete', { id }).then(unwrap),
   },
 
   // ── 账号初始化（AccountController，4 步向导）──

@@ -2,7 +2,7 @@
   <div class="message-row" :class="`message-row--${bubbleSideClass}`">
     <div class="message-body">
 
-      <!-- ── 气泡容器（user/assistant 文本类消息）─── -->
+      <!-- ── 气泡容器（user/assistant 文本类 + 工具调用）─── -->
       <div v-if="showBubble" class="message-bubble"
         :class="[`bubble--${bubbleStyleClass}`, { 'bubble--streaming': isStreaming }]" @click="toggleTimestamp">
         <!-- assistant_text → Markdown 实时渲染 + 流式接收区 -->
@@ -24,16 +24,16 @@
           </Transition>
         </template>
 
+        <!-- assistant_tool_call → content 走气泡正文（在上）+ 标题胶囊（在下） -->
+        <template v-else-if="isToolCall">
+          <template v-if="message.content">{{ message.content }}<br /></template>
+          <span class="tool-call-tag">🔧 通过调用 <span class="tool-call-tag__name">{{ toolNames }}</span> 工具解决问题...</span>
+        </template>
+
         <!-- user_message / 兜底 → 纯文本 -->
         <template v-else>
           {{ message.content }}
         </template>
-
-        <!-- assistant_tool_call → 工具调用内容（toolCall JSON：工具名 + 参数） -->
-        <div v-if="isToolCall" class="tool-call-card">
-          <div class="tool-call-card__header">🔧 工具调用</div>
-          <pre class="tool-call-card__body">{{ prettyToolCall }}</pre>
-        </div>
       </div>
 
       <!-- ── 时间戳 ── -->
@@ -169,20 +169,38 @@ const isToolCall = computed(() => effectiveType.value === 'assistant_tool_call')
 const isApprovalRequest = computed(() => effectiveType.value === 'approval_request')
 const isClarifyRequest = computed(() => effectiveType.value === 'clarify_request')
 
-/** toolCall JSON 美化显示（{toolCallId: {name, arguments}} → 工具名 + 参数 JSON） */
-const prettyToolCall = computed(() => {
-  if (!props.message.toolCall) return ''
-  try {
-    const parsed = JSON.parse(props.message.toolCall as string) as Record<string, { name: string; arguments: unknown }>
-    const entries = Object.entries(parsed)
-    if (entries.length === 0) return props.message.toolCall as string
-    const first = entries[0][1]
-    const name = first?.name ?? ''
-    const args = first?.arguments != null ? JSON.stringify(first.arguments, null, 2) : ''
-    return name + (args ? '\n' + args : '')
-  } catch {
-    return props.message.toolCall as string
+/** 工具名去前缀（desktop_tinker_terminal → terminal / builtin_tinker_clarify → clarify） */
+function displayToolName(name: string): string {
+  return name.replace(/^(desktop_tinker_|builtin_tinker_)/, '')
+}
+
+interface ToolCallEntry { name?: string; arguments?: unknown }
+
+/** 解析 toolCall 为条目数组（兼容两种结构：平铺 {id,name,arguments,status} 或 map {callId:{name,arguments}}） */
+function parseToolCallEntries(raw: unknown): Array<{ id: string; name: string; arguments?: unknown }> {
+  if (!raw) return []
+  let parsed: unknown = raw
+  if (typeof raw === 'string') {
+    try { parsed = JSON.parse(raw) } catch { return [] }
   }
+  if (!parsed || typeof parsed !== 'object') return []
+  const obj = parsed as Record<string, unknown>
+  // 平铺结构（messages-api 转换后的展示结构）
+  if (typeof obj.id === 'string' && typeof obj.name === 'string') {
+    return [{ id: obj.id, name: obj.name, arguments: obj.arguments as unknown }]
+  }
+  // map 结构：{callId: {name, arguments}}
+  return Object.entries(obj).map(([id, v]) => {
+    const e = (v ?? {}) as ToolCallEntry
+    return { id, name: typeof e.name === 'string' ? e.name : id, arguments: e.arguments }
+  })
+}
+
+/** 标题用工具名（去前缀——多工具顿号分隔） */
+const toolNames = computed(() => {
+  const entries = parseToolCallEntries(props.message.toolCall)
+  if (entries.length === 0) return ''
+  return entries.map((e) => displayToolName(e.name)).join('、')
 })
 
 /** 是否需要气泡容器（文本类消息） */
@@ -273,33 +291,31 @@ const bubbleStyleClass = computed(() =>
 }
 
 .bubble--assistant {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--sa-bg-bubble-assistant, #ececed);
   color: var(--sa-text-primary, #1d1d1f);
   border-bottom-left-radius: 4px;
 }
 
-/* ── 工具调用卡片（assistant_tool_call） ── */
+/* ── 工具调用标题胶囊（气泡内特殊样式——accent 淡底 + 圆角标签，与正文区分） ── */
 
-.tool-call-card {
-  font-size: 12px;
-  line-height: 1.6;
+.tool-call-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 6px; /* 与上方 content 正文的间距 */
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
+  color: var(--sa-text-secondary, #48484a);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
-.tool-call-card__header {
+/* toolName 高亮（蓝色 + 左右间距） */
+.tool-call-tag__name {
+  color: var(--sa-accent, #007aff);
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
-  margin-bottom: 6px;
-}
-
-.tool-call-card__body {
-  margin: 0;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
-  color: var(--sa-text-primary, #1d1d1f);
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: var(--sa-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  margin: 0 3px;
 }
 
 /* ── 气泡容器（user/assistant 文本类消息）─── */
@@ -428,7 +444,7 @@ const bubbleStyleClass = computed(() =>
 }
 
 .status-dot--failed {
-  background: #ff3b30;
+  background: var(--sa-destructive, #ff3b30);
 }
 
 @keyframes pulse {

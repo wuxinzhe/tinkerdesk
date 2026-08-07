@@ -38,10 +38,22 @@ export class ElectronEventSender implements IEventSender {
 
   /** 流式 token 通道（LlmChunk → StreamToken 边界转换；30ms 窗口攒批合并发送） */
   sendToken(_sessionId: string, chunk: LlmChunk): void {
+    // 调试日志门控：仅 LOG_DEBUG_TOKEN=1 时打印（排查流式字段问题用；默认关闭避免热路径 IO 拖慢流式）
+    if (process.env.LOG_DEBUG_TOKEN === '1') {
+      console.log('[TOKEN]', JSON.stringify({
+        sessionId: _sessionId.slice(0, 8),
+        text: chunk.text?.slice(0, 50) ?? '',
+        reasoning: chunk.reasoning?.slice(0, 50) ?? '',
+        toolCallArgs: chunk.toolCallArgs?.slice(0, 40) ?? '',
+        toolCallName: chunk.toolCallName ?? '',
+        isFinish: chunk.isFinish,
+      }))
+    }
     const evt: StreamToken = {
       text: chunk.text || undefined,
       reasoning: chunk.reasoning || undefined,
       toolCallArgs: chunk.toolCallArgs || undefined,
+      toolCallName: chunk.toolCallName || undefined,
       isFinish: chunk.isFinish,
       finishReason: chunk.finishReason,
     }

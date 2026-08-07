@@ -10,6 +10,7 @@
  * - yolo 从会话表读取（session.yolo）
  * - connectId 已删除（本地无连接概念）
  */
+import { homedir } from 'node:os'
 import type { SessionContext, SessionContextBuildOptions } from '../core/loop/types'
 import type { AgentConfigService } from './agent-config-service'
 import type { SessionService } from './session-service'
@@ -66,13 +67,18 @@ export class SessionContextFactory {
     // ── 5. Agent 运行参数（配置缺失即报错——不静默兜底，异常可见） ──
     const agentConfig = this.agentConfigService.get(profile)
 
-    // ── 6. 客户端环境（对齐 Java ClientEnv） ──
+    // ── 6. 客户端环境（对齐 Java ClientEnv：os 完整描述 + arch + homedir） ──
+    const isWin = process.platform === 'win32'
     const clientEnv: SessionContext['clientEnv'] = {
-      os: process.platform,
+      // 对齐 Java os 描述串（'Windows' 开头）——runtime-environment 模块的
+      // osStartsWith('windows') 标志位依赖这个前缀（'win32' 会导致 isWindowsMsys 失效）
+      os: isWin ? 'Windows' : process.platform === 'darwin' ? 'macOS' : 'Linux',
+      arch: process.arch,
       clientType: 'desktop',
-      shell: process.platform === 'win32' ? 'cmd' : 'bash',
-      homeDir: process.env.HOME ?? '',
-      pathFormat: process.platform === 'win32' ? 'native' : 'unix',
+      // tinkerdesk 的 terminal 工具实际走 git-bash/MSYS（非 cmd.exe）——如实告知 LLM
+      shell: 'bash',
+      homeDir: homedir(),
+      pathFormat: isWin ? 'msys' : 'unix',
     }
 
     // ── 7. 装配完整上下文（send* 快捷方法委托 sender，对齐 Java SessionContext） ──

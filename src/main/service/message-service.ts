@@ -49,7 +49,13 @@ export class MessageFactory {
     }
   }
 
-  static buildAssistantText(convId: string, sessionId: string, profile: string, content: string): MessageEntity {
+  static buildAssistantText(
+    convId: string,
+    sessionId: string,
+    profile: string,
+    content: string,
+    usage?: Pick<MessageEntity, 'promptTokens' | 'completionTokens' | 'cacheReadTokens' | 'cacheWriteTokens'>,
+  ): MessageEntity {
     return {
       sessionId,
       conversationId: convId,
@@ -64,6 +70,7 @@ export class MessageFactory {
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_TEXT,
       deleted: false,
+      ...usage,
     }
   }
 
@@ -72,19 +79,22 @@ export class MessageFactory {
     sessionId: string,
     profile: string,
     reasoningContent: string,
-    toolCalls: Record<string, { name: string; arguments: unknown }>
+    toolCalls: Record<string, { name: string; arguments: unknown }>,
+    text = '',
+    usage?: Pick<MessageEntity, 'promptTokens' | 'completionTokens' | 'cacheReadTokens' | 'cacheWriteTokens'>,
   ): MessageEntity {
     return {
       sessionId,
       conversationId: convId,
       profile,
       role: 'assistant',
-      content: '',
+      content: text,
       reasoningContent: reasoningContent ?? '',
       toolCall: JSON.stringify(toolCalls),
       toolCallId: '',
       toolName: '',
       finishReason: FINISH_COMPLETE,
+      ...usage,
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_TOOL_CALL,
       deleted: false,
@@ -256,14 +266,22 @@ export class MessageService {
     return all.map(entityToApiMessage)
   }
 
-  /** 对话完成：暂存消息批量落库，清理暂存 */
-  flushConversation(convId: string): void {
+  /** 对话完成：暂存消息批量落库，清理暂存；返回该轮最后一条 assistant 消息的 prompt_tokens（当前上下文总量） */
+  flushConversation(convId: string): number {
     const list = this.tempMessages.get(convId)
     if (!list || list.length === 0) {
-      return
+      return 0
     }
     this.messageRepo.saveAll(list)
     this.tempMessages.delete(convId)
+    // 最后一条 role=assistant 且带 usage 的消息 → prompt_tokens 即当前上下文占用量
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i]
+      if (m.role === 'assistant' && typeof m.promptTokens === 'number' && m.promptTokens > 0) {
+        return m.promptTokens
+      }
+    }
+    return 0
   }
 
   /** 中断 session 下进行中的对话（标记旧 IN_PROGRESS 为已中断） */

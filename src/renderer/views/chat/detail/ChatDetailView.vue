@@ -1,5 +1,7 @@
 <template>
   <div class="chat-detail">
+    <!-- 对话数据面板（右侧按钮 → 手风琴拉出） -->
+    <ChatStatsPanel />
     <!-- 移动端浮动 AgentCard -->
     <transition name="agent-slide">
       <AgentCard
@@ -20,6 +22,7 @@
       :profile="profile"
       :has-more="hasMoreMessages"
       :loading-more="loadingMessages"
+      :switching-session="switchingSession"
       :pending-buffer="pendingBuffer"
       @send="onSendMessage"
       @load-more="onLoadMore"
@@ -67,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import ChatStatsPanel from '@/renderer/components/workspace/ChatStatsPanel.vue'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTypewriter } from '@/renderer/utils/streaming/useTypewriter'
@@ -139,6 +143,8 @@ const showAgentCard = ref(false)
 /* ── Message loading ── */
 const loadingMessages = ref(false)
 const hasMoreMessages = ref(true)
+/* 切换 session 加载态（独立于加载更多——不管有无缓存都显示覆盖层） */
+const switchingSession = ref(false)
 
 watch(sessionId, (newId, oldId) => {
   if (newId && oldId && newId !== oldId) {
@@ -150,15 +156,21 @@ watch(sessionId, (newId, oldId) => {
 }, { immediate: true })
 
 async function loadMessages(sid: string) {
-  loadingMessages.value = true
+  switchingSession.value = true
   hasMoreMessages.value = true
+  const loadStart = Date.now()
   try {
     const messages = await chatStore.loadMessagesFromApi(sid, 50, 0)
     hasMoreMessages.value = messages.length >= 50
   } catch (e) {
     console.error('Failed to load messages', e)
   } finally {
-    loadingMessages.value = false
+    // 加载覆盖层至少显示 250ms——防止超快加载一闪而过
+    const elapsed = Date.now() - loadStart
+    if (elapsed < 250) {
+      await new Promise((r) => setTimeout(r, 250 - elapsed))
+    }
+    switchingSession.value = false
   }
 }
 
@@ -214,6 +226,7 @@ onUnmounted(() => {
 
 <style scoped>
 .chat-detail {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;

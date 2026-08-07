@@ -14,7 +14,7 @@ const COLS = 'id, name, display_name, description, category, version, author, li
 
 function toEntity(row: Record<string, unknown>): PrivateSkillEntity {
   return {
-    id: row.id as string,
+    id: String(row.id),
     name: row.name as string,
     displayName: row.display_name as string,
     description: row.description as string,
@@ -162,7 +162,7 @@ export class PrivateSkillRepository {
            updated_at = datetime('now')`
       )
       .run(
-        entity.id,
+        entity.id || null,
         entity.name,
         entity.displayName,
         entity.description ?? '',

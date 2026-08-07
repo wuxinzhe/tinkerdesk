@@ -56,12 +56,13 @@ defineProps<SaEmptyProps>()
 }
 .sa-empty__text {
   margin: 0;
-  font-size: 14px;
-  color: var(--sa-text-secondary, #86868b);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sa-text-secondary, #48484a);
 }
 .sa-empty__hint {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
 }
 .sa-empty__actions {

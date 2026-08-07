@@ -51,7 +51,10 @@ import {
   EVT_SESSION_TITLE_UPDATED,
   EVT_TOOL_DONE,
   EVT_TOOL_START,
+  EVT_WORKING,
   EVT_CONVERSATION_COMPLETE,
+  EVT_STATS_UPDATE,
+  EVT_ERROR,
   ROLE_SYSTEM,
   ROLE_TOOL,
   ROLE_ASSISTANT,
@@ -187,6 +190,20 @@ export class AgentLoop {
         sessionId,
         conversationId: '',
       }
+    } catch (e) {
+      // 周期异常 → 不静默：错误日志 + errorTip + 尝试落库错误消息（用户可见）
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.error(`action=LOOP_ERROR sessionId=${sessionId} err=${err.message}\n${err.stack ?? ''}`)
+      const convId = (ctx as unknown as { conversationId?: string }).conversationId ?? ''
+      try {
+        if (convId) {
+          this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, ctx.profile, `⚠️ 对话处理异常：${err.message}`))
+        }
+      } catch (saveErr) {
+        console.error(`错误消息落库失败: ${(saveErr as Error).message}`)
+      }
+      ctx.sendTips(EVT_ERROR, `对话处理异常：${err.message}`)
+      throw e // 继续上抛（IPC 拦截层兜底，双保险）
     } finally {
       this.queueStore.setProcessing(sessionId, false)
     }
@@ -234,11 +251,30 @@ export class AgentLoop {
       modelConfigs: allConfigs.get(SCENE_CHAT) ?? [],
     }
 
+    // ── 长任务提示（对齐 Hermes "⏳ Working — X min — iteration i/max, tool"）：
+    // 执行超过 60s 后每 60s 发一次 tip，cycle 结束（finally）自停 ──
+    const cycleStart = Date.now()
+    let currentToolName = ''
+    let workingTimer: NodeJS.Timeout | null = null
+    // 迭代计数（对齐 Java executeLlmStep：超过 maxIterations 中断并发错误）
+    let iteration = 0
+    // LLM 请求计数（本轮调用大模型次数——数据面板统计）
+    let llmRequestCount = 0
+    const maxIter = convCtx.agentConfig.maxIterations
+    const scheduleWorkingTip = (): void => {
+      workingTimer = setTimeout(() => {
+        const elapsedSec = (Date.now() - cycleStart) / 1000
+        if (elapsedSec >= 60) {
+          const min = Math.floor(elapsedSec / 60)
+          ctx.sendTips(EVT_WORKING, `⏳ Working — ${min} min — iteration ${iteration}/${maxIter}, ${currentToolName}`)
+        }
+        scheduleWorkingTip() // 继续调度（cycle 结束后 finally 清理，不再触发）
+      }, 60_000)
+    }
+    scheduleWorkingTip()
+
     try {
       // ── 7. while-loop：LLM 调用 ↔ 工具执行 ──
-      // 迭代计数（对齐 Java executeLlmStep：超过 maxIterations 中断并发错误）
-      let iteration = 0
-      const maxIter = convCtx.agentConfig.maxIterations
       // 空响应重试计数（对齐 Java dispatchEmpty：连续空响应保护）
       let emptyRetry = 0
       // 工具循环防护（per-conversation：失败/无进展检测）
@@ -249,15 +285,17 @@ export class AgentLoop {
         if (maxIter > 0 && iteration > maxIter) {
           console.warn(`达到最大迭代次数 ${maxIter} sessionId=${sessionId} convId=${convId}`)
           this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, profile, '对话已达到最大迭代次数，已被中断'))
+          ctx.sendTips(EVT_WORKING, '对话已达到最大迭代次数，已被中断')
           return this.finishCycle(convCtx, {
             resType: RES_INTERRUPTED,
             text: '',
             toolCalls: [],
             errorMessage: `对话已达到最大迭代次数 ${maxIter}，已被中断`,
-          } as LlmResponse)
+          } as LlmResponse, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
         }
 
         const response = await this.llmRouter.chat(routerOpt, (chunk: LlmChunk) => convCtx.sendToken(chunk))
+        llmRequestCount++
 
         // ── 剩余 token 预算（对齐 Java executeLlmStep：contextLimit × 0.85 - promptTokens）──
         const mainCfg = convCtx.getMainModelConfig()
@@ -268,21 +306,35 @@ export class AgentLoop {
 
         switch (response.resType) {
           case RES_TEXT:
-            // 完成：助手消息持久化 + 返回
-            this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, profile, response.text))
+            // 完成：助手消息持久化 + 返回（usage 落 message——命中率数据源）
+            this.messageService.saveTempMessage(
+              MessageFactory.buildAssistantText(convId, sessionId, profile, response.text, {
+                promptTokens: response.promptTokens,
+                completionTokens: response.completionTokens,
+                cacheReadTokens: response.cacheReadTokens,
+                cacheWriteTokens: response.cacheWriteTokens,
+              }),
+            )
             // 主动压缩检查（阈值 + 冷却控制）
             await this.checkCompaction(convCtx, response)
-            return this.finishCycle(convCtx, response)
+            return this.finishCycle(convCtx, response, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
 
           case RES_TOOL_CALLS:
-            // 工具调用：保存工具调用消息 + 逐个执行 + 结果回填
+            // 工具调用：保存工具调用消息（content 存工具轮次的过渡文本——重进对话可见完整过程）+ 逐个执行 + 结果回填
             this.messageService.saveTempMessage(
               MessageFactory.buildAssistantToolCall(
                 convId,
                 sessionId,
                 profile,
                 response.reasoningContent ?? '',
-                Object.fromEntries(response.toolCalls.map((tc) => [tc.id, { name: tc.name, arguments: tc.arguments }]))
+                Object.fromEntries(response.toolCalls.map((tc) => [tc.id, { name: tc.name, arguments: tc.arguments }])),
+                response.text,
+                {
+                  promptTokens: response.promptTokens,
+                  completionTokens: response.completionTokens,
+                  cacheReadTokens: response.cacheReadTokens,
+                  cacheWriteTokens: response.cacheWriteTokens,
+                }
               )
             )
             // 工具轮次开始：重置防护计数（对齐 Java guardrail.resetForTurn）
@@ -290,10 +342,12 @@ export class AgentLoop {
             // 回填 LLM 上下文：assistant tool_calls 消息（tool 结果消息的前置，缺失会导致 API 400）
             messages.push({
               role: ROLE_ASSISTANT,
-              content: response.reasoningContent ?? '',
+              content: [response.text, response.reasoningContent].filter(Boolean).join('\n'),
               toolCall: JSON.stringify(response.toolCalls.map((tc) => ({ id: tc.id, name: tc.name, arguments: tc.arguments }))),
             })
             for (const tc of response.toolCalls) {
+              // 长任务提示：记录当前正在执行的工具
+              currentToolName = tc.name
               // 工具开始事件（对齐 Java sendAction(TOOL_START)）
               convCtx.sendAction(EVT_TOOL_START, { toolName: tc.name })
               const result = await this.executeToolCall(convCtx, tc, guardrail)
@@ -331,13 +385,15 @@ export class AgentLoop {
             // 空响应：注入继续提示（对齐 Java dispatchEmpty，带重试保护）
             emptyRetry++
             if (emptyRetry >= 3) {
-              console.warn(`连续 ${emptyRetry} 次空响应，结束对话 sessionId=${sessionId}`)
+              console.error(`连续 ${emptyRetry} 次空响应，结束对话 sessionId=${sessionId}`)
+              this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, profile, '⚠️ 模型连续返回空响应，对话已结束'))
+              ctx.sendTips(EVT_ERROR, '模型连续返回空响应')
               return this.finishCycle(convCtx, {
                 resType: RES_INTERRUPTED,
                 text: '',
                 toolCalls: [],
                 errorMessage: '模型连续返回空响应',
-              } as LlmResponse)
+              } as LlmResponse, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
             }
             const hasToolResults = messages.some((m) => m.role === ROLE_TOOL)
             this.messageService.saveTempMessage(MessageFactory.buildUserMessage(
@@ -354,22 +410,35 @@ export class AgentLoop {
             if (compacted) {
               break
             }
-            return this.finishCycle(convCtx, response)
+            return this.finishCycle(convCtx, response, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
 
           default:
-            // 其它错误/异常响应 → 结束周期返回
-            return this.finishCycle(convCtx, response)
+            // 其它错误/异常响应（ERROR_ALL_MODELS_FAILED 等）→ 不静默：
+            // 落库错误消息（用户可见）+ errorTip（前端弹红）+ 错误日志
+            {
+              const errMsg = response.errorMessage || '对话处理失败'
+              console.error(`action=CYCLE_ERROR sessionId=${sessionId} convId=${convId} resType=${response.resType} err=${errMsg}`)
+              this.messageService.saveTempMessage(MessageFactory.buildAssistantText(convId, sessionId, profile, `⚠️ ${errMsg}`))
+              ctx.sendTips(EVT_ERROR, errMsg)
+            }
+            return this.finishCycle(convCtx, response, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
         }
       }
 
       // 中断触发
+      ctx.sendTips(EVT_MESSAGE_QUEUED, '对话已中断')
       return this.finishCycle(convCtx, {
         resType: RES_INTERRUPTED,
         text: '',
         toolCalls: [],
         errorMessage: '对话已被用户中断',
-      } as LlmResponse)
+      } as LlmResponse, { durationMs: Date.now() - cycleStart, iterationCount: iteration, llmRequestCount })
     } finally {
+      // 清理长任务提示定时器
+      if (workingTimer) {
+        clearTimeout(workingTimer)
+        workingTimer = null
+      }
       this.abortControllers.delete(sessionId)
     }
   }
@@ -405,8 +474,7 @@ export class AgentLoop {
     console.log(`[agent] 本轮自动批准已开启 conversationId=${conversationId}（放行挂起审批 ${pending} 个）`)
   }
 
-  /**
-   * 审批响应回调（onApprovalResponse）：用户同意/拒绝工具执行。
+  /** 审批响应回调（onApprovalResponse）：用户同意/拒绝工具执行。
    * 对齐 Java onApprovalResponse：sender 发审批事件 → 用户答复 → 按 toolCallId 恢复挂起的 Promise。
    */
   onApproval(sessionId: string, toolCallId: string, approved: boolean): boolean {
@@ -422,6 +490,30 @@ export class AgentLoop {
     this.messageService.updateApprovalMessageStatusTemp(waiter.convId, toolCallId, approved, waiter.profile, sessionId)
     console.log(`action=APPROVAL sessionId=${sessionId} toolCallId=${toolCallId} approved=${approved}`)
     return true
+  }
+
+  /** 沙盒审批通过后：将本次访问的 URL/路径自动加入白名单（对齐 Hermes permanent allowlist） */
+  private autoWhitelistApproved(profile: string, args: Record<string, unknown>): void {
+    try {
+      const urls = this.sandboxWhitelistService.extractTargetUrls(args)
+      for (const u of urls) {
+        if (!u) continue
+        this.sandboxWhitelistService.addUrlWhitelist({
+          profile, urlPattern: u, description: '审批通过自动添加', enabled: true,
+        })
+        console.log(`[sandbox] 审批通过自动加 URL 白名单 profile=${profile} pattern=${u}`)
+      }
+      const paths = this.sandboxWhitelistService.extractTargetPaths(args)
+      for (const p of paths) {
+        if (!p) continue
+        this.sandboxWhitelistService.addPathWhitelist({
+          profile, pathPattern: p, description: '审批通过自动添加', enabled: true,
+        })
+        console.log(`[sandbox] 审批通过自动加路径白名单 profile=${profile} pattern=${p}`)
+      }
+    } catch (e) {
+      console.warn(`自动加白名单失败: ${(e as Error).message}`)
+    }
   }
 
   /** 审批超时：暂存消息标记 timed_out + 落库（对齐 Java markApprovalExpired） */
@@ -553,14 +645,27 @@ export class AgentLoop {
   }
 
   /** 周期结束：对话标记完成 + 消息落库 + token 统计 */
-  private finishCycle(convCtx: ConversationContext, response: LlmResponse): AgentLoopResult {
+  private finishCycle(
+    convCtx: ConversationContext,
+    response: LlmResponse,
+    cycleStats?: { durationMs: number; iterationCount: number; llmRequestCount: number },
+  ): AgentLoopResult {
     const { sessionId, conversationId: convId, profile } = convCtx
     // 本轮自动批准标记随周期结束清除（下一次对话重新生效审批）
     this.autoApproveConversations.delete(convId)
-    // 对话完成
-    this.conversationService.updateStatus(convId, sessionId, CONV_COMPLETED)
-    // 暂存消息落库
-    this.messageService.flushConversation(convId)
+    // 暂存消息落库（先 flush——拿到本轮上下文总量：最后一条 assistant 消息的 prompt_tokens）
+    const roundContextTokens = this.messageService.flushConversation(convId)
+    // 对话完成（usage 更新 conversation——当前轮次的缓存数据 + 运行统计 + 本轮上下文总量）
+    this.conversationService.updateStatus(convId, sessionId, CONV_COMPLETED, {
+      cacheReadTokens: response.cacheReadTokens ?? 0,
+      cacheWriteTokens: response.cacheWriteTokens ?? 0,
+      totalTokens: (response.promptTokens ?? 0) + (response.completionTokens ?? 0),
+      durationMs: cycleStats?.durationMs ?? 0,
+      iterationCount: cycleStats?.iterationCount ?? 0,
+      llmRequestCount: cycleStats?.llmRequestCount ?? 0,
+      roundContextTokens,
+      completedAt: new Date().toISOString(),
+    })
     // 会话 token 统计
     if (response.promptTokens !== undefined || response.completionTokens !== undefined) {
       this.sessionService.accumulateTokens(
@@ -569,13 +674,48 @@ export class AgentLoop {
         response.promptTokens ?? 0,
         response.completionTokens ?? 0,
         response.cacheReadTokens ?? 0,
-        response.cacheWriteTokens ?? 0
+        response.cacheWriteTokens ?? 0,
+        cycleStats?.durationMs ?? 0,
+        cycleStats?.iterationCount ?? 0,
+        cycleStats?.llmRequestCount ?? 0,
+        roundContextTokens
       )
     }
     // 标题生成（异步，失败不影响主流程；对齐 Java generateTitleAsync）
     void this.generateTitleAsync(convCtx)
-    // 周期完成事件（对齐 Java sendAction(CONVERSATION_COMPLETE)：前端据此停止思考流光/处理中状态）
-    convCtx.sendAction(EVT_CONVERSATION_COMPLETE, null)
+    // 周期完成事件 + 统计数据（一边发事件一边落库——updateStatus 已落库，这里带数据下发）
+    const statsData = (() => {
+      try {
+        const mainCfg = convCtx.getMainModelConfig()
+        const prompt = response.promptTokens ?? 0
+        const cacheRead = response.cacheReadTokens ?? 0
+        const contextLimit = mainCfg?.contextLimit ?? 0
+        return {
+          model: mainCfg?.modelName ?? '',
+          promptTokens: prompt,
+          completionTokens: response.completionTokens ?? 0,
+          cacheReadTokens: cacheRead,
+          cacheWriteTokens: response.cacheWriteTokens ?? 0,
+          // 命中率 = 缓存命中 / 总输入（DeepSeek/OpenAI 的 prompt_tokens 含缓存部分）
+          hitRate: prompt > 0 ? Math.min(cacheRead / prompt, 1) : 0,
+          contextLimit,
+          contextUsedPercent: contextLimit > 0 ? Math.min(prompt / contextLimit, 1) : 0,
+        }
+      } catch (e) {
+        console.warn(`[stats] 统计数据计算失败: ${(e as Error).message}`)
+        return null
+      }
+    })()
+    // 对话完成事件（带本轮统计——前端数据面板可直接消费，无需单独等 stats_update）
+    convCtx.sendAction(EVT_CONVERSATION_COMPLETE, statsData)
+    // 统计数据事件（独立通道——面板实时更新）
+    if (statsData) {
+      try {
+        convCtx.sendAction(EVT_STATS_UPDATE, statsData)
+      } catch (e) {
+        console.warn(`[stats] 统计数据事件发送失败: ${(e as Error).message}`)
+      }
+    }
     return { response, sessionId, conversationId: convId }
   }
 
@@ -619,32 +759,35 @@ export class AgentLoop {
       return syntheticGuardrailResult(before)
     }
 
-    // ── 三层门检（对齐 Java checkToolGate）：授权 → 沙盒 ──
+    // ── 三层门检（对齐 Java checkToolGate）：灾难 → 授权 → 沙盒 ──
     // ① YOLO 模式跳过所有安全检查
     if (!toolCtx.yolo) {
-      // ② 授权检查（危险参数模式 → ASK）
+      // ② 授权检查：灾难命令 → DENY（绝对不执行，不进审批，返回拦截结果）；危险参数模式 → ASK
       const authz = this.toolAuthService.check(toolCall.name, args)
+      if (authz === AuthzDecision.DENY) {
+        console.warn(`灾难性命令拦截 tool=${toolCall.name} 不执行`)
+        return JSON.stringify({
+          output: '',
+          exit_code: -1,
+          error: `Command denied: catastrophic operation detected and blocked. Rephrase the command.`,
+          status: 'blocked'
+        })
+      }
       if (authz === AuthzDecision.ASK) {
         const approved = await this.requestApproval(convCtx, toolCall, '危险操作，需要审批')
         if (!approved) {
           return APPROVAL_REJECTED_MSG
         }
       }
-      // ③ 沙盒检查（URL/路径白名单 → ASK）
+      // ③ 沙盒检查（URL/路径白名单 → ASK；审批通过后自动加入白名单）
       const sandbox = this.sandboxWhitelistService.check(convCtx.profile, toolCall.name, args)
       if (sandbox === SandboxDecision.ASK) {
         const approved = await this.requestApproval(convCtx, toolCall, '沙盒限制')
         if (!approved) {
           return APPROVAL_REJECTED_MSG
         }
-      }
-    }
-
-    // ── 审批检查：需要审批（非 yolo）时挂起 ──
-    if (!toolCtx.yolo) {
-      const approved = await this.requestApproval(convCtx, toolCall)
-      if (!approved) {
-        return APPROVAL_REJECTED_MSG
+        // 审批通过 → 自动将本次访问的 URL/路径加入白名单（对齐 Hermes permanent allowlist）
+        this.autoWhitelistApproved(convCtx.profile, args)
       }
     }
 

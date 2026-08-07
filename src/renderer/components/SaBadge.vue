@@ -25,7 +25,7 @@ withDefaults(defineProps<SaBadgeProps>(), {
   align-items: center;
   gap: 4px;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
   line-height: 1.5;

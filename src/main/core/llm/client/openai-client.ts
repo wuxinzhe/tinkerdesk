@@ -128,6 +128,8 @@ export class OpenAIClient implements LlmClient {
           finishReason: finish ?? 'stop',
           promptTokens: completion.usage?.prompt_tokens,
           completionTokens: completion.usage?.completion_tokens,
+          cacheReadTokens: parseCacheReadTokens(completion.usage),
+          cacheWriteTokens: parseCacheWriteTokens(completion.usage),
         })
       }
 
@@ -158,6 +160,8 @@ export class OpenAIClient implements LlmClient {
       let finishReason: string | undefined
       let promptTokens: number | undefined
       let completionTokens: number | undefined
+      let cacheReadTokens: number | undefined
+      let cacheWriteTokens: number | undefined
       // 工具调用累积：index → {id, name, arguments}（delta 按 index 分片，arguments 增量拼接）
       const toolAccum = new Map<number, { id: string; name: string; arguments: string }>()
 
@@ -168,20 +172,31 @@ export class OpenAIClient implements LlmClient {
           if (chunk.usage) {
             promptTokens = chunk.usage.prompt_tokens ?? undefined
             completionTokens = chunk.usage.completion_tokens ?? undefined
+            cacheReadTokens = parseCacheReadTokens(chunk.usage)
+            cacheWriteTokens = parseCacheWriteTokens(chunk.usage)
           }
           continue
         }
         const delta = choice.delta as Record<string, unknown>
 
+        // 单 chunk 合并：text / reasoning / toolCallArgs 同时携带进一个 LlmChunk
+        // （减少 IPC 调用次数——原来三种内容各自独立 onToken，现在合并为一个）
+        const merged: { text: string; reasoning: string; toolCallArgs: string; toolCallName?: string } = {
+          text: '', reasoning: '', toolCallArgs: '',
+        }
+        let hasContent = false
+
         // 文本增量：转发 + 累积
         if (typeof delta.content === 'string' && delta.content) {
           text += delta.content
-          onToken({ text: delta.content, reasoning: '', toolCallArgs: '', isFinish: false })
+          merged.text = delta.content
+          hasContent = true
         }
         // 推理增量（DeepSeek reasoning_content）：转发 + 累积（跳过 "null" 字符串，对齐 Java）
         if (typeof delta.reasoning_content === 'string' && delta.reasoning_content && delta.reasoning_content.trim() !== 'null') {
           reasoning += delta.reasoning_content
-          onToken({ text: '', reasoning: delta.reasoning_content, toolCallArgs: '', isFinish: false })
+          merged.reasoning = delta.reasoning_content
+          hasContent = true
         }
         // 工具调用增量：转发 + 按 index 累积
         const toolCallsDelta = delta.tool_calls as Array<{ index?: number; id?: string; function?: { name?: string; arguments?: string } }> | undefined
@@ -194,9 +209,19 @@ export class OpenAIClient implements LlmClient {
             if (tc.function?.arguments) acc.arguments += tc.function.arguments
             toolAccum.set(idx, acc)
             if (tc.function?.arguments) {
-              onToken({ text: '', reasoning: '', toolCallArgs: tc.function.arguments, isFinish: false })
+              merged.toolCallArgs += tc.function.arguments
+              hasContent = true
+            }
+            // 工具名随 token 下发（前端流式拼工具卡片用）——首 chunk 通常只有 id/name 无 arguments，
+            // 单独发（hasContent=true）避免工具名随 hasContent 判断被丢弃
+            if (tc.function?.name && !merged.toolCallName) {
+              merged.toolCallName = tc.function.name
+              hasContent = true
             }
           }
+        }
+        if (hasContent) {
+          onToken({ ...merged, isFinish: false })
         }
         if (choice.finish_reason) {
           finishReason = choice.finish_reason
@@ -220,9 +245,9 @@ export class OpenAIClient implements LlmClient {
           status: 'completed' as const,
         }))
 
-      const extra = { finishReason, promptTokens, completionTokens } as Partial<Omit<LlmResponse, 'resType' | 'text' | 'toolCalls'>>
+      const extra = { finishReason, promptTokens, completionTokens, cacheReadTokens, cacheWriteTokens } as Partial<Omit<LlmResponse, 'resType' | 'text' | 'toolCalls'>>
       if (finishReason === 'tool_calls' && toolCalls.length > 0) {
-        return toolCallsResponse(toolCalls, { ...extra, reasoningContent: reasoning || undefined })
+        return toolCallsResponse(toolCalls, { ...extra, text: text || undefined, reasoningContent: reasoning || undefined })
       }
       if (text) {
         return textResponse(text, { ...extra, reasoningContent: reasoning || undefined })
@@ -235,4 +260,28 @@ export class OpenAIClient implements LlmClient {
       return this.toErrorResponse(e)
     }
   }
+}
+
+/**
+ * 解析缓存命中 tokens——兼容各模型 usage 字段差异：
+ * - DeepSeek: usage.prompt_cache_hit_tokens / usage.prompt_cache_miss_tokens
+ * - OpenAI:   usage.prompt_tokens_details.cached_tokens / .uncached_tokens
+ * - Kimi/Moonshot: OpenAI 兼容格式（prompt_tokens_details.cached_tokens）
+ */
+function parseCacheReadTokens(usage: unknown): number | undefined {
+  const u = usage as Record<string, unknown> | undefined
+  if (!u) return undefined
+  const hit = u.prompt_cache_hit_tokens
+  const cached = (u.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens
+  const v = hit ?? cached
+  return typeof v === 'number' ? v : undefined
+}
+
+function parseCacheWriteTokens(usage: unknown): number | undefined {
+  const u = usage as Record<string, unknown> | undefined
+  if (!u) return undefined
+  const miss = u.prompt_cache_miss_tokens
+  const uncached = (u.prompt_tokens_details as Record<string, unknown> | undefined)?.uncached_tokens
+  const v = miss ?? uncached
+  return typeof v === 'number' ? v : undefined
 }

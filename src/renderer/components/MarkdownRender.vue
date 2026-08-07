@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
   renderLinks: false,
   highlightCode: false,
   breaks: false,
-  codeBlockBg: '#fff',
+  codeBlockBg: 'var(--sa-bg-tertiary, #fafafa)',
 })
 
 const isMobile = useMobile()
@@ -152,12 +152,17 @@ const rendered = computed(() => {
   color: #d63384;
 }
 
+html[data-theme='dark'] .markdown-body :deep(code) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ff7ab2;
+}
+
 .markdown-body :deep(pre) {
   margin: 0.8em 0;
   padding: 12px;
   border-radius: 8px;
   overflow-x: auto;
-  background: var(--code-block-bg, #fff);
+  background: var(--code-block-bg, var(--sa-bg-tertiary, #fafafa));
 }
 
 .markdown-body :deep(pre code) {
@@ -172,6 +177,39 @@ const rendered = computed(() => {
   padding: 0;
 }
 
+/* ── 深色：hljs 高亮切换 github-dark 配色（浅色走 github.css） ── */
+html[data-theme='dark'] .markdown-body :deep(pre code.hljs) {
+  color: #c9d1d9;
+}
+html[data-theme='dark'] .markdown-body :deep(.hljs-keyword),
+html[data-theme='dark'] .markdown-body :deep(.hljs-selector-tag),
+html[data-theme='dark'] .markdown-body :deep(.hljs-literal) { color: #ff7b72; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-string),
+html[data-theme='dark'] .markdown-body :deep(.hljs-regexp),
+html[data-theme='dark'] .markdown-body :deep(.hljs-addition) { color: #a5d6ff; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-comment),
+html[data-theme='dark'] .markdown-body :deep(.hljs-quote) { color: #8b949e; font-style: italic; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-number),
+html[data-theme='dark'] .markdown-body :deep(.hljs-symbol),
+html[data-theme='dark'] .markdown-body :deep(.hljs-bullet) { color: #79c0ff; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-title),
+html[data-theme='dark'] .markdown-body :deep(.hljs-section),
+html[data-theme='dark'] .markdown-body :deep(.hljs-function .hljs-title) { color: #d2a8ff; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-attr),
+html[data-theme='dark'] .markdown-body :deep(.hljs-variable),
+html[data-theme='dark'] .markdown-body :deep(.hljs-template-variable) { color: #79c0ff; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-tag),
+html[data-theme='dark'] .markdown-body :deep(.hljs-name),
+html[data-theme='dark'] .markdown-body :deep(.hljs-deletion) { color: #7ee787; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-type),
+html[data-theme='dark'] .markdown-body :deep(.hljs-built_in),
+html[data-theme='dark'] .markdown-body :deep(.hljs-params) { color: #ffa657; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-meta) { color: #ffa657; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-operator),
+html[data-theme='dark'] .markdown-body :deep(.hljs-property) { color: #ff7b72; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-emphasis) { font-style: italic; }
+html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
+
 /* ── Table ── */
 
 .markdown-body :deep(table) {
@@ -179,16 +217,16 @@ const rendered = computed(() => {
   border-collapse: collapse;
   margin: 0.8em 0;
   font-size: 12px;
-  background: #fff;
+  background: var(--sa-bg-elevated, #ffffff);
 }
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
   padding: 8px 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border: 1px solid var(--sa-border, #e8e8ed);
   text-align: left;
   vertical-align: top;
-  background: #fff;
+  background: var(--sa-bg-elevated, #ffffff);
 }
 
 .markdown-body :deep(th) {

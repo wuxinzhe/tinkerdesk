@@ -23,7 +23,6 @@ import { SessionService } from './service/session-service'
 
 import type { IDynamicPromptModule } from './core/prompt'
 import {
-  AgentModePromptModule,
   GoogleOperationalModule,
   MemoryGuidanceModule,
   MemorySnapshotModule,
@@ -133,6 +132,7 @@ export interface TinkerDesk {
   toolManager: ToolManager
   pluginManager: PluginManager
   llmRouter: LlmRouter
+  modelConfigService: ModelConfigService
   // ── controller 层依赖 ──
   privateSkillService: PrivateSkillService
   skillCategoryService: SkillCategoryService
@@ -190,7 +190,6 @@ export function bootstrap(
 
   // 预设模块：注入技能查询/记忆读取依赖（对接 PrivateSkillService / MemoryStore）
   const presetModules: IDynamicPromptModule[] = [
-    new AgentModePromptModule(renderer),
     new SystemContextModule(renderer),
     new RuntimeEnvironmentModule(renderer),
     new ToolEnforcementModule(renderer),
@@ -315,6 +314,7 @@ export function bootstrap(
     toolManager,
     pluginManager,
     llmRouter,
+    modelConfigService,
     privateSkillService,
     skillCategoryService,
     promptService,

@@ -72,8 +72,12 @@ export interface MessageTokenVO {
   reasoning: string | null
   /** 工具调用参数增量（delta.tool_calls），无工具调用时 null */
   toolCallArgs: string | null
+  /** 工具名（工具调用增量首次出现时携带） */
+  toolCallName?: string
   /** 是否为流的最后一个信号 */
   isFinish: boolean
+  /** 结束原因（isFinish=true 时由后端设置；'tool_calls' = 工具轮次） */
+  finishReason?: string
   /** 时间戳（isFinish=true 时由后端设置） */
   timestamp: number
 }
