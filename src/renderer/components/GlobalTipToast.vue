@@ -37,12 +37,26 @@ const current = ref<TipItem | null>(null)
 const animating = ref(false)
 let nextId = 1
 
+let autoCloseTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearAutoClose(): void {
+  if (autoCloseTimer) {
+    clearTimeout(autoCloseTimer)
+    autoCloseTimer = null
+  }
+}
+
 function showNext(): void {
+  clearAutoClose()
   if (queue.value.length === 0) {
     current.value = null
     return
   }
   current.value = queue.value.shift() ?? null
+  // 提示消息 3 秒自动关闭；错误消息必须手动关闭
+  if (current.value?.type === 'tip') {
+    autoCloseTimer = setTimeout(() => closeCurrent(), 3000)
+  }
 }
 
 function maybeShowNext(): void {
@@ -59,6 +73,7 @@ function push(item: Omit<TipItem, 'id'>): void {
 
 /** 手动关闭当前提示（触发出场动画，动画结束后显示下一条） */
 function closeCurrent(): void {
+  clearAutoClose()
   if (!current.value) return
   animating.value = true
   current.value = null
@@ -68,6 +83,18 @@ function closeCurrent(): void {
 function onLeaveDone(): void {
   animating.value = false
   showNext()
+}
+
+/**
+ * enter/leave 钩子：用定时器强制完成过渡（250ms），不依赖 transitionend 事件
+ * ——CDP/无渲染环境下 CSS transition 不触发 transitionend 会导致 Transition 卡死
+ */
+function onTransitionEnter(_el: Element, done: () => void): void {
+  setTimeout(done, 250)
+}
+
+function onTransitionLeave(_el: Element, done: () => void): void {
+  setTimeout(done, 250)
 }
 
 function onGlobalTip(e: Event): void {
@@ -87,7 +114,12 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
 
 <template>
   <Teleport to="body">
-    <Transition name="gtoast" @after-leave="onLeaveDone">
+    <Transition
+      name="gtoast"
+      @enter="onTransitionEnter"
+      @leave="onTransitionLeave"
+      @after-leave="onLeaveDone"
+    >
       <div
         v-if="current"
         class="gtoast"
