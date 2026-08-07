@@ -564,6 +564,14 @@ onMounted(() => {
   .workspace__lv2-toolbar {
     display: flex;
   }
+
+  /* 平板折叠后列左边缘=视口左边缘（lv1 已隐藏）——
+     按钮改为贴屏幕左边缘内侧（left:0），不随 right:0 溢出屏外 */
+  .sidebar-toggle.collapsed {
+    left: 0;
+    right: auto;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 /* ── 桌面端 ≥1024px ── */
