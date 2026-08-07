@@ -273,6 +273,8 @@ function onVoiceButtonClick(): void {
     exitVoiceMode()
   } else {
     voiceMode.value = true
+    // 武装态：灰色时间轴预览（布局完成后绘制）
+    nextTick(() => drawWaveIdle())
   }
 }
 
@@ -330,7 +332,7 @@ async function stopRecording(): Promise<void> {
   clearTimers()
   stopWaveLoop()
   waveHistory = []
-  drawWaveIdle() // 录制结束停留音波框（武装态）：显示空态均线
+  clearWaveCanvas() // 结束录音：时间轴隐藏（清空——不再显示均线）
   const recorder = mediaRecorder
   const chunks = audioChunks
   mediaRecorder = null
@@ -426,8 +428,8 @@ function drawWave(): void {
   ctx.clearRect(0, 0, w, h)
 
   const midY = h / 2
-  // 均线
-  ctx.strokeStyle = 'rgba(0, 122, 255, 0.35)'
+  // 时间轴均线（灰色——非蓝色）
+  ctx.strokeStyle = 'rgba(142, 142, 147, 0.5)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(0, midY)
@@ -465,7 +467,7 @@ function drawWave(): void {
     ctx.moveTo(x, 6)
     ctx.lineTo(x, 14)
     ctx.stroke()
-    ctx.fillText(String(s), x, 25)
+    ctx.fillText(String(s), x, 28) // 数字与刻度保持间距
   }
 
   // 历史波形（从左滚位置绘制）
@@ -484,7 +486,7 @@ function drawWave(): void {
   ctx.stroke()
 }
 
-/** 空态（未录音）：均线 + 刻度 0 秒 */
+/** 空态（武装预览）：灰色均线 + 刻度 0 秒 */
 function drawWaveIdle(): void {
   const canvas = waveCanvasRef.value
   if (!canvas) return
@@ -500,7 +502,7 @@ function drawWaveIdle(): void {
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, w, h)
-  ctx.strokeStyle = 'rgba(0, 122, 255, 0.35)'
+  ctx.strokeStyle = 'rgba(142, 142, 147, 0.5)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.moveTo(0, h / 2)
@@ -509,7 +511,7 @@ function drawWaveIdle(): void {
   ctx.fillStyle = 'rgba(142, 142, 147, 0.7)'
   ctx.font = '10px system-ui, sans-serif'
   ctx.textAlign = 'center'
-  ctx.fillText('0', 24, 25)
+  ctx.fillText('0', 24, 28)
 }
 
 /** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
