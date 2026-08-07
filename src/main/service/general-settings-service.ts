@@ -18,7 +18,7 @@ const DEFAULT_SHORTCUTS: Array<{ key: string; label: string; description: string
     key: 'shortcut.record',
     label: '按住录音',
     description: '聊天页按住该快捷键开始录音，松开结束',
-    value: 'ctrl+backquote'
+    value: 'ctrl+b'
   }
 ]
 

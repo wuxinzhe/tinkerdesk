@@ -193,7 +193,7 @@ let recordingStartedAt = 0
 let recordTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let waveHistory: Float32Array[] = []   // 历史波形帧（降采样 64 点/帧）
-let shortcutRecord = ref('ctrl+backquote')  // 录音快捷键（从通用设置加载）
+let shortcutRecord = ref('ctrl+b')  // 录音快捷键（从通用设置加载）
 let shortcutHeld = false               // 快捷键按住中
 
 /** 快捷键显示文案（ctrl+backquote → Ctrl+`） */
@@ -221,7 +221,7 @@ async function checkSttAvailability(): Promise<void> {
     sttAvailable.value = stt.length > 0
     if (sttAvailable.value) {
       const { settings } = await window.api.generalSettings.get()
-      shortcutRecord.value = settings['shortcut.record'] || 'ctrl+backquote'
+      shortcutRecord.value = settings['shortcut.record'] || 'ctrl+b'
     }
   } catch {
     sttAvailable.value = false

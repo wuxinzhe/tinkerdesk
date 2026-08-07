@@ -7,31 +7,20 @@
           <span class="general-settings__group-title">快捷键</span>
           <span class="general-settings__group-desc">按下新组合键即可修改，Esc 取消</span>
         </div>
-        <div v-for="s in shortcuts" :key="s.key" class="shortcut-row">
+        <div v-for="s in shortcuts" :key="s.key" class="shortcut-row" @click="startCapture(s)">
           <div class="shortcut-row__info">
             <span class="shortcut-row__label">{{ s.label }}</span>
             <span class="shortcut-row__desc">{{ s.description }}</span>
           </div>
-          <div class="shortcut-row__control">
-            <button
-              class="shortcut-row__key"
-              :class="{ capturing: capturingKey === s.key }"
-              @click="startCapture(s)"
-            >
-              <template v-if="capturingKey === s.key">按新快捷键…</template>
-              <template v-else>{{ formatShortcut(s.value) }}</template>
-            </button>
+          <div class="shortcut-row__value">
+            <span v-if="capturingKey === s.key" class="shortcut-row__capturing">输入新快捷键…</span>
+            <span v-else class="shortcut-row__keys">{{ formatShortcut(s.value) }}</span>
             <button
               v-if="s.value !== DEFAULT_RECORD && s.key === 'shortcut.record'"
               class="shortcut-row__reset"
               title="恢复默认"
-              @click="resetShortcut(s)"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-              </svg>
-            </button>
+              @click.stop="resetShortcut(s)"
+            >恢复默认</button>
           </div>
         </div>
       </div>
@@ -51,7 +40,7 @@ interface ShortcutItem {
   value: string
 }
 
-const DEFAULT_RECORD = 'ctrl+backquote'
+const DEFAULT_RECORD = 'ctrl+b'
 
 const shortcuts = ref<ShortcutItem[]>([])
 const capturingKey = ref<string | null>(null)
@@ -154,6 +143,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ── Apple HIG：轻量设置分组（对齐 macOS System Settings） ── */
 .general-settings__body {
   padding: 20px;
   max-width: 560px;
@@ -162,18 +152,17 @@ onUnmounted(() => {
 
 .general-settings__group {
   background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
   overflow: hidden;
 }
 
 .general-settings__group-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
+  padding: 14px 16px 6px;
 }
 
 .general-settings__group-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--sa-text-primary, #1d1d1f);
 }
@@ -181,79 +170,71 @@ onUnmounted(() => {
 .general-settings__group-desc {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--sa-text-tertiary, #aeaeb2);
 }
 
+/* 行：整行点击捕获，右侧纯文本快捷键值 */
 .shortcut-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
+  padding: 11px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background 0.15s;
 }
-.shortcut-row:last-child {
-  border-bottom: none;
+
+.shortcut-row:hover {
+  background: var(--sa-bg-secondary, #f5f5f7);
 }
 
 .shortcut-row__label {
   font-size: 13px;
-  font-weight: 500;
   color: var(--sa-text-primary, #1d1d1f);
 }
 
 .shortcut-row__desc {
   display: block;
-  margin-top: 2px;
+  margin-top: 1px;
   font-size: 11px;
   color: var(--sa-text-tertiary, #aeaeb2);
 }
 
-.shortcut-row__control {
+.shortcut-row__value {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.shortcut-row__key {
-  min-width: 96px;
-  height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 6px;
-  background: var(--sa-bg-primary, #ffffff);
-  font-size: 12px;
-  color: var(--sa-text-primary, #1d1d1f);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+/* 快捷键值：纯文本（非按钮框） */
+.shortcut-row__keys {
+  font-size: 13px;
+  color: var(--sa-text-secondary, #48484a);
+  font-variant-numeric: tabular-nums;
 }
 
-.shortcut-row__key:hover {
-  border-color: var(--sa-accent, #007aff);
-}
-
-.shortcut-row__key.capturing {
-  border-color: var(--sa-accent, #007aff);
-  background: rgba(0, 122, 255, 0.08);
+/* 捕获态：蓝色文字提示 */
+.shortcut-row__capturing {
+  font-size: 13px;
   color: var(--sa-accent, #007aff);
 }
 
+/* 恢复默认：文本链接（低调） */
 .shortcut-row__reset {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  cursor: pointer;
-}
-.shortcut-row__reset:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  font-size: 11px;
   color: var(--sa-accent, #007aff);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.shortcut-row__reset:hover {
+  background: rgba(0, 122, 255, 0.08);
 }
 </style>
