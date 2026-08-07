@@ -863,6 +863,13 @@ export interface WindowApi {
     /** TTS：文本合成 → audio data URL */
     ttsSpeak: (text: string) => Promise<{ audio: string }>
   }
+
+  /** 通用设置（快捷键等全局键值配置） */
+  generalSettings: {
+    get: () => Promise<{ settings: Record<string, string>; shortcuts: Array<{ key: string; label: string; description: string; value: string }> }>
+    set: (key: string, value: string) => Promise<void>
+    reset: (key: string) => Promise<void>
+  }
 }
 
 declare global {

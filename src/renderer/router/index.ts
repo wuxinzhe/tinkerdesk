@@ -235,7 +235,7 @@ const router = createRouter({
           meta: { level3Placeholder: true },
         },
         {
-          path: 'settings/:section(model|mcp|plugins|voice)',
+          path: 'settings/:section(model|mcp|plugins|voice|general)',
           components: {
             default: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
             level2: () => import('@/renderer/views/settings/SettingsListView.vue'),

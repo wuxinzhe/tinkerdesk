@@ -384,6 +384,13 @@ function createTables(database: DatabaseSync): void {
       created_at      TEXT NOT NULL,
       updated_at      TEXT NOT NULL
     );
+
+    -- ── 应用级设置（快捷键等全局键值配置） ──
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key        TEXT PRIMARY KEY,
+      value      TEXT NOT NULL DEFAULT '',
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 

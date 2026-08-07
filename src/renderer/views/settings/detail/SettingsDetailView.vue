@@ -13,6 +13,9 @@
       <!-- 语音设置 -->
       <VoiceSettingsView v-else-if="section === 'voice'" />
 
+      <!-- 通用设置（快捷键等） -->
+      <GeneralSettingsView v-else-if="section === 'general'" />
+
       <!-- 占位 -->
       <div v-else class="settings-placeholder">
         <div class="settings-placeholder__inner">
@@ -37,6 +40,7 @@ import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomMode
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
 import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'
 import VoiceSettingsView from '@/renderer/views/settings/detail/VoiceSettingsView.vue'
+import GeneralSettingsView from '@/renderer/views/settings/detail/GeneralSettingsView.vue'
 
 const route = useRoute()
 

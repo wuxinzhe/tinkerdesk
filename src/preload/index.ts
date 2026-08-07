@@ -344,9 +344,16 @@ const api = {
     providerReady: (pluginId: string) => inv('voice:provider-ready', {pluginId}).then(unwrap),
     /** STT：录音（应用固有）后整段转文本 */
     sttTranscribe: (samples: Float32Array) =>
-      inv('voice:stt:transcribe', {samples}).then(unwrap),
-    /** TTS：文本合成 → audio data URL */
-    ttsSpeak: (text: string) => inv('voice:tts:speak', {text}).then(unwrap),
+      inv('voice:stt:transcribe', { samples }).then(unwrap),
+    /** TTS：文本 → 音频 base64 */
+    ttsSpeak: (text: string) => inv('voice:tts:speak', { text }).then(unwrap),
+  },
+
+  // ── 通用设置（快捷键等全局键值配置） ──
+  generalSettings: {
+    get: () => inv('settings:general:get').then(unwrap),
+    set: (key: string, value: string) => inv('settings:general:set', { key, value }).then(unwrap),
+    reset: (key: string) => inv('settings:general:reset', { key }).then(unwrap),
   },
 }
 

@@ -20,6 +20,7 @@ import { PluginController } from './controller/plugin-controller'
 import { PluginManager } from './core/plugin/plugin-manager'
 import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
+import { GeneralSettingsController } from './controller/general-settings-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -91,6 +92,9 @@ app.whenReady().then(() => {
   // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
   const voiceService = new VoiceProviderService(desk.pluginManager)
   new VoiceController(voiceService).register()
+
+  // ── 通用设置（快捷键等全局键值配置） ──
+  new GeneralSettingsController().register()
 
   // ── 窗口控制 IPC ──
   ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
