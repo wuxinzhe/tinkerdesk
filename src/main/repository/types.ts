@@ -177,6 +177,8 @@ export interface SessionEntity {
   startedAt: string
   archived: boolean
   yolo: boolean
+  /** 推理深度（per-session——'' 或 low/medium/high；创建时默认 'medium'） */
+  reasoningDepth: string
 }
 
 /** 会话摘要 DTO（browseRich 返回） */
@@ -281,6 +283,8 @@ export interface SessionMessageQuery {
   asc?: boolean
   /** 角色过滤（IN 匹配） */
   roles?: string[]
+  /** 消息类型过滤（IN 匹配——DISPLAY_SET 可见性在 SQL 层做，LIMIT 才准确） */
+  messageTypes?: string[]
   /** 排序（ASC/DESC） */
   sortOrder?: 'ASC' | 'DESC'
 }
@@ -361,13 +365,13 @@ export interface FilteredSkillDTO {
   version: string
   author: string
   isDeleted: boolean
-  /** 逗号分隔的标签（对齐 Java String[] tags） */
+  /** 逗号分隔的标签 */
   tags: string
   /** API key 是否配置（readiness 判断：available / setup_needed） */
   apiKey: string | null
-  /** 平台筛选（逗号分隔，对齐 Java oss） */
+  /** 平台筛选 */
   platforms: string
-  /** 客户端类型筛选（逗号分隔，对齐 Java clientTypes） */
+  /** 客户端类型筛选 */
   requiresToolsets: string
 }
 
@@ -390,9 +394,9 @@ export interface SkillFileEntity {
 
 /** 技能关联实体（对应 SkillRelatedEntity） */
 export interface SkillRelatedEntity {
-  id?: string
+  id?: number
   skillId: string
-  relatedSkillId: string
+  relatedSkillId: number
   relationType: string
   createdAt?: string
 }
@@ -443,6 +447,8 @@ export interface UserSceneModelEntity {
   sceneId: string
   modelId: string
   priority: number
+  /** 是否主模型（场景内且仅一个 is_main=1） */
+  isMain?: boolean
   createdAt?: string
 }
 
@@ -457,6 +463,8 @@ export interface SceneModelBinding {
   providerName: string
   apiMode: string
   priority: number
+  /** 是否主模型 */
+  isMain?: boolean
 }
 
 // ── tool-center 持久化（表 tool_registry / mcp_servers） ──

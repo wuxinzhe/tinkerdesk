@@ -15,6 +15,7 @@ import { PromptModuleController } from './controller/prompt-module-controller'
 import { SandboxController } from './controller/sandbox-controller'
 import { ModelController } from './controller/model-controller'
 import { AccountController } from './controller/account-controller'
+import { MemoryController } from './controller/memory-controller'
 import { McpController } from './controller/mcp-controller'
 import { PluginController } from './controller/plugin-controller'
 import { PluginManager } from './core/plugin/plugin-manager'
@@ -67,9 +68,9 @@ app.whenReady().then(() => {
   // 初始化本地数据库（SQLite，custom_models 等表）
   initDatabase()
 
-  // ── Agent 会话（本地 AgentLoop）：组装依赖 + 注册 IPC ──
+  // ── Agent 会话（本地 TinkerAgent）：组装依赖 + 注册 IPC ──
   const desk = bootstrap([], [])
-  new AgentController(desk.agentLoop, desk.sessionContextFactory).register()
+  new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
   new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService).register()
   new MessageController(desk.messageService).register()
   new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
@@ -84,6 +85,7 @@ app.whenReady().then(() => {
   new ModelController(desk.customModelService, desk.sceneModelService, desk.systemProviderService).register()
   new AgentModeController(desk.agentModeService).register()
   new AccountController(desk.accountService).register()
+  new MemoryController(desk.memoryStore).register()
 
   // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
   desk.pluginManager.loadAll()

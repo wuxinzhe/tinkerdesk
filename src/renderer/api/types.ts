@@ -8,7 +8,7 @@
 /**
  * types.ts — renderer API 层 entity 类型（底层数据层）
  *
- * 对齐 tinker-agent 三层：render 侧 api 作为底层数据层（类似 repository），
+ * 三层：render 侧 api 作为底层数据层（类似 repository），
  * 定义接收 IPC 数据的 entity 形状，store/view 层层向上消费。
  *
  * 原 src/defines/models/* 全部集中于此。
@@ -30,11 +30,12 @@ export interface Message {
   /** 时间戳（epoch ms） */
   timestamp: number
   /** 工具调用信息 — 服务端返回 JSON string，客户端 parse 为 ToolCall */
-  toolCall?: ToolCall | string
+  toolCall?: ToolCall | string | Record<string, { name: string; arguments?: unknown }>
   /** 状态 — 客户端本地消息用 'sending'/'sent'，服务端返回 finishReason 字符串 */
   status: string
   toolName?: string
   toolCallId?: string
+  toolCallName?: string   // 流式占位期工具名（toolCall 未拼时胶囊兜底显示）
   approvalArguments?: unknown
   // 服务端返回（MessageVO）
   interactionStatus?: 'pending' | 'approved' | 'rejected' | 'timed_out'
@@ -78,6 +79,8 @@ export interface Session {
   profile: string
   /** 服务端列表接口永远返回 'idle'，处理中状态由 isProcessingBySession 追踪 */
   status: 'idle'
+  /** 推理深度（per-session——'' 或 low/medium/high；默认 medium） */
+  reasoningDepth?: string
 }
 
 // ── Agent（原 defines/models/agent.ts） ──
@@ -236,6 +239,8 @@ export interface SceneBindingVO {
   modelName: string
   /** 服务端 DTO 字段，前端列表中不使用但兼容接收 */
   sceneId?: string
+  /** 是否主模型 */
+  isMain?: boolean
 }
 
 // ── 提示词模块（原 defines/models/prompt-module.ts） ──
@@ -280,6 +285,8 @@ export interface SkillInfo {
   isEnabled?: boolean
   isInstalled?: boolean
   updatedAt?: string
+  /** 关联技能（详情返回——id/name 列表） */
+  related?: Array<{ id: string; name: string }>
 }
 
 /** 技能分类 */
@@ -326,6 +333,8 @@ export interface BindSceneModelRequest {
   modelId: string
   profile?: string
   priority?: number
+  /** 是否设为主模型（默认 false——备用） */
+  isMain?: boolean
 }
 
 /** 重排场景绑定请求 */
@@ -422,7 +431,7 @@ export interface ClientEnvInfo {
   pathFormat: string
 }
 
-// ── 账号初始化（对齐 dto/init/*） ──
+// ── 账号初始化 ──
 
 /** 初始化检查项 */
 export interface InitCheckItem {
@@ -460,17 +469,16 @@ export interface InitAccountParams {
 
 // ── Agent 会话契约（原 agent-api-types.ts） ──
 
-/** 消息角色（对齐 tinker-agent） */
+/** 消息角色 */
 export type AgentMessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-/** 交互状态（对齐 tinker-agent MessageConstants） */
+/** 交互状态 */
 export type InteractionStatus = 'pending' | 'approved' | 'rejected' | 'timed_out' | ''
 
 /** 动作事件合并载荷（conversation_complete / session_title_updated / tool_done / exe_client_tool） */
-import type { ActionMergedPayload } from '@/renderer/stores/types'
 export type { ActionMergedPayload } from '@/renderer/stores/types'
 
-/** 消息类型（对齐 showing-agent MessageConstants） */
+/** 消息类型 */
 export type AgentMessageType =
   | 'user_normal'
   | 'user_continue'
@@ -534,7 +542,7 @@ export interface AgentSendRequest {
   content: string
 }
 
-/** 工具结果回调请求（对齐 onToolResult） */
+/** 工具结果回调请求 */
 export interface AgentToolResultRequest {
   profile: string
   sessionId: string
@@ -542,7 +550,7 @@ export interface AgentToolResultRequest {
   result: string
 }
 
-/** 审批响应请求（对齐 onApprovalResponse） */
+/** 审批响应请求 */
 export interface AgentApprovalRequest {
   profile: string
   sessionId: string
@@ -576,10 +584,8 @@ export interface AgentApi {
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
   /** 清理会话状态 */
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
-  /** 监听审批请求事件（渲染层弹审批卡片） */
-  onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void
-  /** 监听动作事件（conversation_complete / session_title_updated / tool_done 等） */
-  onAction(cb: (payload: ActionMergedPayload) => void): () => void
+  /** 统一路由消息入口（route = '{一级}:{二级}'——客户端自行解析分发） */
+  onRouteMessage(cb: (payload: { route?: string; sessionId?: string; data?: unknown }) => void): () => void
   /** 监听消息事件（远端推送 / 本地广播） */
   onMessage?(cb: (msg: AgentMessageVO) => void): void
 }
@@ -593,8 +599,8 @@ export interface AgentIpcApi {
   revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}>
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
-  onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void
-  onAction(cb: (payload: ActionMergedPayload) => void): () => void
+  /** 统一路由消息入口（route = '{一级}:{二级}'——客户端自行解析分发） */
+  onRouteMessage(cb: (payload: { route?: string; sessionId?: string; data?: unknown }) => void): () => void
 }
 
 
@@ -772,6 +778,8 @@ export interface WindowApi {
     update: (sessionId: string, title: string, profile: string) => Promise<void>
     getYolo: (profile: string, sessionId: string) => Promise<boolean>
     toggleYolo: (profile: string, sessionId: string) => Promise<boolean>
+    setReasoningDepth: (profile: string, sessionId: string, reasoningDepth: string) => Promise<boolean>
+    getReasoningDepth: (profile: string, sessionId: string) => Promise<string>
     /** 会话统计（数据面板：平均命中率 + memory 占用） */
     stats: (profile: string, sessionId: string) => Promise<{
       hitRate: number; promptTokens: number; totalTokens: number; rounds: number
@@ -782,7 +790,7 @@ export interface WindowApi {
     dashboard: (profile: string, sessionId: string) => Promise<{
       model: string
       contextLimit: number; currentContextTokens: number; contextUsedPercent: number
-      thresholdPercent: number; protectedThreshold: number; maxThreshold: number
+      thresholdPercent: number
       hitRate: number; totalTokens: number; promptTokens: number
       durationMs: number; iterations: number; llmRequests: number; rounds: number
       memoryChars: number; memoryEntries: number; memoryMaxChars: number; memoryPercent: number
@@ -828,10 +836,19 @@ export interface WindowApi {
     getProvider: (id: string) => Promise<SystemProvider>
     fetchModels: (input: {providerId: string; baseUrl?: string; apiKey?: string}) => Promise<ModelInfo[]>
     listScenes: (profile: string) => Promise<SceneModelDetail[]>
-    bindScene: (profile: string, input: {sceneId: string; modelId: string; priority?: number}) => Promise<void>
+    bindScene: (profile: string, input: {sceneId: string; modelId: string; priority?: number; isMain?: boolean}) => Promise<void>
     updateScene: (profile: string, input: UpdateSceneModelRequest) => Promise<void>
-    unbindScene: (profile: string, sceneId: string, priority: number) => Promise<void>
+    unbindScene: (profile: string, sceneId: string, modelId: string) => Promise<void>
     reorderScenes: (profile: string, input: {sceneId: string; priorities: number[]}) => Promise<void>
+  }
+
+  // ── 记忆管理（MemoryController——CRUD + 拖拽排序） ──
+  memory: {
+    list: (target: 'memory' | 'user', profile?: string) => Promise<string[]>
+    add: (target: 'memory' | 'user', content: string, profile?: string) => Promise<{ code: number }>
+    update: (target: 'memory' | 'user', index: number, content: string, profile?: string) => Promise<{ code: number }>
+    remove: (target: 'memory' | 'user', index: number, profile?: string) => Promise<{ code: number }>
+    reorder: (target: 'memory' | 'user', order: string[], profile?: string) => Promise<{ code: number }>
   }
 
   skills: {

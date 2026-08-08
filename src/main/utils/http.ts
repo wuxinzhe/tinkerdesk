@@ -1,7 +1,7 @@
 /**
  * utils/http.ts — HTTP 请求工具
  *
- * 复刻 tinker-agent-ui tools/desktop/web-search/web-extract 的 fetchUrl（对齐 Hermes）：
+ * 复刻 tinker-agent-ui tools/desktop/web-search/web-extract 的 fetchUrl：
  * GET/POST JSON，带超时 + UA 伪装，返回文本。
  * 被 web-search-tool / web-extract-tool 共享。
  */

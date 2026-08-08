@@ -1,7 +1,7 @@
 /**
  * utils/search-parse.ts — 搜索输出解析与提示工具
  *
- * 复刻 tinker-agent-ui tools/desktop/search-files（对齐 Hermes search_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/search-files：
  * - checkSearchEngine：检测 rg / grep 引擎
  * - parseMatchLine / parseSearchContextLine：输出行解析
  * - pathNotFoundHint：路径不存在相似路径提示
@@ -28,7 +28,7 @@ export function parseMatchLine(line: string): SearchMatch | null {
   return { path: (m[1] ?? '') + m[2], line: parseInt(m[3], 10), content: m[4] }
 }
 
-/** 解析 context 行（path-line-content，最右数字分隔——对齐 Hermes _parse_search_context_line） */
+/** 解析 context 行 */
 export function parseSearchContextLine(line: string): SearchMatch | null {
   if (!line || line === '--') return null
   const matches = [...line.matchAll(/-(\d+)-/g)]
@@ -39,7 +39,7 @@ export function parseSearchContextLine(line: string): SearchMatch | null {
   return { path, line: parseInt(match[1], 10), content: line.slice((match.index ?? 0) + match[0].length) }
 }
 
-/** 路径不存在 → 相似路径提示（对齐 Hermes search 的 hint_parts） */
+/** 路径不存在 → 相似路径提示 */
 export function pathNotFoundHint(pathStr: string): string {
   const parts = [`Path not found: ${pathStr}`]
   const parent = resolve(pathStr, '..')

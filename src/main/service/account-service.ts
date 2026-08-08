@@ -134,7 +134,7 @@ export class AccountService {
 
   // ── Step 3：含 API Key 的模型 ──
 
-  /** 创建含 API Key 的模型（对齐 Java createDefaultModel） */
+  /** 创建含 API Key 的模型 */
   initStep3(profile: string, request: InitRequestDTO): string {
     const baseUrl = this.resolveDefaultBaseUrl(request.llmProvider, request.llmBaseUrl)
     return this.customModelService.create(profile, {
@@ -162,7 +162,7 @@ export class AccountService {
 
   // ── Step 4：绑定主聊天场景 ──
 
-  /** 绑定主聊天场景（对齐 Java bindMainScene） */
+  /** 绑定主聊天场景 */
   initStep4(profile: string, modelId: string): void {
     this.sceneModelService.appendBinding(profile, SCENE_CHAT, modelId)
   }
@@ -178,7 +178,7 @@ export class AccountService {
     }
   }
 
-  /** baseUrl 兜底（对齐 Java：openai/anthropic 默认 endpoint） */
+  /** baseUrl 兜底 */
   private resolveDefaultBaseUrl(provider: string, provided?: string): string | undefined {
     if (provided && provided.trim() !== '') {
       return provided.trim()

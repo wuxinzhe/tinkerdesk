@@ -1,7 +1,7 @@
 /**
  * constants/ — 本地端统一常量包
  *
- * 对齐 showing-agent core/constant 包，云端/本地数据同构（迁移零转换）。
+ * 常量单一来源——main 与 renderer 共用同一份定义。
  * 对照关系：
  *   event.ts        ← EventConstants
  *   llm.ts          ← LlmConstants（RES_* / ERROR_*）
@@ -10,12 +10,11 @@
  *   role.ts         ← MessageConstants（消息角色）+ RoleConstants（账号角色）
  *   tool.ts         ← ToolConstants（TOOL_TYPE_*）
  *   client.ts       ← ClientConstants（OS_* / TYPE_*）
- * 场景标识 SCENE_* 在 core/llm/types（对齐 Java LlmConstants SCENE 语义）。
+ * 场景标识 SCENE_* 在 core/llm/types。
  */
-export * from './event'
+export * from './ipc'
+export * from './route'
 export * from './llm'
 export * from './message'
 export * from './conversation'
 export * from './role'
-export * from './tool'
-export * from './client'

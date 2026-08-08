@@ -89,6 +89,13 @@
               <line x1="9" y1="17" x2="13" y2="17" />
             </svg>
           </button>
+          <button class="agent-card-item__action" title="记忆" @click.stop="manageMemory(a)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="5" width="14" height="14" rx="2" />
+              <line x1="9" y1="5" x2="9" y2="2" /><line x1="15" y1="5" x2="15" y2="2" />
+              <line x1="9" y1="19" x2="9" y2="22" /><line x1="15" y1="19" x2="15" y2="22" />
+            </svg>
+          </button>
           <button class="agent-card-item__action" title="设置" @click.stop="manageSettings(a)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3" />
@@ -169,6 +176,11 @@ function manageModels(a: AgentInfo) {
 function managePromptModules(a: AgentInfo) {
   selectedProfile.value = a.profile
   router.push(`/workspace/agents/${a.profile}/prompt-modules`)
+}
+
+/** 记忆管理页（MemoryManageView——CRUD + 拖拽排序） */
+function manageMemory(a: AgentInfo) {
+  router.push(`/workspace/agents/${a.profile}/memory`)
 }
 
 function manageSettings(a: AgentInfo) {

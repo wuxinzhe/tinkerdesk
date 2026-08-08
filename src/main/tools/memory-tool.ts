@@ -3,7 +3,7 @@
  *
  * 复刻 tinker-agent MemoryTool：
  * 读取/添加/替换/删除/批量操作持久记忆（文件系统 MemoryStore）。
- * 全部返回 JSON 字符串，语义对齐 Java 版 7 种响应。
+ * 全部返回 JSON 字符串，语义版 7 种响应。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { MemoryOperation } from '../service/memory-store'
@@ -12,10 +12,10 @@ import { BaseTool } from './base-tool'
 import { ToolResult } from '../core/tool/tool-result'
 import type { ToolContext } from '../core/loop/types'
 
-/** 工具名（对齐 @AgentTool(name)） */
+/** 工具名 */
 export const TOOL_NAME = 'builtin_tinker_memory'
 
-/** 单轮最多 consolidation 失败次数（对齐 MAX_CONSOLIDATION_FAILURES_PER_TURN） */
+/** 单轮最多 consolidation 失败次数 */
 const MAX_CONSOLIDATION_FAILURES = 3
 
 /** 记忆工具 */
@@ -28,7 +28,7 @@ export class MemoryTool extends BaseTool {
   constructor(renderer: PromptRenderer, memoryStore: MemoryStore) {
     super(renderer, TOOL_NAME)
     this.memoryStore = memoryStore
-    this.maxMemory = 20000
+    this.maxMemory = 2200
     this.maxUser = 1375
   }
 
@@ -37,7 +37,7 @@ export class MemoryTool extends BaseTool {
     const sessionId = ctx.sessionId
     const profile = ctx.profile
 
-    // 记忆上限：优先 AgentConfig 动态配置（对齐 Java ctx.getMemoryMaxChars/getUserMaxChars）
+    // 记忆上限：优先 AgentConfig 动态配置
     const memoryMaxChars = ctx.agentConfig?.memoryMaxChars ?? this.maxMemory
     const userMaxChars = ctx.agentConfig?.userMaxChars ?? this.maxUser
 

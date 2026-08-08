@@ -24,10 +24,19 @@ export class SkillViewTool extends BaseTool {
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as Record<string, unknown>
-    // 唯一指向：skill id（skills_list 返回 id/name/description——view 按 id 查全貌）
-    const id = String(args.id ?? '').trim()
+    // 寻址：id 优先；id 缺失时 name 兜底（兼容外部技能正文 skill_view(name=...) 引用——导入即用无需回填）
+    let id = String(args.id ?? '').trim()
     if (!id) {
-      return ToolResult.sync('Error: Skill id is required. Use skills_list to get the id.')
+      const name = String(args.name ?? '').trim()
+      if (name) {
+        const byName = this.skillService.findByName(ctx.profile, name)
+        if (!byName) {
+          return ToolResult.sync(`Error: Skill '${name}' not found by name. Use skills_list to see available skills.`)
+        }
+        id = byName.id
+      } else {
+        return ToolResult.sync('Error: Skill id (or name) is required. Use skills_list to get the id.')
+      }
     }
 
     // 按 fileId 加载单个技能文件内容（skill_view(id, fileId)——索引后按需取内容）
@@ -45,7 +54,7 @@ export class SkillViewTool extends BaseTool {
       return ToolResult.sync(`Error: Skill '${id}' not found. Use skills_list to see available skills.`)
     }
 
-    // 渲染 skill-view.hbs（对齐 Java：全部字段 + metaLine 含 Category/Updated/Readiness）
+    // 渲染 skill-view.hbs
     const templateCtx: Record<string, unknown> = { name: detail.name, id: detail.id }
     if (detail.description) templateCtx.description = detail.description
     if (detail.body) templateCtx.body = detail.body
@@ -61,6 +70,10 @@ export class SkillViewTool extends BaseTool {
           language: f.language,
           sortOrder: f.sortOrder,
         }))
+    }
+    // 关联技能（嵌套/关联——模型可继续 skill_view(id=...) 查看——像 files 引用）
+    if (detail.related && detail.related.length > 0) {
+      templateCtx.related = detail.related
     }
     const metaParts: string[] = []
     if (detail.category) metaParts.push(`**Category:** ${detail.category}`)

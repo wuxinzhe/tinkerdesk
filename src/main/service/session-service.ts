@@ -3,7 +3,7 @@
  *
  * 复刻 tinker-agent ISessionService（本地单用户版）：
  * create / listSessions / updateTitle / findById / toggleYolo / browseRich。
- * DTO 定义集中在 ./types.ts（对齐 dto/session/*）。
+ * DTO 定义集中在 ./types.ts。
  */
 import { randomUUID } from 'crypto'
 import type { MessageRepository } from '../repository/message-repository'
@@ -40,6 +40,7 @@ export class SessionService {
       startedAt: now,
       archived: false,
       yolo: false,
+      reasoningDepth: 'medium',
     }
     this.sessionRepo.save(entity)
     return entity
@@ -60,9 +61,25 @@ export class SessionService {
     this.sessionRepo.save(session)
   }
 
+  /** 更新推理深度（per-session——'' / low / medium / high） */
+  updateReasoningDepth(sessionId: string, reasoningDepth: string, profile: string): boolean {
+    const session = this.sessionRepo.findById(sessionId, profile)
+    if (!session) {
+      return false
+    }
+    session.reasoningDepth = reasoningDepth
+    this.sessionRepo.save(session)
+    return true
+  }
+
   /** 按 ID 查找会话（profile 限定） */
   findById(sessionId: string, profile: string): SessionEntity | null {
     return this.sessionRepo.findById(sessionId, profile)
+  }
+
+  /** 按 id 查（不限定 profile——OO 化实例装配用：从 session 记录反查 profile） */
+  findByIdAnyProfile(sessionId: string): SessionEntity | null {
+    return this.sessionRepo.findByIdAnyProfile(sessionId)
   }
 
   /** 切换 YOLO 模式 */
@@ -109,7 +126,7 @@ export class SessionService {
 
   // ── 会话搜索（session_search 工具用，本地 LIKE 实现） ──
 
-  /** 标题精确匹配（DISCOVER 模式第 1 步，对齐 DiscoverHitDTO） */
+  /** 标题精确匹配 */
   matchSessionTitle(query: string, profile: string): DiscoverHitDTO | null {
     const session = this.sessionRepo.findByTitleLike(query, profile)
     if (!session) return null
@@ -130,7 +147,7 @@ export class SessionService {
   }
 
   /**
-   * 全文搜索命中（DISCOVER 模式第 2 步，对齐 Java FTS）：
+   * 全文搜索命中：
    * 标题 LIKE 匹配 + 消息内容 LIKE 匹配合并，role 过滤 + profile 限定。
    */
   discoverHits(query: string, limit: number, roleFilter: string | null, sort: string | null, profile: string): DiscoverHitDTO[] {
@@ -151,7 +168,7 @@ export class SessionService {
       messagesAfter: 0,
     }))
 
-    // 消息内容匹配（对齐 Java messageRepo.discoverHits：role 过滤 + 排除 tool 会话）
+    // 消息内容匹配
     if (this.messageRepo) {
       const roles = roleFilter
         ? roleFilter.split(',').map((r) => r.trim()).filter((r) => r.length > 0)
@@ -181,7 +198,7 @@ export class SessionService {
     return titleHits.slice(0, limit)
   }
 
-  /** 读取会话（READ 模式：前 N + 后 M 条，对齐 ReadResultDTO） */
+  /** 读取会话 */
   readSession(sessionId: string, head: number, tail: number, profile: string): ReadResultDTO | null {
     const session = this.sessionRepo.findById(sessionId, profile)
     if (!session) {
@@ -208,7 +225,7 @@ export class SessionService {
     return sessionId
   }
 
-  /** 消息窗口滚动（SCROLL 模式：around id ± window，对齐 ScrollResultDTO） */
+  /** 消息窗口滚动 */
   scrollWithCounts(sessionId: string, aroundId: number, window: number, profile: string): ScrollResultDTO {
     const all = this.messageRepo?.listAllBySession(sessionId, profile) ?? []
     const idx = all.findIndex((m) => m.id === aroundId)

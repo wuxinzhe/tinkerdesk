@@ -3,7 +3,7 @@
  *
  * 复刻 tinker-agent UserProfileModule：
  * 当 memory 工具可用时，从 MemoryStore 读取用户画像条目（target='user'）并拼接为提示词块。
- * 条目分隔符对齐 Java MemoryStore.ENTRY_DELIMITER（\n§\n）。
+ * 条目分隔符（\n§\n）。
  */
 import type {ConversationContext} from '../types'
 import {HandlebarsPresetModule} from './preset-module'

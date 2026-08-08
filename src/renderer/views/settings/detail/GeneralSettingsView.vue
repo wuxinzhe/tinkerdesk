@@ -81,7 +81,7 @@ async function setTheme(value: ThemePreference): Promise<void> {
   try {
     await window.api.generalSettings.set('theme', value)
   } catch {
-    showErrorToast({ code: 'THEME_SAVE_ERROR', message: '主题保存失败' })
+    showErrorToast({ code: 'theme:save:error', message: '主题保存失败' })
   }
 }
 
@@ -108,7 +108,7 @@ async function load(): Promise<void> {
       theme.value = saved
     }
   } catch {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '读取通用设置失败' })
+    showErrorToast({ code: 'shortcut:load:error', message: '读取通用设置失败' })
   }
 }
 
@@ -128,7 +128,7 @@ function onKeyDown(e: KeyboardEvent): void {
   }
   // 至少需要一个修饰键（防误设单键）
   if (!e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '快捷键至少需要包含一个修饰键（Ctrl/Shift/Alt）' })
+    showErrorToast({ code: 'shortcut:invalid:no_modifier', message: '快捷键至少需要包含一个修饰键（Ctrl/Shift/Alt）' })
     return
   }
   const parts: string[] = []
@@ -143,7 +143,7 @@ function onKeyDown(e: KeyboardEvent): void {
   } else if (/^[a-z0-9]$/.test(key)) {
     parts.push(key)
   } else {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '仅支持字母、数字或反引号（`）作为快捷键主键' })
+    showErrorToast({ code: 'shortcut:invalid:unsupported_key', message: '仅支持字母、数字或反引号（`）作为快捷键主键' })
     return
   }
   const value = parts.join('+')
@@ -159,7 +159,7 @@ async function saveShortcut(key: string, value: string): Promise<void> {
     if (item) item.value = value
     showInfo('快捷键已保存')
   } catch {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '保存快捷键失败' })
+    showErrorToast({ code: 'shortcut:save:error', message: '保存快捷键失败' })
   }
 }
 
@@ -169,7 +169,7 @@ async function resetShortcut(item: ShortcutItem): Promise<void> {
     item.value = DEFAULT_RECORD
     showInfo('已恢复默认快捷键')
   } catch {
-    showErrorToast({ code: 'SHORTCUT_ERROR', message: '恢复默认失败' })
+    showErrorToast({ code: 'shortcut:reset:error', message: '恢复默认失败' })
   }
 }
 

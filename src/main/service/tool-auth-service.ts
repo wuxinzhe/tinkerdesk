@@ -6,6 +6,10 @@
  * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
  */
 import { AuthzDecision } from './types'
+import {
+  COMPUTER_USE_BLOCKED_KEY_COMBOS, COMPUTER_USE_SAFE_ACTIONS,
+  blockedTypePattern, canonKeyCombo,
+} from '../tools/computer-use/schema'
 export { AuthzDecision } from './types'
 
 /** 灾难性命令模式 — 命中后返回 DENY（绝对不执行，不进审批，直接拦截） */
@@ -106,6 +110,11 @@ const DANGEROUS_ARG_PATTERNS: RegExp[] = [
 export class ToolAuthService {
   /** 检查工具调用：灾难命令 → DENY（直接拦截）；危险模式 → ASK（审批）；其余 ALLOW */
   check(toolName: string, args: Record<string, unknown>): AuthzDecision {
+    // computer_use：按 action 判定（capture/list 免费；destructive ASK；硬封锁 DENY）
+    if (toolName === 'computer_use') {
+      return this.checkComputerUse(args)
+    }
+
     // 仅对终端类工具做参数危险检测（其它工具参数非命令语义）
     const isTerminalLike = toolName === 'terminal'
       || toolName === 'desktop_tinker_terminal'
@@ -129,5 +138,29 @@ export class ToolAuthService {
       }
     }
     return AuthzDecision.ALLOW
+  }
+
+  /** computer_use 审批判定：免费 action → ALLOW；硬封锁（危险按键/文本）→ DENY；其余（destructive）→ ASK */
+  private checkComputerUse(args: Record<string, unknown>): AuthzDecision {
+    const action = String(args?.action ?? '').toLowerCase()
+    if (COMPUTER_USE_SAFE_ACTIONS.has(action)) {
+      return AuthzDecision.ALLOW
+    }
+    // 硬封锁（无论审批级别——对齐 hermes 1:1）
+    if (action === 'key') {
+      const combo = canonKeyCombo(String(args?.keys ?? ''))
+      for (const blocked of COMPUTER_USE_BLOCKED_KEY_COMBOS) {
+        if (blocked.size <= combo.size && [...blocked].every((k) => combo.has(k))) {
+          return AuthzDecision.DENY
+        }
+      }
+    }
+    if (action === 'type' || action === 'cua_browser_type') {
+      if (blockedTypePattern(String(args?.text ?? ''))) {
+        return AuthzDecision.DENY
+      }
+    }
+    // 其余改变用户可见状态的动作 → 审批
+    return AuthzDecision.ASK
   }
 }

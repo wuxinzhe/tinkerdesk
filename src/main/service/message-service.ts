@@ -10,8 +10,8 @@ import { MessageRepository } from '../repository/message-repository'
 import type { MessageEntity } from '../repository/types'
 import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
-import { ROLE_SYSTEM } from '../core/loop/constants'
-import { STATUS_APPROVED, STATUS_REJECTED } from '../core/loop/constants'
+import { ROLE_SYSTEM, ROLE_USER, ROLE_ASSISTANT, ROLE_APPROVAL, ROLE_TOOL } from '../core/constants'
+import { STATUS_APPROVED, STATUS_REJECTED, CONV_COMPLETED } from '../core/constants'
 import {
   MSG_TYPE_USER, MSG_TYPE_USER_CONTINUE, MSG_TYPE_ASSISTANT_TEXT, MSG_TYPE_ASSISTANT_TOOL_CALL,
   MSG_TYPE_ASSISTANT_HYBRID, MSG_TYPE_ASSISTANT_THINKING, MSG_TYPE_TOOL_RESULT,
@@ -36,7 +36,7 @@ export class MessageFactory {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'user',
+      role: ROLE_USER,
       content,
       reasoningContent: '',
       toolCall: null,
@@ -60,7 +60,7 @@ export class MessageFactory {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'assistant',
+      role: ROLE_ASSISTANT,
       content,
       reasoningContent: '',
       toolCall: null,
@@ -83,20 +83,22 @@ export class MessageFactory {
     text = '',
     usage?: Pick<MessageEntity, 'promptTokens' | 'completionTokens' | 'cacheReadTokens' | 'cacheWriteTokens'>,
   ): MessageEntity {
+    const ids = Object.keys(toolCalls)
     return {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'assistant',
+      role: ROLE_ASSISTANT,
       content: text,
       reasoningContent: reasoningContent ?? '',
       toolCall: JSON.stringify(toolCalls),
-      toolCallId: '',
+      toolCallId: ids[0] ?? '',   // 第一个工具调用 ID（clarify/approval 等交互类回写匹配用）
       toolName: '',
       finishReason: FINISH_COMPLETE,
       ...usage,
       interactionStatus: '',
-      messageType: MSG_TYPE_ASSISTANT_TOOL_CALL,
+      // 文本 + 工具混合：content 非空时标记 assistant_hybrid（否则纯工具轮次 assistant_tool_call）
+      messageType: text ? MSG_TYPE_ASSISTANT_HYBRID : MSG_TYPE_ASSISTANT_TOOL_CALL,
       deleted: false,
     }
   }
@@ -106,7 +108,7 @@ export class MessageFactory {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'assistant',
+      role: ROLE_ASSISTANT,
       content: '',
       reasoningContent: reasoning ?? '',
       toolCall: null,
@@ -119,7 +121,7 @@ export class MessageFactory {
     }
   }
 
-  /** 审批请求消息（对齐 Java MessageEntity.buildApprovalRequest：toolCall 存 {toolCallId:{name,arguments}} JSON） */
+  /** 审批请求消息 */
   static buildApprovalRequest(
     convId: string,
     sessionId: string,
@@ -133,7 +135,7 @@ export class MessageFactory {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'approval',
+      role: ROLE_APPROVAL,
       toolCallId,
       toolName,
       messageType: MSG_TYPE_APPROVAL_REQUEST,
@@ -153,7 +155,7 @@ export class MessageFactory {
       sessionId,
       conversationId: convId,
       profile,
-      role: 'tool',
+      role: ROLE_TOOL,
       content,
       reasoningContent: '',
       toolCall: null,
@@ -209,13 +211,23 @@ export class MessageService {
     this.messageRepo.updateApprovalStatusTimedOut(toolCallId, profile, sessionId)
   }
 
-  /** 按 session 分页查询消息（DB 已落库 + 拼上当前进行中对话的暂存消息；按 DISPLAY_SET 控制可见性） */
+  /** clarify 回答回显：写入暂存消息 content（完整载荷 {question, choices_offered, user_response}——对话完成 flush 时自然落库） */
+  attachClarifyAnswer(_sessionId: string, _profile: string, toolCallId: string, result: string): void {
+    for (const msgs of this.tempMessages.values()) {
+      const target = msgs.find((m) => m.messageType === 'clarify_request' && m.toolCallId === toolCallId)
+      if (target) target.content = result
+    }
+  }
+
+  /** 按 session 分页查询消息（DB 已落库 + 拼上当前进行中对话的暂存消息；按 DISPLAY_SET 控制可见性）
+   *  最新在前分页：DESC 排序——offset 之后取 limit 条（翻页向旧消息方向） */
   listMessagesBySession(sessionId: string, profile: string, limit: number, offset: number): MessageEntity[] {
     const db = this.messageRepo.findMessagesBySession({
       sessionId,
       profile,
-      sortOrder: 'ASC',
-      limit,
+      sortOrder: 'DESC',
+      messageTypes: [...MSG_TYPE_DISPLAY_SET],   // 可见性 SQL 层过滤——LIMIT 对过滤后生效，hasMore 判断才准
+      limit: limit + offset,   // SQL 一次取 offset+limit 条（slice 前补足 offset 偏移）
     })
     // 拼上暂存消息（进行中对话尚未落库：流式中的 assistant/工具结果/审批卡片）
     // 场景：切 session 再回来 / 刷新页面时，进行中的对话消息不丢失
@@ -227,15 +239,15 @@ export class MessageService {
         }
       }
     }
-    // 可见性：只返回 DISPLAY_SET 内的消息类型（对齐 Java TYPE_DISPLAY_TYPES）
+    // 可见性：只返回 DISPLAY_SET 内的消息类型
     const visible = (m: MessageEntity) => m.messageType != null && MSG_TYPE_DISPLAY_SET.has(m.messageType)
     const dbVisible = db.filter(visible)
     const tempVisible = temp.filter(visible)
-    if (tempVisible.length === 0) return dbVisible.slice(offset)
+    if (tempVisible.length === 0) return dbVisible.slice(offset, offset + limit)
     const all = [...dbVisible, ...tempVisible].sort((a, b) =>
-      (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0)
+      (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || (b.id ?? 0) - (a.id ?? 0)
     )
-    return all.slice(offset)
+    return all.slice(offset, offset + limit)
   }
 
   /** 按 conversation 查询全部消息 */
@@ -246,13 +258,13 @@ export class MessageService {
   /** 合并历史 + 当前暂存，按时间排序，转为 ApiMessage（LLM 上下文；按 LLM_CONTEXT_SET 过滤，审批不进上下文） */
   loadContextMessages(sessionId: string, convId: string, profile: string): ApiMessage[] {
     // 源1：已完成对话的历史消息（COMPLETED 状态，压缩过的 COMPRESSED 对话不在此列）
-    const history = this.messageRepo.findBySessionCompleted(sessionId, profile, 'COMPLETED')
+    const history = this.messageRepo.findBySessionCompleted(sessionId, profile, CONV_COMPLETED)
     // 源2：系统摘要（压缩信息，在压缩对话之前，扮演替补历史上下文）
     const summary = this.loadLatestSummaryContent(sessionId, profile)
     // 源3：当前进行中对话的暂存消息（尚未 flush 的数据）
     const current = this.tempMessages.get(convId) ?? []
 
-    // 可见性：只保留 LLM_CONTEXT_SET 内的消息类型（审批/系统摘要等非对话内容排除，对齐 Java TYPE_LLM_CONTEXT_TYPES）
+    // 可见性：只保留 LLM_CONTEXT_SET 内的消息类型
     const inContext = (m: MessageEntity): boolean =>
       m.messageType != null && MSG_TYPE_LLM_CONTEXT_SET.has(m.messageType)
 
@@ -333,7 +345,7 @@ export class MessageService {
     }
     const m = msgs[0]
     return {
-      role: 'system',
+      role: ROLE_SYSTEM,
       content: m.content,
     }
   }
@@ -358,7 +370,7 @@ export class MessageService {
       sessionId,
       conversationId: null,
       profile,
-      role: 'system',
+      role: ROLE_SYSTEM,
       content: summaryContent,
       reasoningContent: '',
       toolCall: null,

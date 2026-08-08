@@ -57,7 +57,7 @@ export class RuntimeEnvironmentModule extends HandlebarsPresetModule {
     return p || ''
   }
 
-  /** os 为描述串时前缀匹配（对齐 Java osStartsWith） */
+  /** os 为描述串时前缀匹配 */
   private osStartsWith(os: string, prefix: string): boolean {
     return !!os && os.toLowerCase().startsWith(prefix)
   }

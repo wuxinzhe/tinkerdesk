@@ -29,12 +29,12 @@ import type { WebExtractParams } from './types'
 export const TOOL_NAME = 'desktop_tinker_web_extract'
 import type { DebugCallData, ExtractProvider, ExtractResultItem } from './types'
 
-// ── 常量（对齐 Hermes）──
+// ── 常量──
 
 const DEFAULT_EXTRACT_CHAR_LIMIT = 15000
 const MAX_STORED_TEXT_CHARS = 2_000_000
 
-// ── URL 规范化（对齐 Hermes _web_extract_url + normalize_url_for_request）──
+// ── URL 规范化──
 
 function webExtractUrl(item: unknown): string | null {
   let value: unknown = item
@@ -52,7 +52,7 @@ function normalizeUrlForRequest(url: string): string {
   return `https://${url}`
 }
 
-// ── 安全层 1：URL 内嵌密钥检测（对齐 Hermes redact._PREFIX_RE）──
+// ── 安全层 1：URL 内嵌密钥检测──
 
 const SECRET_PREFIX_PATTERNS = [
   /sk-[A-Za-z0-9_-]{10,}/,            // OpenAI / OpenRouter / Anthropic
@@ -79,7 +79,7 @@ function containsSecretPrefix(s: string): boolean {
   return SECRET_PREFIX_PATTERNS.some(re => re.test(s))
 }
 
-// ── 安全层 2：敏感查询参数（对齐 Hermes _SENSITIVE_QUERY_PARAM_NAMES）──
+// ── 安全层 2：敏感查询参数──
 
 const SENSITIVE_QUERY_PARAM_NAMES = new Set([
   'access_token', 'api_key', 'apikey', 'auth', 'authorization', 'awsaccesskeyid',
@@ -104,7 +104,7 @@ function sensitiveQueryParamName(url: string): string | null {
   return null
 }
 
-// ── 安全层 3：SSRF 防护（对齐 Hermes async_is_safe_url）──
+// ── 安全层 3：SSRF 防护──
 
 const BLOCKED_HOSTNAMES = new Set(['metadata.google.internal', 'metadata.goog'])
 
@@ -154,7 +154,7 @@ async function isSafeUrl(urlStr: string): Promise<boolean> {
   }
 }
 
-// ── base64 图片 → 占位符（对齐 Hermes convert_base64_images_to_links）──
+// ── base64 图片 → 占位符──
 
 function convertBase64ImagesToLinks(text: string): string {
   let out = text.replace(
@@ -166,7 +166,7 @@ function convertBase64ImagesToLinks(text: string): string {
   return out
 }
 
-// ── 完整文本本地存储 + 截断 footer（对齐 Hermes _store_full_text + _truncate_with_footer）──
+// ── 完整文本本地存储 + 截断 footer──
 
 function storeFullText(url: string, content: string): string | null {
   try {
@@ -296,7 +296,7 @@ class LocalCheerioProvider implements ExtractProvider {
   }
 }
 
-// ── registry（对齐 Hermes web_search_registry：API provider 优先，本地兜底）──
+// ── registry──
 
 /** API 提取 provider（有 key 时优先，质量更高、支持 JS 渲染） */
 class FirecrawlExtractProvider implements ExtractProvider {
@@ -382,7 +382,7 @@ function getActiveExtractProvider(): ExtractProvider | null {
   return extractProviders.find(p => p.isAvailable() && p.supportsExtract()) ?? null
 }
 
-/** 对齐 Hermes：char_limit clamp [2000, 500000]，非法兜底 15000 */
+/** char_limit clamp [2000, 500000]，非法兜底 15000 */
 function clampCharLimit(raw: unknown): number {
   let value: number
   try {
@@ -444,7 +444,7 @@ export class WebExtractTool extends BaseTool {
           continue
         }
         const normalized = normalizeUrlForRequest(raw)
-        // 密钥检测（原始 / URL-decode / 规范化后）——命中即整体 Blocked（对齐 Hermes）
+        // 密钥检测（原始 / URL-decode / 规范化后）——命中即整体 Blocked
         const decoded = decodeURIComponent(raw)
         if (containsSecretPrefix(raw) || containsSecretPrefix(decoded)
           || containsSecretPrefix(normalized) || containsSecretPrefix(decodeURIComponent(normalized))) {

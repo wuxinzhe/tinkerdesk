@@ -7,12 +7,12 @@ import type { ApiResponse } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class ToolsApi {
-  async list(profile = 'default'): Promise<ToolItem[]> {
+  async list(profile: string): Promise<ToolItem[]> {
     const data = await window.api.tools.list(profile)
     return (data as ToolItem[]) ?? []
   }
 
-  async toggle(toolName: string, disabled: boolean, profile = 'default'): Promise<ApiResponse> {
+  async toggle(toolName: string, disabled: boolean, profile: string): Promise<ApiResponse> {
     try {
       await window.api.tools.toggle(toolName, disabled, profile)
       return { success: true, data: null }

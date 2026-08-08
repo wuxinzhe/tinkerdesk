@@ -10,7 +10,7 @@ import type { ApiMessage, LlmOperation, LlmResponse, OperationContext, Operation
 import type { ToolSchema } from '../../tool/tool-schema'
 import { RES_TEXT } from '../llm-response'
 
-/** 摘要场景（对齐 Java SummaryOperation.SCENE） */
+/** 摘要场景 */
 export const SCENE = 'conversation_compression'
 
 /** 摘要操作 */

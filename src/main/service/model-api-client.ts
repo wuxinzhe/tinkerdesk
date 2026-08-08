@@ -3,11 +3,11 @@
  *
  * 复刻 tinker-agent OpenAiModelApiClient：
  * 调用 GET {baseUrl}/models，适用于 OpenAI、DeepSeek、OpenRouter 等
- * 所有兼容 OpenAI API 的供应商（本地单用户版，对齐 Java 语义）。
+ * 所有兼容 OpenAI API 的供应商。
  */
 import type { ModelInfoDTO } from './types'
 
-/** 模型 API 异常（对齐 Java ModelApiException） */
+/** 模型 API 异常 */
 export class ModelApiException extends Error {
   constructor(message: string) {
     super(message)

@@ -26,19 +26,19 @@
             <div v-if="s.bindings.length > 0" class="ms-subs">
               <div
                 v-for="(b, bi) in s.bindings"
-                :key="b.priority"
+                :key="b.modelId"
                 :class="['ms-sub', { 'ms-sub--last': bi === s.bindings.length - 1 }]"
               >
-                <span class="ms-sub__tag" :class="b.priority === 0 ? 'ms-sub__tag--main' : 'ms-sub__tag--alt'">
-                  {{ b.priority === 0 ? '主' : b.priority }}
+                <span class="ms-sub__tag" :class="b.isMain ? 'ms-sub__tag--main' : 'ms-sub__tag--alt'">
+                  {{ b.isMain ? '主' : '备' }}
                 </span>
                 <span class="ms-sub__alias">{{ b.modelAlias }}</span>
                 <span class="ms-sub__name">{{ b.modelName }}</span>
                 <button
                   class="ms-sub__del"
                   title="移除"
-                  :disabled="removingBindings.has(`${s.sceneId}:${b.priority}`)"
-                  @click="removeBinding(s.sceneId, b.priority)"
+                  :disabled="removingBindings.has(`${s.sceneId}:${b.modelId}`)"
+                  @click="removeBinding(s.sceneId, b.modelId)"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -109,8 +109,8 @@ function toggleScene(id: string) {
 
 function sceneSummary(s: SceneModelDetail): string {
   if (s.bindings.length === 0) return '不使用'
-  const p = s.bindings.find(b => b.priority === 0)
-  return p ? p.modelAlias : s.bindings[0].modelAlias
+  const p = s.bindings.find(b => b.isMain)
+  return (p ?? s.bindings[0]).modelAlias
 }
 
 function availableModels(s: SceneModelDetail): CustomModelInfo[] {
@@ -130,11 +130,11 @@ async function addFallback(sceneId: string) {
   } finally { addingFallback[sceneId] = false }
 }
 
-async function removeBinding(sceneId: string, priority: number) {
-  const key = `${sceneId}:${priority}`
+async function removeBinding(sceneId: string, modelId: string) {
+  const key = `${sceneId}:${modelId}`
   removingBindings.add(key)
   try {
-    await modelsApi.unbindSceneModel(profile.value, sceneId, priority)
+    await modelsApi.unbindSceneModel(profile.value, sceneId, modelId)
     await loadScenes()
   } catch { /* ignore */
   } finally { removingBindings.delete(key) }

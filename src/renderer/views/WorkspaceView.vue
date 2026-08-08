@@ -73,14 +73,19 @@
             <div id="l3-toolbar-actions" />
           </template>
         </WorkspaceToolbar>
-        <router-view name="level3" class="workspace__l3-col" />
+        <!-- L3 页面：key=fullPath——切换 agent（profile 参数变）强制重建，避免组件复用不刷新 -->
+        <router-view
+          name="level3"
+          :key="$route.fullPath"
+          class="workspace__l3-col"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, provide, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WorkspaceToolbar from '@/renderer/components/workspace/WorkspaceToolbar.vue'
 import NavSidebarComponent from '@/renderer/components/workspace/NavSidebarComponent.vue'
@@ -207,6 +212,7 @@ const AGENT_SUB_TITLES: Record<string, string> = {
   skills: '技能管理', tools: '工具配置',
   models: '模型配置', edit: '编辑 Agent',
   market: '技能市场', settings: 'Agent 设置', 'prompt-modules': '提示词模块',
+  memory: '记忆管理',
 }
 
 const topbarTitle = computed(() => {

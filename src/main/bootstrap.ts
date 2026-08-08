@@ -1,12 +1,12 @@
 /**
  * bootstrap.ts — 依赖组装入口（三层结构接线）
  *
- * repository（db/）→ service（service/）→ AgentLoop（loop/）
+ * repository（db/）→ service（service/）→ TinkerAgent（loop/）
  * + prompt（prompt/）+ llm（llm/）+ tools（tools/）+ compaction（service/）
  *
  * 本地业务无 controller：渲染进程通过 IPC（agent-controller.ts）调用 agentLoop。
  */
-import {app} from 'electron'
+import { app } from 'electron'
 import { ConversationRepository } from './repository/conversation-repository'
 import { CustomModelRepository } from './repository/custom-model-repository'
 import { initDatabase } from './repository/database'
@@ -40,88 +40,106 @@ import {
   UserProfileModule,
 } from './core/prompt'
 
-import type { ModelConfig } from './core/llm'
-import { AnthropicClient, LlmClientManager, LlmOperationManager, LlmRouter, OpenAIClient } from './core/llm'
+import { AnthropicClient, GoogleClient, LlmClientManager, LlmOperationManager, LlmRouter, OpenAIClient } from './core/llm'
 
-import type { AgentToolRegistration } from './tools'
-import { getMcpToolCenter } from './core/tool'
-import type { McpToolCenter } from './core/tool'
-import {
-  TerminalTool, TERMINAL_TOOL_NAME,
-  ProcessTool, PROCESS_TOOL_NAME,
-  ReadTerminalTool, READ_TERMINAL_TOOL_NAME,
-  CloseTerminalTool, CLOSE_TERMINAL_TOOL_NAME,
-  ReadFileTool, READ_FILE_TOOL_NAME,
-  WriteFileTool, WRITE_FILE_TOOL_NAME,
-  PatchTool, PATCH_TOOL_NAME,
-  SearchFilesTool, SEARCH_FILES_TOOL_NAME,
-  WebSearchTool, WEB_SEARCH_TOOL_NAME,
-  WebExtractTool, WEB_EXTRACT_TOOL_NAME,
-  ScheduleTimerTool, SCHEDULE_TIMER_TOOL_NAME,
-  FileMutationVerifierTool, FILE_MUTATION_VERIFIER_TOOL_NAME,
-} from './tools/desktop'
-import { PluginManager } from './core/plugin/plugin-manager'
-import {
-  PluginInstallTool, PLUGIN_INSTALL_TOOL_NAME,
-  PluginConfigureTool, PLUGIN_CONFIGURE_TOOL_NAME,
-  PluginEnableTool, PLUGIN_ENABLE_TOOL_NAME,
-  PluginListTool, PLUGIN_LIST_TOOL_NAME,
-  PluginUninstallTool, PLUGIN_UNINSTALL_TOOL_NAME,
-} from './tools/plugin-tools'
-import {
-  ClarifyTool,
-  CLARIFY_TOOL_NAME,
-  MemoryTool,
-  MEMORY_TOOL_NAME,
-  SessionSearchTool,
-  SESSION_SEARCH_TOOL_NAME,
-  SkillManageTool,
-  SKILL_MANAGE_TOOL_NAME,
-  SkillsListTool,
-  SKILLS_LIST_TOOL_NAME,
-  SkillViewTool,
-  SKILL_VIEW_TOOL_NAME,
-  TodoTool,
-  TODO_TOOL_NAME,
-} from './tools'
-import { ToolManager } from './core/tool'
-import {TodoService} from './service/todo-service'
-import {PrivateSkillService} from './service/private-skill-service'
-import {UserCustomModelService} from './service/user-custom-model-service'
-import {SceneModelService} from './service/scene-model-service'
-import {AgentService} from './service/agent-service'
-import {AgentConfigService} from './service/agent-config-service'
-import {SystemProviderService} from './service/system-provider-service'
-import {SkillCategoryService} from './service/skill-category-service'
-import {PromptService} from './service/prompt-service'
-import { ModelConfigService } from './service/model-config-service'
-import { TitleOperation } from './core/llm/operations/title-operation'
 import { ChatOperation } from './core/llm/operations/chat-operation'
 import { SummaryOperation } from './core/llm/operations/summary-operation'
-import { SessionContextFactory } from './service/session-context-factory'
-import { AgentModeService } from './service/agent-mode-service'
-import { AccountService } from './service/account-service'
-import { DefaultAgentMode } from './service/agent/default-agent-mode'
+import { TitleOperation } from './core/llm/operations/title-operation'
 import { AgentModeRegistry } from './core/mode/agent-mode-registry'
+import { PluginManager } from './core/plugin/plugin-manager'
+import type { McpToolCenter } from './core/tool'
+import { getMcpToolCenter, ToolManager } from './core/tool'
+import { AgentConfigRepository } from './repository/agent-config-repository'
+import { AgentRepository } from './repository/agent-repository'
+import { PrivateSkillFileRepository } from './repository/private-skill-file-repository'
+import { PrivateSkillRelatedRepository } from './repository/private-skill-related-repository'
+import { PrivateSkillRepository } from './repository/private-skill-repository'
+import { PromptModuleRepository } from './repository/prompt-module-repository'
+import { SkillCategoryRepository } from './repository/skill-category-repository'
+import { SystemProviderRepository } from './repository/system-provider-repository'
+import { UserPathWhitelistRepository } from './repository/user-path-whitelist-repository'
+import { UserSceneModelRepository } from './repository/user-scene-model-repository'
+import { UserUrlWhitelistRepository } from './repository/user-url-whitelist-repository'
+import { AccountService } from './service/account-service'
+import { AgentConfigService } from './service/agent-config-service'
+import { AgentModeService } from './service/agent-mode-service'
+import { AgentService } from './service/agent-service'
+import { DefaultAgentMode } from './service/agent/default-agent-mode'
+import { ModelConfigService } from './service/model-config-service'
+import { PrivateSkillService } from './service/private-skill-service'
+import { PromptService } from './service/prompt-service'
 import { SandboxWhitelistService } from './service/sandbox-whitelist-service'
+import { SceneModelService } from './service/scene-model-service'
+import { SessionContextFactory } from './service/session-context-factory'
+import { SkillCategoryService } from './service/skill-category-service'
+import { SystemProviderService } from './service/system-provider-service'
+import { TodoService } from './service/todo-service'
 import { ToolAuthService } from './service/tool-auth-service'
-import {PrivateSkillRepository} from './repository/private-skill-repository'
-import {PrivateSkillFileRepository} from './repository/private-skill-file-repository'
-import {PrivateSkillRelatedRepository} from './repository/private-skill-related-repository'
-import {AgentRepository} from './repository/agent-repository'
-import {AgentConfigRepository} from './repository/agent-config-repository'
-import {SkillCategoryRepository} from './repository/skill-category-repository'
-import {PromptModuleRepository} from './repository/prompt-module-repository'
-import {UserUrlWhitelistRepository} from './repository/user-url-whitelist-repository'
-import {UserPathWhitelistRepository} from './repository/user-path-whitelist-repository'
-import {SystemProviderRepository} from './repository/system-provider-repository'
-import {UserSceneModelRepository} from './repository/user-scene-model-repository'
+import { UserCustomModelService } from './service/user-custom-model-service'
+import type { AgentToolRegistration } from './tools'
+import {
+  CLARIFY_TOOL_NAME,
+  ClarifyTool,
+  MEMORY_TOOL_NAME,
+  MemoryTool,
+  SESSION_SEARCH_TOOL_NAME,
+  SessionSearchTool,
+  SKILL_MANAGE_TOOL_NAME,
+  SKILL_VIEW_TOOL_NAME,
+  SkillManageTool,
+  SKILLS_LIST_TOOL_NAME,
+  SkillsListTool,
+  SkillViewTool,
+  TODO_TOOL_NAME,
+  TodoTool,
+} from './tools'
+import {
+  CLOSE_TERMINAL_TOOL_NAME,
+  CloseTerminalTool,
+  FILE_MUTATION_VERIFIER_TOOL_NAME,
+  FileMutationVerifierTool,
+  PATCH_TOOL_NAME,
+  PatchTool,
+  PROCESS_TOOL_NAME,
+  ProcessTool,
+  READ_FILE_TOOL_NAME,
+  READ_TERMINAL_TOOL_NAME,
+  ReadFileTool,
+  ReadTerminalTool,
+  SCHEDULE_TIMER_TOOL_NAME,
+  ScheduleTimerTool,
+  SEARCH_FILES_TOOL_NAME,
+  SearchFilesTool,
+  TERMINAL_TOOL_NAME,
+  TerminalTool,
+  WEB_EXTRACT_TOOL_NAME,
+  WEB_SEARCH_TOOL_NAME,
+  WebExtractTool,
+  WebSearchTool,
+  WRITE_FILE_TOOL_NAME,
+  WriteFileTool,
+} from './tools/desktop'
+import {
+  PLUGIN_CONFIGURE_TOOL_NAME,
+  PLUGIN_ENABLE_TOOL_NAME,
+  PLUGIN_INSTALL_TOOL_NAME,
+  PLUGIN_LIST_TOOL_NAME,
+  PLUGIN_UNINSTALL_TOOL_NAME,
+  PluginConfigureTool,
+  PluginEnableTool,
+  PluginInstallTool,
+  PluginListTool,
+  PluginUninstallTool,
+} from './tools/plugin-tools'
 
-import { AgentLoop } from './core/loop/agent-loop'
+import type { TinkerAgentOptions } from './core/loop/types'
+import { DelegateTool } from './tools/delegate-tool'
+import { ComputerUseTool } from './tools/computer-use/computer-use-tool'
 
 /** 组装结果 */
 export interface TinkerDesk {
-  agentLoop: AgentLoop
+  /** TinkerAgent 装配选项（OO 化——controller 按 session 惰性实例化） */
+  agentLoopOptions: Omit<TinkerAgentOptions, 'sessionId' | 'profile'>
   messageService: MessageService
   conversationService: ConversationService
   sessionService: SessionService
@@ -169,7 +187,7 @@ export function bootstrap(
   const sessionRepo = new SessionRepository()
 
   // ── LLM（先建，CompactionService 需要）──
-  const clientManager = new LlmClientManager([new OpenAIClient(), new AnthropicClient()])
+  const clientManager = new LlmClientManager([new OpenAIClient(), new AnthropicClient(), new GoogleClient()])
   const renderer = new PromptRenderer()
   const operationManager = new LlmOperationManager([
     new ChatOperation(),
@@ -221,37 +239,51 @@ export function bootstrap(
 
   // ── Tools（内建工具 + 调用方自定义工具） ──
   const builtinTools: AgentToolRegistration[] = [
-    {meta: {name: MEMORY_TOOL_NAME, emoji: '🧠'}, tool: new MemoryTool(renderer, memoryStore)},
-    {meta: {name: TODO_TOOL_NAME, emoji: '✅'}, tool: new TodoTool(renderer, todoService)},
-    {meta: {name: CLARIFY_TOOL_NAME, emoji: '❓'}, tool: new ClarifyTool(renderer, messageService)},
-    {meta: {name: SKILL_VIEW_TOOL_NAME, emoji: '📄'}, tool: new SkillViewTool(renderer, privateSkillService)},
-    {meta: {name: SKILLS_LIST_TOOL_NAME, emoji: '📚'}, tool: new SkillsListTool(renderer, privateSkillService)},
-    {meta: {name: SKILL_MANAGE_TOOL_NAME, emoji: '🛠️'}, tool: new SkillManageTool(renderer, privateSkillService, new PrivateSkillFileRepository())},
-    {meta: {name: SESSION_SEARCH_TOOL_NAME, emoji: '🔍'}, tool: new SessionSearchTool(renderer, sessionService)},
+    { meta: { name: MEMORY_TOOL_NAME, emoji: '🧠' }, tool: new MemoryTool(renderer, memoryStore) },
+    { meta: { name: TODO_TOOL_NAME, emoji: '✅' }, tool: new TodoTool(renderer, todoService) },
+    { meta: { name: CLARIFY_TOOL_NAME, emoji: '❓' }, tool: new ClarifyTool(renderer, messageService) },
+    { meta: { name: SKILL_VIEW_TOOL_NAME, emoji: '📄' }, tool: new SkillViewTool(renderer, privateSkillService) },
+    { meta: { name: SKILLS_LIST_TOOL_NAME, emoji: '📚' }, tool: new SkillsListTool(renderer, privateSkillService) },
+    { meta: { name: SKILL_MANAGE_TOOL_NAME, emoji: '🛠️' }, tool: new SkillManageTool(renderer, privateSkillService, new PrivateSkillFileRepository()) },
+    { meta: { name: SESSION_SEARCH_TOOL_NAME, emoji: '🔍' }, tool: new SessionSearchTool(renderer, sessionService) },
   ]
+  // 子代理工具（OO 化 delegate——依赖延迟解析：agentLoopOptions/sessionContextFactory 在装配后部定义）
+  builtinTools.push({
+    meta: { name: 'builtin_tinker_delegate', emoji: '🤖' },
+    tool: new DelegateTool(renderer, () => ({
+      agentLoopOptions,
+      sessionContextFactory,
+      sessionService,
+    })),
+  })
+  // 桌面控制工具（cua-driver——后台桌面自动化；check() 在 cua-driver 未安装时自动不入池）
+  builtinTools.push({
+    meta: { name: 'builtin_tinker_computer_use', emoji: '🖥️' },
+    tool: new ComputerUseTool(renderer),
+  })
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
   const desktopTools: AgentToolRegistration[] = [
-    {meta: {name: TERMINAL_TOOL_NAME, emoji: '💻'}, tool: new TerminalTool(renderer)},
-    {meta: {name: PROCESS_TOOL_NAME, emoji: '⚙️'}, tool: new ProcessTool(renderer)},
-    {meta: {name: READ_TERMINAL_TOOL_NAME, emoji: '📋'}, tool: new ReadTerminalTool(renderer)},
-    {meta: {name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌'}, tool: new CloseTerminalTool(renderer)},
-    {meta: {name: READ_FILE_TOOL_NAME, emoji: '📄'}, tool: new ReadFileTool(renderer)},
-    {meta: {name: WRITE_FILE_TOOL_NAME, emoji: '📝'}, tool: new WriteFileTool(renderer)},
-    {meta: {name: PATCH_TOOL_NAME, emoji: '✂️'}, tool: new PatchTool(renderer)},
-    {meta: {name: SEARCH_FILES_TOOL_NAME, emoji: '🔍'}, tool: new SearchFilesTool(renderer)},
-    {meta: {name: WEB_SEARCH_TOOL_NAME, emoji: '🌐'}, tool: new WebSearchTool(renderer)},
-    {meta: {name: WEB_EXTRACT_TOOL_NAME, emoji: '📰'}, tool: new WebExtractTool(renderer)},
-    {meta: {name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰'}, tool: new ScheduleTimerTool(renderer)},
-    {meta: {name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬'}, tool: new FileMutationVerifierTool(renderer)},
+    { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻' }, tool: new TerminalTool(renderer) },
+    { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️' }, tool: new ProcessTool(renderer) },
+    { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋' }, tool: new ReadTerminalTool(renderer) },
+    { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌' }, tool: new CloseTerminalTool(renderer) },
+    { meta: { name: READ_FILE_TOOL_NAME, emoji: '📄' }, tool: new ReadFileTool(renderer) },
+    { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝' }, tool: new WriteFileTool(renderer) },
+    { meta: { name: PATCH_TOOL_NAME, emoji: '✂️' }, tool: new PatchTool(renderer) },
+    { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍' }, tool: new SearchFilesTool(renderer) },
+    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐' }, tool: new WebSearchTool(renderer) },
+    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰' }, tool: new WebExtractTool(renderer) },
+    { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
+    { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
   const pluginManager = new PluginManager()
   const pluginTools: AgentToolRegistration[] = [
-    {meta: {name: PLUGIN_INSTALL_TOOL_NAME, emoji: '🧩'}, tool: new PluginInstallTool(renderer, pluginManager)},
-    {meta: {name: PLUGIN_CONFIGURE_TOOL_NAME, emoji: '⚙️'}, tool: new PluginConfigureTool(renderer, pluginManager)},
-    {meta: {name: PLUGIN_ENABLE_TOOL_NAME, emoji: '✅'}, tool: new PluginEnableTool(renderer, pluginManager)},
-    {meta: {name: PLUGIN_LIST_TOOL_NAME, emoji: '📦'}, tool: new PluginListTool(renderer, pluginManager)},
-    {meta: {name: PLUGIN_UNINSTALL_TOOL_NAME, emoji: '🗑️'}, tool: new PluginUninstallTool(renderer, pluginManager)},
+    { meta: { name: PLUGIN_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new PluginInstallTool(renderer, pluginManager) },
+    { meta: { name: PLUGIN_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new PluginConfigureTool(renderer, pluginManager) },
+    { meta: { name: PLUGIN_ENABLE_TOOL_NAME, emoji: '✅' }, tool: new PluginEnableTool(renderer, pluginManager) },
+    { meta: { name: PLUGIN_LIST_TOOL_NAME, emoji: '📦' }, tool: new PluginListTool(renderer, pluginManager) },
+    { meta: { name: PLUGIN_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new PluginUninstallTool(renderer, pluginManager) },
   ]
 
   const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
@@ -265,12 +297,13 @@ export function bootstrap(
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
   const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
 
-  // ── 安全门检服务（AgentLoop 工具门检用，需在 AgentLoop 之前组装） ──
+  // ── 安全门检服务（TinkerAgent 工具门检用，需在 TinkerAgent 之前组装） ──
   const sandboxWhitelistService = new SandboxWhitelistService(new UserUrlWhitelistRepository(), new UserPathWhitelistRepository())
   const toolAuthService = new ToolAuthService()
 
-  // ── AgentLoop ──
-  const agentLoop = new AgentLoop({
+  // ── TinkerAgent ──
+  // OO 化：不再建单例——AgentController 按 session 惰性 new TinkerAgent（构造绑定 sessionId/profile）
+  const agentLoopOptions = {
     llmRouter,
     toolManager,
     messageService,
@@ -281,7 +314,7 @@ export function bootstrap(
     modelConfigService,
     sandboxWhitelistService,
     toolAuthService,
-  })
+  }
 
   // ── Controller 层依赖 ──
   const agentRepo = new AgentRepository()
@@ -292,7 +325,7 @@ export function bootstrap(
   const promptService = new PromptService(new PromptModuleRepository())
   const customModelService = new UserCustomModelService(CustomModelRepository, providerRepo)
   const sceneModelService = new SceneModelService(sceneRepo, operationManager)
-  // ── Agent Mode：注册表 + 默认模式（对齐 Java 注解扫描 → 手动注册），agentService 创建时需要 ---
+  // ── Agent Mode：注册表 + 默认模式，agentService 创建时需要 ---
   const agentModeRegistry = new AgentModeRegistry()
   agentModeRegistry.register(new DefaultAgentMode(renderer))
   const agentService = new AgentService(agentRepo, agentConfigRepo, agentModeRegistry)
@@ -303,7 +336,7 @@ export function bootstrap(
   const sessionContextFactory = new SessionContextFactory(agentConfigService, sessionService, agentModeRegistry, agentService)
 
   return {
-    agentLoop,
+    agentLoopOptions,
     messageService,
     conversationService,
     sessionService,

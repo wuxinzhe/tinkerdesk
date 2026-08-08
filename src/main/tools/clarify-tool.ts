@@ -11,14 +11,11 @@ import type { ToolContext } from '../core/loop/types'
 import { ToolResult } from '../core/tool/tool-result'
 import type { MessageService } from '../service/message-service'
 import { MessageFactory } from '../service/message-service'
+import { EVT_CHAT_CLARIFY } from '../core/constants'
+import { MSG_TYPE_CLARIFY_REQUEST } from '../core/constants'
 
 /** 工具名 */
 export const TOOL_NAME = 'builtin_tinker_clarify'
-
-/** 澄清请求消息类型 */
-const TYPE_CLARIFY_REQUEST = 'clarify_request'
-/** 澄清请求事件名 */
-const EVENT_CLARIFY_REQUEST = 'clarify_request'
 
 /** 澄清确认工具 */
 export class ClarifyTool extends BaseTool {
@@ -37,11 +34,11 @@ export class ClarifyTool extends BaseTool {
       [toolCall.id]: { name: toolCall.name, arguments: toolCall.arguments },
     }
     const clarifyMsg = MessageFactory.buildAssistantToolCall(conversationId, sessionId, profile, '', clarifyOnly)
-    clarifyMsg.messageType = TYPE_CLARIFY_REQUEST
+    clarifyMsg.messageType = MSG_TYPE_CLARIFY_REQUEST
     this.messageService.saveTempMessage(clarifyMsg)
 
     // 将工具参数发往客户端处理（sender 消息通道）
-    ctx.sendMessage(EVENT_CLARIFY_REQUEST, {
+    ctx.sender.sendMessage(ctx.sessionId, EVT_CHAT_CLARIFY, {
       toolCallId: toolCall.id,
       name: toolCall.name,
       arguments: toolCall.arguments,

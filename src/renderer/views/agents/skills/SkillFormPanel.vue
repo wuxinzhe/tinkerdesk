@@ -85,6 +85,10 @@
             <div class="sfp__field-label">触发词</div>
             <input :value="model.triggers" class="sfp__input" placeholder="逗号分隔，如: 装插件,安装插件" @input="set('triggers', ($event.target as HTMLInputElement).value)" />
           </div>
+          <div class="sfp__field">
+            <div class="sfp__field-label">关联技能</div>
+            <input :value="model.relatedNames ?? ''" class="sfp__input" placeholder="技能名，逗号分隔（嵌套/关联——模型可 skill_view 查看）" @input="set('relatedNames', ($event.target as HTMLInputElement).value)" />
+          </div>
         </div>
         <div class="sfp__field" style="margin-bottom: 8px">
           <div class="sfp__field-label">触发条件</div>
@@ -136,6 +140,8 @@ export interface SkillFormModel {
   fallbackForTools: string
   triggers: string
   triggerConditions: string
+  /** 关联技能（技能名逗号分隔——保存时按 name 匹配写入关联） */
+  relatedNames?: string
   config: string
   envVars: string
   commands: string

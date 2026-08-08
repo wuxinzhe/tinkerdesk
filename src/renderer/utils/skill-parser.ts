@@ -23,6 +23,8 @@ export interface ParsedSkill {
   fallbackForToolsets?: string
   fallbackForTools?: string
   triggers?: string
+  /** 关联技能名数组（frontmatter related: [name...]——导入时按 name 匹配写入关联） */
+  related?: string[]
   triggerConditions?: string
   commands?: string
   envVars?: string
@@ -41,7 +43,8 @@ export function parseSkillMarkdown(content: string): ParsedSkill {
   const fields: Record<string, string> = {}
   for (const line of frontmatter.split('\n')) {
     const kv = /^([a-zA-Z_]+):\s*(.*)$/.exec(line.trim())
-    if (kv) fields[kv[1]] = kv[2].trim().replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
+    // 数组字段（tags/platforms 等）的 YAML 方括号语法在解析层剥掉——存储层不背锅
+    if (kv) fields[kv[1]] = kv[2].trim().replace(/^\[/, '').replace(/\]$/, '').replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1')
   }
   const name = fields.name
   if (!name || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
@@ -74,6 +77,10 @@ export function parseSkillMarkdown(content: string): ParsedSkill {
     commands: fields.commands,
     envVars: fields.env_vars ?? fields.envVars,
     config: fields.config ?? '[]',
+    // related 是数组语义（frontmatter related: [a, b]）——逗号拆分
+    related: fields.related
+      ? fields.related.split(',').map((x: string) => x.trim()).filter(Boolean)
+      : undefined,
     body,
   }
 }

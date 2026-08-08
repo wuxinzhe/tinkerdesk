@@ -48,11 +48,11 @@ function toEntity(row: Record<string, unknown>): PrivateSkillEntity {
 
 /** 私有技能仓库 */
 export class PrivateSkillRepository {
-  /** 按名称查询（profile 维度） */
+  /** 按名称查询（profile 维度——排除软删） */
   findByName(profile: string, name: string, limit = 1): PrivateSkillEntity | null {
     const db = getDatabase()
     const row = db
-      .prepare(`SELECT ${COLS} FROM private_skills WHERE profile = ? AND name = ? LIMIT ?`)
+      .prepare(`SELECT ${COLS} FROM private_skills WHERE profile = ? AND name = ? AND is_deleted = 0 LIMIT ?`)
       .get(profile, name, limit) as Record<string, unknown> | undefined
     return row ? toEntity(row) : null
   }
@@ -73,10 +73,10 @@ export class PrivateSkillRepository {
     return rows.map(toEntity)
   }
 
-  /** 统计同名技能数 */
+  /** 统计同名技能数（排除软删——重名检查只看存活技能） */
   countByName(profile: string, name: string): number {
     const db = getDatabase()
-    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND name = ?').get(profile, name) as { cnt: number }
+    const row = db.prepare('SELECT COUNT(1) AS cnt FROM private_skills WHERE profile = ? AND name = ? AND is_deleted = 0').get(profile, name) as { cnt: number }
     return row.cnt
   }
 
@@ -87,23 +87,14 @@ export class PrivateSkillRepository {
     return row.cnt
   }
 
-  /** 查询 profile 下未删除的全部技能 */
-  findAllByAgentFiltered(profile: string): PrivateSkillEntity[] {
-    const db = getDatabase()
-    const rows = db
-      .prepare(`SELECT ${COLS} FROM private_skills WHERE profile = ? AND is_deleted = 0`)
-      .all(profile) as Array<Record<string, unknown>>
-    return rows.map(toEntity)
-  }
-
-  /** 查询过滤后的技能列表（不含正文，轻量） */
+  /** 查询过滤后的技能列表（不含正文，轻量）——Agent 路径专用：过滤软删 */
   findFiltered(profile: string): FilteredSkillDTO[] {
     const db = getDatabase()
     const rows = db
       .prepare(
         `SELECT id, name, display_name, description, category, version, author, is_deleted,
                 tags, api_key, platforms, requires_toolsets
-         FROM private_skills WHERE profile = ?`
+         FROM private_skills WHERE profile = ? AND is_deleted = 0`
       )
       .all(profile) as Array<Record<string, unknown>>
     return rows.map((r) => ({
@@ -201,6 +192,15 @@ export class PrivateSkillRepository {
         `UPDATE private_skills SET is_deleted = 1, deleted_at = datetime('now'), updated_at = datetime('now')
          WHERE id = ? AND profile = ?`
       )
+      .run(id, profile)
+    return Number(result.changes)
+  }
+
+  /** 硬删除技能（物理删行） */
+  hardDelete(profile: string, id: string): number {
+    const db = getDatabase()
+    const result = db
+      .prepare('DELETE FROM private_skills WHERE id = ? AND profile = ?')
       .run(id, profile)
     return Number(result.changes)
   }

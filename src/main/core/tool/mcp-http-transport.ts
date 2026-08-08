@@ -22,7 +22,7 @@ import type {
 import { request as httpRequest } from 'http'
 import { request as httpsRequest } from 'https'
 
-/** MCP 协议版本（对齐 2025-03-26 Streamable HTTP） */
+/** MCP 协议版本（2025-03-26 Streamable HTTP） */
 export const PROTOCOL_VERSION = '2025-03-26'
 /** 请求超时 */
 const REQUEST_TIMEOUT_MS = 15000

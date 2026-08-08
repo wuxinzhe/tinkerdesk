@@ -15,10 +15,13 @@ export function apiModeFromString(mode: string | null | undefined): ApiMode {
   if (m === 'anthropic') {
     return 'anthropic'
   }
+  if (m === 'google') {
+    return 'google'
+  }
   if (m === 'openai') {
     return 'openai'
   }
-  throw new Error(`不支持的 API 模式: '${mode}'。支持: openai, anthropic`)
+  throw new Error(`不支持的 API 模式: '${mode}'。支持: openai, anthropic, google`)
 }
 
 /** 该模式请求 API 的路径后缀（拼在 baseUrl 后面） */

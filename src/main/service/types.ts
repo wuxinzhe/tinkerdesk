@@ -1,7 +1,7 @@
 /**
  * types.ts — 服务层统一类型定义（DTO 集中）
  *
- * 对齐 tinker-agent 三层：service 构建 DTO（层间传递），controller 构建 VO（出口），
+ * 三层：service 构建 DTO（层间传递），controller 构建 VO（出口），
  * repository 构建 entity（表结构）。
  *
  * 各 Service 的类型定义集中于此（实现留在各自文件）。
@@ -17,7 +17,7 @@ export interface CooldownEntry {
 
 // ── memory-store ──
 
-/** 记忆操作（对齐 tinker-agent MemoryOperation） */
+/** 记忆操作 */
 export interface MemoryOperation {
   /** 操作类型：'add' | 'replace' | 'remove' */
   action: 'add' | 'replace' | 'remove'
@@ -29,20 +29,20 @@ export interface MemoryOperation {
 
 // ── todo-service ──
 
-/** 待办事项（对齐 tinker-agent TodoItem） */
+/** 待办事项 */
 export interface TodoItem {
   id: string
   content: string
   status: string
 }
 
-/** 待办列表响应（对齐 tinker-agent TodoListResponseDTO） */
+/** 待办列表响应 */
 export interface TodoListResponse {
   todos: TodoItem[]
   summary: TodoSummary
 }
 
-/** 待办汇总（对齐 tinker-agent TodoSummaryDTO） */
+/** 待办汇总 */
 export interface TodoSummary {
   total: number
   pending: number
@@ -50,9 +50,9 @@ export interface TodoSummary {
   completed: number
 }
 
-// ── session-service（对齐 tinker-agent dto/session/*） ──
+// ── session-service ──
 
-/** 会话搜索命中（对齐 DiscoverHitDTO） */
+/** 会话搜索命中 */
 export interface DiscoverHitDTO {
   sessionId: string
   when: string
@@ -68,7 +68,7 @@ export interface DiscoverHitDTO {
   messagesAfter: number
 }
 
-/** 会话读取结果（对齐 ReadResultDTO） */
+/** 会话读取结果 */
 export interface ReadResultDTO {
   sessionId: string
   source: string
@@ -79,16 +79,16 @@ export interface ReadResultDTO {
   messages: Array<{id: number; role: string; content: string}>
 }
 
-/** 会话滚动结果（对齐 ScrollResultDTO） */
+/** 会话滚动结果 */
 export interface ScrollResultDTO {
   window: Array<{id: number; role: string; content: string}>
   messagesBefore: number
   messagesAfter: number
 }
 
-// ── skill-service（对齐 tinker-agent dto/skill/*） ──
+// ── skill-service ──
 
-/** 技能概要（对齐 SkillSummaryDTO） */
+/** 技能概要 */
 export interface SkillSummaryDTO {
   id: string
   name: string
@@ -100,7 +100,7 @@ export interface SkillSummaryDTO {
   readinessStatus: string
 }
 
-/** 技能详情（对齐 SkillDetailDTO） */
+/** 技能详情 */
 export interface SkillDetailDTO {
   id: string
   name: string
@@ -127,9 +127,9 @@ export interface SkillDetailDTO {
   apiKey: string | null
 }
 
-// ── model（对齐 tinker-agent dto/model/*） ──
+// ── model ──
 
-/** Agent 信息 DTO（对齐 dto/agent/AgentInfoDTO） */
+/** Agent 信息 DTO */
 export interface AgentInfoDTO {
   profile: string
   displayName: string
@@ -153,7 +153,7 @@ export interface AgentInfoDTO {
   userPercent?: number
 }
 
-/** 创建 Agent 请求 DTO（对齐 CreateAgentRequestDTO） */
+/** 创建 Agent 请求 DTO */
 export interface CreateAgentRequestDTO {
   profile: string
   displayName?: string
@@ -165,7 +165,7 @@ export interface CreateAgentRequestDTO {
   isDefault?: boolean
 }
 
-/** 更新 Agent 请求 DTO（对齐 UpdateAgentRequestDTO） */
+/** 更新 Agent 请求 DTO */
 export interface UpdateAgentRequestDTO {
   profile: string
   displayName?: string
@@ -176,21 +176,21 @@ export interface UpdateAgentRequestDTO {
   isActive?: boolean
 }
 
-/** 供应商拉取模型信息 DTO（对齐 dto/model/ModelInfoDTO） */
+/** 供应商拉取模型信息 DTO */
 export interface ModelInfoDTO {
   id: string
   object: string
   ownedBy: string
 }
 
-/** 拉取供应商模型请求 DTO（对齐 FetchModelsRequestVO） */
+/** 拉取供应商模型请求 DTO */
 export interface FetchModelsRequestDTO {
   providerId: string
   baseUrl?: string
   apiKey?: string
 }
 
-/** 自定义模型信息 DTO（对齐 CustomModelInfoDTO） */
+/** 自定义模型信息 DTO */
 export interface CustomModelInfoDTO {
   id: string
   alias: string
@@ -205,7 +205,7 @@ export interface CustomModelInfoDTO {
   createdAt?: string
 }
 
-/** 创建自定义模型请求 DTO（对齐 CreateCustomModelRequestDTO） */
+/** 创建自定义模型请求 DTO */
 export interface CreateCustomModelRequestDTO {
   alias: string
   modelName: string
@@ -216,7 +216,7 @@ export interface CreateCustomModelRequestDTO {
   modelType?: string
 }
 
-/** 更新自定义模型请求 DTO（对齐 UpdateCustomModelRequestDTO） */
+/** 更新自定义模型请求 DTO */
 export interface UpdateCustomModelRequestDTO {
   id: string
   alias?: string
@@ -227,57 +227,64 @@ export interface UpdateCustomModelRequestDTO {
   contextLimit?: number
 }
 
-/** 自定义模型测试结果 DTO（对齐 CustomModelTestResultDTO） */
+/** 自定义模型测试结果 DTO */
 export interface CustomModelTestResultDTO {
   success: boolean
   latencyMs: number
   message: string
 }
 
-/** 场景绑定 DTO（对齐 SceneBindingDTO） */
+/** 场景绑定 DTO */
 export interface SceneBindingDTO {
   sceneId: string
   priority: number
   modelId: string
   modelAlias: string
   modelName: string
+  /** 是否主模型 */
+  isMain?: boolean
 }
 
-/** 场景模型详情 DTO（对齐 SceneModelDetailDTO） */
+/** 场景模型详情 DTO */
 export interface SceneModelDetailDTO {
   sceneId: string
   sceneName: string
   bindings: SceneBindingDTO[]
 }
 
-/** 绑定场景模型请求 DTO（对齐 BindSceneModelRequestDTO） */
+/** 绑定场景模型请求 DTO */
 export interface BindSceneModelRequestDTO {
   sceneId: string
   modelId: string
   priority?: number
+  /** 是否设为主模型（默认 false——备用） */
+  isMain?: boolean
 }
 
-/** 更新场景模型请求 DTO（对齐 UpdateSceneModelRequestDTO） */
+/** 更新场景模型请求 DTO */
 export interface UpdateSceneModelRequestDTO {
   sceneId: string
   modelId: string | null
 }
 
-/** 重排场景绑定请求 DTO（对齐 ReorderSceneBindingsRequestDTO） */
+/** 重排场景绑定请求 DTO */
 export interface ReorderSceneBindingsRequestDTO {
   sceneId: string
-  priorities: number[]
+  /** 新顺序的模型 id 列表（长度 = 场景绑定数） */
+  modelIds: string[]
+  /** 兼容旧参数（模型 id 列表顺序映射） */
+  priorities?: number[]
 }
 
-/** 删除场景绑定请求 DTO（对齐 unbindSceneModel 入参） */
+/** 删除场景绑定请求 DTO */
 export interface UnbindSceneModelRequestDTO {
   sceneId: string
   priority: number
 }
 
-// ── account（对齐 dto/init/*） ──
+// ── account ──
 
-/** 账号初始化请求 DTO（对齐 InitRequestDTO） */
+/** 账号初始化请求 DTO */
 export interface InitRequestDTO {
   nickname: string
   llmProvider: string
@@ -286,7 +293,7 @@ export interface InitRequestDTO {
   llmBaseUrl?: string
 }
 
-/** 初始化检查项 DTO（对齐 CheckItemDTO） */
+/** 初始化检查项 DTO */
 export interface CheckItemDTO {
   key: string
   label: string
@@ -294,7 +301,7 @@ export interface CheckItemDTO {
   detail: string
 }
 
-/** 初始化状态响应 DTO（对齐 InitStatusResponseDTO） */
+/** 初始化状态响应 DTO */
 export interface InitStatusResponseDTO {
   initialized: boolean
   checks: CheckItemDTO[]
@@ -310,22 +317,22 @@ export interface StepStatusDTO {
   existing: unknown
 }
 
-// ── 门检决策枚举（对齐 ToolAuthService / SandboxWhitelistService / ToolLoopGuardrail） ──
+// ── 门检决策枚举 ──
 
-/** 授权决策（对齐 AuthzDecision；DENY = 灾难性命令绝对不执行，不进审批） */
+/** 授权决策 */
 export enum AuthzDecision {
   ALLOW = 'ALLOW',
   ASK = 'ASK',
   DENY = 'DENY',
 }
 
-/** 沙盒决策（对齐 SandboxDecision） */
+/** 沙盒决策 */
 export enum SandboxDecision {
   ALLOW = 'ALLOW',
   ASK = 'ASK',
 }
 
-/** 工具循环防护决策动作（对齐 ToolLoopGuardrail.Action） */
+/** 工具循环防护决策动作 */
 export enum GuardrailAction {
   ALLOW = 'allow',
   WARN = 'warn',
@@ -333,7 +340,7 @@ export enum GuardrailAction {
   HALT = 'halt',
 }
 
-/** 工具循环防护决策结果（对齐 ToolLoopGuardrail.Decision） */
+/** 工具循环防护决策结果 */
 export interface GuardrailDecision {
   action: GuardrailAction
   code: string

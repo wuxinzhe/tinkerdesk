@@ -21,11 +21,10 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   open: boolean
   activeTab: string
 }>()
-
 const emit = defineEmits<{
   close: []
   select: [id: string]

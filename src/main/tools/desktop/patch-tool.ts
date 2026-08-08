@@ -1,7 +1,7 @@
 /**
  * desktop/patch-tool.ts — 文件编辑工具
  *
- * 复刻 tinker-agent-ui tools/desktop/patch（对齐 Hermes patch_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/patch：
  * - mode=replace：9 策略模糊匹配（fuzzy-match.ts）
  * - mode=patch：V4A 多文件 patch（v4a-patch.ts，两阶段 validate-then-apply）
  * - 敏感路径守卫 + V4A 头部 .. traversal 拒绝
@@ -58,7 +58,7 @@ export class PatchTool extends BaseTool {
         if (res.matchCount === 0) {
           let errMsg = res.error ?? 'Could not find match for old_string'
           errMsg += formatNoMatchHint(errMsg, res.matchCount, params.old_string, originalContent)
-          // 连续失败提示（对齐 Hermes _hint）
+          // 连续失败提示
           resultDict['_hint'] = (
             'old_string not found. Use read_file to verify the current content, '
             + 'or search_files to locate the text.'
@@ -66,7 +66,7 @@ export class PatchTool extends BaseTool {
           return ToolResult.sync(JSON.stringify({ success: false, error: errMsg, _hint: resultDict['_hint'] }))
         }
 
-        // 写入（Node writeFileSync 原样写，不做 CRLF 转换；对齐 Hermes 的行尾保持目标）
+        // 写入
         writeFileSync(resolvedPath, res.content, 'utf-8')
 
         const diff = unifiedDiff(originalContent, res.content, params.path)

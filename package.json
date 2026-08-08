@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
+    "@google/genai": "^2.16.0",
     "@stomp/stompjs": "^7.3.0",
     "cheerio": "^1.2.0",
     "electron-updater": "^6.8.9",

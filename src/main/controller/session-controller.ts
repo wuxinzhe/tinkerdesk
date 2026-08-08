@@ -49,6 +49,8 @@ export class SessionController {
     ipcMain.handle('session:list', (_event, payload) => this.listSessions(payload))
     ipcMain.handle('session:create', (_event, payload) => this.createSession(payload))
     ipcMain.handle('session:update', (_event, payload) => this.renameSession(payload))
+    ipcMain.handle('session:set-reasoning-depth', (_event, payload) => this.setReasoningDepth(payload))
+    ipcMain.handle('session:get-reasoning-depth', (_event, payload) => this.getReasoningDepth(payload))
     ipcMain.handle('session:getYolo', (_event, payload) => this.getYolo(payload))
     ipcMain.handle('session:toggleYolo', (_event, payload) => this.toggleYolo(payload))
     ipcMain.handle('session:stats', (_event, payload) => this.getStats(payload))
@@ -84,6 +86,25 @@ export class SessionController {
     }
     this.sessionService.updateTitle(payload.sessionId, payload.title, payload.profile)
     return ok(null)
+  }
+
+  /** 设置推理深度（per-session——'' / low / medium / high） */
+  private setReasoningDepth(payload: { profile: string; sessionId: string; reasoningDepth: string }): ApiResponse<boolean> {
+    const session = this.sessionService.findById(payload.sessionId, payload.profile)
+    if (!session) {
+      return fail('会话不存在')
+    }
+    const updated = this.sessionService.updateReasoningDepth(payload.sessionId, payload.reasoningDepth, payload.profile)
+    return ok(updated)
+  }
+
+  /** 查询推理深度（per-session——'' / low / medium / high） */
+  private getReasoningDepth(payload: { profile: string; sessionId: string }): ApiResponse<string> {
+    const session = this.sessionService.findById(payload.sessionId, payload.profile)
+    if (!session) {
+      return fail('会话不存在')
+    }
+    return ok(session.reasoningDepth ?? 'medium')
   }
 
   /** 查询会话 YOLO 状态（profile 限定） */
@@ -132,8 +153,6 @@ export class SessionController {
           thresholdPercent = 0
         }
       }
-      const PROTECTED_THRESHOLD = 0.2
-      const MAX_THRESHOLD = 0.85
 
       // 命中率 + 总消耗（会话累积）
       const input = session?.inputTokens ?? 0
@@ -174,8 +193,6 @@ export class SessionController {
         contextUsedPercent: contextLimit > 0 ? Math.min((session?.currentContextTokens ?? 0) / contextLimit, 1) : 0,
         // 压缩阈值（只读——游标展示位置）
         thresholdPercent,
-        protectedThreshold: PROTECTED_THRESHOLD,
-        maxThreshold: MAX_THRESHOLD,
         // 会话统计
         hitRate,
         totalTokens: (session?.inputTokens ?? 0) + (session?.outputTokens ?? 0),
@@ -226,6 +243,10 @@ export class SessionController {
       }
 
       return ok({
+        // 当前主对话场景主模型（切换后立即反映——dashboard 模型名）
+        model: this.modelConfigService
+          ? this.modelConfigService.resolveForScene(payload.profile, 'main_conversation')[0]?.modelName ?? ''
+          : '',
         hitRate,
         promptTokens: input,
         // 会话总 token 消耗（输入 + 输出）

@@ -14,8 +14,9 @@ export const useSessionStore = defineStore('session', () => {
   const sessionId = ref<string | null>(null)
   const currentSession = ref<Session | null>(null)
 
-  // ── 用户信息 ──
-  const profile = ref('default')
+  // ── 用户信息（当前 Agent——localStorage 持久化：切 agent/刷新后保持） ──
+  const PROFILE_KEY = 'tinkerdesk:active-profile'
+  const profile = ref<string>(localStorage.getItem(PROFILE_KEY) || 'default')
 
   // ── 锁屏 ──
   const isLocked = ref(false)
@@ -23,13 +24,17 @@ export const useSessionStore = defineStore('session', () => {
   // ── Setters ──
   function setSessionId(id: string | null) { sessionId.value = id }
   function setCurrentSession(s: Session | null) { currentSession.value = s }
-  function setProfile(p: string) { profile.value = p }
+  function setProfile(p: string) {
+    profile.value = p
+    localStorage.setItem(PROFILE_KEY, p)
+  }
   function setLocked(v: boolean) { isLocked.value = v }
 
   function $reset() {
     sessionId.value = null
     currentSession.value = null
     profile.value = 'default'
+    localStorage.removeItem(PROFILE_KEY)
     isLocked.value = false
   }
 

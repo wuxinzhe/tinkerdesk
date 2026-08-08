@@ -18,8 +18,12 @@ import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
 import type { SkillInfoVO, SkillListQueryDTO, SkillPageVO, SkillOpRequestDTO } from './types'
 
-/** PrivateSkillEntity → SkillInfoVO（includeBody 时携带正文，详情页用） */
-export function toSkillInfoVO(s: PrivateSkillEntity, includeBody = false): SkillInfoVO {
+/** PrivateSkillEntity → SkillInfoVO（includeBody 时携带正文，详情页用；related 为关联技能列表） */
+export function toSkillInfoVO(
+  s: PrivateSkillEntity,
+  includeBody = false,
+  related?: Array<{ id: string; name: string }>
+): SkillInfoVO {
   return {
     id: s.id,
     name: s.name,
@@ -38,6 +42,7 @@ export function toSkillInfoVO(s: PrivateSkillEntity, includeBody = false): Skill
     triggers: parseTagList(s.triggers),
     triggerConditions: s.triggerConditions ?? '',
     config: s.config ?? '[]',
+    related: related ?? undefined,
     envVars: s.envVars ?? '',
     commands: s.commands ?? '',
     envs: s.envs ?? '',
@@ -91,14 +96,15 @@ export class SkillController {
   // 各 IPC 方法（具名方法 + 完整入参出参类型）
   // ══════════════════════════════════════════════════════════════
 
-  /** 查询已安装技能列表（分页，按 profile 限定；支持分类 + 名称模糊过滤） */
+  /** 查询已安装技能列表（分页，按 profile 限定；支持分类 + 名称模糊过滤）
+   *  UI 路径：不过滤软删（软删技能仍显示——可重新激活；Agent 查询路径另走 findFiltered 已过滤） */
   private listSkills(payload: SkillListQueryDTO): ApiResponse<SkillPageVO> {
     const profile = payload?.profile ?? 'default'
     const offset = payload?.offset ?? 0
     const limit = payload?.limit ?? 20
     const category = (payload?.category ?? '').trim()
     const name = (payload?.name ?? '').trim()
-    let all = this.privateSkillService.findByAgent(profile).filter((s) => !s.isDeleted)
+    let all = this.privateSkillService.findByAgent(profile)
     if (category) {
       all = all.filter((s) => s.category === category)
     }
@@ -119,13 +125,13 @@ export class SkillController {
     return ok(toSkillInfoVO(skill))
   }
 
-  /** 按 ID 查询技能详情（对齐 Java GET /skills/{id}；详情带正文） */
+  /** 技能详情（不过滤软删——软删技能可查看后激活；Agent 查询路径另走 findFiltered 已过滤） */
   private getSkill(payload: SkillOpRequestDTO): ApiResponse<SkillInfoVO> {
-    const skill = this.privateSkillService.findById(payload?.profile ?? 'default', payload?.id ?? '')
-    if (!skill || skill.isDeleted) {
+    const skill = this.privateSkillService.viewSkillById(payload?.profile ?? 'default', payload?.id ?? '')
+    if (!skill) {
       return fail('Skill not found')
     }
-    return ok(toSkillInfoVO(skill, true))
+    return ok(toSkillInfoVO(skill, true, skill.related))
   }
 
   /** 停用技能（软删除，按 profile 限定） */
@@ -249,6 +255,8 @@ export class SkillController {
     commands?: string
     body?: string
     files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
+    /** 关联技能（frontmatter related: [name...]——按 name 匹配已有技能，写入 private_skill_related） */
+    related?: string[]
   }): ApiResponse<SkillInfoVO> {
     const name = (payload?.name ?? '').trim()
     if (!name || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
@@ -299,6 +307,15 @@ export class SkillController {
       if (!f.fileType || !f.content) return
       this.privateSkillService.saveSkillFile(created.id, f.fileType, f.content, '', f.sortOrder ?? idx, f.name ?? '')
     })
+    // 关联技能写入（frontmatter related: [name...]——按 name 匹配已存在技能；忽略不存在的；不自关联）
+    if (payload.related && payload.related.length > 0) {
+      for (const relatedName of payload.related) {
+        const target = this.privateSkillService.findByName(profile, relatedName.trim())
+        if (target && target.id !== created.id) {
+          this.privateSkillService.addRelated(created.id, target.id, 'related')
+        }
+      }
+    }
     return ok(toSkillInfoVO(created, true))
   }
 
@@ -309,6 +326,8 @@ export class SkillController {
     tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
     config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    /** 关联技能名数组（编辑时全量替换——清旧写新） */
+    related?: string[]
   }): ApiResponse<SkillInfoVO> {
     const id = (payload?.id ?? '').trim()
     const profile = payload?.profile ?? 'default'
@@ -339,15 +358,25 @@ export class SkillController {
       body: payload.body,
     })
     if (!updated) return fail('技能不存在或更新失败')
+    // 关联技能全量替换（清旧写新——按 name 匹配已存在技能）
+    this.privateSkillService.clearRelated(id)
+    if (payload.related && payload.related.length > 0) {
+      for (const relatedName of payload.related) {
+        const target = this.privateSkillService.findByName(profile, relatedName.trim())
+        if (target && target.id !== id) {
+          this.privateSkillService.addRelated(id, target.id, 'related')
+        }
+      }
+    }
     return ok(toSkillInfoVO(updated))
   }
 
-  /** 删除技能（软删——列表/详情不再展示） */
+  /** 删除技能（硬删——物理删行 + 级联文件；停用请走 skill:deactivate 软删） */
   private deleteSkill(payload: { id?: string; profile?: string }): ApiResponse<null> {
     const id = (payload?.id ?? '').trim()
     const profile = payload?.profile ?? 'default'
     if (!id) return fail('技能 id 为空')
-    const okDel = this.privateSkillService.softDelete(profile, id)
+    const okDel = this.privateSkillService.hardDelete(profile, id)
     if (!okDel) return fail('技能不存在或已删除')
     return ok(null)
   }

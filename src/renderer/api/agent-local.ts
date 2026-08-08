@@ -1,14 +1,12 @@
 /**
- * agent-local.ts — 本地 AgentLoop 实现（IPC 通信）
+ * agent-local.ts — 本地 TinkerAgent 实现（IPC 通信）
  *
- * AgentApi 的本地实现：通过 preload 暴露的 electron API 调用主进程 AgentLoop controller。
+ * AgentApi 的本地实现：通过 preload 暴露的 electron API 调用主进程 TinkerAgent controller。
  * 渲染层用同一套 AgentApi 接口，切换 local/remote 只需换工厂函数。
  */
 import type {
   AgentApi,
-  AgentApprovalEvent,
   AgentApprovalRequest,
-  ActionMergedPayload,
   AgentIpcApi,
   AgentMessageVO,
   AgentSendRequest,
@@ -16,7 +14,7 @@ import type {
   AgentToolResultRequest,
 } from '@/renderer/api/types'
 
-/** 本地 AgentLoop 实现 */
+/** 本地 TinkerAgent 实现 */
 export class AgentLocal implements AgentApi {
   private messageCbs: Array<(msg: AgentMessageVO) => void> = []
 
@@ -59,14 +57,9 @@ export class AgentLocal implements AgentApi {
     return this.api.clearAll(profile, sessionId)
   }
 
-  /** 监听审批请求（渲染层弹审批卡片） */
-  onApprovalRequest(cb: (payload: AgentApprovalEvent) => void): () => void {
-    return this.api.onApprovalRequest(cb)
-  }
-
-  /** 监听动作事件（conversation_complete / session_title_updated / tool_done 等） */
-  onAction(cb: (payload: ActionMergedPayload) => void): () => void {
-    return this.api.onAction(cb)
+  /** 统一路由消息入口（route = '{一级}:{二级}'——客户端自行解析分发） */
+  onRouteMessage(cb: (payload: { route?: string; sessionId?: string; data?: unknown }) => void): () => void {
+    return this.api.onRouteMessage(cb)
   }
 
   /** 监听消息事件 */

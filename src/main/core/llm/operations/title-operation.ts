@@ -10,7 +10,7 @@ import { isSuccess } from '../llm-response'
 import type { ToolSchema } from '../../tool/tool-schema'
 import type { PromptRenderer } from '../../prompt/renderer'
 
-/** 标题生成场景（对齐 Java TitleOperation.SCENE） */
+/** 标题生成场景 */
 export const SCENE = 'title_generation'
 
 /** 标题生成操作 */

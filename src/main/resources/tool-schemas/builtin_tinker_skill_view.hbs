@@ -1,13 +1,13 @@
 {
   "name": "builtin_tinker_skill_view",
-  "description": "Load a skill's full content from the database by id. Returns metadata, description, body, advanced fields (dependencies, requires_toolsets, triggers, config, env_vars, commands, etc.) and a file index (id/name/fileType/language, sorted by sort_order). Use skills_list first to discover skill ids. To load a specific skill file's content, pass fileId (the file id shown in the file index).",
+  "description": "Load a skill's full content from the database by id (or by name for compatibility with external skills). Returns metadata, description, body, advanced fields, related skills and a file index (id/name/fileType/language, sorted by sort_order). Use skills_list first to discover skill ids. To load a specific skill file's content, pass fileId (the file id shown in the file index).",
   "parameters": {
     "type": "object",
     "properties": {
-      "id": { "type": "string", "description": "The skill id (use skills_list to see available skills)." },
+      "id": { "type": "string", "description": "The skill id (use skills_list to see available skills). Preferred." },
+      "name": { "type": "string", "description": "The skill name — compatibility path for external skills whose body references skill_view(name=...). Used when id is omitted." },
       "fileId": { "type": "integer", "description": "Optional: load a specific skill file's content by file id (from the file index)." }
-    },
-    "required": ["id"]
+    }
   },
   "toolType": "server",
   "emoji": "📘"

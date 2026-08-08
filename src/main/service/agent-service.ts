@@ -3,7 +3,7 @@
  *
  * 复刻 tinker-agent IAgentService / AgentService（本地单用户版，去 userId）：
  * listByUser / getAgentInfo / getDetail / create / update / delete。
- * DTO 定义集中在 ./types.ts（对齐 dto/agent/AgentInfoDTO 等）。
+ * DTO 定义集中在 ./types.ts。
  */
 import { AgentRepository } from '../repository/agent-repository'
 import type { AgentConfigRepository } from '../repository/agent-config-repository'
@@ -66,18 +66,18 @@ export class AgentService {
     return { items, total: agents.length }
   }
 
-  /** 获取单个 Agent（对齐 getAgentInfo） */
+  /** 获取单个 Agent */
   getAgentInfo(profile: string): AgentInfoDTO | null {
     const entity = this.agentRepo.findById(profile)
     return entity ? toAgentInfoDTO(entity) : null
   }
 
-  /** 获取详情（对齐 getDetail，本地与 getAgentInfo 同） */
+  /** 获取详情 */
   getDetail(profile: string): AgentInfoDTO | null {
     return this.getAgentInfo(profile)
   }
 
-  /** 创建（对齐 create）：写 agents 表 + 用 AgentMode.getDefaultConfig() 初始化 agent_configs 预设 */
+  /** 创建：写 agents 表 + 用 AgentMode.getDefaultConfig() 初始化 agent_configs 预设 */
   create(req: CreateAgentRequestDTO): AgentInfoDTO | null {
     if (this.agentRepo.findById(req.profile)) {
       return null // 已存在
@@ -109,13 +109,13 @@ export class AgentService {
     return toAgentInfoDTO(entity)
   }
 
-  /** 查询默认 Agent（is_default=1 且未删除，对齐 Java countDefaultAgents 语义） */
+  /** 查询默认 Agent */
   findDefaultAgent(): AgentInfoDTO | null {
     const agents = this.agentRepo.findByUser().filter((a) => a.isDefault && !a.deletedAt)
     return agents.length === 1 ? toAgentInfoDTO(agents[0]) : null
   }
 
-  /** 更新（对齐 update） */
+  /** 更新 */
   update(req: UpdateAgentRequestDTO): AgentInfoDTO | null {
     const existing = this.agentRepo.findById(req.profile)
     if (!existing) {
@@ -134,7 +134,7 @@ export class AgentService {
     return toAgentInfoDTO(updated)
   }
 
-  /** 删除（对齐 delete） */
+  /** 删除 */
   delete(profile: string): boolean {
     return this.agentRepo.delete(profile) > 0
   }

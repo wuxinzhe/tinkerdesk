@@ -144,7 +144,7 @@ export class ToolManager {
   /**
    * 获取客户端工具 Schema（toolType = client，注册到服务端用）。
    * 云端模式时，这些工具需要向 tinker-agent 服务端注册，
-   * 服务端 AgentLoop 调用时派发回本地执行。
+   * 服务端 TinkerAgent 调用时派发回本地执行。
    */
   getClientToolSchemas(profile: string): ToolSchema[] {
     const disabled = this.getDisabledSet(profile)
@@ -157,7 +157,7 @@ export class ToolManager {
     return result
   }
 
-  /** 获取内建工具 Schema（toolType = builtin，本地 AgentLoop 直接执行）。 */
+  /** 获取内建工具 Schema（toolType = builtin，本地 TinkerAgent 直接执行）。 */
   getBuiltinToolSchemas(profile: string): ToolSchema[] {
     const disabled = this.getDisabledSet(profile)
     const result: ToolSchema[] = []
@@ -196,7 +196,7 @@ export class ToolManager {
   }
 
   // ════════════════════════════════════════════════════════════
-  // 工具执行（取出 tool 实例 → 按 toolType 路由，对齐 Java ToolManager.execute）
+  // 工具执行
   // ════════════════════════════════════════════════════════════
 
   /** 执行工具调用（builtin/client 走自身执行器；mcp 走 MCP 统一执行器） */

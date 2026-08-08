@@ -28,6 +28,7 @@
         <div class="skill-detail__heading">
           <h3>{{ skill.displayName || skill.name }}</h3>
           <div class="skill-detail__badges">
+            <span class="badge">id: {{ skill.id }}</span>
             <span v-if="skill.author" class="badge">作者: {{ skill.author }}</span>
             <span v-if="skill.category" class="badge">{{ skill.category }}</span>
             <span v-if="skill.version" class="badge">v{{ skill.version }}</span>
@@ -146,9 +147,10 @@
         <div v-show="fileOpen" class="file-content">
           <div v-if="files.length" class="file-table">
             <div class="file-table__row file-table__head">
-              <span>文件名</span><span>类型</span><span>语言</span><span>排序</span><span></span>
+              <span>ID</span><span>文件名</span><span>类型</span><span>语言</span><span>排序</span><span></span>
             </div>
             <div v-for="f in files" :key="f.id" class="file-table__row">
+              <span class="file-id">{{ f.id }}</span>
               <span class="file-name" :title="f.name">{{ f.name || f.fileType }}</span>
               <span class="file-type">{{ f.fileType }}</span>
               <span class="file-lang">{{ f.language || '-' }}</span>
@@ -211,6 +213,7 @@ const drafts = ref({
   version: '', author: '', license: '',
   dependencies: '', requiresToolsets: '', requiresTools: '', fallbackForToolsets: '', fallbackForTools: '',
   triggers: '', triggerConditions: '', config: '', envVars: '', commands: '', body: '',
+  relatedNames: '',
 })
 
 async function loadDetail() {
@@ -274,6 +277,7 @@ function startEdit() {
     envVars: skill.value.envVars ?? '',
     commands: skill.value.commands ?? '',
     body: skill.value.body ?? '',
+    relatedNames: (skill.value.related ?? []).map((r) => r.name).join(', '),
   }
   editing.value = true
 }
@@ -309,6 +313,7 @@ async function saveEdit() {
       envVars: d.envVars,
       commands: d.commands,
       body: d.body,
+      related: d.relatedNames ? d.relatedNames.split(',').map((x: string) => x.trim()).filter(Boolean) : undefined,
     })
     editing.value = false
     advancedOpen.value = false
@@ -851,7 +856,7 @@ async function handleDelete() {
 
 .file-table__row {
   display: grid;
-  grid-template-columns: 1fr 90px 70px 50px 76px;
+  grid-template-columns: 44px 1fr 90px 70px 50px 76px;
   align-items: center;
   gap: 8px;
   padding: 9px 12px;

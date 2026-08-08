@@ -14,11 +14,11 @@ import type { ToolContext } from '../core/loop/types'
 /** 工具名 */
 export const TOOL_NAME = 'builtin_tinker_todo'
 
-/** 最大待办项数（对齐 MAX_TODO_ITEMS） */
+/** 最大待办项数 */
 const MAX_TODO_ITEMS = 256
-/** 单条内容最大字符数（对齐 Hermes MAX_TODO_CONTENT_CHARS） */
+/** 单条内容最大字符数 */
 const MAX_TODO_CONTENT_CHARS = 4000
-/** 截断标记（对齐 Hermes _TRUNCATION_MARKER） */
+/** 截断标记 */
 const TRUNCATION_MARKER = '\u2026 [truncated]'
 /** 有效状态 */
 const VALID_STATUSES = new Set(['pending', 'in_progress', 'completed', 'cancelled'])
@@ -57,7 +57,7 @@ export class TodoTool extends BaseTool {
         const todos = this.parseTodos(todosNode as Array<Record<string, unknown>>)
         const merge = Boolean(args.merge)
         items = this.todoService.write(sessionId, todos, merge)
-        // 对齐 Hermes：超 MAX_TODO_ITEMS 砍掉尾部（保留头部）
+        // 超 MAX_TODO_ITEMS 砍掉尾部（保留头部）
         if (items.length > MAX_TODO_ITEMS) {
           items = items.slice(0, MAX_TODO_ITEMS)
         }

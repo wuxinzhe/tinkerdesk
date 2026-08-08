@@ -250,7 +250,7 @@ async function saveCreate() {
   saving.value = true
   editError.value = ''
   try {
-    const created = await agentsApi.create({
+    await agentsApi.create({
       profile: createForm.value.profile.trim(),
       displayName: createForm.value.displayName || createForm.value.profile.trim(),
       description: createForm.value.description || undefined,

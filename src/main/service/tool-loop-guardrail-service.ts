@@ -5,10 +5,10 @@
  * - exact_failure：相同工具+相同参数连续失败 → warn/block
  * - same_tool_failure：同工具连续失败（不同参数）→ warn/halt
  * - no_progress：幂等工具返回相同结果 → warn/block
- * 全部阈值由 AgentConfig 驱动（per-agent），默认值对齐 Hermes。
+ * 全部阈值由 AgentConfig 驱动（per-agent），默认值
  *
  * 与 ToolAuthService / SandboxWhitelistService 同属工具门检服务簇，
- * 由 AgentLoop 在工具执行前后调用（beforeCall / afterCall）。
+ * 由 TinkerAgent 在工具执行前后调用（beforeCall / afterCall）。
  */
 import { createHash } from 'crypto'
 import type { AgentConfig } from '../core/loop/types'
@@ -17,7 +17,7 @@ import type { GuardrailDecision } from './types'
 export { GuardrailAction } from './types'
 export type { GuardrailDecision } from './types'
 
-/** 只读/幂等工具：检测"相同结果重复"（对齐 Hermes IDEMPOTENT_TOOL_NAMES） */
+/** 只读/幂等工具：检测"相同结果重复" */
 const IDEMPOTENT_TOOLS = new Set([
   'read_file', 'search_files', 'web_search', 'web_extract',
   'session_search', 'browser_snapshot', 'browser_console', 'browser_get_images',
@@ -25,7 +25,7 @@ const IDEMPOTENT_TOOLS = new Set([
   'desktop_tinker_web_search', 'desktop_tinker_web_extract',
 ])
 
-/** 变更工具：不做 no_progress 检测（对齐 Hermes MUTATING_TOOL_NAMES） */
+/** 变更工具：不做 no_progress 检测 */
 const MUTATING_TOOLS = new Set([
   'terminal', 'execute_code', 'write_file', 'patch', 'todo', 'memory',
   'skill_manage', 'browser_click', 'browser_type', 'browser_press',
@@ -201,7 +201,7 @@ export class ToolLoopGuardrail {
     return { toolName, argsHash: this.sha256(this.canonicalArgs(args)) }
   }
 
-  /** 参数规范化：排序键的紧凑 JSON（对齐 Hermes canonical_tool_args） */
+  /** 参数规范化：排序键的紧凑 JSON */
   private canonicalArgs(args: Record<string, unknown>): string {
     if (!args || Object.keys(args).length === 0) {
       return '{}'
@@ -213,7 +213,7 @@ export class ToolLoopGuardrail {
     return JSON.stringify(sorted)
   }
 
-  /** 结果 hash：优先解析 JSON 后规范化（对齐 Hermes _result_hash） */
+  /** 结果 hash：优先解析 JSON 后规范化 */
   private resultHash(result: string): string {
     if (!result) {
       return this.sha256('')
@@ -236,7 +236,7 @@ export class ToolLoopGuardrail {
 }
 
 /**
- * 失败分类（对齐 Hermes classify_tool_failure）：
+ * 失败分类：
  * terminal 看 exit_code≠0；其余含 "error"/"failed"/Error 前缀。
  */
 export function classifyToolFailure(toolName: string, result: string): boolean {
@@ -259,7 +259,7 @@ export function classifyToolFailure(toolName: string, result: string): boolean {
 }
 
 /**
- * warn/halt 时附加引导文本到工具结果（对齐 Hermes append_toolguard_guidance）。
+ * warn/halt 时附加引导文本到工具结果。
  */
 export function appendGuardrailGuidance(result: string, decision: GuardrailDecision): string {
   if ((decision.action !== GuardrailAction.WARN && decision.action !== GuardrailAction.HALT) || !decision.message) {
@@ -270,7 +270,7 @@ export function appendGuardrailGuidance(result: string, decision: GuardrailDecis
   return (result ?? '') + suffix
 }
 
-/** 构造合成结果（block/halt 时返回，对齐 Hermes toolguard_synthetic_result） */
+/** 构造合成结果 */
 export function syntheticGuardrailResult(decision: GuardrailDecision): string {
   return JSON.stringify({
     error: decision.message,

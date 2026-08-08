@@ -10,7 +10,7 @@ import {
  *
  * 对应 tinker-agent LlmResponse：所有下游层只根据 resType 做分发。
  * 类型定义集中在 types.ts，本文件只提供常量、工厂和查询方法。
- * 常量值对齐 showing-agent LlmConstants（小写风格），定义在 core/constants/llm.ts。
+ * 常量值定义在 core/constants/llm.ts。
  */
 
 // ── 响应类型常量（re-export，定义在 core/constants/llm.ts）──

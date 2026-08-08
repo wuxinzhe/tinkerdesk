@@ -6,7 +6,7 @@
  * 原子写（tmp + rename）保证崩溃安全，等价 Redis Lua 的原子性。
  *
  * 数据格式：{ "entries": string[] }，按 profile 分区。
- * 操作语义对齐 Java 版：
+ * 操作语义版：
  *   addEntry     1 已添加 / 0 重复 / -1 超限
  *   replaceEntry 1 已替换 / 0 未找到 / -1 超限 / -2 多条匹配
  *   removeEntry  1 已删除 / 0 未找到 / -2 多条匹配
@@ -20,7 +20,7 @@ export type { MemoryOperation } from './types'
 
 /** 文件系统记忆存储 */
 export class MemoryStore {
-  /** Entry 分隔符（对齐 Java ENTRY_DELIMITER） */
+  /** Entry 分隔符 */
   static readonly ENTRY_DELIMITER = '\n§\n'
 
   /** 记忆类型 target：'memory' 或 'user' */
@@ -155,6 +155,33 @@ export class MemoryStore {
     return items.length
   }
 
+  /** 按索引替换条目（index 越界返回 -1；内容超限返回 -2） */
+  updateByIndex(target: string, profile: string, index: number, newContent: string, charLimit: number): number {
+    const items = this.readAll(target, profile)
+    if (index < 0 || index >= items.length) return -1
+    if (newContent.length > charLimit) return -2
+    items[index] = newContent
+    this.writeAll(target, profile, items)
+    return 1
+  }
+
+  /** 按索引删除条目（index 越界返回 -1） */
+  removeByIndex(target: string, profile: string, index: number): number {
+    const items = this.readAll(target, profile)
+    if (index < 0 || index >= items.length) return -1
+    items.splice(index, 1)
+    this.writeAll(target, profile, items)
+    return 1
+  }
+
+  /** 按新顺序重排条目（order 长度必须等于条目数） */
+  reorder(target: string, profile: string, order: string[]): number {
+    const items = this.readAll(target, profile)
+    if (order.length !== items.length) return -1
+    this.writeAll(target, profile, [...order])
+    return 1
+  }
+
   // ── Internal ──
 
   /** 文件路径：{dir}/{target}-{profile}.json */
@@ -170,7 +197,7 @@ export class MemoryStore {
     renameSync(tmp, file)
   }
 
-  /** 计算条目总字符数（含分隔符，对齐 Lua 逻辑） */
+  /** 计算条目总字符数 */
   private totalChars(items: string[]): number {
     return items.reduce((sum, v) => sum + v.length + MemoryStore.ENTRY_DELIMITER.length, 0)
   }

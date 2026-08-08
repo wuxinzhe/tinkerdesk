@@ -1,5 +1,6 @@
 <template>
-  <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
+  <div class="chat-input-wrap">
+    <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
     <div class="chat-input__row">
       <!-- 语音输入（点击武装 → 按住音波框/快捷键录音 → 松开识别发送；录音是应用固有功能，STT 转发给语音 provider） -->
       <button
@@ -43,7 +44,7 @@
           key="textarea"
           ref="textareaRef"
           class="chat-input__textarea"
-          :placeholder="'Enter发送消息，Ctrl+Enter换行'"
+          :placeholder="'Enter 发送，Ctrl+Enter 换行'"
           :disabled="disabled"
           :value="modelValue"
           rows="1"
@@ -53,16 +54,6 @@
         />
       </Transition>
       <div class="chat-input__btn-group">
-        <button
-          class="chat-input__send"
-          :disabled="disabled || voiceMode || !modelValue.trim()"
-          @click="handleSend"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
-        </button>
         <button
           class="chat-input__function"
           :class="{ 'chat-input__function--open': panelOpen }"
@@ -94,7 +85,7 @@
             :title="'历史预览'"
             @click="$emit('history-preview')"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <rect x="3" y="3" width="7" height="9" rx="1.5" />
               <rect x="14" y="3" width="7" height="5" rx="1.5" />
               <rect x="14" y="12" width="7" height="9" rx="1.5" />
@@ -102,44 +93,18 @@
             </svg>
             <span>历史预览</span>
           </button>
-
-          <button
-            class="chat-input__panel-icon"
-            :class="{ 'chat-input__panel-icon--active': yoloView }"
-            @click="yoloView = !yoloView"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-              <line x1="9" y1="9" x2="9.01" y2="9" />
-              <line x1="15" y1="9" x2="15.01" y2="9" />
-            </svg>
-            <span>YOLO</span>
-          </button>
         </div>
-
-        <!-- YOLO 设置详情 -->
-        <Transition name="yolo-detail">
-          <div v-if="yoloView" class="chat-input__yolo-detail">
-            <div class="chat-input__yolo-row">
-              <div class="chat-input__yolo-info">
-                <div class="chat-input__yolo-title">YOLO 模式</div>
-                <div class="chat-input__yolo-desc">开启后跳过所有工具审批，直接执行</div>
-              </div>
-              <label class="chat-input__switch">
-                <input
-                  type="checkbox"
-                  :checked="yoloEnabled"
-                  :disabled="!sessionId"
-                  @change="toggleYolo"
-                />
-                <span class="chat-input__switch-slider" />
-              </label>
-            </div>
-          </div>
-        </Transition>
       </div>
     </Transition>
+    </div>
+
+    <!-- 设置抽屉（独立组件——模型/推理深度/YOLO） -->
+    <ChatSettingsDrawer
+      :session-id="sessionId"
+      :profile="profile"
+      :yolo="yolo"
+      @update:yolo="$emit('update:yolo', $event)"
+    />
   </div>
 </template>
 
@@ -147,6 +112,7 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
+import ChatSettingsDrawer from './ChatSettingsDrawer.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
@@ -174,8 +140,6 @@ const emit = defineEmits<{
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const panelOpen = ref(false)
-const yoloView = ref(false)
-const yoloEnabled = ref(props.yolo)
 
 // ── 语音输入（应用固有录音；STT 由语音 provider 支持） ──
 // 状态机：idle（输入框）→ 点击按钮武装 voiceMode → 按住音波框/快捷键录音 → 松开 STT 发送 → idle
@@ -184,8 +148,9 @@ const voiceMode = ref(false)      // true=输入框切换为音波框（武装/�
 const recording = ref(false)
 const countdown = ref(0)          // 110s 后剩余秒数（0=未进入倒计时）
 const waveCanvasRef = ref<HTMLCanvasElement | null>(null)
-let mediaRecorder: MediaRecorder | null = null
-let audioChunks: Blob[] = []
+let pcmChunks: Float32Array[] = []            // 录音 PCM 分片（onaudioprocess 收集）
+let pcmSourceNode: MediaStreamAudioSourceNode | null = null
+let pcmProcessor: ScriptProcessorNode | null = null
 let audioContext: AudioContext | null = null
 let analyser: AnalyserNode | null = null
 let waveRaf = 0
@@ -212,7 +177,6 @@ const shortcutLabel = computed(() =>
 
 const PX_PER_SEC = 60                  // 音波框时间轴：1 秒固定宽度
 const MAX_RECORD_SEC = 120             // 最长录音 120s
-const COUNTDOWN_AT_SEC = 110           // 110s 起按钮倒计时
 
 /** 启动时检测 STT provider + 加载快捷键配置 */
 async function checkSttAvailability(): Promise<void> {
@@ -295,27 +259,30 @@ function onWaveboxLeave(): void {
   if (recording.value) void stopRecording()
 }
 
-/** 开始录音 */
+/** 开始录音（直接 PCM 采集——ScriptProcessorNode 绕过 MediaRecorder/decodeAudioData，避免 "Unable to decode audio data"） */
 async function startRecording(): Promise<void> {
   if (recording.value) return
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    audioChunks = []
-    // 显式指定纯音频 mimeType——默认可能录成 vp8/webm（含视频轨），decodeAudioData 无法解码报 "Unable to decode audio data"
-    const mimeCandidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
-    const mime = mimeCandidates.find((m) => typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(m)) ?? ''
-    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) audioChunks.push(e.data)
-    }
-    mediaRecorder.start()
-    // 实时音波：AnalyserNode
-    audioContext = audioContext ?? new AudioContext()
+    pcmChunks = []
+    // 实时音波 + PCM 采集共用同一 AudioContext
+    audioContext = audioContext ?? new AudioContext({ sampleRate: 16000 })
     const source = audioContext.createMediaStreamSource(stream)
+    pcmSourceNode = source
     analyser = audioContext.createAnalyser()
     analyser.fftSize = 256
     analyser.smoothingTimeConstant = 0.6
     source.connect(analyser)
+    // ScriptProcessor 采集 PCM（4096 帧/片）——必须 connect destination 才会被处理（Chromium 优化：无输出连接不触发 onaudioprocess）
+    const processor = audioContext.createScriptProcessor(4096, 1, 1)
+    pcmProcessor = processor
+    processor.onaudioprocess = (e) => {
+      pcmChunks.push(new Float32Array(e.inputBuffer.getChannelData(0)))
+      // 静音输出（输出置零——避免麦克风回声）
+      e.outputBuffer.getChannelData(0).fill(0)
+    }
+    source.connect(processor)
+    processor.connect(audioContext.destination)
     waveHistory = []
     recordingStartedAt = Date.now()
     recording.value = true
@@ -324,31 +291,36 @@ async function startRecording(): Promise<void> {
     startTimers()
   } catch {
     // 麦克风权限被拒等：明确提示（不静默）
-    showErrorToast({ code: 'MIC_PERMISSION_DENIED', message: '无法访问麦克风，请在系统设置中允许应用使用麦克风' })
+    showErrorToast({ code: 'mic:permission:denied', message: '无法访问麦克风，请在系统设置中允许应用使用麦克风' })
   }
 }
 
-/** 停止录音 → STT → 发送 → 恢复输入框 */
+/** 停止录音 → PCM 降采样 16k → STT → 发送 → 恢复输入框 */
 async function stopRecording(): Promise<void> {
-  if (!recording.value || !mediaRecorder) return
+  if (!recording.value || !pcmProcessor) return
   recording.value = false
   clearTimers()
   stopWaveLoop()
   waveHistory = []
   clearWaveCanvas() // 结束录音：时间轴隐藏（清空——不再显示均线）
-  const recorder = mediaRecorder
-  const chunks = audioChunks
-  mediaRecorder = null
-  audioChunks = []
+  // 停止采集并释放麦克风
   try {
-    const blob = await new Promise<Blob>((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunks, { type: chunks[0]?.type ?? 'audio/webm' }))
-      recorder.stop()
-      recorder.stream.getTracks().forEach((t) => t.stop())
-    })
-    const samples = await decodeToPcm16k(blob)
+    pcmProcessor.disconnect()
+    pcmSourceNode?.disconnect()
+  } catch {
+    // 断开失败不影响后续
+  }
+  pcmProcessor.onaudioprocess = null
+  const stream = pcmSourceNode?.mediaStream
+  stream?.getTracks().forEach((t) => t.stop())
+  const chunks = pcmChunks
+  pcmChunks = []
+  pcmProcessor = null
+  pcmSourceNode = null
+  try {
+    const samples = concatPcmTo16k(chunks)
     if (samples.length === 0) {
-      console.warn('[voice] 录音解码后为空（未检测到声音？）')
+      console.warn('[voice] 录音为空（未检测到声音？）')
       window.dispatchEvent(
         new CustomEvent('global-tip', {
           detail: { type: 'error', code: 'voice:stt', message: '未检测到声音，请靠近麦克风重试' },
@@ -389,11 +361,13 @@ function exitVoiceMode(): void {
   stopWaveLoop()
   clearWaveCanvas() // 清空 canvas——避免切换动画中时间轴蓝线闪现
   waveHistory = []
-  if (mediaRecorder) {
-    mediaRecorder.stream.getTracks().forEach((t) => t.stop())
-    mediaRecorder = null
+  if (pcmSourceNode) {
+    pcmSourceNode.mediaStream.getTracks().forEach((t) => t.stop())
+    pcmSourceNode = null
   }
-  audioChunks = []
+  pcmProcessor?.disconnect()
+  pcmProcessor = null
+  pcmChunks = []
 }
 
 /** 时长计时：120s 自动结束；110s 起按钮倒计时 */
@@ -461,7 +435,6 @@ function drawWave(): void {
   ctx.lineTo(w, midY)
   ctx.stroke()
 
-  const elapsed = recording.value ? (Date.now() - recordingStartedAt) / 1000 : 0
   // 当前帧波形入历史（降采样 64 点）
   if (recording.value && analyser) {
     const data = new Uint8Array(analyser.frequencyBinCount)
@@ -523,43 +496,25 @@ function drawWaveIdle(): void {
   ctx.fillText('0', 24, 28)
 }
 
-/** webm/ogg blob → 16kHz Float32Array 单声道 PCM */
-async function decodeToPcm16k(blob: Blob): Promise<Float32Array> {
-  if (!audioContext) audioContext = new AudioContext()
-  // 用户手势后 AudioContext 可能处于 suspended——先 resume 再解码，否则 decodeAudioData 失败
-  if (audioContext.state === 'suspended') {
-    try {
-      await audioContext.resume()
-    } catch {
-      // resume 失败继续尝试解码
-    }
+/** 合并 PCM 分片 + 线性插值降采样 → 16kHz Float32Array 单声道（录音时 AudioContext 即 16k——通常无需重采样） */
+function concatPcmTo16k(chunks: Float32Array[]): Float32Array {
+  if (chunks.length === 0) return new Float32Array(0)
+  let total = 0
+  for (const c of chunks) total += c.length
+  const merged = new Float32Array(total)
+  let offset = 0
+  for (const c of chunks) {
+    merged.set(c, offset)
+    offset += c.length
   }
-  const arrayBuffer = await blob.arrayBuffer()
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-  const source = audioBuffer.getChannelData(0)
-  const srcRate = audioBuffer.sampleRate
-  const targetRate = 16000
-  if (srcRate === targetRate) return source
-  // 线性插值重采样
-  const ratio = srcRate / targetRate
-  const outLen = Math.floor(source.length / ratio)
-  const out = new Float32Array(outLen)
-  for (let i = 0; i < outLen; i++) {
-    const pos = i * ratio
-    const idx = Math.floor(pos)
-    const frac = pos - idx
-    const next = Math.min(idx + 1, source.length - 1)
-    out[i] = source[idx] * (1 - frac) + source[next] * frac
-  }
-  return out
+  return merged
 }
 
-// 切换 session 时重置功能面板 + YOLO 详情为关闭状态（组件复用，状态不跨会话保留）
+// 切换 session 时重置功能面板为关闭状态（组件复用，状态不跨会话保留）
 watch(
   () => props.sessionId,
   () => {
     panelOpen.value = false
-    yoloView.value = false
   }
 )
 
@@ -575,38 +530,8 @@ onUnmounted(() => {
   exitVoiceMode()
 })
 
-// 打开 YOLO 面板或切换会话时，向后台查询该 session 的最新 yolo 状态
-// （后台不会主动推送，开关状态必须每次打开时刷新，否则永远显示默认 false）
-watch(
-  () => [yoloView.value, props.sessionId],
-  async () => {
-    if (!yoloView.value || !props.sessionId) return
-    try {
-      const data = await window.api.sessions.getYolo(props.profile ?? 'default', props.sessionId)
-      yoloEnabled.value = (data as boolean) ?? false
-    } catch (err) {
-      // 查询失败不能静默——否则开关永远显示默认 false 且无法排查
-      console.warn('[yolo] 查询状态异常', err)
-    }
-  }
-)
-
 function togglePanel() {
   panelOpen.value = !panelOpen.value
-  if (!panelOpen.value) {
-    yoloView.value = false
-  }
-}
-
-async function toggleYolo() {
-  if (!props.sessionId) return
-  try {
-    const data = await window.api.sessions.toggleYolo(props.profile ?? 'default', props.sessionId)
-    yoloEnabled.value = (data as boolean) ?? !yoloEnabled.value
-    emit('update:yolo', yoloEnabled.value)
-  } catch {
-    // 静默失败
-  }
 }
 
 function onInput(e: Event) {
@@ -616,10 +541,27 @@ function onInput(e: Event) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
+  if (e.key !== 'Enter') return
+  // Shift/Ctrl/Cmd+Enter 换行（Ctrl+Enter 在 textarea 默认不插入——显式插入）
+  if (e.shiftKey || e.ctrlKey || e.metaKey) {
+    if (!e.shiftKey) {
+      e.preventDefault()
+      insertNewline()
+    }
+    return
   }
+  // 纯 Enter 发送
+  e.preventDefault()
+  handleSend()
+}
+
+/** 在光标处插入换行（Ctrl/Cmd+Enter——textarea 原生不处理） */
+function insertNewline() {
+  const el = textareaRef.value
+  if (!el) return
+  el.setRangeText('\n', el.selectionStart, el.selectionEnd, 'end')
+  el.dispatchEvent(new Event('input', { bubbles: true }))
+  nextTick(() => autoResize(el))
 }
 
 function handleSend() {
@@ -646,7 +588,16 @@ defineExpose({ focus })
 <style scoped>
 /* ── 容器 ── */
 
+/* chat-input-wrap：包裹输入框 + 设置抽屉（drawer absolute 定位基准） */
+.chat-input-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── 输入框主体 ── */
 .chat-input {
+  position: relative;   /* 设置抽屉定位基准 */
+  z-index: 10;          /* 上层——抽屉（z 下层）从输入框背后拉出 */
   padding: 8px 16px;
   border-top: 1px solid var(--sa-border, #d2d2d7);
   background: var(--sa-bg-primary, #ffffff);
@@ -815,9 +766,9 @@ defineExpose({ focus })
   .chat-input__textarea {
     font-size: 16px;
   }
-  /* 手机模式：隐藏发送按钮（手机键盘 Enter 发送） */
-  .chat-input__send {
-    display: none;
+  /* 手机模式：输入框字号放大（键盘 Enter 发送） */
+  .chat-input__textarea::placeholder {
+    font-size: 13px;   /* placeholder 缩小——与输入字号拉开层级 */
   }
 }
 
@@ -842,42 +793,7 @@ defineExpose({ focus })
   flex-shrink: 0;
 }
 
-/* ── 发送按钮（圆形） ── */
-
-.chat-input__send {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--sa-accent, #007aff);
-  color: #ffffff;
-  cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-}
-
-.chat-input__send svg {
-  display: block;
-}
-
-.chat-input__send:hover:not(:disabled) {
-  background: var(--sa-accent-hover, #0066d6);
-}
-
-.chat-input__send:active:not(:disabled) {
-  transform: scale(0.92);
-}
-
-.chat-input__send:disabled {
-  background: var(--sa-border, #d2d2d7);
-  cursor: not-allowed;
-}
-
-/* ── 功能按钮（圆形，+ / X 旋转） ── */
-
+/* + 号功能按钮（点击展开功能面板） */
 .chat-input__function {
   display: flex;
   align-items: center;
@@ -888,36 +804,40 @@ defineExpose({ focus })
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 50%;
   background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--sa-text-secondary, #86868b);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+/* + 号图标旋转动画（展开 → 旋转 135° 变 X 关闭符） */
+.chat-input__function-icon {
+  transition: transform 0.2s ease;
+}
+
+.chat-input__function--open .chat-input__function-icon {
+  transform: rotate(135deg);
 }
 
 .chat-input__function:hover {
-  background: var(--sa-bg-primary, #ffffff);
   border-color: var(--sa-accent, #007aff);
+  color: var(--sa-accent, #007aff);
 }
 
 .chat-input__function--open {
-  background: var(--sa-bg-primary, #ffffff);
   border-color: var(--sa-accent, #007aff);
+  color: var(--sa-accent, #007aff);
+  background: var(--sa-bg-elevated, #ffffff);
 }
 
 .chat-input__function-icon {
   display: block;
-  transition: transform 0.25s ease;
 }
 
-.chat-input__function--open .chat-input__function-icon {
-  transform: rotate(45deg);
-}
 
-/* ── 功能面板 ── */
-
+/* ── 功能面板（+ 展开——历史预览等） ── */
 .chat-input__panel {
   margin-top: 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 12px;
+  border-top: 1px solid var(--sa-border, #d2d2d7);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
   background: var(--sa-bg-primary, #ffffff);
   padding: 12px;
   overflow: hidden;
@@ -931,18 +851,19 @@ defineExpose({ focus })
 }
 
 .chat-input__panel-icon {
-  flex: 1 1 120px;      /* 均分剩余宽度；最小基底 120px，不够就换行 */
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 10px 14px;
+  width: 72px;          /* 正方形（不平铺）——图标按钮 */
+  height: 72px;
   border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 10px;
+  border-radius: 16px;
   background: var(--sa-bg-secondary, #f5f5f7);
   color: var(--sa-text-primary, #1d1d1f);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   white-space: nowrap;
   transition: border-color 0.15s, background 0.15s;
 }
@@ -952,89 +873,7 @@ defineExpose({ focus })
   background: var(--sa-bg-primary, #ffffff);
 }
 
-.chat-input__panel-icon--active {
-  border-color: var(--sa-accent, #007aff);
-  background: rgba(0, 122, 255, 0.08);
-}
-
-/* ── YOLO 详情 ── */
-
-.chat-input__yolo-detail {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
-}
-
-.chat-input__yolo-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chat-input__yolo-info {
-  flex: 1;
-}
-
-.chat-input__yolo-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
-}
-
-.chat-input__yolo-desc {
-  font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  margin-top: 2px;
-}
-
-/* ── Toggle Switch ── */
-
-.chat-input__switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 26px;
-  flex-shrink: 0;
-}
-
-.chat-input__switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.chat-input__switch-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background: var(--sa-border, #d2d2d7);
-  border-radius: 13px;
-  transition: background 0.2s;
-}
-
-.chat-input__switch-slider::before {
-  content: '';
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  left: 2px;
-  bottom: 2px;
-  background: var(--sa-bg-primary, #ffffff);
-  border-radius: 50%;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-.chat-input__switch input:checked + .chat-input__switch-slider {
-  background: var(--sa-accent, #007aff);
-}
-
-.chat-input__switch input:checked + .chat-input__switch-slider::before {
-  transform: translateX(18px);
-}
-
 /* ── 面板滑动动画（0.25s） ── */
-
 .panel-slide-enter-active {
   transition: all 0.25s ease;
 }

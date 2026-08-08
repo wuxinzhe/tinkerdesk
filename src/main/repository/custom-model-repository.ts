@@ -76,30 +76,30 @@ const SELECT_COLS =
 
 /** 自定义模型数据访问层（本地 SQLite） */
 export const CustomModelRepository = {
-  /** 查询启用的模型（按创建时间倒序） */
-  listEnabled(profile: string): CustomModelEntity[] {
+  /** 查询启用的模型（按创建时间倒序——全局共享，不按 profile 隔离） */
+  listEnabled(): CustomModelEntity[] {
     const db = getDatabase()
     const rows = db
-      .prepare(`SELECT ${SELECT_COLS} FROM custom_models WHERE profile = ? AND enabled = 1 ORDER BY created_at DESC`)
-      .all(profile)
+      .prepare(`SELECT ${SELECT_COLS} FROM custom_models WHERE enabled = 1 ORDER BY created_at DESC`)
+      .all()
     return rows.map((r) => rowToEntity(toRow(r)))
   },
 
-  /** 按 id 查询 */
-  findById(id: string, profile: string): CustomModelEntity | null {
+  /** 按 id 查询（全局共享——不按 profile 隔离） */
+  findById(id: string): CustomModelEntity | null {
     const db = getDatabase()
     const row = db
-      .prepare(`SELECT ${SELECT_COLS} FROM custom_models WHERE profile = ? AND id = ? AND enabled = 1`)
-      .get(profile, id)
+      .prepare(`SELECT ${SELECT_COLS} FROM custom_models WHERE id = ? AND enabled = 1`)
+      .get(id)
     return row ? rowToEntity(toRow(row)) : null
   },
 
-  /** 创建 */
+  /** 创建（模型全局共享——profile 统一 'default' 兼容旧表结构） */
   create(input: CreateCustomModelInput): CustomModelEntity {
     const db = getDatabase()
     const entity: CustomModelEntity = {
       id: randomUUID(),
-      profile: input.profile ?? 'default',
+      profile: 'default',   // 全局化：custom_models 不再按 profile 隔离
       alias: input.alias,
       modelName: input.modelName,
       providerId: input.providerId ?? 'openai',
@@ -121,11 +121,11 @@ export const CustomModelRepository = {
       entity.apiKey, entity.baseUrl, entity.contextLimit, entity.modelType,
       entity.enabled ? 1 : 0, entity.testPassed ? 1 : 0,
     )
-    return this.findById(entity.id, entity.profile)!
+    return this.findById(entity.id)!
   },
 
-  /** 更新（COALESCE 语义：仅更新非空字段，updated_at 自动刷新） */
-  update(id: string, input: UpdateCustomModelInput, profile: string): boolean {
+  /** 更新（COALESCE 语义：仅更新非空字段，updated_at 自动刷新——全局共享） */
+  update(id: string, input: UpdateCustomModelInput): boolean {
     const db = getDatabase()
     const result = db.prepare(
       `UPDATE custom_models SET
@@ -136,28 +136,28 @@ export const CustomModelRepository = {
         api_key    = COALESCE(?, api_key),
         base_url   = COALESCE(?, base_url),
         context_limit = COALESCE(?, context_limit)
-       WHERE profile = ? AND id = ?`
+       WHERE id = ?`
     ).run(
       input.alias ?? null, input.modelName ?? null, input.providerId ?? null,
       input.apiKey ?? null, input.baseUrl ?? null, input.contextLimit ?? null,
-      profile, id,
+      id,
     )
     return result.changes > 0
   },
 
-  /** 删除 */
-  delete(id: string, profile: string): boolean {
+  /** 删除（全局共享） */
+  delete(id: string): boolean {
     const db = getDatabase()
-    const result = db.prepare('DELETE FROM custom_models WHERE profile = ? AND id = ?').run(profile, id)
+    const result = db.prepare('DELETE FROM custom_models WHERE id = ?').run(id)
     return result.changes > 0
   },
 
-  /** 更新连通性测试结果 */
-  updateTestPassed(id: string, passed: boolean, profile: string): boolean {
+  /** 更新连通性测试结果（全局共享） */
+  updateTestPassed(id: string, passed: boolean): boolean {
     const db = getDatabase()
     const result = db
-      .prepare(`UPDATE custom_models SET test_passed = ?, updated_at = datetime('now') WHERE profile = ? AND id = ?`)
-      .run(passed ? 1 : 0, profile, id)
+      .prepare(`UPDATE custom_models SET test_passed = ?, updated_at = datetime('now') WHERE id = ?`)
+      .run(passed ? 1 : 0, id)
     return result.changes > 0
   },
 }

@@ -30,7 +30,8 @@
       </div>
 
       <div class="si__actions">
-        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">{{ saving ? '保存中…' : '保存技能' }}</button>
+        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">{{ saving ? '保存中…' :
+          '保存技能' }}</button>
         <button class="action-btn" @click="goBack">取消</button>
       </div>
     </div>
@@ -38,13 +39,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { skillsApi } from '@/renderer/api/skills-api'
-import { parseSkillMarkdown } from '@/renderer/utils/skill-parser'
 import { L3PageLayout } from '@/renderer/components'
+import { parseSkillMarkdown } from '@/renderer/utils/skill-parser'
 import SkillFormPanel from '@/renderer/views/agents/skills/SkillFormPanel.vue'
-import type { SkillFormModel } from '@/renderer/views/agents/skills/SkillFormPanel.vue'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 interface SkillImportForm {
   name: string
@@ -63,6 +63,8 @@ interface SkillImportForm {
   fallbackForTools: string
   triggers: string
   triggerConditions: string
+  /** 关联技能名数组（导入解析 related: [name...]） */
+  related?: string[]
   config: string
   envVars: string
   commands: string
@@ -74,7 +76,6 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 const saving = ref(false)
-const advancedOpen = ref(false)
 const importedName = ref('')
 const parseError = ref('')
 const categories = ref<Array<{ name: string; displayName?: string }>>([])
@@ -144,23 +145,23 @@ async function handleSave() {
   if (saving.value) return
   const f = form.value
   if (!f.name.trim() || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(f.name.trim())) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'si', message: 'name 缺失或非法（小写字母/数字/连字符）' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:import:invalid_name', message: 'name 缺失或非法（小写字母/数字/连字符）' } }))
     return
   }
   if (!f.body.trim()) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'si', message: '正文不能为空' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:import:empty_body', message: '正文不能为空' } }))
     return
   }
   // 长度校验（与后端一致）
   const MAX_BODY = 50 * 1024
   const MAX_FILE = 256 * 1024
   if (f.body.length > MAX_BODY) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'si', message: `正文过长（${f.body.length} 字符，上限 ${MAX_BODY}）——请精简或拆分为附件` } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:import:body_too_long', message: `正文过长（${f.body.length} 字符，上限 ${MAX_BODY}）——请精简或拆分为附件` } }))
     return
   }
   for (const file of f.files) {
     if ((file.content ?? '').length > MAX_FILE) {
-      window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'si', message: `附件「${file.name || file.fileType}」过长（上限 ${MAX_FILE} 字符）` } }))
+      window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:import:file_too_long', message: `附件「${file.name || file.fileType}」过长（上限 ${MAX_FILE} 字符）` } }))
       return
     }
   }
@@ -189,12 +190,14 @@ async function handleSave() {
       envVars: f.envVars.trim(),
       commands: f.commands.trim(),
       body: f.body,
-      files: f.files,
+      // reactive 代理对象无法过 IPC structured clone（DataCloneError）——展开为普通对象
+      files: f.files.map((file) => ({ fileType: file.fileType, name: file.name, content: file.content, sortOrder: file.sortOrder })),
+      related: f.related ?? undefined,
     })
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'tip', code: 'si', message: `技能「${info.displayName}」已保存` } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'tip', code: 'skill:import:saved', message: `技能「${info.displayName}」已保存` } }))
     goBack()
   } catch (e) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'si', message: (e as Error).message ?? '保存失败' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:import:save_failed', message: (e as Error).message ?? '保存失败' } }))
   } finally {
     saving.value = false
   }

@@ -23,7 +23,7 @@ export class ModelsApi {
     return (await window.api.models.getProvider(id)) as SystemProvider
   }
 
-  /** 从供应商拉取可用模型列表（对齐 Java POST /models/providers/{id}/models） */
+  /** 从供应商拉取可用模型列表 */
   async fetchModels(providerId: string, apiKey: string, baseUrl?: string): Promise<ModelInfo[]> {
     const data = await window.api.models.fetchModels({ providerId, apiKey, baseUrl })
     return data as ModelInfo[]
@@ -63,11 +63,11 @@ export class ModelsApi {
   }
 
   async bindSceneModel(profile: string, data: BindSceneModelRequest): Promise<void> {
-    await window.api.models.bindScene(profile, { sceneId: data.sceneId, modelId: data.modelId, priority: data.priority })
+    await window.api.models.bindScene(profile, { sceneId: data.sceneId, modelId: data.modelId, priority: data.priority, isMain: data.isMain })
   }
 
-  async unbindSceneModel(profile: string, sceneId: string, priority: number): Promise<void> {
-    await window.api.models.unbindScene(profile, sceneId, priority)
+  async unbindSceneModel(profile: string, sceneId: string, modelId: string): Promise<void> {
+    await window.api.models.unbindScene(profile, sceneId, modelId)
   }
 
   async reorderSceneBindings(_profile: string, _data: ReorderSceneBindingsRequest): Promise<void> {

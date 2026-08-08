@@ -28,7 +28,7 @@ export abstract class HandlebarsPresetModule implements IDynamicPromptModule {
     return result && result.trim() !== '' ? result : null
   }
 
-  /** 构建模板变量映射（对齐 HandlebarsPresetModule.buildContextMap） */
+  /** 构建模板变量映射 */
   private buildContextMap(ctx: ConversationContext): Record<string, unknown> {
     return {
       sessionId: ctx.sessionId,

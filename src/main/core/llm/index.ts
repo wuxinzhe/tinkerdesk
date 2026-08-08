@@ -4,6 +4,7 @@
 // 实现类
 export { AnthropicClient } from './client/anthropic-client'
 export { OpenAIClient } from './client/openai-client'
+export { GoogleClient } from './client/google-client'
 export { LlmClientManager } from './llm-client-manager'
 export { LlmOperationManager } from './llm-operation-manager'
 export { LlmRouter } from './llm-router'

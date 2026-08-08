@@ -1,7 +1,7 @@
 /**
  * utils/file-read.ts — 文件读取守卫与格式化工具
  *
- * 复刻 tinker-agent-ui tools/desktop/read-file（对齐 Hermes）：
+ * 复刻 tinker-agent-ui tools/desktop/read-file：
  * - isBlockedDevicePath / hasBinaryExtension：设备路径 + 二进制扩展守卫
  * - truncateToCharBudget：字符预算截断
  * - addLineNumbers：行号格式化（LINE_NUM|CONTENT）
@@ -47,7 +47,7 @@ export function hasBinaryExtension(p: string): string | null {
   return BINARY_EXTENSIONS.has(ext) ? ext : null
 }
 
-/** 字符预算截断：超预算保留完整行直到超限（对齐 _truncate_to_char_budget） */
+/** 字符预算截断：超预算保留完整行直到超限 */
 export function truncateToCharBudget(content: string, maxChars: number): { kept: string; linesKept: number; truncated: boolean } {
   if (content.length <= maxChars) {
     return { kept: content, linesKept: content ? content.split('\n').length : 0, truncated: false }

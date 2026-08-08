@@ -509,7 +509,7 @@ async function testConnection() {
       form.model = modelsResult[0].id
     } else {
       window.dispatchEvent(new CustomEvent('global-tip', {
-        detail: { type: 'error', code: 'CONNECTION_TEST', message: '连接测试失败：该提供商未返回可用模型' }
+        detail: { type: 'error', code: 'connection:test:no_models', message: '连接测试失败：该提供商未返回可用模型' }
       }))
     }
   } catch {

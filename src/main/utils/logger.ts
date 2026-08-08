@@ -1,7 +1,7 @@
 /**
  * utils/logger.ts — 本地端日志文件系统
  *
- * 对齐 showing-agent logback-spring.xml：
+ * -spring.xml：
  *   - FILE       → tinkerdesk.{yyyy-MM-dd}.log        （按天滚动，保留 30 天）
  *   - ERROR_FILE → error.{yyyy-MM-dd}.log             （warn/error 双写，保留 30 天）
  *   - CONSOLE    → 控制台原样输出（console.* 拦截后转发）
@@ -18,7 +18,7 @@ let currentDate = ''
 let currentFile: fs.WriteStream | null = null
 let errorFile: fs.WriteStream | null = null
 
-/** 日志保留天数（对齐 Java maxHistory=30） */
+/** 日志保留天数 */
 const MAX_HISTORY_DAYS = 30
 
 function pad(n: number): string {

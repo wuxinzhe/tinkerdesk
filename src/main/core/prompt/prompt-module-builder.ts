@@ -31,9 +31,14 @@ export class PromptModuleBuilder {
   buildSystemPrompt(ctx: ConversationContext): string {
     const sessionId = ctx.sessionId
 
-    // 0) 运行时模块：同一天内缓存（os 固定、date 当天一致）——对齐 Hermes 整串缓存保 LLM prompt 缓存热；
+    // 0) 运行时模块：同一天内缓存（os 固定、date 当天一致）——整串缓存保 LLM prompt 缓存热；
     //    跨天自动重建（date 更新）。避免每个 chunk 轮次都重渲染导致上游 prompt 缓存失效。
     const runtimePrompt = this.getRuntimePromptCached(ctx)
+
+    // 0.5) delegate 子代理：ephemeral 覆盖优先（不走 DB 缓存）
+    if (ctx.ephemeralSystemPrompt) {
+      return `${ctx.ephemeralSystemPrompt}\n\n${runtimePrompt}`
+    }
 
     // 1) 先查内存缓存
     let sessionPrompt = this.promptCache.get(sessionId)
@@ -157,7 +162,7 @@ export class PromptModuleBuilder {
 
   /**
    * 获取模块列表：优先 AgentMode.getModuleList()（模式决定渲染顺序），
-   * 兜底全部已注册模块（对齐 Java AgentMode 驱动模块加载）。
+   * 兜底全部已注册模块。
    */
   private getModuleList(ctx: ConversationContext): string[] {
     const modeList = ctx.agentMode?.getModuleList()

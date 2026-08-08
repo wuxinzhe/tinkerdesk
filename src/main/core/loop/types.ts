@@ -1,11 +1,11 @@
 /**
- * types.ts — AgentLoop 统一类型定义
+ * types.ts — TinkerAgent 统一类型定义
  *
- * 只放类型定义（接口），实现集中在 agent-loop.ts。
+ * 只放类型定义（接口），实现集中在 tinker-agent.ts。
  * 复刻 tinker-agent ConversationEngine 相关接口（线程模型版）。
  */
 import type {LlmRouter} from '../llm/llm-router'
-import type {AgentActionType} from './constants'
+import type {AgentActionType} from '../constants'
 import type {ToolManager} from '../tool/tool-manager'
 import type {LlmResponse, ModelConfig} from '../llm/types'
 import type {LlmChunk} from '../llm/types'
@@ -19,17 +19,24 @@ import type {SessionService} from '../../service/session-service'
 import type {SandboxWhitelistService} from '../../service/sandbox-whitelist-service'
 import type {ToolAuthService} from '../../service/tool-auth-service'
 import type {ToolCall} from '../llm/types'
+import type {ApprovalManager} from './approval-manager'
+import type {ToolCallExecutor} from './tool-call-executor'
+import type {SessionRuntime} from './session-runtime'
 
 /** 主对话场景（单一来源在 core/llm/types，此处不再重复定义） */
 
 /** 对话状态常量（单一来源在 core/constants/conversation，此处 re-export） */
 export { CONV_IN_PROGRESS, CONV_COMPLETED, CONV_COMPRESSED } from '../constants/conversation'
 
-/** 引擎层响应类型（AgentLoop 内部产生的非 LLM 响应） */
+/** 引擎层响应类型（TinkerAgent 内部产生的非 LLM 响应） */
 export const RES_INTERRUPTED = 'INTERRUPTED'
 
-/** AgentLoop 构造参数 */
-export interface AgentLoopOptions {
+/** TinkerAgent 构造参数 */
+export interface TinkerAgentOptions {
+  /** 会话 id（实例化绑定——一个会话一个 TinkerAgent 实例） */
+  sessionId: string
+  /** 用户 profile（agent 配置归属） */
+  profile: string
   llmRouter: LlmRouter
   toolManager: ToolManager
   messageService: MessageService
@@ -46,15 +53,15 @@ export interface AgentLoopOptions {
 }
 
 /** 单轮对话结果 */
-export interface AgentLoopResult {
+export interface TinkerAgentResult {
   response: LlmResponse
   sessionId: string
   conversationId: string
 }
 
-// ── 三级上下文（对齐 tinker-agent SessionContext → ConversationContext → ToolContext） ──
+// ── 三级上下文 ──
 
-/** Agent 配置（会话级，对齐 tinker-agent AgentConfig） */
+/** Agent 配置 */
 export interface AgentConfig {
   /** 最大迭代次数（LLM↔工具循环），0 = 不限 */
   maxIterations: number
@@ -86,7 +93,7 @@ export interface AgentConfig {
   agentSoulPrompt: string | null
 }
 
-/** 客户端环境信息（会话级，对齐 tinker-agent ClientEnv） */
+/** 客户端环境信息 */
 export interface ClientEnv {
   os: string
   arch?: string
@@ -102,25 +109,45 @@ export interface SessionContextBuildOptions {
   sessionId?: string
   /** Agent 画像标识（必传：明确指定与哪个 Agent 对话） */
   profile: string
-  /** 事件发送器（对齐 Java IEventSender） */
+  /** 事件发送器 */
   sender: IEventSender
 }
 
 /**
- * 事件发送器接口（对齐 Java IEventSender）：
- * 每种方法对应一类语义明确的事件通道，AgentLoop 可在对话任意阶段发事件。
+ * 事件发送器接口：
+ * 每种方法对应一个业务域（一级路由），内部组装 route = '{一级}:{二级}'。
+ * 协议见 docs/event-protocol.md。
  */
 export interface IEventSender {
-  /** 消息通道（入会话消息列表） */
+  /** chat 域（对话内容流：token/approval/clarify/interaction_status） */
   sendMessage(sessionId: string, type: string, data: unknown): void
-  /** 动作通道（入会话消息列表） */
+  /** action 域（行为动作：tool_start/tool_done） */
   sendAction(sessionId: string, type: AgentActionType | (string & {}), data: unknown): void
-  /** 提示信号通道（一次性展示） */
+  /** session 域（会话数据/状态：stats/complete/title/budget） */
+  sendSession(sessionId: string, type: string, data: unknown): void
+  /** tip 域（提示信号：queued/working） */
   sendTips(sessionId: string, type: string, message: string): void
-  /** 流式 token 通道（text/reasoning/toolCallArgs 增量） */
+  /** error 域（报错） */
+  sendError(sessionId: string, type: string, message: string): void
+  /** 流式 token（chat:token 便捷方法——text/reasoning/toolCallArgs 增量） */
   sendToken(sessionId: string, chunk: LlmChunk): void
-  /** 审批请求通道（工具需审批时弹审批卡片，对齐 Java APPROVAL_REQUEST 事件） */
+  /** 审批请求（chat:approval 便捷方法——工具需审批时弹审批卡片） */
   sendApprovalRequest(sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string; conversationId?: string }): void
+}
+
+/** 审批挂起表项 */
+export interface ApprovalWaiterEntry {
+  resolve: (approved: boolean) => void
+  timer: NodeJS.Timeout
+  convId: string
+  profile: string
+  sessionId: string
+}
+
+/** 工具结果挂起表项 */
+export interface ToolResultWaiterEntry {
+  resolve: (result: string) => void
+  timer: NodeJS.Timeout
 }
 
 /** 会话级上下文（对话开始前一次性加载） */
@@ -129,35 +156,64 @@ export interface SessionContext {
   profile: string
   /** YOLO 模式（自动批准工具，来自 sessions 表） */
   yolo: boolean
-  /** Agent 运行参数（无配置行走默认值，对齐 Java agentConfigService.resolve） */
+  /** Agent 运行参数 */
   agentConfig: AgentConfig
-  /** Agent Mode 引用（agent 表的 agent_mode_id，对齐 Java SessionContext） */
+  /** Agent Mode 引用 */
   agentModeId: string
   /** Agent Mode 版本（agent 表的 agent_mode_version） */
   agentModeVersion: string
-  /** Agent Mode 实例（注册表解析，对齐 Java getAgentMode） */
+  /** Agent Mode 实例 */
   agentMode?: IAgentMode
   /** 客户端环境 */
   clientEnv: ClientEnv
-  /** 事件发送器（对齐 Java IEventSender：对话任意阶段推送事件） */
+  /** 事件发送器 */
   sender: IEventSender
 
-  // ── 事件发送快捷方法（委托 sender，对齐 Java SessionContext 直接方法） ──
+  /** 临时 system prompt 覆盖（delegate 子代理用——不走 DB 缓存） */
+  ephemeralSystemPrompt?: string
+  /** 子代理深度（父=0，delegate 每层 +1——超限拒绝，防无限递归） */
+  delegateDepth?: number
 
-  /** 发送提示（一次性弹窗/气泡） */
+  // ── 事件发送快捷方法 ──
+
+  /** 发送提示（tip 域——一次性弹窗/气泡） */
   sendTips(eventType: string, content: string): void
-  /** 发送动作事件（入会话消息列表） */
+  /** 发送动作事件（action 域——入会话消息列表） */
   sendAction(eventType: AgentActionType | (string & {}), payload: Record<string, unknown> | null): void
-  /** 发送消息事件（入会话消息列表） */
+  /** 发送消息事件（chat 域——入会话消息列表） */
   sendMessage(eventType: string, payload: unknown): void
-  /** 发送流式 token（text/reasoning/toolCallArgs 增量） */
+  /** 发送会话数据事件（session 域——面板/标题/预算） */
+  sendSession(eventType: string, payload: unknown): void
+  /** 发送错误（error 域） */
+  sendError(eventType: string, message: string): void
+  /** 发送流式 token（chat:token——text/reasoning/toolCallArgs 增量） */
   sendToken(chunk: LlmChunk): void
-  /** 发送审批请求（弹审批卡片） */
+  /** 发送审批请求（chat:approval——弹审批卡片） */
   sendApprovalRequest(data: { toolCallId: string; name: string; arguments?: unknown; reason?: string; conversationId?: string }): void
 }
 
 /** 对话周期级上下文（继承 SessionContext） */
-export interface ConversationContext extends SessionContext {
+/**
+ * 对话周期上下文（每轮构建）——不再 extends SessionContext（收敛为最小组合）：
+ * 显式声明工具执行/审批/压缩/提示词构建实际需要的字段——不携带整份会话配置快照。
+ */
+export interface ConversationContext {
+  sessionId: string
+  profile: string
+  /** Agent 运行参数（工具门检/压缩阈值/迭代上限） */
+  agentConfig: AgentConfig
+  /** 客户端环境（提示词构建：runtime-environment/soul-prompt） */
+  clientEnv: ClientEnv
+  /** YOLO 模式（工具门检自动批准） */
+  yolo: boolean
+  /** 临时 system prompt 覆盖（delegate 子代理——不走 DB 缓存） */
+  ephemeralSystemPrompt?: string
+  /** Agent Mode 实例（提示词构建：agent-mode 模块） */
+  agentMode?: IAgentMode
+  /** 子代理深度（delegate 工具——防无限递归） */
+  delegateDepth?: number
+  /** 事件发送器（审批/工具状态推送） */
+  sender: IEventSender
   conversationId: string
   /** 本周期可用工具名列表 */
   toolNames: string[]
@@ -174,4 +230,33 @@ export interface ConversationContext extends SessionContext {
 export interface ToolContext extends ConversationContext {
   /** 待执行的工具调用 */
   toolCall: ToolCall
+}
+
+/** 对话轮次依赖（TinkerAgent 组装传入 Conversation） */
+export interface ConversationDeps {
+  llmRouter: LlmRouter
+  toolManager: ToolManager
+  messageService: MessageService
+  sessionService: SessionService
+  conversationService: ConversationService
+  compactionService: CompactionService
+  promptModuleBuilder: PromptModuleBuilder
+  modelConfigService: ModelConfigService
+  sandboxWhitelistService: SandboxWhitelistService
+  toolAuthService: ToolAuthService
+  /** 会话级运行时（中断控制） */
+  runtime: SessionRuntime
+  /** 审批/工具结果管理（会话级共享——IPC 入口在 TinkerAgent 委托同一实例） */
+  approvalManager: ApprovalManager
+  /** 工具执行器（无状态——可每轮新建或共享） */
+  toolExecutor: ToolCallExecutor
+}
+
+/** 工具执行器依赖（TinkerAgent 组装传入 ToolCallExecutor） */
+export interface ToolCallExecutorDeps {
+  toolManager: ToolManager
+  sandboxWhitelistService: SandboxWhitelistService
+  toolAuthService: ToolAuthService
+  promptModuleBuilder: PromptModuleBuilder
+  approvalManager: ApprovalManager
 }

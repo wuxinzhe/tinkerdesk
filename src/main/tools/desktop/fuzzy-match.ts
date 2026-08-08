@@ -11,7 +11,7 @@
  */
 import type { FuzzyResult, MatchSpan, Opcode } from './types'
 
-// ── Unicode 归一化（对齐 Hermes UNICODE_MAP）──
+// ── Unicode 归一化──
 
 const UNICODE_MAP: Record<string, string> = {
   '\u201c': '"', '\u201d': '"',  // smart double quotes
@@ -27,7 +27,7 @@ function unicodeNormalize(text: string): string {
   return text
 }
 
-// ── SequenceMatcher ratio（对齐 difflib.SequenceMatcher.ratio，LCS 简化版）──
+// ── SequenceMatcher ratio──
 
 function lcsLength(a: string, b: string): number {
   const m = a.length
@@ -103,7 +103,7 @@ function strategyExact(content: string, pattern: string): MatchSpan[] {
     const pos = content.indexOf(pattern, start)
     if (pos === -1) break
     matches.push([pos, pos + pattern.length])
-    // 跳过整个 match（非重叠，对齐 str.replace 语义）
+    // 跳过整个 match
     start = pos + pattern.length
   }
   return matches
@@ -467,7 +467,7 @@ function applyReplacements(content: string, matches: MatchSpan[], newString: str
   return result
 }
 
-// ── 主入口（对齐 fuzzy_find_and_replace）──
+// ── 主入口──
 
 export function fuzzyFindAndReplace(content: string, oldString: string, newString: string, replaceAll: boolean = false): FuzzyResult {
   if (!oldString) return { content, matchCount: 0, strategy: null, error: 'old_string cannot be empty' }
@@ -512,7 +512,7 @@ export function fuzzyFindAndReplace(content: string, oldString: string, newStrin
   return { content, matchCount: 0, strategy: null, error: 'Could not find a match for old_string in the file' }
 }
 
-// ── "Did you mean" 提示（对齐 format_no_match_hint + find_closest_lines）──
+// ── "Did you mean" 提示──
 
 export function findClosestLines(oldString: string, content: string, contextLines: number = 2, maxResults: number = 3): string {
   if (!oldString || !content) return ''

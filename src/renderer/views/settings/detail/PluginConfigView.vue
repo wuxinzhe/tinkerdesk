@@ -6,13 +6,12 @@
  * 插件系统只提供通用框架，具体逻辑由插件内部实现（check、models 状态/下载、schema）。
  */
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { pluginsApi, onPluginEvent } from '@/renderer/api/plugins-api'
 import PluginConfigForm from '@/renderer/components/settings/PluginConfigForm.vue'
 import type { ConfigSchema, PluginCheckItem, PluginInfo } from '@/renderer/api/types'
 
 const route = useRoute()
-const router = useRouter()
 const pluginId = computed(() => String(route.params.pluginId ?? ''))
 
 const plugin = ref<PluginInfo | null>(null)

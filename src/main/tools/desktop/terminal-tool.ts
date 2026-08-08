@@ -1,7 +1,7 @@
 /**
  * desktop/terminal-tool.ts — 终端工具
  *
- * 复刻 tinker-agent-ui tools/desktop/terminal（对齐 Hermes terminal_tool 本地语义）：
+ * 复刻 tinker-agent-ui tools/desktop/terminal：
  * - 参数：command/background/timeout/workdir/pty/notify_on_complete/watch_patterns
  * - timeout 单位秒，默认 15s，前台最大 600s（超出拒绝并建议 background）
  * - 破坏性命令检测 → status: blocked
@@ -17,10 +17,10 @@ import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
 import type { TerminalParams } from './types'
 
-/** 工具名（对齐 @AgentTool(name)） */
+/** 工具名 */
 export const TOOL_NAME = 'desktop_tinker_terminal'
 
-// ── 常量（对齐 Hermes）──
+// ── 常量──
 
 const DEFAULT_TIMEOUT = 15          // 秒
 const FOREGROUND_MAX_TIMEOUT = 600  // 秒
@@ -66,13 +66,13 @@ export class TerminalTool extends BaseTool {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as TerminalParams
     const cmd = params.command
 
-    // 参数校验（对齐 Hermes：command 必须是字符串）
+    // 参数校验
     if (typeof cmd !== 'string') {
       const errJson = JSON.stringify({ output: '', exit_code: -1, error: `Invalid command: expected string, got ${typeof cmd}`, status: 'error' })
       return ToolResult.sync(errJson)
     }
 
-    // notify 与 watch 互斥（对齐 Hermes）
+    // notify 与 watch 互斥
     if (params.notify_on_complete && params.watch_patterns && params.watch_patterns.length > 0) {
       const errJson = JSON.stringify({ output: '', exit_code: -1, error: 'notify_on_complete and watch_patterns are mutually exclusive — set one, not both.', status: 'error' })
       return ToolResult.sync(errJson)
@@ -91,7 +91,7 @@ export class TerminalTool extends BaseTool {
       }
     }
 
-    // 前台超时上限（对齐 Hermes：>600s 拒绝并建议 background）
+    // 前台超时上限
     const timeoutSec = params.timeout ?? DEFAULT_TIMEOUT
     if (!params.background && timeoutSec > FOREGROUND_MAX_TIMEOUT) {
       const errJson = JSON.stringify({
@@ -169,7 +169,7 @@ export class TerminalTool extends BaseTool {
     })
   }
 
-  /** 后台模式：注册到进程注册表并立即返回 session_id + nudge hint（对齐 Hermes） */
+  /** 后台模式：注册到进程注册表并立即返回 session_id + nudge hint */
   private executeBackground(cmd: string, timeoutSec: number, workdir?: string, notifyOnComplete?: boolean, watchPatterns?: string[]): ToolResult {
     const sessionId = processRegistry.spawn({ command: cmd, timeout: timeoutSec * 1000, cwd: workdir })
     const session = processRegistry.get(sessionId)!

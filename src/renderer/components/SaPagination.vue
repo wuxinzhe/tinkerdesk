@@ -31,10 +31,6 @@ const props = defineProps<{
   pageSize?: number
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / (props.pageSize || 20))))
 </script>
 

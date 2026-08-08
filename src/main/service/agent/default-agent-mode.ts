@@ -3,8 +3,8 @@
  *
  * 复刻 tinker-agent DefaultAgentMode（全功能默认实现）：
  * - 元数据：id=default, version=1.0, 通用模式
- * - getModuleList：动态提示词模块渲染顺序（对齐 Java MODULE_ORDER）
- * - getDefaultConfig：agent_configs 无行时的配置兜底（对齐 Java 参数）
+ * - getModuleList：动态提示词模块渲染顺序
+ * - getDefaultConfig：agent_configs 无行时的配置兜底
  */
 import type { AgentConfig } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
@@ -19,7 +19,7 @@ const META = {
   promptTemplate: 'agent-mode-default',
 }
 
-/** 动态模块渲染顺序（对齐 Java MODULE_ORDER：pre → mid → post） */
+/** 动态模块渲染顺序 */
 const MODULE_ORDER = [
   // pre
   'soul-prompt',
@@ -36,11 +36,11 @@ const MODULE_ORDER = [
 export class DefaultAgentMode implements IAgentMode {
   readonly meta = META
 
-  /** 运行时已渲染的灵魂提示词文本（构造时通过 PromptRenderer 生成，对齐 Java soulPromptTemp） */
+  /** 运行时已渲染的灵魂提示词文本 */
   private readonly soulPromptTemp: string
 
   constructor(promptRenderer: PromptRenderer) {
-    // 对齐 Java：Bean 实例化时即将 getAgentModePrompt() 指定的模板渲染为最终文本
+    // Bean 实例化时即将 getAgentModePrompt() 指定的模板渲染为最终文本
     const templateName = META.promptTemplate
     const ctxMap: Record<string, unknown> = {
       date: new Date().toISOString().slice(0, 10),

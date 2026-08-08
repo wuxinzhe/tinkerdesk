@@ -43,6 +43,15 @@ export class PrivateSkillFileRepository {
     return Number(result.changes)
   }
 
+  /** 删除技能下全部文件（硬删技能时级联清理） */
+  deleteBySkillId(skillId: string): number {
+    const db = getDatabase()
+    const result = db
+      .prepare('DELETE FROM private_skill_files WHERE skill_id = ?')
+      .run(skillId)
+    return Number(result.changes)
+  }
+
   /** 按 id 更新文件（fileType/name/content/language/sortOrder） */
   update(entity: SkillFileEntity): boolean {
     const db = getDatabase()

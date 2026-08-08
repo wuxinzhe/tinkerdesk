@@ -101,11 +101,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { HistoryState } from 'vue-router'
 import { NSelect, NSwitch } from 'naive-ui'
-import { useAgentStore } from '@/renderer/stores/agent-store'
 import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { L3PageLayout } from '@/renderer/components'
@@ -113,7 +111,6 @@ import { skillsApi } from '@/renderer/api/skills-api'
 
 const route = useRoute()
 const router = useRouter()
-const agentStore = useAgentStore()
 
 const detailProfile = computed(() => route.params.profile as string)
 

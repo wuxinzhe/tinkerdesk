@@ -12,7 +12,7 @@ import {
   textResponse,
   toolCallsResponse,
 } from '../llm-response'
-import type { ApiMessage, ChunkCallback, LlmClient, LlmResponse, ModelConfig, ToolCall } from '../types'
+import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ModelConfig, ToolCall } from '../types'
 
 /**
  * anthropic-client.ts — Anthropic 客户端
@@ -69,16 +69,19 @@ export class AnthropicClient implements LlmClient {
   }
 
   /** 非流式调用 */
-  async callNonStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[]): Promise<LlmResponse> {
+  async callNonStreaming(request: LlmRequest): Promise<LlmResponse> {
+    const { config } = request
     const client = new Anthropic({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
     try {
       const message = await client.messages.create({
         model: config.modelName,
-        messages: this.toAnthropicMessages(messages),
-        system: this.getSystemPrompt(messages),
+        messages: this.toAnthropicMessages(request.messages),
+        system: this.getSystemPrompt(request.messages),
         max_tokens: 4096,
-        tools: tools.length > 0 ? this.toAnthropicTools(tools) : undefined,
-      })
+        tools: request.tools.length > 0 ? this.toAnthropicTools(request.tools) : undefined,
+        // 推理深度（预算派：枚举 → thinking budget_tokens）
+        ...(request.reasoningDepth ? { thinking: { type: 'enabled' as const, budget_tokens: mapReasoningBudget(request.reasoningDepth) } } : {}),
+      } as Anthropic.MessageCreateParamsNonStreaming)
 
       let text = ''
       const toolCalls: ToolCall[] = []
@@ -111,18 +114,21 @@ export class AnthropicClient implements LlmClient {
     }
   }
 
-  /** 流式调用：转发 token 的同时缓存拼装完整 LlmResponse（含工具调用，对齐 Java AnthropicLlmClient） */
-  async callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], onToken: ChunkCallback): Promise<LlmResponse> {
+  /** 流式调用：转发 token 的同时缓存拼装完整 LlmResponse */
+  async callStreaming(request: LlmRequest, onToken: ChunkCallback): Promise<LlmResponse> {
+    const { config } = request
     const client = new Anthropic({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
     try {
       const stream = await client.messages.create({
         model: config.modelName,
-        messages: this.toAnthropicMessages(messages),
-        system: this.getSystemPrompt(messages),
+        messages: this.toAnthropicMessages(request.messages),
+        system: this.getSystemPrompt(request.messages),
         max_tokens: 4096,
-        tools: tools.length > 0 ? this.toAnthropicTools(tools) : undefined,
+        tools: request.tools.length > 0 ? this.toAnthropicTools(request.tools) : undefined,
+        // 推理深度（预算派：枚举 → thinking budget_tokens）
+        ...(request.reasoningDepth ? { thinking: { type: 'enabled' as const, budget_tokens: mapReasoningBudget(request.reasoningDepth) } } : {}),
         stream: true,
-      })
+      } as Anthropic.MessageCreateParamsStreaming)
 
       let text = ''
       let reasoning = ''
@@ -164,7 +170,7 @@ export class AnthropicClient implements LlmClient {
 
       onToken({ text: '', reasoning: '', toolCallArgs: '', isFinish: true, finishReason })
 
-      // ── 组装完整 LlmResponse（对齐 Java：tool_use → text → reasoning → empty）──
+      // ── 组装完整 LlmResponse──
       const toolCalls: ToolCall[] = [...toolAccum.entries()]
         .sort(([a], [b]) => a - b)
         .filter(([, acc]) => acc.name !== '')
@@ -189,5 +195,14 @@ export class AnthropicClient implements LlmClient {
     } catch (e) {
       return this.toErrorResponse(e)
     }
+  }
+}
+
+/** 推理深度枚举 → Anthropic thinking budget_tokens（low/medium/high）——Google 同款预算映射 */
+export function mapReasoningBudget(depth: string): number {
+  switch (depth) {
+    case 'low': return 2048
+    case 'high': return 16384
+    default: return 8192
   }
 }

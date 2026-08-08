@@ -1,5 +1,5 @@
 /**
- * plugin-tools.ts — 插件管理 Agent 工具（本地 AgentLoop 可调）
+ * plugin-tools.ts — 插件管理 Agent 工具（本地 TinkerAgent 可调）
  *
  * 设计（与用户确认）：tool schema 只讲参数用法（与其他 tool 一致）；
  * 安装/配置流程知识放在 skill `tinkerdesk-plugin-install`（读 guide.md → 按步骤操作）。

@@ -113,7 +113,7 @@ async function start() {
     currentStep.value = 'loading'
     await loadConfiguration()
 
-    // ── Step 3: 检查初始化（对齐 showing-agent-ui：未初始化 → 跳初始化向导）──
+    // ── Step 3: 检查初始化──
     let initialized = false
     try {
       const status = await window.api.account.initStatus()

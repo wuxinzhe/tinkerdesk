@@ -1,7 +1,7 @@
 /**
  * utils/diff.ts — 文本 diff 工具
  *
- * 简单 unified diff 生成（对齐 Hermes patch_tool 的展示 diff）：
+ * 简单 unified diff 生成：
  * --- a/{path} / +++ b/{path} + 逐行 +/- 对比 + @@ 头。
  * 被 patch-tool 使用。
  */

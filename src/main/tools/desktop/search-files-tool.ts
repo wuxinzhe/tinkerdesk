@@ -1,7 +1,7 @@
 /**
  * desktop/search-files-tool.ts — 文件搜索工具
  *
- * 复刻 tinker-agent-ui tools/desktop/search-files（对齐 Hermes search_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/search-files：
  * - 参数：pattern/target/path/file_glob/limit/offset/output_mode/context
  * - content：rg --line-number --no-heading --with-filename [-C ctx] [--glob] pattern path
  * - files：rg --files --sortr=modified（按修改时间排序）
@@ -57,7 +57,7 @@ export class SearchFilesTool extends BaseTool {
       const outputMode = params.outputMode ?? params.output_mode ?? 'content'
       const context = coerceInt(params.context, 0)
 
-      // 重复搜索检测（对齐 Hermes：同 search_key 连续 ≥4 BLOCKED）
+      // 重复搜索检测
       const searchKey = JSON.stringify(['search', pattern, target, pathStr, fileGlob ?? '', limit, offset, outputMode, context])
       if (searchTracker.lastKey === searchKey) searchTracker.consecutive++
       else { searchTracker.lastKey = searchKey; searchTracker.consecutive = 1 }
@@ -75,7 +75,7 @@ export class SearchFilesTool extends BaseTool {
         return ToolResult.sync(JSON.stringify({ error: 'Content search requires ripgrep (rg) or grep. Install ripgrep: https://github.com/BurntSushi/ripgrep#installation' }))
       }
 
-      // 路径存在性（对齐 Hermes：不存在 → 相似路径提示）
+      // 路径存在性
       if (!existsSync(pathStr)) {
         return ToolResult.sync(JSON.stringify({ error: pathNotFoundHint(pathStr), total_count: 0 }))
       }
@@ -92,7 +92,7 @@ export class SearchFilesTool extends BaseTool {
         resultDict = this.searchContent(pattern, pathStr, fileGlob, limit, offset, context, engine)
       }
 
-      // 脱敏（对齐 Hermes search_tool：匹配内容 redact file_read）
+      // 脱敏
       if (Array.isArray(resultDict['matches'])) {
         for (const m of resultDict['matches'] as SearchMatch[]) {
           if (m.content) m.content = redactSensitiveText(m.content)
@@ -221,7 +221,7 @@ export class SearchFilesTool extends BaseTool {
       if (!line || line === '--') continue
       const m = parseMatchLine(line)
       if (m) {
-        // 脱敏在 densify 之前（对齐 Hermes：先脱敏 SearchResult.matches 再渲染 matches_text）
+        // 脱敏在 densify 之前
         matches.push({ path: m.path, line: m.line, content: redactSensitiveText(m.content.slice(0, MAX_MATCH_CONTENT)) })
         continue
       }
@@ -237,7 +237,7 @@ export class SearchFilesTool extends BaseTool {
       total_count: total,
       truncated: total > offset + limit
     }
-    // densify（对齐 Hermes：≥5 个匹配 → path-grouped 文本块）
+    // densify
     if (page.length >= 5) {
       const lines: string[] = []
       let currentPath: string | null = null

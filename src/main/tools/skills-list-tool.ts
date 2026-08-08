@@ -34,12 +34,12 @@ export class SkillsListTool extends BaseTool {
       return ToolResult.sync(showDisabled ? 'No skills found (including disabled).' : 'No skills available. Use skill_manage to create one.')
     }
 
-    // 按 category 分组（对齐 Java：os/type 平台筛选 + readinessStatus）
+    // 按 category 分组
     const byCategory = new Map<string, Array<Record<string, unknown>>>()
     let totalCount = 0
     for (const s of skills) {
       if (categoryFilter && categoryFilter !== s.category) continue
-      // 平台/客户端筛选（对齐 Java listSkills(os, type)）
+      // 平台/客户端筛选
       if (s.platforms && s.platforms.trim() !== '' && !s.platforms.split(',').map(p => p.trim()).some(p => p === osFilter)) continue
       if (s.requiresToolsets && s.requiresToolsets.trim() !== '' && !s.requiresToolsets.split(',').map(t => t.trim()).some(t => t === typeFilter)) continue
 
@@ -49,7 +49,7 @@ export class SkillsListTool extends BaseTool {
         id: s.id,
         name: s.name,
       }
-      // 非 available 才输出 readinessStatus（对齐 Java）
+      // 非 available 才输出 readinessStatus
       const readiness = s.apiKey ? 'available' : 'setup_needed'
       if (readiness !== 'available') {
         item.readinessStatus = readiness
@@ -86,7 +86,7 @@ export class SkillsListTool extends BaseTool {
     return ToolResult.sync(result)
   }
 
-  /** 截断描述（对齐 Java truncate 80） */
+  /** 截断描述 */
   private truncate(text: string, maxLen: number): string {
     if (!text) return ''
     if (text.length <= maxLen) return text

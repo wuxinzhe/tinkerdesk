@@ -1,6 +1,6 @@
 /**
  * constants/llm.ts — LLM 响应类型与错误码常量
- * 对齐 showing-agent LlmConstants（小写风格）。
+ * LLM 相关常量（小写风格）。
  */
 /** 响应类型 */
 export const RES_TEXT = 'text'

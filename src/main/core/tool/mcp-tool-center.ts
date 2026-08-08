@@ -6,7 +6,7 @@
  *   2. 将发现的 MCP 工具封装为 McpTool（IAgentTool 同构实例），
  *      由 bootstrap 注册进 ToolManager 统一注册中心。
  *
- * AgentLoop → ToolManager.execute →（toolType=mcp）→ McpTool.execute → mcpManager
+ * TinkerAgent → ToolManager.execute →（toolType=mcp）→ McpTool.execute → mcpManager
  */
 import { mcpManager } from './mcp-manager'
 import { McpTool } from './mcp-tool'

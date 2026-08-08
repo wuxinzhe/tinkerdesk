@@ -74,6 +74,8 @@ export interface MessageTokenVO {
   toolCallArgs: string | null
   /** 工具名（工具调用增量首次出现时携带） */
   toolCallName?: string
+  /** 工具调用 index（多工具时区分——前端按 index 分路拼装） */
+  toolCallIndex?: number
   /** 是否为流的最后一个信号 */
   isFinish: boolean
   /** 结束原因（isFinish=true 时由后端设置；'tool_calls' = 工具轮次） */

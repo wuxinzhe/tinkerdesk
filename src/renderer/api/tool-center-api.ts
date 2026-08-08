@@ -2,7 +2,7 @@
  * tool-center-api.ts — 数据层
  * 主进程 ToolCenter 的 IPC 桥接封装
  */
-import type { ToolCenterState, McpServerConfig, McpServerState, McpDiscoveredTool, RegisteredTool, CheckedTool } from '@/renderer/api/types'
+import type { ToolCenterState, McpServerConfig } from '@/renderer/api/types'
 import type { ClientEnvInfo } from './types'
 import '@/renderer/api/types'
 

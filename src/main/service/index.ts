@@ -1,8 +1,8 @@
 /**
  * service/index.ts — 服务层统一出口
  *
- * 三层结构：repository（repository/）→ service（本层）→ 上层（AgentLoop/controller）
- * 本地业务无 controller，服务直接接入 AgentLoop。
+ * 三层结构：repository（repository/）→ service（本层）→ 上层（TinkerAgent/controller）
+ * 本地业务无 controller，服务直接接入 TinkerAgent。
  */
 export type { ConversationEntity, ConversationStatusUpdate, MessageEntity, SessionEntity, SessionSummaryDTO } from '../repository/types'
 export { CompactionService } from './compaction-service'

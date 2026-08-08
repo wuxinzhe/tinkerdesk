@@ -72,7 +72,7 @@
     </div>
 
     <!-- 切换按钮（独立于动画容器——right 切换定位；关闭贴右缘 / 打开贴抽屉左缘） -->
-    <button class="stats__toggle" title="对话数据" @click="open = !open">
+    <button class="stats__toggle" title="对话数据" @click="toggleOpen">
       <svg
         width="14"
         height="14"
@@ -130,6 +130,12 @@ interface AvgData {
 const open = ref(false)
 const stats = ref<StatsData>({})
 const avg = ref<AvgData>({})
+
+/** 展开/收起——展开时加载最新数据（dashboard 点开即拉接口最新） */
+function toggleOpen() {
+  open.value = !open.value
+  if (open.value) void loadAvg()
+}
 const avgLoaded = ref(false)
 const route = useRoute()
 const currentSessionId = ref<string>('')
@@ -149,11 +155,6 @@ function formatTokens(n: number | undefined): string {
 }
 
 /** 记忆体积统一 KB（当前值/总量都是 KB） */
-function formatSize(chars: number | undefined): string {
-  if (chars === undefined) return '—'
-  return `${Math.round((chars / 1024) * 10) / 10}KB`
-}
-
 function formatDuration(ms: number | undefined): string {
   if (ms === undefined || Number.isNaN(ms)) return '—'
   const sec = Math.round(ms / 1000)

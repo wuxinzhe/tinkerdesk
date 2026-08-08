@@ -7,7 +7,7 @@
  */
 import { getDatabase } from './database'
 import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
-import { STATUS_PENDING, STATUS_TIMED_OUT } from '../core/loop/constants'
+import { STATUS_PENDING, STATUS_TIMED_OUT } from '../core/constants'
 
 /** 消息实体（对应 MessageEntity） */
 
@@ -192,6 +192,10 @@ export class MessageRepository {
       where.push(`m.role IN (${query.roles.map(() => '?').join(',')})`)
       params.push(...query.roles)
     }
+    if (query.messageTypes && query.messageTypes.length > 0) {
+      where.push(`m.message_type IN (${query.messageTypes.map(() => '?').join(',')})`)
+      params.push(...query.messageTypes)
+    }
 
     const order = query.sortOrder === 'DESC' ? 'DESC' : 'ASC'
     let sql = `SELECT ${COLS} FROM messages m WHERE ${where.join(' AND ')} ORDER BY m.id ${order}`
@@ -217,7 +221,7 @@ export class MessageRepository {
   }
 
   /**
-   * 全文检索消息（对齐 Java FTS discover 功能，SQLite 用 LIKE 近似）：
+   * 全文检索消息：
    * 内容 LIKE 匹配 + 角色过滤 + 排除 source='tool' 会话 + profile 限定。
    */
   discoverHits(query: string, roles: string[], sort: string | null, profile: string, limit: number): Array<{ id: number; sessionId: string; matchedRole: string; snippet: string; title: string; when: string }> {

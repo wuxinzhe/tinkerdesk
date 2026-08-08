@@ -1,7 +1,7 @@
 /**
  * desktop/write-file-tool.ts — 文件写入工具
  *
- * 复刻 tinker-agent-ui tools/desktop/write-file（对齐 Hermes write_file_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/write-file：
  * - 参数 path + content
  * - 敏感系统路径守卫（Windows 版：C:\Windows\ 等）
  * - read_file 行号内容拒绝（防止把 "N|content" 显示文本写进文件）
@@ -20,7 +20,7 @@ import type { WriteFileParams } from './types'
 /** 工具名 */
 export const TOOL_NAME = 'desktop_tinker_write_file'
 
-// ── read_file 行号内容拒绝（对齐 Hermes _looks_like_read_file_line_numbered_content）──
+// ── read_file 行号内容拒绝──
 
 function looksLikeReadFileLineNumberedContent(content: string): boolean {
   if (typeof content !== 'string') return false
@@ -60,20 +60,20 @@ export class WriteFileTool extends BaseTool {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as WriteFileParams
     const result: Record<string, unknown> = {}
     try {
-      // 对齐 Hermes：path + content 必填
+      // path + content 必填
       const pathStr = (params.path ?? '').trim()
       if (!pathStr) {
         return ToolResult.sync(JSON.stringify({ error: 'path 不能为空' }))
       }
       const content = params.content ?? ''
 
-      // 敏感路径守卫（对齐 Hermes _check_sensitive_path）
+      // 敏感路径守卫
       const sensitiveErr = checkSensitivePath(pathStr)
       if (sensitiveErr) {
         return ToolResult.sync(JSON.stringify({ error: sensitiveErr }))
       }
 
-      // read_file 行号内容拒绝（对齐 Hermes _is_internal_file_tool_content）
+      // read_file 行号内容拒绝
       if (looksLikeReadFileLineNumberedContent(content)) {
         return ToolResult.sync(JSON.stringify({
           error: 'Refusing to write internal read_file display text as file content. '
@@ -90,7 +90,7 @@ export class WriteFileTool extends BaseTool {
       }
       writeFileSync(resolvedPath, content, 'utf-8')
 
-      // 对齐 Hermes WriteResult.to_dict + resolved_path/files_modified
+      // _dict + resolved_path/files_modified
       result['bytes_written'] = Buffer.byteLength(content, 'utf-8')
       result['dirs_created'] = dirsCreated
       result['resolved_path'] = resolvedPath

@@ -5,7 +5,7 @@
  */
 import type { ToolFunction, ToolType } from './types'
 
-/** 工具 Schema 定义（含工具类型分类，对齐 tinker-agent ToolSchema） */
+/** 工具 Schema 定义 */
 export class ToolSchema {
   /** 工具类型，固定为 "function" */
   readonly type = 'function'

@@ -2,7 +2,7 @@
  * account-controller.ts — 账号初始化 IPC controller（4 步向导版）
  *
  * 复刻 tinker-agent AccountController（本地单用户版，去 userId）：
- * - account:init-status      → 4 项初始化检查（对齐 GET /account/init-status）
+ * - account:init-status      → 4 项初始化检查
  * - account:init-step-status → 分步状态检查（configured + 回显）
  * - account:init-step1       → 创建默认 Agent
  * - account:init-step2       → 写入 AgentConfig（合并保存）
@@ -38,7 +38,7 @@ export class AccountController {
   // 各 IPC 方法（具名方法 + 完整入参出参类型）
   // ══════════════════════════════════════════════════════════════
 
-  /** 查询初始化状态（4 项检查，对齐 Java GET /account/init-status） */
+  /** 查询初始化状态 */
   private getInitStatus(): ApiResponse<InitStatusResponseDTO> {
     try {
       return ok(this.accountService.checkInitStatus(PROFILE))
@@ -78,7 +78,7 @@ export class AccountController {
     }
   }
 
-  /** 创建含 API Key 的模型（Step 3，对齐 Java createDefaultModel） */
+  /** 创建含 API Key 的模型 */
   private createDefaultModel(input: InitRequestDTO): ApiResponse<{ id: string }> {
     try {
       if (!input?.llmProvider || !input?.llmModel || !input?.llmApiKey) {
@@ -91,7 +91,7 @@ export class AccountController {
     }
   }
 
-  /** 绑定主聊天场景（Step 4，对齐 Java bindMainScene） */
+  /** 绑定主聊天场景 */
   private bindMainSceneModel(input: { modelId: string }): ApiResponse<null> {
     try {
       if (!input?.modelId) {

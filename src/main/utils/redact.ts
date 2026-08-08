@@ -2,7 +2,7 @@
  * redact.ts — 敏感信息脱敏工具
  *
  * 一比一复刻 Hermes agent/redact.py redact_sensitive_text(file_read=True)：
- * - 20+ 已知前缀（对齐 _PREFIX_PATTERNS）+ 边界断言（(?<![A-Za-z0-9_-])…(?![A-Za-z0-9_-])）
+ * - 20+ 已知前缀+ 边界断言（(?<![A-Za-z0-9_-])…(?![A-Za-z0-9_-])）
  * - PRIVATE KEY 块 / Authorization 头 / JSON 敏感字段 / JWT / DB connstring
  */
 
@@ -46,7 +46,7 @@ const JWT_RE = /\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/g
 
 const DB_CONNSTR_RE = /(\w+:\/\/[^:\s/]+:)([^@\s/]+)(@)/g
 
-/** file_read 语义：non-reusable sentinel（对齐 Hermes «redacted:ghp_…»） */
+/** file_read 语义：non-reusable sentinel */
 function maskToken(value: string): string {
   if (value.length <= 8) return '«redacted:' + value + '»'
   return '«redacted:' + value.slice(0, 8) + '…»'

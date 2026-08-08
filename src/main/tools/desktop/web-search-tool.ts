@@ -1,7 +1,7 @@
 /**
  * desktop/web-search-tool.ts — 网络搜索工具
  *
- * 复刻 tinker-agent-ui tools/desktop/web-search（对齐 Hermes web_search_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/web-search：
  * - 7 个后端（bing-html / brave-free / ddgs / searxng / exa / parallel / tavily / firecrawl）
  * - registry 分发：显式配置 backend → 不可用则 availability-walk 自动回退
  * - limit clamp [1,100]，非法值兜底 5
@@ -252,7 +252,7 @@ class FirecrawlProvider implements SearchProvider {
   }
 }
 
-// ── Registry（对齐 Hermes web_search_registry）──
+// ── Registry──
 
 const providers: SearchProvider[] = [
   // 无 key 国内直连兜底优先（ddgs 国内不可达，放最后）
@@ -282,7 +282,7 @@ function getActiveSearchProvider(): SearchProvider | null {
   return providers.find(p => p.isAvailable() && p.supportsSearch()) ?? null
 }
 
-/** 对齐 Hermes：int 转换失败兜底 5，clamp [1,100] */
+/** int 转换失败兜底 5，clamp [1,100] */
 function clampLimit(raw: unknown): number {
   let limit: number
   try {

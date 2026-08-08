@@ -9,6 +9,7 @@
  */
 import { ref } from 'vue'
 import { messagesApi } from '@/renderer/api/messages-api'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import type { Message } from '@/renderer/api/types'
 import type { ConversationCard } from './types'
 import { truncateText } from '@/renderer/utils/string-utils'
@@ -66,6 +67,7 @@ export function groupByConversation(messages: Message[]): ConversationCard[] {
  * 每页 50 条消息，按 convId 去重合并。
  */
 export function useConversationCards() {
+  const sessionStore = useSessionStore()
   const cards = ref<ConversationCard[]>([])
   const loading = ref(false)
   const hasMore = ref(true)
@@ -77,7 +79,7 @@ export function useConversationCards() {
     loading.value = true
     error.value = ''
     try {
-      const messages = await messagesApi.listBySession(sessionId, 50, offset.value)
+      const messages = await messagesApi.listBySession(sessionId, sessionStore.profile ?? 'default', 50, offset.value)
       const newCards = groupByConversation(messages)
       mergeByConvId(cards.value, newCards)
       offset.value += 50

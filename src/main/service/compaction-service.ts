@@ -107,7 +107,7 @@ export class CompactionService {
 
     let finalSummary = summary.trim() !== '' ? summary : buildFallbackSummary(compressConvIds)
 
-    // 压缩后注入活跃 todo 列表（对齐 Java formatTodoInjection / Hermes TodoStore.format_for_injection）：
+    // 压缩后注入活跃 todo 列表：
     // 只注入 pending/in_progress——completed/cancelled 会让模型在压缩后重复已完成工作。
     const todoBlock = this.formatTodoInjection(sessionId)
     if (todoBlock !== null) {
@@ -122,7 +122,7 @@ export class CompactionService {
   }
 
   /**
-   * 格式化压缩后注入的活跃 todo 块（对齐 Java formatTodoInjection）。
+   * 格式化压缩后注入的活跃 todo 块。
    * 只包含 pending / in_progress 项；无活跃项返回 null（不注入）。
    * 格式：
    * [Your active task list was preserved across context compression]

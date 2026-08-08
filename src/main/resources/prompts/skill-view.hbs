@@ -23,6 +23,11 @@
 {{/if}}{{#if apiKey}}**API key:** {{apiKey}}
 {{/if}}{{#if envVars}}**Env vars:** {{envVars}}
 {{/if}}{{#if commands}}**Commands:** {{commands}}
+{{/if}}{{#if related}}
+**Related skills** (view with skill_view(id: <id>)):
+{{#each related}}
+- `{{id}}` — {{name}}
+{{/each}}
 {{/if}}{{#if files}}
 **Files** (load content with skill_view(id, fileId: <id>)):
 {{#each files}}

@@ -68,7 +68,7 @@ export class SessionSearchTool extends BaseTool {
     return raw
   }
 
-  /** DISCOVER：全文搜索（标题优先 + 消息内容 LIKE，对齐 Java FTS） */
+  /** DISCOVER：全文搜索 */
   private doDiscover(args: Record<string, unknown>, profile: string): string {
     const query = String(args.query ?? '').trim()
     const limit = typeof args.limit === 'number' ? args.limit : 3

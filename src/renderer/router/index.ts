@@ -44,7 +44,7 @@ const router = createRouter({
       meta: { transition: 'fade' },
     },
     {
-      // LV1 页面：首次启动初始化向导（对齐 showing-agent-ui /init-account）
+      // LV1 页面：首次启动初始化向导
       path: '/init-account',
       name: 'init-account',
       component: () => import('@/renderer/views/InitAccountView.vue'),
@@ -133,6 +133,14 @@ const router = createRouter({
             default: () => import('@/renderer/views/agents/tools/AgentToolsView.vue'),
             level2: () => import('@/renderer/views/agents/AgentListView.vue'),
             level3: () => import('@/renderer/views/agents/tools/AgentToolsView.vue'),
+          },
+        },
+        {
+          path: 'agents/:profile/memory',
+          components: {
+            default: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),
+            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
+            level3: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),
           },
         },
         {

@@ -9,7 +9,7 @@ import type { LlmClient, ModelConfig } from './types'
 
 export class LlmClientManager {
   /** 客户端缓存：apiMode → LlmClient 实例 */
-  private readonly clientCache = new Map<'openai' | 'anthropic', LlmClient>()
+  private readonly clientCache = new Map<'openai' | 'anthropic' | 'google', LlmClient>()
 
   /** 注册客户端列表（每个 apiMode 只能有一个实现） */
   constructor(clients: LlmClient[]) {

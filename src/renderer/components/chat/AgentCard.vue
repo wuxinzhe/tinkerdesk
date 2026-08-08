@@ -10,27 +10,26 @@
           <div class="agent-card__name">
             {{ agent.displayName || '默认 Agent' }}
             <span class="agent-card__profile">({{ agent.profile }})</span>
-            <span v-if="agent.isDefault" class="agent-card__badge" title="默认 Agent">默认</span>
           </div>
           <div v-if="agent.description" class="agent-card__model" :title="agent.description">{{ agent.description }}</div>
           <div v-else class="agent-card__model">{{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion"> · {{ agent.agentModeVersion }}</template></div>
         </div>
       </div>
-      <!-- 记忆占用（profile 级——与 AgentInfo 一起返回；位于按钮上方） -->
-      <div class="agent-card__memory">
-        <div class="agent-card__memory-item">
-          <div class="agent-card__memory-row">
-            <span class="agent-card__memory-tag">Memory</span>
-            <span class="agent-card__memory-num">{{ formatKB(agent.memoryChars) }} / {{ formatKB(agent.memoryMaxChars) }}</span>
+      <!-- 默认角标（卡片内部右上角） -->
+      <span v-if="agent.isDefault" class="agent-card__corner-badge" title="默认 Agent">默认</span>
+      <!-- 分割线（常显——折叠时也在） -->
+      <div class="agent-card__memory-divider"></div>
+      <!-- 记忆占用（芯片默认隐藏——记忆按钮展开；点击芯片跳转记忆管理页） -->
+      <div class="agent-card__memory-wrap" :class="{ 'agent-card__memory-wrap--open': memoryOpen }">
+        <div class="agent-card__chips">
+          <div class="agent-card__chip" :title="`Memory 记忆（${(agent.memoryChars ?? 0) / 1024 > 1 ? '查看' : '管理'}）——点击查看记忆内容`" @click="goMemory('memory')">
+            <span class="agent-card__chip-tag">Memory</span>
+            <span class="agent-card__chip-num">{{ formatChars(agent.memoryChars) }} / {{ formatChars(agent.memoryMaxChars) }}</span>
           </div>
-          <div class="agent-card__memory-bar"><div class="agent-card__memory-fill agent-card__memory-fill--mem" :style="{ width: formatPercent(agent.memoryPercent) }"></div></div>
-        </div>
-        <div class="agent-card__memory-item">
-          <div class="agent-card__memory-row">
-            <span class="agent-card__memory-tag">User</span>
-            <span class="agent-card__memory-num">{{ formatKB(agent.userChars) }} / {{ formatKB(agent.userMaxChars) }}</span>
+          <div class="agent-card__chip" title="User 用户画像记忆——点击查看记忆内容" @click="goMemory('user')">
+            <span class="agent-card__chip-tag">User</span>
+            <span class="agent-card__chip-num">{{ formatChars(agent.userChars) }} / {{ formatChars(agent.userMaxChars) }}</span>
           </div>
-          <div class="agent-card__memory-bar"><div class="agent-card__memory-fill agent-card__memory-fill--usr" :style="{ width: formatPercent(agent.userPercent) }"></div></div>
         </div>
       </div>
 
@@ -67,16 +66,17 @@
                 <line x1="9" y1="17" x2="13" y2="17" />
               </svg>
             </button>
+            <button class="agent-card__manage-btn" title="记忆" :class="{ 'agent-card__btn--active': memoryOpen }" @click="toggleMemory">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+                <line x1="9" y1="5" x2="9" y2="2" /><line x1="15" y1="5" x2="15" y2="2" />
+                <line x1="9" y1="19" x2="9" y2="22" /><line x1="15" y1="19" x2="15" y2="22" />
+              </svg>
+            </button>
             <button class="agent-card__manage-btn" title="设置" @click="goSettings">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-              </svg>
-            </button>
-            <button class="agent-card__manage-btn" title="编辑" @click="goEdit">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z" />
               </svg>
             </button>
           </div>
@@ -103,9 +103,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/renderer/stores/session-store'
+import { useChatStore } from '@/renderer/stores/chat-store'
 
 const router = useRouter()
 const sessionStore = useSessionStore()
@@ -120,7 +121,6 @@ const goSkills = () => goManage('skills')
 const goTools = () => goManage('tools')
 const goPromptModules = () => goManage('prompt-modules')
 const goSettings = () => goManage('settings')
-const goEdit = () => goManage('edit')
 
 /** 组件私有 Agent 展示类型（完整 Agent 定义在 api/types.ts） */
 interface AgentInfo {
@@ -143,18 +143,14 @@ interface AgentInfo {
   userPercent?: number
 }
 
-/** 记忆体积统一 KB */
-function formatKB(chars: number | undefined): string {
+/** 记忆体积显示（单位：字符——与 hermes memory 一致；非 KB） */
+function formatChars(chars: number | undefined): string {
   if (chars === undefined) return '—'
-  return `${Math.round((chars / 1024) * 10) / 10}KB`
+  return chars.toLocaleString()
 }
 
-function formatPercent(v: number | undefined): string {
-  if (v === undefined || Number.isNaN(v)) return '0%'
-  return `${Math.round(v * 100)}%`
-}
 
-defineProps<{
+const props = defineProps<{
   agent: AgentInfo | null
   thinkingActive: boolean
 }>()
@@ -171,11 +167,17 @@ defineEmits<{
 const thoughtActive = ref(false)
 const currentThought = ref('')
 const thoughtBodyRef = ref<HTMLElement | null>(null)
-let reasoningAccum = '' // 累积流式内容
 
-function showThought(text: string) {
-  currentThought.value = text
-  thoughtActive.value = true
+// ── 记忆芯片折叠（默认收起——记忆按钮展开/收起） ──
+const memoryOpen = ref(false)
+function toggleMemory() {
+  memoryOpen.value = !memoryOpen.value
+}
+
+/** 点击芯片跳转记忆管理页（MemoryManageView——CRUD + 拖拽排序） */
+function goMemory(target: string) {
+  if (!props.agent?.profile) return
+  router.push(`/workspace/agents/${props.agent.profile}/memory?target=${target}`)
 }
 
 // 内容追加时自动滚动到底部（固定高度内滚动）
@@ -184,44 +186,38 @@ watch(currentThought, () => {
   if (el) el.scrollTop = el.scrollHeight
 })
 
-/**
- * 处理流式 reasoning token：持续追加到思考气泡（不自动隐藏——只有 conversation complete 才隐藏）
- */
-function handleReasoningToken(e: Event) {
-  const { reasoning } = (e as CustomEvent).detail ?? {}
-  if (!reasoning) return
-  reasoningAccum += reasoning
-  showThought(reasoningAccum)
-}
+// ── 思考气泡 = chat-store 直读（streamingReasoningBySession 累积值——不再走 window 事件） ──
+const chatStore = useChatStore()
+const currentReasoning = computed(() =>
+  sessionStore.sessionId ? chatStore.getStreamingReasoning(sessionStore.sessionId) : ''
+)
 
-/**
- * 新一轮推理开始（isNewStream：新文本/工具轮次到来）→ 清理上一轮 reasoning，只留本轮
- */
-function handleReasoningStart() {
-  reasoningAccum = ''
-}
+watch(currentReasoning, (v) => {
+  // store 累积变化 → 刷新气泡内容（纯推理流每 chunk 触发——天然 append）
+  if (v) {
+    currentThought.value = v
+    thoughtActive.value = true
+  }
+})
 
-function handleConversationComplete(e: Event) {
+function handleConversationComplete() {
   // 只有收到 conversation-complete 才隐藏思考气泡
   thoughtActive.value = false
-  reasoningAccum = ''
+  currentThought.value = ''
 }
 
 onMounted(() => {
-  window.addEventListener('agent-reasoning-token', handleReasoningToken)
-  window.addEventListener('agent-reasoning-start', handleReasoningStart)
   window.addEventListener('conversation-complete', handleConversationComplete)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('agent-reasoning-token', handleReasoningToken)
-  window.removeEventListener('agent-reasoning-start', handleReasoningStart)
   window.removeEventListener('conversation-complete', handleConversationComplete)
 })
 </script>
 
 <style scoped>
 .agent-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -232,6 +228,22 @@ onUnmounted(() => {
   border: 1px solid var(--sa-border, #d2d2d7);
   cursor: default;
   user-select: none;
+}
+
+/* 默认角标（卡片内部右上角——对齐卡片内边距，不溢出） */
+.agent-card__corner-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--sa-accent, #007aff);
+  border-radius: 4px;
+  padding: 1px 6px;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  z-index: 1;
 }
 
 .agent-card--thinking {
@@ -301,16 +313,7 @@ onUnmounted(() => {
 }
 
 /* 默认角标（右上角） */
-.agent-card__badge {
-  font-size: 9px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--sa-accent, #007aff);
-  border-radius: 4px;
-  padding: 1px 5px;
-  flex-shrink: 0;
-  line-height: 1.4;
-}
+/* 默认角标已迁移为 .agent-card__corner-badge（右上角）——旧类保留仅为过渡（模板已不引用） */
 
 .agent-card__model {
   font-size: 11px;
@@ -321,55 +324,134 @@ onUnmounted(() => {
   margin-top: 1px;
 }
 
-/* ── 记忆占用（按钮下方） ── */
-.agent-card__memory {
+/* ── 记忆芯片（分割线常显；芯片默认隐藏——展开时高度动画） ── */
+.agent-card__memory-divider {
   border-top: 1px solid var(--sa-border, #d2d2d7);
-  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.agent-card__memory-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.28s ease;
+}
+
+.agent-card__memory-wrap--open {
+  max-height: 140px;
+}
+
+/* 记忆按钮 active 态（展开时高亮） */
+.agent-card__btn--active {
+  background: var(--sa-accent, #007aff);
+  color: #fff;
+}
+
+/* ── 记忆占用：双芯片（浅色 IC 芯片风格——金属引脚 + tag/用量/容量） ── */
+.agent-card__chips {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  padding: 10px 2px 2px;
+}
+
+/* 芯片主体（正方形——硅片质感 + 方向圆点 + 左右金色引脚） */
+.agent-card__chip {
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.agent-card__memory-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 3px;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  /* 方向圆点（左上角——IC 引脚 1 标记）+ 硅片浅色渐变 */
+  background:
+    radial-gradient(circle at 12px 12px, #d4a92e 1.6px, transparent 2.4px),
+    linear-gradient(145deg, #fbfcfd, #e7eaf0);
+  border: 1px solid #c6cbd4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.agent-card__memory-tag {
+.agent-card__chip:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+  border-color: var(--sa-accent, #007aff);
+}
+
+/* 左侧引脚（金色——四小段竖条） */
+.agent-card__chip::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  background: linear-gradient(#f2dc9c, #b8963f);
+  border-radius: 1px 0 0 1px;
+  box-shadow:
+    0 11px 0 -1px #c9a227,
+    0 22px 0 -1px #c9a227,
+    0 33px 0 -1px #c9a227,
+    0 44px 0 -1px #c9a227;
+}
+
+/* 右侧引脚 */
+.agent-card__chip::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  background: linear-gradient(#f2dc9c, #b8963f);
+  border-radius: 0 1px 1px 0;
+  box-shadow:
+    0 11px 0 -1px #c9a227,
+    0 22px 0 -1px #c9a227,
+    0 33px 0 -1px #c9a227,
+    0 44px 0 -1px #c9a227;
+}
+
+/* 芯片标签（硅片丝印蚀刻文字——深色凹刻感，无背景块，居中） */
+.agent-card__chip-tag {
   font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #3a3d42;
+  line-height: 1.4;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* Memory/User 蚀刻色相微调（绿/蓝——丝印感） */
+.agent-card__chip:nth-child(1) .agent-card__chip-tag {
+  color: #2f6d3c;
+}
+
+.agent-card__chip:nth-child(2) .agent-card__chip-tag {
+  color: #1a5da6;
+}
+
+/* 用量/容量（蚀刻数字——同硅片丝印，居中；正方形内允许换行） */
+.agent-card__chip-num {
+  font-size: 9px;
   font-weight: 600;
-  color: var(--sa-text-tertiary, #aeaeb2);
-}
-
-.agent-card__memory-num {
-  font-size: 10px;
-  color: var(--sa-text-secondary, #86868b);
+  color: #6a6e76;
   font-variant-numeric: tabular-nums;
-}
-
-.agent-card__memory-bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.agent-card__memory-fill {
-  height: 100%;
-  border-radius: 1px;
-  transition: width 0.3s;
-}
-
-.agent-card__memory-fill--mem {
-  background: #34c759;
-}
-
-.agent-card__memory-fill--usr {
-  background: var(--sa-accent, #007aff);
+  text-align: center;
+  white-space: normal;
+  line-height: 1.3;
+  max-width: 100%;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* ── 连接状态指示器 ── */
@@ -567,7 +649,7 @@ onUnmounted(() => {
 }
 
 .thought-area__body {
-  max-height: 67px;         /* 3 行 × 19.2px + 上下留白 ≈ 67px，与流式接收区一致 */
+  height: 86px;             /* 固定高度：4 行 × 19.2px + 上下留白 ≈ 86px */
   overflow: hidden;         /* 思考气泡：隐藏滚动条且不允许滚动 */
 }
 

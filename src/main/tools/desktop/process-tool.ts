@@ -1,11 +1,11 @@
 /**
  * desktop/process-tool.ts — 进程管理工具
  *
- * 复刻 tinker-agent-ui tools/desktop/process（对齐 Hermes process_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/process：
  * - 8 个 action：list/poll/log/wait/kill/write/submit/close
  * - session_id 强制转字符串（模型可能发整数）
  * - not_found → {status:"not_found", error}；已退出 → {status:"already_exited", ...}
- * - 输出脱敏（对齐 _redact_process_result）
+ * - 输出脱敏
  */
 import { BaseTool } from '../base-tool'
 import { processRegistry } from '../common/process-registry'
@@ -21,7 +21,7 @@ export const TOOL_NAME = 'desktop_tinker_process'
 const WAIT_DEFAULT_TIMEOUT = 180
 const LOG_DEFAULT_LIMIT = 200
 
-/** 合并 stdout+stderr（对齐 Hermes 的 session.output_buffer 语义） */
+/** 合并 stdout+stderr */
 function mergedOutput(session: { stdout: string; stderr: string }): string {
   return session.stdout + (session.stderr ? '\n' + session.stderr : '')
 }
@@ -40,7 +40,7 @@ export class ProcessTool extends BaseTool {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as ProcessParams
     const action = params.action
 
-    // session_id 强制转字符串（对齐 Hermes：模型可能发整数）
+    // session_id 强制转字符串
     const sessionId = params.session_id != null ? String(params.session_id) : ''
 
     switch (action) {
@@ -79,7 +79,7 @@ export class ProcessTool extends BaseTool {
     return ToolResult.sync(JSON.stringify({ error }))
   }
 
-  /** 脱敏输出（对齐 Hermes _redact_process_result：output/output_preview/command） */
+  /** 脱敏输出 */
   private redact(d: Record<string, unknown>): Record<string, unknown> {
     if (typeof d['output'] === 'string' && d['output']) d['output'] = redactSensitiveText(d['output'] as string)
     if (typeof d['output_preview'] === 'string' && d['output_preview']) d['output_preview'] = redactSensitiveText(d['output_preview'] as string)
@@ -87,7 +87,7 @@ export class ProcessTool extends BaseTool {
     return d
   }
 
-  /** list → {"processes": [...]}（对齐 list_sessions 字段） */
+  /** list → {"processes": [...]} */
   private actionList(): ToolResult {
     const sessions = processRegistry.list()
     const processes = sessions.map(s => {
@@ -132,7 +132,7 @@ export class ProcessTool extends BaseTool {
     return ToolResult.sync(JSON.stringify(this.redact(d)))
   }
 
-  /** log：offset==0 → 最后 N 行；tinker 是 "N lines" 字符串（对齐 read_log） */
+  /** log：offset==0 → 最后 N 行；tinker 是 "N lines" 字符串 */
   private actionLog(sessionId: string, offset?: number, limit?: number): ToolResult {
     const session = processRegistry.get(sessionId)
     if (!session) {
@@ -144,7 +144,7 @@ export class ProcessTool extends BaseTool {
     if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
     const totalLines = lines.length
     const lim = limit ?? LOG_DEFAULT_LIMIT
-    // 对齐 Hermes：offset==0（或未传）→ 最后 N 行；offset>0 → 从 offset 开始
+    // offset==0（或未传）→ 最后 N 行；offset>0 → 从 offset 开始
     let selected: string[]
     if ((offset ?? 0) === 0 && lim > 0) {
       selected = lines.slice(-lim)
@@ -181,7 +181,7 @@ export class ProcessTool extends BaseTool {
     }
 
     return new Promise((resolve) => {
-      // 对齐 Hermes wait：clamp 到默认值（180s），timeout_note 记录 clamp
+      // ：clamp 到默认值（180s），timeout_note 记录 clamp
       const maxTimeout = WAIT_DEFAULT_TIMEOUT
       const requested = timeout ?? maxTimeout
       let timeoutNote: string | null = null
@@ -265,12 +265,12 @@ export class ProcessTool extends BaseTool {
     return ToolResult.sync(JSON.stringify({ status: 'ok', bytes_written: Buffer.byteLength(data, 'utf-8') }))
   }
 
-  /** submit = write(data + "\n")（对齐 Hermes submit_stdin） */
+  /** submit = write(data + "\n") */
   private actionSubmit(sessionId: string, data: string): ToolResult {
     return this.actionWrite(sessionId, data + '\n')
   }
 
-  /** close → {status:"ok", message:"stdin closed"}（对齐 close_stdin） */
+  /** close → {status:"ok", message:"stdin closed"} */
   private actionClose(sessionId: string): ToolResult {
     const ok = processRegistry.closeStdin(sessionId)
     if (!ok) {

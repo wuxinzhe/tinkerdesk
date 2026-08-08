@@ -1,47 +1,72 @@
 /**
- * controller/electron-event-sender.ts — Electron WebContents 事件发送器
+ * service/electron-event-sender.ts — Electron WebContents 事件发送器
  *
- * 实现 IEventSender（对齐 Java StompEventHelper 职责）：
- * 通过 webContents 向渲染层推送事件，事件名映射本地 IPC 契约。
- * 由 AgentController 在 handleChat 时构建，注入 SessionContext。
+ * 实现 IEventSender（协议见 docs/event-protocol.md）：
+ * 所有 main → renderer 事件统一走单通道 IPC_MESSAGE（'agent:message'），
+ * 消息格式 { route, sessionId, data }——route = '{一级路由}:{二级type}' 单字段两级。
+ *
+ * 一级路由 = 业务域（chat/session/action/tip/error）；客户端 split(':') 解析。
+ * 未来接云 Agent：实现同一 IEventSender 接口（WebSocket 传输），route 语义不变。
  */
 import { webContents } from 'electron'
 import type { IEventSender } from '../core/loop/types'
 import type { LlmChunk } from '../core/llm/types'
 import type { StreamToken } from '../controller/types'
+import {
+  EVT_CHAT_APPROVAL, EVT_CHAT_TOKEN,
+  ROUTE_ACTION, ROUTE_CHAT, ROUTE_ERROR, ROUTE_SESSION, ROUTE_TIP,
+  IPC_MESSAGE,
+} from '../core/constants'
 
 /** Electron WebContents 事件发送器 */
 export class ElectronEventSender implements IEventSender {
   /** 待合并发送的 token 批（30ms 窗口，减少高频 IPC + 平滑渲染节奏） */
   private tokenBuffer: Array<{ sessionId: string; evt: StreamToken }> = []
   private tokenFlushTimer: ReturnType<typeof setTimeout> | null = null
+  /** 攒批尺寸上限：超过立即 flush（即使时间窗未到——防止单批过大、内存/传输膨胀） */
+  private static readonly MAX_TOKEN_BUFFER = 50
 
   constructor(
     private readonly senderId: number,
     private readonly sessionId: string
   ) {}
 
-  /** 消息通道 */
-  sendMessage(_sessionId: string, type: string, data: unknown): void {
-    webContents.fromId(this.senderId)?.send('agent:message', { type, data })
+  /** 统一出口：route 单字段两级 + data */
+  private send(sessionId: string, route: string, data: unknown): void {
+    webContents.fromId(this.senderId)?.send(IPC_MESSAGE, { route, sessionId, data })
   }
 
-  /** 动作通道 */
+  /** chat 域（对话内容流） */
+  sendMessage(sessionId: string, type: string, data: unknown): void {
+    this.send(sessionId, `${ROUTE_CHAT}:${type}`, data)
+  }
+
+  /** action 域（行为动作） */
   sendAction(sessionId: string, type: string, data: unknown): void {
-    webContents.fromId(this.senderId)?.send('agent:action', { type, data, sessionId })
+    this.send(sessionId, `${ROUTE_ACTION}:${type}`, data)
   }
 
-  /** 提示信号通道 */
-  sendTips(_sessionId: string, type: string, message: string): void {
-    webContents.fromId(this.senderId)?.send('agent:queueTip', { type, message, sessionId: this.sessionId })
+  /** session 域（会话数据/状态） */
+  sendSession(sessionId: string, type: string, data: unknown): void {
+    this.send(sessionId, `${ROUTE_SESSION}:${type}`, data)
   }
 
-  /** 流式 token 通道（LlmChunk → StreamToken 边界转换；30ms 窗口攒批合并发送） */
-  sendToken(_sessionId: string, chunk: LlmChunk): void {
+  /** tip 域（提示信号） */
+  sendTips(sessionId: string, type: string, message: string): void {
+    this.send(sessionId, `${ROUTE_TIP}:${type}`, message)
+  }
+
+  /** error 域（报错） */
+  sendError(sessionId: string, type: string, message: string): void {
+    this.send(sessionId, `${ROUTE_ERROR}:${type}`, message)
+  }
+
+  /** 流式 token（chat:token——LlmChunk → StreamToken 边界转换；30ms 窗口攒批合并发送） */
+  sendToken(sessionId: string, chunk: LlmChunk): void {
     // 调试日志门控：仅 LOG_DEBUG_TOKEN=1 时打印（排查流式字段问题用；默认关闭避免热路径 IO 拖慢流式）
     if (process.env.LOG_DEBUG_TOKEN === '1') {
       console.log('[TOKEN]', JSON.stringify({
-        sessionId: _sessionId.slice(0, 8),
+        sessionId: sessionId.slice(0, 8),
         text: chunk.text?.slice(0, 50) ?? '',
         reasoning: chunk.reasoning?.slice(0, 50) ?? '',
         toolCallArgs: chunk.toolCallArgs?.slice(0, 40) ?? '',
@@ -58,7 +83,12 @@ export class ElectronEventSender implements IEventSender {
       finishReason: chunk.finishReason,
     }
     // 攒批：同一窗口内的多个 chunk 合并为一次 IPC（减少高频消息 + 渲染节奏更均匀）
-    this.tokenBuffer.push({ sessionId: this.sessionId, evt })
+    this.tokenBuffer.push({ sessionId, evt })
+    // 尺寸超限 → 立即 flush（时间窗重置由 flushTokens 内 clearTimeout 完成）
+    if (this.tokenBuffer.length >= ElectronEventSender.MAX_TOKEN_BUFFER) {
+      this.flushTokens()
+      return
+    }
     if (!this.tokenFlushTimer) {
       this.tokenFlushTimer = setTimeout(() => this.flushTokens(), 30)
     }
@@ -68,7 +98,7 @@ export class ElectronEventSender implements IEventSender {
     }
   }
 
-  /** 合并发送攒批的 token（按 session 聚合 text/reasoning/toolCallArgs） */
+  /** 合并发送攒批的 token（按 session 分组——原样 chunk 数组，不拼接；前端负责累积拼接）——chat:token */
   private flushTokens(): void {
     if (this.tokenFlushTimer) {
       clearTimeout(this.tokenFlushTimer)
@@ -76,30 +106,21 @@ export class ElectronEventSender implements IEventSender {
     }
     if (this.tokenBuffer.length === 0) return
 
-    const bySession = new Map<string, StreamToken>()
+    const bySession = new Map<string, StreamToken[]>()
     for (const { sessionId, evt } of this.tokenBuffer) {
-      const cur = bySession.get(sessionId) ?? {
-        text: undefined, reasoning: undefined, toolCallArgs: undefined,
-        isFinish: false, finishReason: undefined,
-      } as StreamToken
-      if (evt.text) cur.text = (cur.text ?? '') + evt.text
-      if (evt.reasoning) cur.reasoning = (cur.reasoning ?? '') + evt.reasoning
-      if (evt.toolCallArgs) cur.toolCallArgs = (cur.toolCallArgs ?? '') + evt.toolCallArgs
-      if (evt.isFinish) {
-        cur.isFinish = true
-        cur.finishReason = evt.finishReason
-      }
-      bySession.set(sessionId, cur)
+      const list = bySession.get(sessionId) ?? []
+      list.push(evt)
+      bySession.set(sessionId, list)
     }
     this.tokenBuffer = []
-    for (const [sessionId, merged] of bySession) {
-      webContents.fromId(this.senderId)?.send('agent:token', { ...merged, sessionId })
+    for (const [sessionId, chunks] of bySession) {
+      this.send(sessionId, `${ROUTE_CHAT}:${EVT_CHAT_TOKEN}`, { chunks })
     }
   }
 
-  /** 审批请求通道（对齐 Java APPROVAL_REQUEST：弹审批卡片） */
+  /** 审批请求 */
   sendApprovalRequest(sessionId: string, data: { toolCallId: string; name: string; arguments?: unknown; reason?: string; conversationId?: string }): void {
     console.log(`[agent] 审批请求 sessionId=${sessionId} tool=${data.name} toolCallId=${data.toolCallId} conv=${data.conversationId ?? '-'}`)
-    webContents.fromId(this.senderId)?.send('agent:approvalRequest', { ...data, sessionId })
+    this.send(sessionId, `${ROUTE_CHAT}:${EVT_CHAT_APPROVAL}`, data)
   }
 }

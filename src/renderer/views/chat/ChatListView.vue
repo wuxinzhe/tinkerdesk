@@ -22,8 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
-import type { Ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import SessionList from '@/renderer/components/chat/SessionList.vue'

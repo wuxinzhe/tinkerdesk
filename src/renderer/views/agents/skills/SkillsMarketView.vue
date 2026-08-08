@@ -100,7 +100,7 @@ import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import { useRouter, useRoute } from 'vue-router'
 import type { HistoryState } from 'vue-router'
 import { NSelect } from 'naive-ui'
-import { SaLoading, SaEmpty, SaPagination, SaActionBtn, SaSkeleton, L3PageLayout } from '@/renderer/components'
+import { SaEmpty, SaPagination, SaActionBtn, SaSkeleton, L3PageLayout } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
 
 const router = useRouter()

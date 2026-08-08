@@ -2,32 +2,25 @@
  * chat-store.ts — 对话状态管理
  *
  * 消息按 sessionId 隔离存储，互不干扰。
- * 本地 AgentLoop（IPC）：消息流通过 agentApi.chat() 的 onToken 回调 + 返回 MessageVO 驱动。
+ * 本地 TinkerAgent（IPC）：消息流通过 agentApi.chat() 的 onToken 回调 + 返回 MessageVO 驱动。
  *
  * 消息路由：agentApi.onMessage → 路由到各个 handler，保持 View → Store → API 单向依赖。
  */
 import { createLocalAgentApi } from '@/renderer/api/agent-local'
 import { messagesApi } from '@/renderer/api/messages-api'
-import type { AgentApi, AgentApprovalEvent, AgentMessageVO, AgentStreamEvent, Message as ApiMessage } from '@/renderer/api/types'
+import type { AgentApi, AgentMessageVO, Message as ApiMessage } from '@/renderer/api/types'
+import { STATUS_CONTENT_APPROVED, STATUS_CONTENT_REJECTED, STATUS_CONTENT_TIMED_OUT } from '@/renderer/constants'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { playMessageNotification } from '@/renderer/utils/audio-utils'
-import { showInfoToast } from '@/renderer/utils/notification-utils'
 import { isValidTokenValue } from '@/renderer/utils/streaming/token-validate'
-import { mergeToolCallChunks, type ToolCallChunk } from '@/renderer/utils/streaming/tool-call-merge'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   ActionMergedPayload,
   AgentResponseTokenPayload,
   ApprovalRequestPayload,
-  ChatMergedPayload,
-  ClarifyRequestPayload,
-  ErrorPayload,
-  ExecuteToolPayload,
   MessageVOData,
-  SessionTitleUpdatedPayload,
-  ThinkingPayload,
-  TipsPayload
+  SessionTitleUpdatedPayload
 } from './types'
 
 
@@ -45,10 +38,10 @@ export const useChatStore = defineStore('chat', () => {
   const streamingContentByConversation = ref<Record<string, string>>({})
   /** 每 session 的 tool 调用记录（用于 todo list） */
   const toolCallsBySession = ref<Record<string, { toolCallId: string; toolName: string; status: 'pending' | 'done' }[]>>({})
-  /** 每个 conversation 的 tool call 累积片段（流式累积，isFinish 时 join 一次 JSON.parse） */
-  const toolCallArgsBufferByConversation = ref<Record<string, string[]>>({})
-  /** 工具名缓存（工具轮次——main 随 token 下发，isFinish 拼工具卡片用） */
-  const toolCallNameByConversation = ref<Record<string, string>>({})
+  /** 每个 conversation 的 tool call 累积片段（流式累积，按 index 分路——多工具各自拼接，isFinish 时逐工具 join 一次 JSON.parse） */
+  const toolCallArgsBufferByConversation = ref<Record<string, Record<number, string[]>>>({})
+  /** 工具名缓存（工具轮次——main 随 token 下发，按 index 分路——多工具各自保留；isFinish 拼工具卡片用） */
+  const toolCallNameByConversation = ref<Record<string, Record<number, string>>>({})
   /** 每个 conversation 的完整 toolCall 缓存：compositeKey → { toolCallId: {name, arguments} }。
    * isFinish 时从 toolCallArgs 组装；exe_client_tool 只下发 id，执行时按 id 从本缓存取完整参数。 */
   const toolCallsByConversation = ref<Record<string, Record<string, { name: string; arguments: unknown }>>>({})
@@ -58,7 +51,7 @@ export const useChatStore = defineStore('chat', () => {
   /** 每个 session 是否正在处理中（用于 UI 指示器，不阻断操作） */
   const isProcessingBySession = ref<Record<string, boolean>>({})
 
-  // AgentApi 引用（本地 AgentLoop IPC，由 initAgentApi 创建）
+  // AgentApi 引用（本地 TinkerAgent IPC，由 initAgentApi 创建）
   let agentApi: AgentApi | null = null
 
   // ── 按 session 获取数据 ──
@@ -78,7 +71,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 初始化本地 AgentApi（IPC）并建立消息路由。
    * 由 SplashView / WorkspaceView 在初始化时调用。
-   * 本地 AgentLoop：流式 token 在 sendMessage 的 chat 回调中处理；
+   * 本地 TinkerAgent：流式 token 在 sendMessage 的 chat 回调中处理；
    * onApprovalRequest 处理审批请求等事件。
    */
   function initAgentApi(): AgentApi {
@@ -86,98 +79,74 @@ export const useChatStore = defineStore('chat', () => {
     initialized = true
     agentApi = createLocalAgentApi()
 
-    // 审批请求事件 → 弹审批卡片（sessionId/conversationId 由 main 随事件携带；兜底用当前会话）
-    agentApi.onApprovalRequest((payload: AgentApprovalEvent) => {
-      const tc = payload as AgentApprovalEvent
-      addApprovalMessage({
-        sessionId: tc.sessionId ?? sessionStore.sessionId ?? '',
-        conversationId: tc.conversationId ?? '',
-        data: {
-          toolCallId: tc.toolCallId,
-          toolName: tc.name,
-          approvalArguments: tc.arguments as Record<string, unknown>,
-        } as unknown as MessageVOData,
-      } as ApprovalRequestPayload)
-    })
-
-    // 动作事件（conversation_complete / session_title_updated / tool_done / exe_client_tool）→ 路由处理
-    agentApi.onAction((payload: ActionMergedPayload) => {
-      handleActionEvent(payload)
+    // 统一路由消息入口（协议见 docs/event-protocol.md——route = '{一级}:{二级}' → 分域处理）
+    agentApi.onRouteMessage((payload: { route?: string; sessionId?: string; data?: unknown }) => {
+      handleRouteMessage(payload)
     })
 
     return agentApi
   }
 
-  function getAgentApi(): AgentApi | null {
-    return agentApi
-  }
-
-  /** 处理 chat 通道事件：agent_response / approval_request / interaction_status_update */
-  function handleChatEvent(payload: ChatMergedPayload): void {
+  /** 路由消息分发：route = '{一级}:{二级}'——客户端自行解析 */
+  function handleRouteMessage(payload: { route?: string; sessionId?: string; data?: unknown }): void {
+    const [route1, route2] = (payload.route ?? '').split(':')
     const sessionId = payload.sessionId ?? ''
-    if (!sessionId) return
-    const subType = payload.type ?? ''
+    const data = payload.data as Record<string, unknown> | undefined
 
-    switch (subType) {
-      case 'agent_response_token': {
-        handleTokenEvent(payload as AgentResponseTokenPayload)
-        break
-      }
-      case 'approval_request':
-        addApprovalMessage(payload as ApprovalRequestPayload)
-        break
-      case 'clarify_request': {
-        const d = (payload as ClarifyRequestPayload).data
-        if (!d || !d.toolCallId) break
-        const tcStr = d.toolCall
-        let question = ''
-        let choices: string[] | null = null
-        if (typeof tcStr === 'string') {
-          try {
-            const parsed = JSON.parse(tcStr) as Record<string, unknown>
-            const entry = Object.values(parsed)[0] as Record<string, unknown> | undefined
-            const args = entry?.['arguments'] as Record<string, unknown> | undefined
-            question = (args?.['question'] as string) ?? ''
-            choices = (args?.['choices'] as string[]) ?? null
-          } catch { /* fallback to empty */ }
+    switch (route1) {
+      case 'chat': {
+        switch (route2) {
+          case 'token': {
+            // 流式 token（data = { chunks: StreamToken[] }——后端攒批原样下发，前端负责拼接累积）
+            const chunks = (data?.chunks as Array<Record<string, unknown>> | undefined) ?? []
+            for (const chunk of chunks) {
+              handleTokenEvent({
+                sessionId,
+                conversationId: `local:${sessionId}`,
+                data: {
+                  token: (chunk?.text as string) ?? '',
+                  reasoning: (chunk?.reasoning as string) ?? '',
+                  toolCallArgs: (chunk?.toolCallArgs as string) ?? '',
+                  toolCallName: chunk?.toolCallName as string | undefined,
+                  toolCallIndex: chunk?.toolCallIndex as number | undefined,
+                  isFinish: chunk?.isFinish ?? false,
+                  finishReason: chunk?.finishReason as string | undefined,
+                },
+              } as unknown as AgentResponseTokenPayload)
+            }
+            break
+          }
+          case 'approval':
+            addApprovalMessage({
+              sessionId,
+              conversationId: (data?.conversationId as string) ?? '',
+              data: {
+                toolCallId: data?.toolCallId as string,
+                toolName: data?.name as string,
+                approvalArguments: data?.arguments as Record<string, unknown>,
+              } as unknown as MessageVOData,
+            } as ApprovalRequestPayload)
+            break
+          case 'clarify': {
+            const question = (data?.arguments as Record<string, unknown> | undefined)?.['question'] as string | undefined
+            const choices = (data?.arguments as Record<string, unknown> | undefined)?.['choices'] as string[] | undefined
+            addClarifyMessage({ toolCallId: data?.toolCallId as string, sessionId, question: question ?? '', choices: choices ?? null })
+            break
+          }
+          case 'interaction_status':
+            updateApprovalStatus((data?.toolCallId as string) ?? '', (data?.interactionStatus as string) ?? '', sessionId)
+            break
         }
-        addClarifyMessage({ toolCallId: d.toolCallId, sessionId, question, choices })
         break
       }
-      case 'interaction_status_update': {
-        const { data, sessionId: sid } = payload
-        const toolCallId = (data as Record<string, unknown>)?.toolCallId as string | undefined
-        if (toolCallId) updateApprovalStatus(toolCallId, (data as Record<string, unknown>)?.interactionStatus as string, sid)
+      case 'session':
+      case 'action':
+        // 会话数据（stats/complete/title/budget）+ 行为动作（tool_start/tool_done）→ 同一动作处理
+        handleActionEvent({ type: route2, data: payload.data, sessionId } as unknown as ActionMergedPayload)
         break
-      }
-      case 'clarify_status_update': {
-        const { data, sessionId: sid } = payload
-        const toolCallId = (data as Record<string, unknown>)?.toolCallId as string | undefined
-        if (toolCallId) updateClarifyStatus(toolCallId, sid)
-        break
-      }
+      // tip/error 域由 preload 顶层分发（GlobalTipToast）——不在此处理
     }
   }
-
-  /** 处理 thinking 通道事件：追加推理内容 */
-  function handleThinkingEvent(payload: ThinkingPayload): void {
-    const sessionId = payload.sessionId ?? ''
-    if (!sessionId) return
-    const text = payload.message ?? ''
-    if (!isValidTokenValue(text)) return
-
-    streamingReasoningBySession.value[sessionId] =
-      (streamingReasoningBySession.value[sessionId] ?? '') + text
-    window.dispatchEvent(new CustomEvent('agent-thinking', {
-      detail: { sessionId, reasoning: streamingReasoningBySession.value[sessionId] }
-    }))
-  }
-
-  /**
-   * 处理 agent_response_token 事件。
-   * LlmChunk 中可能同时包含 text / reasoning / toolCallArgs 三种内容，
-   * 各自独立字段，前端检查非空分别路由到对应缓冲区。
-   */
   function handleTokenEvent(payload: AgentResponseTokenPayload): void {
     const data = payload.data
     if (!data) return
@@ -188,17 +157,15 @@ export const useChatStore = defineStore('chat', () => {
     const compositeKey = `${sessionId}:${conversationId}`
 
     // ── 新流到来 → 清理上一轮残留 + 创建占位消息 ──
+    // （纯推理流：streamingContent/args 都空——必须把 reasoning 也计入，否则每 chunk 都判为新流→清空→只留最后 token）
     const isNewStream = !streamingContentByConversation.value[compositeKey]
+      && !streamingReasoningBySession.value[sessionId]
       && !toolCallArgsBufferByConversation.value[compositeKey]
     if (isNewStream && (isValidTokenValue(data.token) || isValidTokenValue(data.toolCallArgs) || isValidTokenValue(data.reasoning))) {
       // 清理上一轮工具调用记录
       delete toolCallsBySession.value[sessionId]
       // 清理上一轮推理内容
       delete streamingReasoningBySession.value[sessionId]
-      // 通知思考气泡：新一轮推理开始（清理旧 reasoning，只留本轮）
-      window.dispatchEvent(new CustomEvent('agent-reasoning-start', {
-        detail: { sessionId, conversationId }
-      }))
       // 清理旧的占位消息（如果仍在）
       removeStreamingPlaceholder(sessionId)
     }
@@ -213,24 +180,30 @@ export const useChatStore = defineStore('chat', () => {
 
     // 2. 推理内容 → 追加到推理缓冲区
     if (isValidTokenValue(data.reasoning)) {
+      // 推理累积（思考气泡 store 直读——无需 window 事件派发）
       streamingReasoningBySession.value[sessionId] =
         (streamingReasoningBySession.value[sessionId] ?? '') + data.reasoning
-      window.dispatchEvent(new CustomEvent('agent-reasoning-token', {
-        detail: { sessionId, conversationId, reasoning: data.reasoning }
-      }))
     }
 
-    // 3. 工具调用参数 → push 到字符串数组，isFinish 时 join 一次 JSON.parse
+    // 3. 工具调用参数 → 按 index 分路 push（isFinish 时逐工具 join 一次 JSON.parse）
     if (isValidTokenValue(data.toolCallArgs)) {
-      const arr = toolCallArgsBufferByConversation.value[compositeKey] ?? []
+      const idx = data.toolCallIndex ?? 0
+      const byIndex = toolCallArgsBufferByConversation.value[compositeKey] ?? {}
+      const arr = byIndex[idx] ?? []
       arr.push(data.toolCallArgs)
-      toolCallArgsBufferByConversation.value[compositeKey] = arr
+      byIndex[idx] = arr
+      toolCallArgsBufferByConversation.value[compositeKey] = byIndex
       // 工具轮次也确保占位消息（isFinish 时转工具卡片）
       ensureStreamingPlaceholder(sessionId, conversationId, compositeKey)
     }
-    // 3.5 工具名缓存（首次出现）
-    if (isValidTokenValue(data.toolCallName) && !toolCallNameByConversation.value[compositeKey]) {
-      toolCallNameByConversation.value[compositeKey] = data.toolCallName as string
+    // 3.5 工具名缓存（首次出现——按 index 分路，多工具各自保留）
+    if (isValidTokenValue(data.toolCallName)) {
+      const idx = data.toolCallIndex ?? 0
+      const byIndex = toolCallNameByConversation.value[compositeKey] ?? {}
+      if (!byIndex[idx]) {
+        byIndex[idx] = data.toolCallName as string
+        toolCallNameByConversation.value[compositeKey] = byIndex
+      }
     }
 
     // isFinish → 判断是否工具轮次（finishReason 明确判断）+ 完整文本一次填充占位消息
@@ -238,8 +211,8 @@ export const useChatStore = defineStore('chat', () => {
       const accumulated = streamingContentByConversation.value[compositeKey] ?? ''
       const fullText = accumulated || (isValidTokenValue(data.token) ? data.token : '')
       const buffers = toolCallArgsBufferByConversation.value[compositeKey]
-      // 工具轮次：finishReason === 'tool_calls'（或缓冲非空兜底）
-      const isToolTurn = data.finishReason === 'tool_calls' || (buffers && buffers.length > 0)
+      // 工具轮次：finishReason === 'tool_calls'（或缓冲非空兜底——按 index 分路后是对象）
+      const isToolTurn = data.finishReason === 'tool_calls' || (buffers && Object.keys(buffers).length > 0)
 
       // 文本轮次：finalize 为 assistant_text
       if (fullText && !isToolTurn) {
@@ -252,16 +225,23 @@ export const useChatStore = defineStore('chat', () => {
       // 工具轮次：占位转 assistant_tool_call 卡片（content 过渡文本 + toolCall map）
       if (isToolTurn) {
         let toolCallJson: string | undefined
-        const toolName = toolCallNameByConversation.value[compositeKey]
-        if (buffers && buffers.length > 0) {
-          const raw = buffers.join('')
+        const nameByIndex = toolCallNameByConversation.value[compositeKey]
+        const argsByIndex = toolCallArgsBufferByConversation.value[compositeKey]
+        if (argsByIndex && Object.keys(argsByIndex).length > 0) {
+          // 多工具分路：逐 index 拼 map 结构 { call_<idx>: { name, arguments } }
+          const toolCallsMap: Record<string, { name: string; arguments: unknown }> = {}
+          for (const [idxStr, arr] of Object.entries(argsByIndex)) {
+            const idx = Number(idxStr)
+            const raw = arr.join('')
+            let parsed: unknown = raw
+            try { parsed = JSON.parse(raw) } catch { /* 参数解析失败——保留原文 */ }
+            toolCallsMap[`call_${idx}`] = {
+              name: nameByIndex?.[idx] ?? '',
+              arguments: parsed,
+            }
+          }
+          toolCallJson = JSON.stringify(toolCallsMap)
           delete toolCallArgsBufferByConversation.value[compositeKey]
-          try {
-            const parsed = JSON.parse(raw)
-            // token 流只有参数片段——工具名从 toolCallName 缓存（main 随 token 下发）——
-            // 拼平铺结构（id 空串；前端 parseToolCallEntries 兼容）
-            toolCallJson = JSON.stringify({ id: '', name: toolName ?? '', arguments: parsed })
-          } catch { /* 参数解析失败——不拼 toolCall（只显示标题） */ }
         }
         delete toolCallNameByConversation.value[compositeKey]
         finalizeStreamingPlaceholder(sessionId, conversationId, {
@@ -278,15 +258,11 @@ export const useChatStore = defineStore('chat', () => {
 
       cleanupConversationToken(sessionId, conversationId)
       isProcessingBySession.value[sessionId] = false
-
-      window.dispatchEvent(new CustomEvent('agent-response-received', {
-        detail: { sessionId, conversationId }
-      }))
     }
   }
 
   /** 确保存在当前 conversation 的流式占位消息（content 由 runSegmentation 追加） */
-  function ensureStreamingPlaceholder(sid: string, convId: string, key: string): void {
+  function ensureStreamingPlaceholder(sid: string, convId: string, _key: string): void {
     if (!messagesBySession.value[sid]) messagesBySession.value[sid] = []
     const msgs = messagesBySession.value[sid]
     // 只匹配"活动中的"占位（isStreaming=true）；上一轮已完成的回复不匹配
@@ -295,13 +271,15 @@ export const useChatStore = defineStore('chat', () => {
       // content 不在此更新——由 runSegmentation 分段后追加
       return
     }
-    // 创建新占位（唯一 id，content 初始为空）
+    // 创建新占位（唯一 id，content 初始为空；工具轮次带工具名——胶囊流式即时可见；多工具取第一个）
+    const toolName = toolCallNameByConversation.value[`${sid}:${convId}`]?.[0] ?? ''
     msgs.push({
       id: `msg_stream_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       sessionId: sid,
       conversationId: convId,
       role: 'assistant',
-      messageType: 'assistant_text',
+      messageType: toolName ? 'assistant_tool_call' : 'assistant_text',
+      toolCallName: toolName ?? '',
       content: '',
       timestamp: Date.now(),
       status: 'streaming',
@@ -318,7 +296,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** 完成流式占位消息（原地转为 finalized 消息） */
-  function finalizeStreamingPlaceholder(sid: string, convId: string | undefined, info: {
+  function finalizeStreamingPlaceholder(sid: string, _convId: string | undefined, info: {
     content: string
     messageType?: string
     reasoningContent?: string
@@ -343,7 +321,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  /** 本地 AgentLoop 返回最终 MessageVO 时：只更新流式占位（走流式输出，不再追加新消息） */
+  /** 本地 TinkerAgent 返回最终 MessageVO 时：只更新流式占位（走流式输出，不再追加新消息） */
   function finalizeAgentMessage(sid: string, msg: AgentMessageVO): void {
     const msgs = messagesBySession.value[sid] ?? []
     if (!messagesBySession.value[sid]) {
@@ -362,7 +340,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /** 切换 conversation 时调用：清理临时状态（缓冲区分段已移除，无轮询可停） */
-  function clearConvChunks(prevSessionId: string, prevConvId: string): void {
+  function clearConvChunks(_prevSessionId: string, prevConvId: string): void {
     if (!prevConvId) return
   }
 
@@ -372,14 +350,6 @@ export const useChatStore = defineStore('chat', () => {
     return streamingContentByConversation.value[`${sessionId}:${conversationId}`] ?? ''
   }
 
-  /** 检查指定 conversation 是否还在流式接收中 */
-  function isConvStreaming(sessionId: string, conversationId: string): boolean {
-    if (!sessionId || !conversationId) return false
-    const key = `${sessionId}:${conversationId}`
-    return streamingContentByConversation.value[key] !== undefined
-  }
-
-  /** 获取当前 session 活跃流式的 conversationId（无则返回空字符串） */
   function getActiveStreamingConvId(sessionId: string): string {
     if (!sessionId) return ''
     const prefix = `${sessionId}:`
@@ -398,21 +368,21 @@ export const useChatStore = defineStore('chat', () => {
     const subType = payload.type ?? ''
 
     switch (subType) {
-      case 'conversation_complete':
+      case 'complete':
         playMessageNotification()
         isProcessingBySession.value[sessionId] = false
         window.dispatchEvent(new CustomEvent('conversation-complete', {
           detail: { sessionId, data: (payload as ActionMergedPayload).data ?? null }
         }))
         break
-      case 'stats_update': {
+      case 'stats': {
         // 每轮统计数据（数据面板——命中率/模型/上下文使用）
         window.dispatchEvent(new CustomEvent('agent-stats-update', {
           detail: { sessionId, data: (payload as ActionMergedPayload).data ?? null }
         }))
         break
       }
-      case 'session_title_updated': {
+      case 'title': {
         const titleData = payload as SessionTitleUpdatedPayload
         window.dispatchEvent(new CustomEvent('session-title-updated', {
           detail: { sessionId, title: titleData.data?.title ?? '' }
@@ -432,83 +402,6 @@ export const useChatStore = defineStore('chat', () => {
         }
         break
       }
-      case 'exe_client_tool': {
-        const toolPayload = payload as ExecuteToolPayload
-        const toolData = toolPayload.data
-        if (!toolData) break
-        const toolCallId = toolData.id ?? ''
-        const toolName = toolData.name ?? ''
-        if (!toolCallId || !toolName) break
-
-        // 服务端只下发 id（且无 conversationId、无 arguments）—— 按 sessionId 前缀匹配活跃 conversation 的缓存取参
-        // 服务端串行：token 全下发 → isFinish → 才发 exe_client_tool，故缓存必然已组装完成
-        let cached: Record<string, { name: string; arguments: unknown }> | undefined
-        const cacheKeys = Object.keys(toolCallsByConversation.value).filter(k => k.startsWith(`${sessionId}:`))
-        if (cacheKeys.length > 0) cached = toolCallsByConversation.value[cacheKeys[cacheKeys.length - 1]]
-        const cachedCall = cached ? cached[toolCallId] : undefined
-        const toolArgs = cachedCall?.arguments ?? toolData.arguments ?? {}
-        if (!cachedCall) {
-          console.warn(`[chat-store] toolCallId=${toolCallId} 未命中 toolCallsByConversation 缓存，回退事件 arguments`)
-        }
-
-        // 记录到 toolCallsBySession
-        const tcArray = toolCallsBySession.value[sessionId] ?? []
-        if (!tcArray.find(tc => tc.toolCallId === toolCallId)) {
-          tcArray.push({ toolCallId, toolName, status: 'pending' })
-          toolCallsBySession.value[sessionId] = tcArray
-        }
-
-        const sendResult = (id: string, result: string) => {
-          agentApi?.toolResult({ profile: sessionStore.profile ?? 'default', sessionId, toolCallId: id, result }).catch(() => { /* 本地调用失败静默 */ })
-        }
-
-        // ── 本地 AgentLoop：工具已在主进程执行，renderer 只需处理 UI 类工具（clarify） ──
-        console.log(`[chat-store] exe_client_tool 事件（本地模式忽略）tool=${toolName}`)
-
-        // clarify 工具：往聊天框添加消息，渲染 ClarifyCard
-        if (toolName === 'builtin_tinker_clarify') {
-          const args = (toolArgs ?? {}) as Record<string, unknown>
-          addClarifyMessage({
-            toolCallId,
-            sessionId,
-            question: (args.question as string) || '',
-            choices: args.choices as string[] | undefined | null
-          })
-        }
-        break
-      }
-      case 'exe_mcp_tool': {
-        const toolPayload = payload as ExecuteToolPayload
-        const toolData = toolPayload.data
-        if (!toolData) break
-        const toolCallId = toolData.id ?? ''
-        const toolName = toolData.name ?? ''
-        const toolArgs = toolData.arguments ?? {}
-        if (!toolCallId || !toolName) break
-
-        // 本地 AgentLoop：工具已在主进程执行（含 MCP 工具），renderer 无需处理
-        console.log(`[chat-store] exe_client_tool 事件（本地模式忽略）tool=${toolName}`)
-        break
-      }
-    }
-  }
-
-  /** 处理 error 通道事件 */
-  function handleErrorEvent(payload: ErrorPayload): void {
-    const sessionId = payload.sessionId ?? ''
-    handleError(sessionId, payload)
-  }
-
-  /** 处理 tips 通道事件 */
-  function handleTipsEvent(payload: TipsPayload): void {
-    const message = payload.message ?? ''
-    if (!message) return
-
-    showInfoToast(message)
-    const code = payload.type ?? ''
-    if (code === 'CONVERSATION_INTERRUPTED') {
-      const sid = payload.sessionId ?? ''
-      if (sid) isProcessingBySession.value[sid] = false
     }
   }
 
@@ -540,24 +433,8 @@ export const useChatStore = defineStore('chat', () => {
     streamingContentBySession.value[sessionId] = ''
     streamingReasoningBySession.value[sessionId] = ''
 
-    // 本地 AgentLoop：chat + onToken 流式回调
-    api.chat({ sessionId, profile: activeProfile, content }, (evt: AgentStreamEvent) => {
-      // 流式 token → 复用 handleTokenEvent 的格式
-      // 本地会话无 conversationId（AgentLoop 返回结果才有），用 sessionId 兜底作流式 key
-      const convId = (evt as unknown as { conversationId?: string }).conversationId ?? `local:${sessionId}`
-      handleTokenEvent({
-        sessionId,
-        conversationId: convId,
-        data: {
-          token: evt.text ?? '',
-          reasoning: evt.reasoning ?? '',
-          toolCallArgs: evt.toolCallArgs ?? '',
-          toolCallName: evt.toolCallName,
-          isFinish: evt.isFinish,
-          finishReason: evt.finishReason,
-        },
-      } as unknown as AgentResponseTokenPayload)
-    }).then((msg: AgentMessageVO) => {
+    // 本地 TinkerAgent：chat 返回最终 MessageVO（流式 token 由 onRouteMessage 的 chat:token 统一处理）
+    api.chat({ sessionId, profile: activeProfile, content }).then((msg: AgentMessageVO) => {
       // 流式结束后：以最终 MessageVO 补齐（占位消息由 handleTokenEvent 处理）
       userMsg.status = 'sent'
       isProcessingBySession.value[sessionId] = false
@@ -577,81 +454,6 @@ export const useChatStore = defineStore('chat', () => {
       detail: { sessionId }
     }))
   }
-
-  // ── Action: 切换会话 ──
-
-  function switchSession(sessionId: string): void {
-    // 切换到新 session，无特别清理
-  }
-
-  function loadMessages(sessionId: string, history: ApiMessage[]): void {
-    messagesBySession.value[sessionId] = history
-  }
-
-  function prependMessages(sessionId: string, older: ApiMessage[]): void {
-    const existing = messagesBySession.value[sessionId] ?? []
-    messagesBySession.value[sessionId] = [...older, ...existing]
-  }
-
-  // ── Action: 追加流式 chunk ──
-
-  function appendChunk(sessionId: string, content: string): void {
-    if (content === '[DONE]') return
-    if (!content) return
-    const current = streamingContentBySession.value[sessionId] ?? ''
-    streamingContentBySession.value[sessionId] = current + content
-  }
-
-  // ── Action: 完成回复 ──
-
-  function finalizeMessage(info: {
-    content: string
-    sessionId: string
-    conversationId?: string
-    reasoningContent?: string
-    messageType?: string
-  }): void {
-    const finalContent = isValidTokenValue(info.content) ? info.content : (streamingContentBySession.value[info.sessionId] ?? '')
-    const finalReasoning = isValidTokenValue(info.reasoningContent)
-      ? info.reasoningContent
-      : (streamingReasoningBySession.value[info.sessionId] ?? '')
-
-    const assistantMsg: ApiMessage = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      sessionId: info.sessionId,
-      conversationId: info.conversationId,
-      role: 'assistant',
-      messageType: info.messageType,
-      content: finalContent,
-      reasoningContent: finalReasoning || undefined,
-      timestamp: Date.now(),
-      status: 'completed'
-    }
-
-    if (!messagesBySession.value[info.sessionId]) {
-      messagesBySession.value[info.sessionId] = []
-    }
-    // 去重：同一会话内容的消息已存在则跳过（STOMP 推送与历史加载竞争导致重复）
-    const exists = messagesBySession.value[info.sessionId].some(
-      m => m.role === 'assistant' && m.content === finalContent
-        && m.conversationId === info.conversationId
-    )
-    if (exists) {
-      streamingContentBySession.value[info.sessionId] = ''
-      streamingReasoningBySession.value[info.sessionId] = ''
-      isProcessingBySession.value[info.sessionId] = false
-      cleanupConversationToken(info.sessionId, info.conversationId)
-      return
-    }
-    messagesBySession.value[info.sessionId].push(assistantMsg)
-
-    streamingContentBySession.value[info.sessionId] = ''
-    streamingReasoningBySession.value[info.sessionId] = ''
-    isProcessingBySession.value[info.sessionId] = false
-    cleanupConversationToken(info.sessionId, info.conversationId)
-  }
-
-  // ── Action: 审批（内联为消息）──
 
   function addApprovalMessage(data: ApprovalRequestPayload): void {
     const sessionId = data.sessionId ?? ''
@@ -691,19 +493,8 @@ export const useChatStore = defineStore('chat', () => {
 
     msg.interactionStatus = status as 'approved' | 'rejected' | 'timed_out'
     if (status === 'timed_out') {
-      msg.content = '⏰ 已过期'
+      msg.content = STATUS_CONTENT_TIMED_OUT
     }
-  }
-
-  /** 服务端推送 clarify 状态变更（如过期） */
-  function updateClarifyStatus(toolCallId: string, sessionId: string): void {
-    if (!sessionId || !toolCallId) return
-
-    const msgs = messagesBySession.value[sessionId] ?? []
-    const msg = msgs.find(m => m.role === 'clarify' && m.toolCallId === toolCallId)
-    if (!msg) return
-    msg.interactionStatus = 'timed_out'
-    msg.content = '⏰ 已过期'
   }
 
   /** 内联 clarify 提问消息。 */
@@ -741,13 +532,19 @@ export const useChatStore = defineStore('chat', () => {
       console.warn('[chat-store] submitClarify: toolCallId is empty, skipping send')
       return
     }
+    // 本地回显：完整载荷（{question, choices_offered, user_response}）写入 clarify 消息 content（刷新后/其他组件读取都有"已回复"）
+    const list = messagesBySession.value[sessionId]
+    const target = list?.find((m) => m.messageType === 'clarify_request' && m.toolCallId === toolCallId)
+    if (target) {
+      target.content = result
+    }
     agentApi?.toolResult({ profile: sessionStore.profile ?? 'default', sessionId, toolCallId, result }).catch(() => { /* 本地调用失败静默 */ })
   }
 
   /** 本轮对话自动批准：找到当前审批消息的 conversationId → 后端放行当前挂起 + 本轮后续审批 */
   function resolveAutoApprove(toolCallId: string): void {
     if (!agentApi) return
-    for (const [sid, msgs] of Object.entries(messagesBySession.value)) {
+    for (const [, msgs] of Object.entries(messagesBySession.value)) {
       const msg = msgs.find(m => m.role === 'approval' && m.toolCallId === toolCallId)
       if (!msg) continue
       const convId = msg.conversationId ?? ''
@@ -777,7 +574,7 @@ export const useChatStore = defineStore('chat', () => {
       agentApi.approval({ profile: sessionStore.profile ?? 'default', sessionId: sid, toolCallId, approved }).catch(() => { /* 本地调用失败静默 */ })
 
       msg.interactionStatus = approved ? 'approved' : 'rejected'
-      msg.content = approved ? '✅ 已批准' : '❌ 已拒绝'
+      msg.content = approved ? STATUS_CONTENT_APPROVED : STATUS_CONTENT_REJECTED
       return
     }
   }
@@ -789,8 +586,9 @@ export const useChatStore = defineStore('chat', () => {
    * 替代原本 View 层的「listBySession + loadMessages 两步调用」。
    */
   async function loadMessagesFromApi(sessionId: string, limit = 50, offset = 0): Promise<ApiMessage[]> {
-    const msgs = await messagesApi.listBySession(sessionId, limit, offset)
-    messagesBySession.value[sessionId] = msgs
+    const msgs = await messagesApi.listBySession(sessionId, sessionStore.profile ?? 'default', limit, offset)
+    // main 返回 DESC（最新在前）——反转成 ASC 显示顺序（旧在上新在下）
+    messagesBySession.value[sessionId] = [...msgs].reverse()
     return msgs
   }
 
@@ -800,10 +598,11 @@ export const useChatStore = defineStore('chat', () => {
    */
   async function loadOlderMessages(sessionId: string, pageSize = 50): Promise<ApiMessage[]> {
     const offset = (messagesBySession.value[sessionId] ?? []).length
-    const older = await messagesApi.listBySession(sessionId, pageSize, offset)
+    const older = await messagesApi.listBySession(sessionId, sessionStore.profile ?? 'default', pageSize, offset)
     if (older.length > 0) {
       const existing = messagesBySession.value[sessionId] ?? []
-      messagesBySession.value[sessionId] = [...older, ...existing]
+      // older 是更旧页（DESC）——页内反转成 ASC（最旧在前）——prepend 到顶部（更旧的在更上面）
+      messagesBySession.value[sessionId] = [...older.reverse(), ...existing]
     }
     return older
   }
@@ -812,11 +611,11 @@ export const useChatStore = defineStore('chat', () => {
 
   /** 原文模式专用：未 normalize 的原始消息（保留完整 toolCall map） */
   async function listByConversationRaw(conversationId: string): Promise<ApiMessage[]> {
-    return messagesApi.listByConversationRaw(conversationId)
+    return messagesApi.listByConversationRaw(conversationId, sessionStore.profile ?? 'default')
   }
 
   async function deleteConversation(conversationId: string, sessionId: string): Promise<void> {
-    await messagesApi.deleteConversation(conversationId)
+    await messagesApi.deleteConversation(conversationId, sessionStore.profile ?? 'default')
     messagesBySession.value[sessionId] = []
   }
 
@@ -854,49 +653,11 @@ export const useChatStore = defineStore('chat', () => {
     initialized = false
   }
 
-  // ── 内部: 错误处理 ──
-
-  function handleError(sessionId: string, payload: ErrorPayload): void {
-    const code = payload.type ?? ''
-    const message = payload.message ?? ''
-
-    console.error(`[chat-store] Server error ${code}: ${message}`)
-
-    if (sessionId) isProcessingBySession.value[sessionId] = false
-
-    // 事件通道错误（非 IPC invoke）→ 派发全局通知队列（error 样式）
-    window.dispatchEvent(new CustomEvent('global-tip', {
-      detail: { type: 'error', code: code || 'AGENT_ERROR', message: message || '操作失败，请重试' }
-    }))
-  }
-
   /** 清理 per-conversation token 队列 */
   function cleanupConversationToken(sessionId: string, conversationId?: string): void {
     if (!conversationId) return
     const key = `${sessionId}:${conversationId}`
     delete streamingContentByConversation.value[key]
-  }
-
-  /**
-   * 从 JSON.parse 的 tool call 数组组装完整工具调用缓存：
-   * 1) toolCallsByConversation[compositeKey] = { toolCallId: {name, arguments} } —— exe_client_tool 按 id 取参
-   * 2) toolCallsBySession[sessionId] 追加 {toolCallId, toolName, status} —— UI todo 列表展示
-   *
-   * 流式分片处理：每个 chunk 的 arguments 是【增量片段】（首 chunk 可能为空，
-   * id/name 只出现在首 chunk）。必须按 index 合并所有片段的 arguments 再整体 parse，
-   * 不能取第一个含 id 的对象（否则拿到空/截断片段 → 工具参数丢失）。
-   */
-  function assembleToolCalls(arr: ToolCallChunk[], sessionId: string, compositeKey: string): void {
-    // 纯合并逻辑在 utils/streaming/tool-call-merge（按 index 合并 + JSON.parse）
-    const byId = mergeToolCallChunks(arr)
-    const tcArray = toolCallsBySession.value[sessionId] ?? []
-    for (const [id, call] of Object.entries(byId)) {
-      tcArray.push({ toolCallId: id, toolName: call.name, status: 'pending' })
-    }
-    if (Object.keys(byId).length > 0) {
-      toolCallsByConversation.value[compositeKey] = byId
-      toolCallsBySession.value[sessionId] = tcArray
-    }
   }
 
   return {
@@ -920,17 +681,7 @@ export const useChatStore = defineStore('chat', () => {
     clearConvChunks,
 
     // Actions
-    initAgentApi,
-    getAgentApi,
     sendMessage,
-    switchSession,
-    loadMessages,
-    prependMessages,
-    appendChunk,
-    finalizeMessage,
-    cleanupConversationToken,
-    addApprovalMessage,
-    addClarifyMessage,
     submitClarify,
     resolveApproval,
     resolveAutoApprove,

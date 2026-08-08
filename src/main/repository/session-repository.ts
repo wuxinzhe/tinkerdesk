@@ -12,7 +12,7 @@ import type { SessionEntity, SessionSummaryDTO } from './types'
 
 /** 会话摘要 DTO（对应 SessionSummaryDTO） */
 
-const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests, current_context_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo'
+const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests, current_context_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo, reasoning_depth'
 
 function toEntity(row: Record<string, unknown>): SessionEntity {
   return {
@@ -37,6 +37,7 @@ function toEntity(row: Record<string, unknown>): SessionEntity {
     startedAt: row.started_at as string,
     archived: (row.archived as number) === 1,
     yolo: (row.yolo as number) === 1,
+    reasoningDepth: (row.reasoning_depth as string) ?? 'medium',
   }
 }
 
@@ -50,8 +51,8 @@ export class SessionRepository {
           title, input_tokens, output_tokens,
           cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests,
           current_context_tokens, estimated_cost_usd, message_count,
-          tool_call_count, rewind_count, started_at, archived, yolo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          tool_call_count, rewind_count, started_at, archived, yolo, reasoning_depth)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET
         profile = excluded.profile,
         source = excluded.source,
@@ -72,7 +73,8 @@ export class SessionRepository {
         rewind_count = excluded.rewind_count,
         started_at = excluded.started_at,
         archived = excluded.archived,
-        yolo = excluded.yolo`
+        yolo = excluded.yolo,
+        reasoning_depth = excluded.reasoning_depth`
     ).run(
       entity.id,
       entity.profile,
@@ -94,7 +96,8 @@ export class SessionRepository {
       entity.rewindCount,
       entity.startedAt,
       entity.archived ? 1 : 0,
-      entity.yolo ? 1 : 0
+      entity.yolo ? 1 : 0,
+      entity.reasoningDepth ?? 'medium'
     )
   }
 
@@ -111,6 +114,13 @@ export class SessionRepository {
   findById(id: string, profile: string): SessionEntity | null {
     const db = getDatabase()
     const row = db.prepare(`SELECT ${COLS} FROM sessions WHERE id = ? AND profile = ?`).get(id, profile) as Record<string, unknown> | undefined
+    return row ? toEntity(row) : null
+  }
+
+  /** 按 id 查（不限定 profile——OO 化实例装配用：从 session 记录反查 profile） */
+  findByIdAnyProfile(id: string): SessionEntity | null {
+    const db = getDatabase()
+    const row = db.prepare(`SELECT ${COLS} FROM sessions WHERE id = ?`).get(id) as Record<string, unknown> | undefined
     return row ? toEntity(row) : null
   }
 

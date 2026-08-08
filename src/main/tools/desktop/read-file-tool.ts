@@ -1,7 +1,7 @@
 /**
  * desktop/read-file-tool.ts — 文件读取工具
  *
- * 复刻 tinker-agent-ui tools/desktop/read-file（对齐 Hermes read_file_tool）：
+ * 复刻 tinker-agent-ui tools/desktop/read-file：
  * - 分页归一化（offset max(1, int)；limit clamp [1,2000]）
  * - 守卫链：设备路径 → 二进制扩展名 → 文件不存在
  * - 行号格式 LINE_NUM|CONTENT（紧凑 gutter，单行 2000 字符截断）
@@ -22,7 +22,7 @@ import type { ReadFileParams } from './types'
 /** 工具名 */
 export const TOOL_NAME = 'desktop_tinker_read_file'
 
-// ── 常量（对齐 Hermes）──
+// ── 常量──
 
 const DEFAULT_OFFSET = 1
 const DEFAULT_LIMIT = 500
@@ -51,7 +51,7 @@ const BINARY_EXTENSIONS = new Set([
   '.mp3', '.mp4', '.avi', '.mkv', '.mov', '.wav', '.flac'
 ])
 
-/** 重复读追踪器（对齐 Hermes _read_tracker） */
+/** 重复读追踪器 */
 interface ReadTracker {
   lastKey: string | null
   consecutive: number
@@ -59,7 +59,7 @@ interface ReadTracker {
   dedupHits: Record<string, number>
 }
 
-// ── 重复读追踪（dedup + consecutive loop 检测，对齐 _read_tracker）──
+// ── 重复读追踪──
 
 const readTracker: ReadTracker = { lastKey: null, consecutive: 0, dedup: {}, dedupHits: {} }
 

@@ -2,7 +2,7 @@
  * tools/desktop/index.ts — 桌面工具统一导出
  *
  * 与内建工具（tools/ 根目录）隔离的客户端工具集，
- * 复刻自 tinker-agent-ui/src/tools/desktop（对齐 Hermes 工具语义）。
+ * 复刻自 tinker-agent-ui/src/tools/desktop。
  * 全部实现 IAgentTool（extends BaseTool，schema 从 tool-schemas/*.hbs 加载）。
  */
 export { TerminalTool, TOOL_NAME as TERMINAL_TOOL_NAME } from './terminal-tool'

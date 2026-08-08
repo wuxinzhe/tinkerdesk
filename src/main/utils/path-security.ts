@@ -1,14 +1,14 @@
 /**
  * utils/path-security.ts — 路径安全守卫工具
  *
- * 复刻 tinker-agent-ui tools/desktop（对齐 Hermes）：
+ * 复刻 tinker-agent-ui tools/desktop：
  * - checkSensitivePath：敏感系统路径守卫（Windows + Unix）
  * - rejectV4aTraversal：V4A patch 头部 .. traversal 拒绝
  * 被 patch-tool / write-file-tool 共享。
  */
 import { resolve } from 'path'
 
-// ── 敏感路径守卫（对齐 Hermes _SENSITIVE_PATH_PREFIXES，Windows 化）──
+// ── 敏感路径守卫──
 
 const SENSITIVE_PATH_PREFIXES = [
   'C:\\Windows\\', 'C:\\Program Files\\', 'C:\\Program Files (x86)\\',
@@ -29,7 +29,7 @@ export function isWindowsDriveRoot(p: string): boolean {
 
 /**
  * 敏感路径检查：命中敏感前缀/精确路径/盘符根 → 返回拒绝原因；安全返回 null。
- * 对齐 Hermes _check_sensitive_path（统一用 resolve 规范化）。
+ * _check_sensitive_path（统一用 resolve 规范化）。
  */
 export function checkSensitivePath(filepath: string): string | null {
   const normalized = resolve(filepath)
@@ -48,7 +48,7 @@ export function checkSensitivePath(filepath: string): string | null {
 }
 
 /**
- * V4A 头部 .. traversal 拒绝（对齐 Hermes patch_tool）：
+ * V4A 头部 .. traversal 拒绝：
  * 路径包含 '..' 段 → 返回拒绝原因；安全返回 null。
  */
 export function rejectV4aTraversal(v4aPath: string): string | null {

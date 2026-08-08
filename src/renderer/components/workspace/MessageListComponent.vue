@@ -9,12 +9,14 @@
       <button
         class="message-list__load-btn"
         :disabled="loadingMore"
-        @click="$emit('load-more')"
+        @click="emit('load-more')"
       >
         <SaSpinner v-if="loadingMore" size="small" />
         <template v-else>加载更多消息</template>
       </button>
     </div>
+    <!-- 没有更多消息提示（尝试加载过且 hasMore 变 false） -->
+    <div v-if="noMoreHint" class="message-list__no-more">没有更多消息了</div>
 
     <!-- 空状态 -->
     <div v-if="messages.length === 0 && !isStreaming" class="message-list__empty">
@@ -98,11 +100,12 @@ const props = withDefaults(defineProps<{
  * 历史加载消息 id 为 DB 自增。id 有效用 id，否则用会话+时间戳+类型+序号兜底保证唯一。
  */
 function msgKey(msg: Message, idx: number): string {
-  if (msg.id != null && msg.id !== '') return String(msg.id)
+  // id 0（未落库的实时消息）不能当 key——多条 id 0 会冲突导致 TransitionGroup 渲染异常
+  if (msg.id != null && msg.id !== '' && msg.id !== 0 && String(msg.id) !== '0') return String(msg.id)
   return `${msg.sessionId ?? ''}_${msg.timestamp ?? idx}_${msg.messageType ?? ''}_${idx}`
 }
 
-defineEmits<{
+const emit = defineEmits<{
   'load-more': []
   approve: [toolCallId: string]
   reject: [toolCallId: string]
@@ -115,6 +118,9 @@ const bottomRef = ref<HTMLDivElement | null>(null)
 
 // 用户是否手动上滚
 const userScrolledUp = ref(false)
+/** 是否触发过加载更多（加载后 hasMore 变 false → 顶部显示"没有更多消息了"） */
+const loadAttempted = ref(false)
+const noMoreHint = computed(() => loadAttempted.value && !props.hasMore)
 
 /** 按 messageType 过滤后的可见消息（含 isStreaming=true 的占位消息） */
 const visibleMessages = computed(() =>
@@ -174,6 +180,11 @@ function onScroll() {
   const threshold = 80
   const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold
   userScrolledUp.value = !isAtBottom
+  // 滚动到顶触发加载更多（更旧消息）——替代/补充顶部按钮
+  if (el.scrollTop < threshold && props.hasMore && !props.loadingMore && props.messages.length > 0) {
+    loadAttempted.value = true
+    emit('load-more')
+  }
 }
 
 // 新消息到达时自动滚动（会话切换后的首批消息直接拉到底部，不触发顶部对齐）
@@ -197,6 +208,7 @@ watch(
   () => {
     sessionJustSwitched = true
     userScrolledUp.value = false
+    loadAttempted.value = false
     scrollToBottom()
   }
 )
@@ -267,7 +279,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: var(--sa-bg-primary, #ffffff);
+  /* 无背景：加载覆盖层透明——不遮住下方消息 */
   z-index: 5;
 }
 
@@ -296,6 +308,16 @@ defineExpose({
   display: flex;
   justify-content: center;
   padding: 8px 16px 16px;
+}
+
+/* 没有更多消息提示（滚动到顶加载到底后显示） */
+.message-list__no-more {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 16px 14px;
+  font-size: 12px;
+  color: var(--sa-text-tertiary, rgba(60, 60, 67, 0.4));
 }
 
 .message-list__load-btn {

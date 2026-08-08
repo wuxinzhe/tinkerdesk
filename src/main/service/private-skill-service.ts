@@ -68,6 +68,17 @@ export class PrivateSkillService {
     return this.skillRepo.softDelete(profile, id) > 0
   }
 
+  /** 硬删除技能（物理删行 + 级联删除关联文件与关联关系） */
+  hardDelete(profile: string, id: string): boolean {
+    if (this.skillRepo.hardDelete(profile, id) > 0) {
+      this.fileRepo.deleteBySkillId(id)
+      this.relatedRepo.deleteBySkillId(id)
+      this.relatedRepo.deleteByRelatedSkillId(id)
+      return true
+    }
+    return false
+  }
+
   /** 恢复技能 */
   restore(profile: string, id: string): boolean {
     return this.skillRepo.restore(profile, id) > 0
@@ -77,7 +88,9 @@ export class PrivateSkillService {
 
   /** 保存技能文件 */
   saveSkillFile(skillId: string, fileType: string, content: string, language: string, sortOrder: number, name = ''): void {
-    this.fileRepo.save({ skillId, fileType, name, content, language, sortOrder })
+    // 语言未显式传入时按文件后缀解析（导入/API 直调都覆盖）
+    const lang = language || languageFromName(name)
+    this.fileRepo.save({ skillId, fileType, name, content, language: lang, sortOrder })
   }
 
   /** 删除技能下指定类型的文件 */
@@ -138,6 +151,11 @@ export class PrivateSkillService {
     return this.relatedRepo.findBySkillId(skillId)
   }
 
+  /** 清空技能关联（编辑全量替换用） */
+  clearRelated(skillId: string): void {
+    this.relatedRepo.deleteBySkillId(skillId)
+  }
+
   // ── 技能详情（skill_view 用） ──
 
   /** 按名称查询技能详情（含附件文件——controller/skill_manage 等按 name 场景用） */
@@ -148,12 +166,17 @@ export class PrivateSkillService {
     return { ...entity, files }
   }
 
-  /** 按技能 id 查询详情（含附件文件，供 skill_view 渲染——唯一指向为 id） */
-  viewSkillById(profile: string, id: string): (PrivateSkillEntity & { files: SkillFileEntity[] }) | null {
+  /** 按技能 id 查询详情（含附件文件 + 关联技能，供 skill_view 渲染——唯一指向为 id） */
+  viewSkillById(profile: string, id: string): (PrivateSkillEntity & { files: SkillFileEntity[]; related: Array<{ id: string; name: string }> }) | null {
     const entity = this.skillRepo.findById(profile, id)
     if (!entity) return null
     const files = this.fileRepo.findBySkillId(entity.id)
-    return { ...entity, files }
+    // 关联技能（private_skill_related——related 关系——嵌套/关联展示）
+    const related = this.relatedRepo.findBySkillId(entity.id)
+      .map((r) => this.skillRepo.findById(profile, String(r.relatedSkillId)))
+      .filter((s): s is PrivateSkillEntity => s !== null && !s.isDeleted)
+      .map((s) => ({ id: s.id, name: s.name }))
+    return { ...entity, files, related }
   }
 
   // ── 技能列表（skills_list 用） ──
@@ -286,8 +309,25 @@ export class PrivateSkillService {
   }
 }
 
-/** 逗号分隔串 → 存储格式（JSON 数组字符串 "[a, b]"） */
+/** 文件后缀 → 语言映射（skill_files.language 列；saveSkillFile 未显式传语言时按后缀解析） */
+const LANGUAGE_BY_EXT: Record<string, string> = {
+  ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript',
+  py: 'python', md: 'markdown', json: 'json', yaml: 'yaml', yml: 'yaml',
+  hbs: 'handlebars', sql: 'sql', sh: 'bash', bash: 'bash', css: 'css',
+  html: 'html', vue: 'vue', java: 'java', go: 'go', rs: 'rust',
+  c: 'c', cpp: 'cpp', h: 'c', hpp: 'cpp', txt: 'text', csv: 'csv',
+  xml: 'xml', svg: 'xml', toml: 'toml', ini: 'ini', bat: 'batch', ps1: 'powershell',
+}
+
+/** 按文件后缀解析语言（无后缀/未知返回空串——不猜测） */
+function languageFromName(name: string): string {
+  const ext = (name.split('.').pop() ?? '').toLowerCase()
+  return LANGUAGE_BY_EXT[ext] ?? ''
+}
+
+/** 逗号分隔串 → 存储格式（JSON 数组字符串 "[a, b]"）——容忍 `[a, b]` / `a, b` / 混合 */
 function toStoredList(raw: string): string {
-  const arr = raw.split(',').map((x) => x.trim()).filter(Boolean)
+  const cleaned = raw.trim().replace(/^\[/, '').replace(/\]$/, '')
+  const arr = cleaned.split(',').map((x) => x.trim()).filter(Boolean)
   return JSON.stringify(arr)
 }

@@ -41,7 +41,7 @@ export class UserCustomModelService {
 
   /** 查询全部自定义模型（对齐 list） */
   list(profile: string): CustomModelInfoDTO[] {
-    return this.repo.listEnabled(profile).map(toCustomModelInfoDTO)
+    return this.repo.listEnabled().map(toCustomModelInfoDTO)
   }
 
   /** 创建（对齐 create，返回新模型 ID） */
@@ -83,23 +83,23 @@ export class UserCustomModelService {
       apiKey: req.apiKey ?? undefined,
       baseUrl: this.resolveBaseUrl(req.providerId ?? '', req.baseUrl),
       contextLimit: req.contextLimit,
-    }, profile)
+    })
   }
 
   /** 删除（对齐 delete） */
   delete(profile: string, modelId: string): boolean {
-    return this.repo.delete(modelId, profile)
+    return this.repo.delete(modelId)
   }
 
   /** 按 ID 查找（对齐 findById，返回 DTO） */
   findById(profile: string, id: string): CustomModelInfoDTO | null {
-    const entity = this.repo.findById(id, profile)
+    const entity = this.repo.findById(id)
     return entity ? toCustomModelInfoDTO(entity) : null
   }
 
   /** 连通性测试（对齐 test，本地简化：ping 供应商 baseUrl） */
   async test(profile: string, modelId: string): Promise<CustomModelTestResultDTO> {
-    const entity = this.repo.findById(modelId, profile)
+    const entity = this.repo.findById(modelId)
     if (!entity) {
       return {success: false, latencyMs: 0, message: '模型不存在'}
     }
@@ -115,10 +115,10 @@ export class UserCustomModelService {
       const timer = setTimeout(() => controller.abort(), 5000)
       await fetch(baseUrl, {method: 'HEAD', signal: controller.signal})
       clearTimeout(timer)
-      this.repo.updateTestPassed(modelId, true, profile)
+      this.repo.updateTestPassed(modelId, true)
       return {success: true, latencyMs: Date.now() - start, message: '连通'}
     } catch {
-      this.repo.updateTestPassed(modelId, false, profile)
+      this.repo.updateTestPassed(modelId, false)
       return {success: false, latencyMs: Date.now() - start, message: '连接失败'}
     }
   }

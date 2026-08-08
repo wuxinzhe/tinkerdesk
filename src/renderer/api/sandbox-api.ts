@@ -6,7 +6,7 @@ import type { UrlWhitelistItem, PathWhitelistItem } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class SandboxApi {
-  async listUrlWhitelist(profile = 'default'): Promise<UrlWhitelistItem[]> {
+  async listUrlWhitelist(profile: string): Promise<UrlWhitelistItem[]> {
     const data = await window.api.sandbox.listUrl(profile)
     return (data as UrlWhitelistItem[]) ?? []
   }
@@ -15,11 +15,11 @@ export class SandboxApi {
     await window.api.sandbox.addUrl(data)
   }
 
-  async deleteUrlWhitelist(id: number, profile = 'default'): Promise<void> {
+  async deleteUrlWhitelist(id: number, profile: string): Promise<void> {
     await window.api.sandbox.deleteUrl(id, profile)
   }
 
-  async listPathWhitelist(profile = 'default'): Promise<PathWhitelistItem[]> {
+  async listPathWhitelist(profile: string): Promise<PathWhitelistItem[]> {
     const data = await window.api.sandbox.listPath(profile)
     return (data as PathWhitelistItem[]) ?? []
   }
@@ -28,7 +28,7 @@ export class SandboxApi {
     await window.api.sandbox.addPath(data)
   }
 
-  async deletePathWhitelist(id: number, profile = 'default'): Promise<void> {
+  async deletePathWhitelist(id: number, profile: string): Promise<void> {
     await window.api.sandbox.deletePath(id, profile)
   }
 }

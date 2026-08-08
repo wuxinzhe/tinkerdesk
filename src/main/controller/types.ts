@@ -1,19 +1,19 @@
 /**
  * types.ts — Controller 层 VO 定义（IPC 出口类型）
  *
- * 对齐 tinker-agent 三层：controller 构建 VO（对外出口），service 构建 DTO，repository 构建 entity。
+ * 三层：controller 构建 VO（对外出口），service 构建 DTO，repository 构建 entity。
  * 本地客户端：controller 的 VO 即 IPC 返回给 render 的数据形状。
  *
  * 原 src/defines/api/agent-api-types.ts（Agent 会话统一契约，本地/远端同源）。
  */
 
-/** 消息角色（对齐 tinker-agent） */
+/** 消息角色 */
 export type AgentMessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
-/** 交互状态（对齐 tinker-agent MessageConstants） */
+/** 交互状态 */
 export type InteractionStatus = 'pending' | 'approved' | 'rejected' | 'timed_out' | ''
 
-/** 消息类型（对齐 tinker-agent MessageConstants） */
+/** 消息类型 */
 export type AgentMessageType =
   | 'user_normal'
   | 'user_continue'
@@ -63,6 +63,8 @@ export interface StreamToken {
   toolCallArgs?: string
   /** 工具名（工具调用增量首次出现时携带——前端流式拼工具卡片） */
   toolCallName?: string
+  /** 工具调用 index（多工具时区分——前端按 index 分路拼装；缺省 0 单工具兼容） */
+  toolCallIndex?: number
   /** 是否结束 */
   isFinish: boolean
   finishReason?: string
@@ -141,7 +143,7 @@ export interface AgentClearAllRequestDTO {
 
 // ── Session（session-controller） ──
 
-/** 会话列表项 VO（对齐 Java toListItem） */
+/** 会话列表项 VO */
 export interface SessionListItemVO {
   id: string
   title: string
@@ -245,6 +247,8 @@ export interface SkillInfoVO {
   isEnabled: boolean
   /** 详情返回（列表不返回，节省传输） */
   body?: string
+  /** 关联技能（详情返回——id/name 列表；模型可 skill_view 继续查看） */
+  related?: Array<{ id: string; name: string }>
 }
 
 /** 技能列表查询 DTO */

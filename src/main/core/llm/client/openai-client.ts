@@ -13,7 +13,7 @@ import {
   textResponse,
   toolCallsResponse
 } from '../llm-response'
-import type { ApiMessage, ChunkCallback, LlmClient, LlmResponse, ModelConfig, ToolCall } from '../types'
+import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ModelConfig, ToolCall } from '../types'
 
 /**
  * openai-client.ts — OpenAI 兼容客户端
@@ -95,14 +95,17 @@ export class OpenAIClient implements LlmClient {
   }
 
   /** 非流式调用 */
-  async callNonStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[]): Promise<LlmResponse> {
+  async callNonStreaming(request: LlmRequest): Promise<LlmResponse> {
+    const { config } = request
     const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
     try {
       const completion = await client.chat.completions.create({
         model: config.modelName,
-        messages: this.toOpenAIMessages(messages),
-        tools: tools.length > 0 ? this.toOpenAITools(tools) : undefined,
-      })
+        messages: this.toOpenAIMessages(request.messages),
+        tools: request.tools.length > 0 ? this.toOpenAITools(request.tools) : undefined,
+        // 推理深度（OpenAI 兼容派：low/medium/high 直传 reasoning_effort——SDK 类型未收录，cast 透传）
+        ...(request.reasoningDepth ? { reasoning_effort: request.reasoningDepth } : {}),
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming)
 
       const message = completion.choices[0]?.message
       const finish = completion.choices[0]?.finish_reason
@@ -144,16 +147,19 @@ export class OpenAIClient implements LlmClient {
     }
   }
 
-  /** 流式调用：转发 token 的同时缓存拼装完整 LlmResponse（含工具调用，对齐 Java OpenAiLlmClient） */
-  async callStreaming(config: ModelConfig, messages: ApiMessage[], tools: ToolSchema[], onToken: ChunkCallback): Promise<LlmResponse> {
+  /** 流式调用：转发 token 的同时缓存拼装完整 LlmResponse */
+  async callStreaming(request: LlmRequest, onToken: ChunkCallback): Promise<LlmResponse> {
+    const { config } = request
     const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
     try {
       const stream = await client.chat.completions.create({
         model: config.modelName,
-        messages: this.toOpenAIMessages(messages),
-        tools: tools.length > 0 ? this.toOpenAITools(tools) : undefined,
+        messages: this.toOpenAIMessages(request.messages),
+        tools: request.tools.length > 0 ? this.toOpenAITools(request.tools) : undefined,
+        // 推理深度（OpenAI 兼容派：low/medium/high 直传 reasoning_effort——SDK 类型未收录，cast 透传）
+        ...(request.reasoningDepth ? { reasoning_effort: request.reasoningDepth } : {}),
         stream: true,
-      })
+      } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming)
 
       let text = ''
       let reasoning = ''
@@ -179,9 +185,9 @@ export class OpenAIClient implements LlmClient {
         }
         const delta = choice.delta as Record<string, unknown>
 
-        // 单 chunk 合并：text / reasoning / toolCallArgs 同时携带进一个 LlmChunk
-        // （减少 IPC 调用次数——原来三种内容各自独立 onToken，现在合并为一个）
-        const merged: { text: string; reasoning: string; toolCallArgs: string; toolCallName?: string } = {
+        // 单 chunk 合并：text / reasoning 携带进一个 LlmChunk；工具调用按 index 独立下发
+        // （多工具分路：每 tc 单独 onToken——前端按 toolCallIndex 拼装各自 name/args）
+        const merged: { text: string; reasoning: string; toolCallArgs: string; toolCallName?: string; toolCallIndex?: number } = {
           text: '', reasoning: '', toolCallArgs: '',
         }
         let hasContent = false
@@ -192,13 +198,13 @@ export class OpenAIClient implements LlmClient {
           merged.text = delta.content
           hasContent = true
         }
-        // 推理增量（DeepSeek reasoning_content）：转发 + 累积（跳过 "null" 字符串，对齐 Java）
+        // 推理增量（DeepSeek reasoning_content）：转发 + 累积
         if (typeof delta.reasoning_content === 'string' && delta.reasoning_content && delta.reasoning_content.trim() !== 'null') {
           reasoning += delta.reasoning_content
           merged.reasoning = delta.reasoning_content
           hasContent = true
         }
-        // 工具调用增量：转发 + 按 index 累积
+        // 工具调用增量：按 index 累积 + 独立下发（多工具分路——每 tc 一次 onToken）
         const toolCallsDelta = delta.tool_calls as Array<{ index?: number; id?: string; function?: { name?: string; arguments?: string } }> | undefined
         if (toolCallsDelta) {
           for (const tc of toolCallsDelta) {
@@ -208,15 +214,14 @@ export class OpenAIClient implements LlmClient {
             if (tc.function?.name) acc.name = tc.function.name
             if (tc.function?.arguments) acc.arguments += tc.function.arguments
             toolAccum.set(idx, acc)
-            if (tc.function?.arguments) {
-              merged.toolCallArgs += tc.function.arguments
-              hasContent = true
-            }
-            // 工具名随 token 下发（前端流式拼工具卡片用）——首 chunk 通常只有 id/name 无 arguments，
-            // 单独发（hasContent=true）避免工具名随 hasContent 判断被丢弃
-            if (tc.function?.name && !merged.toolCallName) {
-              merged.toolCallName = tc.function.name
-              hasContent = true
+            // 独立下发：本 tc 的 name（首次 chunk）+ args 增量 + index（前端按 index 分路）
+            if (tc.function?.name || tc.function?.arguments) {
+              onToken({
+                text: '', reasoning: '', toolCallArgs: tc.function?.arguments ?? '',
+                toolCallName: tc.function?.name || undefined,
+                toolCallIndex: idx,
+                isFinish: false,
+              })
             }
           }
         }
@@ -229,12 +234,14 @@ export class OpenAIClient implements LlmClient {
         if (chunk.usage) {
           promptTokens = chunk.usage.prompt_tokens ?? undefined
           completionTokens = chunk.usage.completion_tokens ?? undefined
+          cacheReadTokens = parseCacheReadTokens(chunk.usage)
+          cacheWriteTokens = parseCacheWriteTokens(chunk.usage)
         }
       }
 
       onToken({ text: '', reasoning: '', toolCallArgs: '', isFinish: true, finishReason })
 
-      // ── 组装完整 LlmResponse（对齐 Java：tool_calls → text → reasoning → empty）──
+      // ── 组装完整 LlmResponse──
       const toolCalls: ToolCall[] = [...toolAccum.entries()]
         .sort(([a], [b]) => a - b)
         .filter(([, acc]) => acc.name !== '')

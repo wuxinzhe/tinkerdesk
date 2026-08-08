@@ -1,31 +1,30 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  AgentSendRequest,
-  StreamToken,
-  AgentMessageVO,
   AgentApprovalEvent,
-  AgentToolResultRequestDTO,
   AgentApprovalRequestDTO,
-  AgentRevokeRequestDTO,
-  CreateSessionRequestDTO,
-  UpdateSessionRequestDTO,
-  ListSessionsQueryDTO,
-  SessionMessagesQueryDTO,
+  AgentSendRequest,
+  AgentToolResultRequestDTO,
   ConversationMessagesQueryDTO,
+  CreatePromptModuleRequestDTO,
+  CreateSessionRequestDTO,
   DeleteConversationRequestDTO,
-  ToolListQueryDTO,
-  ToggleToolRequestDTO,
+  ListSessionsQueryDTO,
+  PathWhitelistRequestDTO,
+  PromptModuleIdRequestDTO,
+  SessionMessagesQueryDTO,
   SkillListQueryDTO,
   SkillOpRequestDTO,
-  CreatePromptModuleRequestDTO,
-  UpdatePromptModuleRequestDTO,
-  PromptModuleIdRequestDTO,
+  StreamToken,
   TogglePromptModuleRequestDTO,
+  ToggleToolRequestDTO,
+  ToolListQueryDTO,
+  UpdatePromptModuleRequestDTO,
+  UpdateSessionRequestDTO,
   UrlWhitelistRequestDTO,
-  PathWhitelistRequestDTO,
-  WhitelistIdRequestDTO,
+  WhitelistIdRequestDTO
 } from '../main/controller/types'
-import type { CreateCustomModelRequestDTO, UpdateCustomModelRequestDTO, BindSceneModelRequestDTO, UpdateSceneModelRequestDTO, ReorderSceneBindingsRequestDTO, FetchModelsRequestDTO, InitRequestDTO as InitAccountParams } from '../main/service/types'
+import { EVT_CHAT_TOKEN, IPC_MESSAGE, ROUTE_CHAT, ROUTE_ERROR, ROUTE_TIP } from '../main/core/constants'
+import type { BindSceneModelRequestDTO, CreateCustomModelRequestDTO, FetchModelsRequestDTO, InitRequestDTO as InitAccountParams, ReorderSceneBindingsRequestDTO, UpdateCustomModelRequestDTO, UpdateSceneModelRequestDTO } from '../main/service/types'
 
 /** IPC 响应解包：controller 返回 {success, data, error}，取 data 或抛错 */
 function unwrap<T>(res: unknown): T {
@@ -104,14 +103,16 @@ function dispatchGlobalTip(type: 'error' | 'tip', code: string, message: string)
   }
 }
 
-// ── main → renderer 通知出口：agent:queueTip（ElectronEventSender.sendTips）──
-// 本地单客户端：main 的 tips 提示（如"消息已入队"）经此频道推送 → 统一进 GlobalTipToast（tip 样式）
-ipcRenderer.on('agent:queueTip', (_event, payload: { type?: string; message?: string } | null) => {
-  const message = payload?.message ?? ''
+// ── main → renderer 统一消息通道：agent:message（route = '{一级}:{二级}'，协议见 docs/event-protocol.md）──
+// 顶层分发 tip/error 域 → GlobalTipToast；chat/session/action 域由 agent.onMessage 消费
+ipcRenderer.on(IPC_MESSAGE, (_event, payload: { route?: string; data?: unknown } | null) => {
+  const [route1] = (payload?.route ?? '').split(':')
+  if (route1 !== ROUTE_TIP && route1 !== ROUTE_ERROR) return
+  const message = typeof payload?.data === 'string' ? payload.data : ''
   if (message) {
-    // type === 'error' → 错误提示（红色样式）；其余（working/message_queued 等）→ 普通 tip
-    const type = payload?.type === 'error' ? 'error' : 'tip'
-    dispatchGlobalTip(type, payload?.type ?? 'TIP', message)
+    // error 域 → 错误提示（红色样式）；tip 域 → 普通 tip
+    const type = route1 === ROUTE_ERROR ? 'error' : 'tip'
+    dispatchGlobalTip(type, route1, message)
   }
 })
 
@@ -140,7 +141,7 @@ const api = {
     recheckMcp: () => inv('tool-center:recheck-mcp').then(unwrap),
     getState: () => inv('tool-center:get-state').then(unwrap),
     getMcpConfigs: () => inv('tool-center:get-mcp-configs').then(unwrap),
-    upsertMcpServer: (config: {name: string; transport: 'stdio' | 'http'; command?: string; args?: string[]; url?: string; enabled: boolean}) => inv('tool-center:upsert-mcp-server', config).then(unwrap),
+    upsertMcpServer: (config: { name: string; transport: 'stdio' | 'http'; command?: string; args?: string[]; url?: string; enabled: boolean }) => inv('tool-center:upsert-mcp-server', config).then(unwrap),
     removeMcpServer: (name: string) => inv('tool-center:remove-mcp-server', name).then(unwrap),
     collectEnv: () => inv('tool-center:collect-env').then(unwrap),
   },
@@ -149,28 +150,42 @@ const api = {
   checkForUpdates: (manual = false) => inv('update:check', manual),
   installUpdate: () => inv('update:install'),
   getAppVersion: () => inv('app:version'),
-  onUpdateStatus: (callback: (data: {status: string; message?: string}) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: {status: string; message?: string}) => callback(data)
+  onUpdateStatus: (callback: (data: { status: string; message?: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { status: string; message?: string }) => callback(data)
     ipcRenderer.on('update:status', handler)
     return () => ipcRenderer.removeListener('update:status', handler)
   },
-  onUpdateProgress: (callback: (data: {percent: number; speed?: string}) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: {percent: number; speed?: string}) => callback(data)
+  onUpdateProgress: (callback: (data: { percent: number; speed?: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { percent: number; speed?: string }) => callback(data)
     ipcRenderer.on('update:progress', handler)
     return () => ipcRenderer.removeListener('update:progress', handler)
   },
 
-  // ── Agent 会话（本地 AgentLoop controller）──
+  // ── Agent 会话（本地 TinkerAgent controller）──
   agent: {
     chat: (req: AgentSendRequest, onToken?: (evt: StreamToken) => void) => {
       if (onToken) {
-        const handler = (_event: Electron.IpcRendererEvent, evt: StreamToken) => onToken(evt)
-        ipcRenderer.on('agent:token', handler)
+        // 统一通道 + route/sessionId 过滤（chat:token 事件）
+        const handler = (_event: Electron.IpcRendererEvent, payload: { route?: string; data?: StreamToken; sessionId?: string }) => {
+          if (payload?.route === `${ROUTE_CHAT}:${EVT_CHAT_TOKEN}` && payload.sessionId === req.sessionId && payload.data) {
+            onToken(payload.data)
+          }
+        }
+        ipcRenderer.on(IPC_MESSAGE, handler)
         return inv('agent:chat', req).then(unwrap).finally(() => {
-          ipcRenderer.removeListener('agent:token', handler)
+          ipcRenderer.removeListener(IPC_MESSAGE, handler)
         })
       }
       return inv('agent:chat', req).then(unwrap)
+    },
+    /** 统一消息入口：所有推送（route = '{一级}:{二级}'，客户端自行解析分发） */
+    onRouteMessage: (callback: (payload: { route?: string; sessionId?: string; data?: unknown }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: { route?: string; sessionId?: string; data?: unknown }) => {
+        if (!payload?.route) return
+        callback(payload)
+      }
+      ipcRenderer.on(IPC_MESSAGE, handler)
+      return () => ipcRenderer.removeListener(IPC_MESSAGE, handler)
     },
     toolResult: (req: AgentToolResultRequestDTO) =>
       inv('agent:toolResult', req).then(unwrap),
@@ -184,48 +199,40 @@ const api = {
       inv('agent:interrupt', {profile, sessionId}).then(unwrap),
     clearAll: (profile: string, sessionId: string) =>
       inv('agent:clearAll', {profile, sessionId}).then(unwrap),
-    onApprovalRequest: (callback: (payload: AgentApprovalEvent) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, payload: AgentApprovalEvent) => callback(payload)
-      ipcRenderer.on('agent:approvalRequest', handler)
-      return () => ipcRenderer.removeListener('agent:approvalRequest', handler)
-    },
-    onAction: (callback: (payload: { sessionId?: string; type?: string; data?: unknown }) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, payload: { sessionId?: string; type?: string; data?: unknown }) => callback(payload)
-      ipcRenderer.on('agent:action', handler)
-      return () => ipcRenderer.removeListener('agent:action', handler)
-    }
   },
 
   // ── 会话（SessionController）──
   sessions: {
     list: (payload: ListSessionsQueryDTO) => inv('session:list', payload).then(unwrap),
     create: (payload: CreateSessionRequestDTO) => inv('session:create', payload).then(unwrap),
-    update: (sessionId: string, title: string, profile: string) => inv('session:update', {sessionId, title, profile} satisfies UpdateSessionRequestDTO).then(unwrap),
-    getYolo: (profile: string, sessionId: string) => inv('session:getYolo', {profile, sessionId}).then(unwrap),
-    toggleYolo: (profile: string, sessionId: string) => inv('session:toggleYolo', {profile, sessionId}).then(unwrap),
+    update: (sessionId: string, title: string, profile: string) => inv('session:update', { sessionId, title, profile } satisfies UpdateSessionRequestDTO).then(unwrap),
+    getYolo: (profile: string, sessionId: string) => inv('session:getYolo', { profile, sessionId }).then(unwrap),
+    toggleYolo: (profile: string, sessionId: string) => inv('session:toggleYolo', { profile, sessionId }).then(unwrap),
+    setReasoningDepth: (profile: string, sessionId: string, reasoningDepth: string) => inv('session:set-reasoning-depth', { profile, sessionId, reasoningDepth }).then(unwrap),
+    getReasoningDepth: (profile: string, sessionId: string) => inv('session:get-reasoning-depth', { profile, sessionId }).then(unwrap),
     /** 会话统计（数据面板：平均命中率 + memory 占用） */
-    stats: (profile: string, sessionId: string) => inv('session:stats', {profile, sessionId}).then(unwrap),
+    stats: (profile: string, sessionId: string) => inv('session:stats', { profile, sessionId }).then(unwrap),
     /** 数据面板整合（只读——上下文窗口/阈值/统计/memory 一口气给前端） */
-    dashboard: (profile: string, sessionId: string) => inv('dashboard:get', {profile, sessionId}).then(unwrap),
+    dashboard: (profile: string, sessionId: string) => inv('dashboard:get', { profile, sessionId }).then(unwrap),
   },
 
   // ── 消息（MessageController）──
   messages: {
     bySession: (sessionId: string, profile?: string, limit?: number, offset?: number) =>
-      inv('message:bySession', {sessionId, profile, limit, offset} satisfies SessionMessagesQueryDTO).then(unwrap),
+      inv('message:bySession', { sessionId, profile, limit, offset } satisfies SessionMessagesQueryDTO).then(unwrap),
     byConversation: (conversationId: string, profile?: string) =>
-      inv('message:byConversation', {conversationId, profile} satisfies ConversationMessagesQueryDTO).then(unwrap),
+      inv('message:byConversation', { conversationId, profile } satisfies ConversationMessagesQueryDTO).then(unwrap),
     deleteConversation: (conversationId: string, profile?: string) =>
-      inv('message:deleteConversation', {conversationId, profile} satisfies DeleteConversationRequestDTO).then(unwrap),
+      inv('message:deleteConversation', { conversationId, profile } satisfies DeleteConversationRequestDTO).then(unwrap),
   },
 
   // ── Agent 配置（AgentCrudController）──
   agents: {
-    list: (payload?: {profile?: string}) => inv('agent-cfg:list', payload).then(unwrap),
-    create: (payload: {profile: string; displayName?: string; description?: string; avatar?: string}) =>
+    list: (payload?: { profile?: string }) => inv('agent-cfg:list', payload).then(unwrap),
+    create: (payload: { profile: string; displayName?: string; description?: string; avatar?: string }) =>
       inv('agent-cfg:create', payload).then(unwrap),
     get: (profile: string) => inv('agent-cfg:get', profile).then(unwrap),
-    update: (payload: {profile: string; displayName?: string; description?: string; avatar?: string; isActive?: boolean}) =>
+    update: (payload: { profile: string; displayName?: string; description?: string; avatar?: string; isActive?: boolean }) =>
       inv('agent-cfg:update', payload).then(unwrap),
     delete: (profile: string) => inv('agent-cfg:delete', profile).then(unwrap),
   },
@@ -234,42 +241,42 @@ const api = {
   agentModes: {
     list: () => inv('agent-mode:list').then(unwrap),
     options: () => inv('agent-mode:options').then(unwrap),
-    get: (id: string, version: string) => inv('agent-mode:get', {id, version}).then(unwrap),
-    check: (profile: string) => inv('agent-mode:check', {profile}).then(unwrap),
+    get: (id: string, version: string) => inv('agent-mode:get', { id, version }).then(unwrap),
+    check: (profile: string) => inv('agent-mode:check', { profile }).then(unwrap),
   },
 
   // ── Agent 配置参数（AgentConfigController）──
   agentConfig: {
     get: (profile: string) => inv('agent-config:get', profile).then(unwrap),
-    update: (payload: {profile: string; config: Record<string, unknown>}) => inv('agent-config:update', payload).then(unwrap),
+    update: (payload: { profile: string; config: Record<string, unknown> }) => inv('agent-config:update', payload).then(unwrap),
     reset: (profile: string) => inv('agent-config:reset', profile).then(unwrap),
   },
 
   // ── 模型（ModelController；per-agent 操作 profile 必传）──
   models: {
-    list: (profile: string) => inv('model:list', {profile}).then(unwrap),
-    get: (profile: string, id: string) => inv('model:get', {profile, id}).then(unwrap),
-    create: (profile: string, input: CreateCustomModelRequestDTO) => inv('model:create', {profile, ...input}).then(unwrap),
-    update: (profile: string, input: UpdateCustomModelRequestDTO) => inv('model:update', {profile, ...input}).then(unwrap),
-    delete: (profile: string, id: string) => inv('model:delete', {profile, id}).then(unwrap),
-    test: (profile: string, id: string) => inv('model:test', {profile, id}).then(unwrap),
+    list: (profile: string) => inv('model:list', { profile }).then(unwrap),
+    get: (profile: string, id: string) => inv('model:get', { profile, id }).then(unwrap),
+    create: (profile: string, input: CreateCustomModelRequestDTO) => inv('model:create', { profile, ...input }).then(unwrap),
+    update: (profile: string, input: UpdateCustomModelRequestDTO) => inv('model:update', { profile, ...input }).then(unwrap),
+    delete: (profile: string, id: string) => inv('model:delete', { profile, id }).then(unwrap),
+    test: (profile: string, id: string) => inv('model:test', { profile, id }).then(unwrap),
     listProviders: () => inv('model:list-providers').then(unwrap),
     getProvider: (id: string) => inv('model:get-provider', id).then(unwrap),
     fetchModels: (input: FetchModelsRequestDTO) => inv('model:fetch-models', input).then(unwrap),
-    listScenes: (profile: string) => inv('model:list-scenes', {profile}).then(unwrap),
-    bindScene: (profile: string, input: BindSceneModelRequestDTO) => inv('model:bind-scene', {profile, ...input}).then(unwrap),
-    updateScene: (profile: string, input: UpdateSceneModelRequestDTO) => inv('model:update-scene', {profile, ...input}).then(unwrap),
-    unbindScene: (profile: string, sceneId: string, priority: number) => inv('model:unbind-scene', {profile, sceneId, priority}).then(unwrap),
-    reorderScenes: (profile: string, input: ReorderSceneBindingsRequestDTO) => inv('model:reorder-scenes', {profile, ...input}).then(unwrap),
+    listScenes: (profile: string) => inv('model:list-scenes', { profile }).then(unwrap),
+    bindScene: (profile: string, input: BindSceneModelRequestDTO) => inv('model:bind-scene', { profile, ...input }).then(unwrap),
+    updateScene: (profile: string, input: UpdateSceneModelRequestDTO) => inv('model:update-scene', { profile, ...input }).then(unwrap),
+    unbindScene: (profile: string, sceneId: string, priority: number) => inv('model:unbind-scene', { profile, sceneId, priority }).then(unwrap),
+    reorderScenes: (profile: string, input: ReorderSceneBindingsRequestDTO) => inv('model:reorder-scenes', { profile, ...input }).then(unwrap),
   },
 
   // ── 技能（SkillController）──
   skills: {
     list: (payload?: SkillListQueryDTO) => inv('skill:list', payload).then(unwrap),
-    byName: (name: string, profile?: string) => inv('skill:byName', {name, profile} satisfies SkillOpRequestDTO).then(unwrap),
-    get: (id: string, profile?: string) => inv('skill:get', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
-    deactivate: (id: string, profile?: string) => inv('skill:deactivate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
-    activate: (id: string, profile?: string) => inv('skill:activate', {id, profile} satisfies SkillOpRequestDTO).then(unwrap),
+    byName: (name: string, profile?: string) => inv('skill:byName', { name, profile } satisfies SkillOpRequestDTO).then(unwrap),
+    get: (id: string, profile?: string) => inv('skill:get', { id, profile } satisfies SkillOpRequestDTO).then(unwrap),
+    deactivate: (id: string, profile?: string) => inv('skill:deactivate', { id, profile } satisfies SkillOpRequestDTO).then(unwrap),
+    activate: (id: string, profile?: string) => inv('skill:activate', { id, profile } satisfies SkillOpRequestDTO).then(unwrap),
     categories: () => inv('skill:categories').then(unwrap),
     /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
     install: (payload: {
@@ -302,54 +309,63 @@ const api = {
     fileDelete: (id: number) => inv('skill:file-delete', { id }).then(unwrap),
   },
 
+  // ── 记忆管理（MemoryController——CRUD + 拖拽排序） ──
+  memory: {
+    list: (target: 'memory' | 'user', profile?: string) => inv('memory:list', { target, profile }).then(unwrap),
+    add: (target: 'memory' | 'user', content: string, profile?: string) => inv('memory:add', { target, content, profile }).then(unwrap),
+    update: (target: 'memory' | 'user', index: number, content: string, profile?: string) => inv('memory:update', { target, index, content, profile }).then(unwrap),
+    remove: (target: 'memory' | 'user', index: number, profile?: string) => inv('memory:remove', { target, index, profile }).then(unwrap),
+    reorder: (target: 'memory' | 'user', order: string[], profile?: string) => inv('memory:reorder', { target, order, profile }).then(unwrap),
+  },
+
   // ── 账号初始化（AccountController，4 步向导）──
   account: {
     initStatus: () => inv('account:init-status').then(unwrap),
-    initStepStatus: (step: number) => inv('account:init-step-status', {step}).then(unwrap),
-    initStep1: (input: {displayName?: string}) => inv('account:init-step1', input).then(unwrap),
-    initStep2: (config?: Record<string, unknown>) => inv('account:init-step2', {config}).then(unwrap),
+    initStepStatus: (step: number) => inv('account:init-step-status', { step }).then(unwrap),
+    initStep1: (input: { displayName?: string }) => inv('account:init-step1', input).then(unwrap),
+    initStep2: (config?: Record<string, unknown>) => inv('account:init-step2', { config }).then(unwrap),
     initStep3: (input: InitAccountParams) => inv('account:init-step3', input).then(unwrap),
-    initStep4: (modelId: string) => inv('account:init-step4', {modelId}).then(unwrap),
+    initStep4: (modelId: string) => inv('account:init-step4', { modelId }).then(unwrap),
   },
 
   // ── 提示词模块（PromptModuleController）──
   promptModules: {
     list: (profile: string) => inv('prompt-module:list', profile).then(unwrap),
     create: (name: string, content: string, profile: string, enabled?: boolean) =>
-      inv('prompt-module:create', {name, content, profile, enabled} satisfies CreatePromptModuleRequestDTO).then(unwrap),
+      inv('prompt-module:create', { name, content, profile, enabled } satisfies CreatePromptModuleRequestDTO).then(unwrap),
     update: (id: number, name: string, content: string, profile: string) =>
-      inv('prompt-module:update', {id, name, content, profile} satisfies UpdatePromptModuleRequestDTO).then(unwrap),
-    delete: (id: number, profile: string) => inv('prompt-module:delete', {id, profile} satisfies PromptModuleIdRequestDTO).then(unwrap),
-    toggle: (id: number, enabled: boolean, profile: string) => inv('prompt-module:toggle', {id, enabled, profile} satisfies TogglePromptModuleRequestDTO).then(unwrap),
+      inv('prompt-module:update', { id, name, content, profile } satisfies UpdatePromptModuleRequestDTO).then(unwrap),
+    delete: (id: number, profile: string) => inv('prompt-module:delete', { id, profile } satisfies PromptModuleIdRequestDTO).then(unwrap),
+    toggle: (id: number, enabled: boolean, profile: string) => inv('prompt-module:toggle', { id, enabled, profile } satisfies TogglePromptModuleRequestDTO).then(unwrap),
   },
 
   // ── 沙盒白名单（SandboxController）──
   sandbox: {
     listUrl: (profile?: string) => inv('sandbox:listUrl', profile).then(unwrap),
     addUrl: (payload: UrlWhitelistRequestDTO) => inv('sandbox:addUrl', payload).then(unwrap),
-    deleteUrl: (id: number, profile?: string) => inv('sandbox:deleteUrl', {id, profile} satisfies WhitelistIdRequestDTO).then(unwrap),
+    deleteUrl: (id: number, profile?: string) => inv('sandbox:deleteUrl', { id, profile } satisfies WhitelistIdRequestDTO).then(unwrap),
     listPath: (profile?: string) => inv('sandbox:listPath', profile).then(unwrap),
     addPath: (payload: PathWhitelistRequestDTO) => inv('sandbox:addPath', payload).then(unwrap),
-    deletePath: (id: number, profile?: string) => inv('sandbox:deletePath', {id, profile} satisfies WhitelistIdRequestDTO).then(unwrap),
+    deletePath: (id: number, profile?: string) => inv('sandbox:deletePath', { id, profile } satisfies WhitelistIdRequestDTO).then(unwrap),
   },
 
   // ── 工具配置（ToolController）──
   tools: {
-    list: (profile?: string) => inv('tool-config:list', {profile} satisfies ToolListQueryDTO).then(unwrap),
+    list: (profile?: string) => inv('tool-config:list', { profile } satisfies ToolListQueryDTO).then(unwrap),
     toggle: (toolName: string, disabled: boolean, profile?: string) =>
-      inv('tool-config:toggle', {toolName, disabled, profile} satisfies ToggleToolRequestDTO).then(unwrap),
+      inv('tool-config:toggle', { toolName, disabled, profile } satisfies ToggleToolRequestDTO).then(unwrap),
   },
 
   // ── 插件系统 ──
   plugins: {
     list: () => inv('plugin:list').then(unwrap),
-    toggle: (id: string, enabled: boolean) => inv('plugin:toggle', {id, enabled}).then(unwrap),
-    check: (id: string) => inv('plugin:check', {id}).then(unwrap),
-    getStatus: (id: string) => inv('plugin:get-status', {id}).then(unwrap),
-    getSchema: (id: string) => inv('plugin:get-schema', {id}).then(unwrap),
-    getConfig: (id: string) => inv('plugin:get-config', {id}).then(unwrap),
+    toggle: (id: string, enabled: boolean) => inv('plugin:toggle', { id, enabled }).then(unwrap),
+    check: (id: string) => inv('plugin:check', { id }).then(unwrap),
+    getStatus: (id: string) => inv('plugin:get-status', { id }).then(unwrap),
+    getSchema: (id: string) => inv('plugin:get-schema', { id }).then(unwrap),
+    getConfig: (id: string) => inv('plugin:get-config', { id }).then(unwrap),
     saveConfig: (id: string, patch: Record<string, unknown>) =>
-      inv('plugin:save-config', {id, patch}).then(unwrap),
+      inv('plugin:save-config', { id, patch }).then(unwrap),
     /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
     invoke: (id: string, channel: string, payload?: unknown) =>
       inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
@@ -372,7 +388,7 @@ const api = {
     getConfig: () => inv('voice:get-config').then(unwrap),
     setProvider: (patch: { sttProvider?: string | null; ttsProvider?: string | null }) =>
       inv('voice:set-provider', patch).then(unwrap),
-    providerReady: (pluginId: string) => inv('voice:provider-ready', {pluginId}).then(unwrap),
+    providerReady: (pluginId: string) => inv('voice:provider-ready', { pluginId }).then(unwrap),
     /** STT：录音（应用固有）后整段转文本 */
     sttTranscribe: (samples: Float32Array) =>
       inv('voice:stt:transcribe', { samples }).then(unwrap),

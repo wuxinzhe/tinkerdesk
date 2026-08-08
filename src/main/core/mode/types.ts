@@ -5,7 +5,7 @@
  */
 import type { AgentConfig } from '../loop/types'
 
-/** Agent Mode 元数据（对齐 Java ModeInfoDTO 基础字段 + promptTemplate） */
+/** Agent Mode 元数据 */
 export interface AgentModeMeta {
   /** 模式 ID（唯一标识，agent 表 agent_mode_id 引用） */
   id: string
@@ -27,11 +27,11 @@ export interface IAgentMode {
   /** 动态提示词模块渲染顺序（对应 PromptModule 的 id 列表） */
   getModuleList(): string[]
 
-  /** agent_configs 无行时的默认配置（对齐 Java getDefaultConfig） */
+  /** agent_configs 无行时的默认配置 */
   getDefaultConfig(): AgentConfig
 }
 
-/** 模式元数据 DTO（对齐 ModeInfoDTO） */
+/** 模式元数据 DTO */
 export interface ModeInfoDTO {
   id: string
   version: string
@@ -40,7 +40,7 @@ export interface ModeInfoDTO {
   promptTemplate: string
 }
 
-/** 模式选项（对齐 ModeOptionDTO：id → [versions...]，前端下拉用） */
+/** 模式选项 */
 export interface ModeOptionDTO {
   id: string
   versions: string[]

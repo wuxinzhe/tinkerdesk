@@ -8,10 +8,14 @@
         <!-- assistant_text → Markdown 实时渲染 + 流式接收区 -->
         <template v-if="isAssistantText">
 
-          <!-- 实时 Markdown 渲染（content 持续积累） -->
-          <div v-if="!!message.content" class="markdown-body">
-            <MarkdownRender :content="message.content" :breaks="true" :highlight-code="true" :render-links="false" />
-          </div>
+          <!-- 实时 Markdown 渲染（content 持续积累；MarkdownRender 根自带 markdown-body——不再外层包裹） -->
+          <MarkdownRender
+            v-if="!!message.content"
+            :content="message.content"
+            :breaks="true"
+            :highlight-code="true"
+            :render-links="false"
+          />
 
           <!-- 流式接收区：在 Markdown 下方，显示最新原始文本 -->
           <Transition name="collapse">
@@ -24,10 +28,14 @@
           </Transition>
         </template>
 
-        <!-- assistant_tool_call → content 走气泡正文（在上）+ 标题胶囊（在下） -->
+        <!-- assistant_hybrid → 文本+工具混合卡片（content Markdown + 工具树） -->
+        <template v-else-if="isHybrid">
+          <HybridCard :message="message" :is-streaming="isStreaming" :pending-buffer="pendingBuffer" />
+        </template>
+
+        <!-- assistant_tool_call → 纯工具调用卡片（工具树为主） -->
         <template v-else-if="isToolCall">
-          <template v-if="message.content">{{ message.content }}<br /></template>
-          <span class="tool-call-tag">🔧 通过调用 <span class="tool-call-tag__name">{{ toolNames }}</span> 工具解决问题...</span>
+          <ToolCallCard :message="message" :is-streaming="isStreaming" :pending-buffer="pendingBuffer" />
         </template>
 
         <!-- user_message / 兜底 → 纯文本 -->
@@ -36,12 +44,27 @@
         </template>
       </div>
 
-      <!-- ── 时间戳 ── -->
+      <!-- ── 时间戳（SVG 按钮 + 时间） ── -->
       <div class="message-timestamp" :class="{ visible: showTimestamp }">
-        <span>{{ formatTime(message.timestamp) }}</span>
-        <button v-if="message.conversationId" class="conv-detail-btn" title="查看对话详情"
+        <button
+          v-if="canSpeak"
+          class="ts-btn"
+          title="朗读本条消息"
+          @click.stop="speakContent"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="7,4 20,12 7,20" fill="currentColor" stroke="none" />
+          </svg>
+        </button>
+        <span class="message-timestamp__time">{{ formatTime(message.timestamp) }}</span>
+        <button v-if="message.conversationId" class="ts-btn" title="查看对话详情"
           @click.stop="openConversationDetail(message.sessionId, message.conversationId)">
-          📋
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <line x1="8" y1="9" x2="16" y2="9" />
+            <line x1="8" y1="13" x2="16" y2="13" />
+            <line x1="8" y1="17" x2="13" y2="17" />
+          </svg>
         </button>
       </div>
 
@@ -85,14 +108,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import ApprovalCard from '@/renderer/components/chat/ApprovalCard.vue'
 import type { Message } from '@/renderer/api/types'
 import ClarifyCard from '@/renderer/components/chat/ClarifyCard.vue'
-import { formatSmartTime } from '@/renderer/utils/date-utils'
+import ToolCallCard from './ToolCallCard.vue'
+import HybridCard from './HybridCard.vue'
 import { inferMessageTypeFromRole } from '@/renderer/utils/message-utils'
+import { markdownToPlainText } from '@/renderer/utils/markdown-to-text'
 
 const router = useRouter()
 
@@ -126,6 +151,37 @@ const showTimestamp = ref(false)
 function toggleTimestamp() {
   showTimestamp.value = !showTimestamp.value
 }
+
+// ── TTS 朗读（assistant 文本/混合消息——时间戳区 🔊 按钮） ──
+
+/** 可朗读：assistant_text / assistant_hybrid 且有内容 */
+const canSpeak = computed(() =>
+  (isAssistantText.value || isHybrid.value) && !!props.message.content
+)
+const speakingAudio = ref<HTMLAudioElement | null>(null)
+
+async function speakContent() {
+  const raw = props.message.content
+  if (!raw) return
+  try {
+    // TTS 前清洗：markdown → 纯文本（表格整体删除——TTS 无法朗读）
+    const text = markdownToPlainText(raw)
+    if (!text) return
+    const { audio } = await window.api.voice.ttsSpeak(text)
+    if (!audio) return
+    const src = audio.startsWith('data:') ? audio : `data:audio/mp3;base64,${audio}`
+    speakingAudio.value?.pause()
+    const a = new Audio(src)
+    speakingAudio.value = a
+    await a.play()
+  } catch (e) {
+    console.error('TTS 播放失败', e)
+  }
+}
+
+onBeforeUnmount(() => {
+  speakingAudio.value?.pause()
+})
 
 function formatTime(ts: number): string {
   if (!ts) return ''
@@ -166,46 +222,13 @@ const effectiveType = computed(() =>
 const isUserNormal = computed(() => effectiveType.value === 'user_normal')
 const isAssistantText = computed(() => effectiveType.value === 'assistant_text')
 const isToolCall = computed(() => effectiveType.value === 'assistant_tool_call')
+const isHybrid = computed(() => effectiveType.value === 'assistant_hybrid')
 const isApprovalRequest = computed(() => effectiveType.value === 'approval_request')
 const isClarifyRequest = computed(() => effectiveType.value === 'clarify_request')
 
-/** 工具名去前缀（desktop_tinker_terminal → terminal / builtin_tinker_clarify → clarify） */
-function displayToolName(name: string): string {
-  return name.replace(/^(desktop_tinker_|builtin_tinker_)/, '')
-}
-
-interface ToolCallEntry { name?: string; arguments?: unknown }
-
-/** 解析 toolCall 为条目数组（兼容两种结构：平铺 {id,name,arguments,status} 或 map {callId:{name,arguments}}） */
-function parseToolCallEntries(raw: unknown): Array<{ id: string; name: string; arguments?: unknown }> {
-  if (!raw) return []
-  let parsed: unknown = raw
-  if (typeof raw === 'string') {
-    try { parsed = JSON.parse(raw) } catch { return [] }
-  }
-  if (!parsed || typeof parsed !== 'object') return []
-  const obj = parsed as Record<string, unknown>
-  // 平铺结构（messages-api 转换后的展示结构）
-  if (typeof obj.id === 'string' && typeof obj.name === 'string') {
-    return [{ id: obj.id, name: obj.name, arguments: obj.arguments as unknown }]
-  }
-  // map 结构：{callId: {name, arguments}}
-  return Object.entries(obj).map(([id, v]) => {
-    const e = (v ?? {}) as ToolCallEntry
-    return { id, name: typeof e.name === 'string' ? e.name : id, arguments: e.arguments }
-  })
-}
-
-/** 标题用工具名（去前缀——多工具顿号分隔） */
-const toolNames = computed(() => {
-  const entries = parseToolCallEntries(props.message.toolCall)
-  if (entries.length === 0) return ''
-  return entries.map((e) => displayToolName(e.name)).join('、')
-})
-
 /** 是否需要气泡容器（文本类消息） */
 const showBubble = computed(() =>
-  isUserNormal.value || isAssistantText.value || isToolCall.value || !props.message.messageType
+  isUserNormal.value || isAssistantText.value || isToolCall.value || isHybrid.value || !props.message.messageType
 )
 
 /** 流式接收区：isStreaming 且有 buffer 时显示原始文本 */
@@ -213,12 +236,7 @@ const showStreamingReceiver = computed(() =>
   props.isStreaming && !!props.pendingBuffer
 )
 
-/** 完成态 Markdown 渲染：非流式、有内容时显示 */
-const showFallbackMarkdown = computed(() =>
-  isAssistantText.value && !props.isStreaming && !!props.message.content
-)
-
-/** 气泡对齐方向：user → right, assistant → left */
+/** 气泡行对齐方向：user → right, assistant → left */
 const bubbleSideClass = computed(() =>
   isUserNormal.value ? 'user' : 'assistant'
 )
@@ -294,28 +312,6 @@ const bubbleStyleClass = computed(() =>
   background: var(--sa-bg-bubble-assistant, #ececed);
   color: var(--sa-text-primary, #1d1d1f);
   border-bottom-left-radius: 4px;
-}
-
-/* ── 工具调用标题胶囊（气泡内特殊样式——accent 淡底 + 圆角标签，与正文区分） ── */
-
-.tool-call-tag {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 6px; /* 与上方 content 正文的间距 */
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
-  color: var(--sa-text-secondary, #48484a);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-/* toolName 高亮（蓝色 + 左右间距） */
-.tool-call-tag__name {
-  color: var(--sa-accent, #007aff);
-  font-weight: 600;
-  margin: 0 3px;
 }
 
 /* ── 气泡容器（user/assistant 文本类消息）─── */
@@ -405,19 +401,33 @@ const bubbleStyleClass = computed(() =>
   opacity: 1;
 }
 
-.conv-detail-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 0;
-  opacity: 0.6;
-  transition: opacity 0.15s;
-  pointer-events: auto;
+/* 时间戳文本（与按钮区分——hover 后可见） */
+.message-timestamp__time {
+  color: var(--sa-text-tertiary, #aeaeb2);
 }
 
-.conv-detail-btn:hover {
+/* 时间戳按钮（SVG 图标——统一样式；父容器 pointer-events:none——必须显式 auto 才能点） */
+.ts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: none;
+  border: none;
+  padding: 0;
+  border-radius: 4px;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  pointer-events: auto;   /* 覆盖 .message-timestamp 的 pointer-events: none */
+  opacity: 0.75;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.ts-btn:hover {
   opacity: 1;
+  color: var(--sa-accent, #007aff);
+  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
 }
 
 /* ── 发送状态 ── */

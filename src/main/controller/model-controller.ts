@@ -2,11 +2,12 @@
  * model-controller.ts — 模型管理 IPC controller（class 形式）
  *
  * 复刻 tinker-agent ModelController（本地单用户版，去 userId）：
- * - 请求参数封装为 RequestDTO（对齐 dto/model/CreateCustomModelRequestDTO 等）
- * - 返回类型具体化（对齐 ApiResponse<CustomModelInfoDTO> 等），不用 unknown
+ * - 请求参数封装为 RequestDTO
+ * - 返回类型具体化，不用 unknown
  * - 构造注入 service，register() 统一注册
  *
- * profile 铁律：本地单用户但可多 Agent——custom_models / scene_models 按 profile 隔离，
+ * profile 铁律：本地单用户但可多 Agent——scene_models（场景绑定）按 profile 隔离，
+ * custom_models（接入的模型）全局共享（所有 agent 可见，查询/CRUD 不按 profile 过滤）。
  * 所有 per-agent 方法 profile 必传（由前端传入，main 不硬编码默认值）。
  * system_providers / fetch-models 为全局或无状态操作，不带 profile。
  *
@@ -14,6 +15,7 @@
  * IPC 前缀：model:*
  */
 import { ipcMain } from 'electron'
+import { SCENE_CHAT } from '../core/llm/types'
 import type { UserCustomModelService } from '../service/user-custom-model-service'
 import type { SceneModelService } from '../service/scene-model-service'
 import type { SystemProviderService } from '../service/system-provider-service'
@@ -166,7 +168,7 @@ export class ModelController {
     }
   }
 
-  /** 从供应商拉取可用模型列表（无状态操作，对齐 Java POST /models/providers/{id}/models） */
+  /** 从供应商拉取可用模型列表 */
   private async fetchProviderModels(input: FetchModelsRequestDTO): Promise<ApiResponse<ModelInfoDTO[]>> {
     try {
       if (!input?.providerId) {
@@ -176,7 +178,7 @@ export class ModelController {
       if (!provider) {
         return fail(`供应商 '${input.providerId}' 不存在`)
       }
-      // baseUrl 优先用请求中的，其次用供应商模板默认值（对齐 Java）
+      // baseUrl 优先用请求中的，其次用供应商模板默认值
       const baseUrl = (input.baseUrl && input.baseUrl.trim() !== '') ? input.baseUrl.trim() : provider.baseUrl
       if (!baseUrl) {
         return fail('该供应商没有默认 endpoint，请提供 baseUrl')
@@ -248,16 +250,20 @@ export class ModelController {
     }
   }
 
-  /** 删除场景指定优先级的模型绑定（按 profile 限定，对齐 Java DELETE /models/scenes/{sceneId}/bind/{priority}） */
-  private unbindSceneModel(payload: { profile: string; sceneId: string; priority: number }): ApiResponse<null> {
+  /** 解绑场景模型（按 model id——主对话场景至少保留 1 个由本方法校验） */
+  private unbindSceneModel(payload: { profile: string; sceneId: string; modelId: string }): ApiResponse<null> {
     try {
       if (!payload?.profile) {
         return fail('profile 不能为空')
       }
-      if (!payload.sceneId || typeof payload.priority !== 'number') {
-        return fail('sceneId 和 priority 必填')
+      if (!payload.sceneId || !payload.modelId) {
+        return fail('sceneId 和 modelId 必填')
       }
-      this.sceneModelService.unbindSceneModel(payload.profile, payload.sceneId, payload.priority)
+      // 删除校验：主对话场景至少保留 1 个模型
+      if (payload.sceneId === SCENE_CHAT && this.sceneModelService.listByScene(payload.profile, SCENE_CHAT).length <= 1) {
+        return fail('主对话场景至少需要保留 1 个模型')
+      }
+      this.sceneModelService.unbindSceneModel(payload.profile, payload.sceneId, payload.modelId)
       return ok(null)
     } catch (e) {
       return fail((e as Error).message)

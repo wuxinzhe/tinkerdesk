@@ -150,7 +150,7 @@ export interface TerminalParams {
 
 // ── web-extract ──
 
-/** URL 字符串或含 url/href 字段的对象（对齐 Hermes：模型可能直接转发搜索结果对象） */
+/** URL 字符串或含 url/href 字段的对象 */
 export type WebExtractUrlItem = string | { url?: string; href?: string }
 
 export interface WebExtractParams {
@@ -181,7 +181,7 @@ export interface WriteFileParams {
 
 /** 匹配区间 [start, end) */
 export type MatchSpan = [number, number]
-/** 模糊匹配结果（对齐 Hermes FuzzyMatchResult） */
+/** 模糊匹配结果 */
 export interface FuzzyResult {
   content: string
   matchCount: number
@@ -189,7 +189,7 @@ export interface FuzzyResult {
   error: string | null
 }
 
-/** 序列比对操作码（简化 LCS 回溯，对齐 difflib.opcodes） */
+/** 序列比对操作码 */
 export interface Opcode {
   tag: 'equal' | 'replace' | 'delete' | 'insert'
   i1: number; i2: number; j1: number; j2: number

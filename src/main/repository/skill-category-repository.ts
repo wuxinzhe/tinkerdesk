@@ -2,7 +2,7 @@
  * skill-category-repository.ts — 技能分类仓库（本地 JSON 数据源）
  *
  * 本地客户端不建 skill_categories 表，分类数据用 JSON 文件维护
- * （src/main/resources/skill-categories.json，数据源自 showing-agent 的 skill_categories 表）。
+ * （src/main/resources/skill-categories.json，数据源自  的 skill_categories 表）。
  * 保留 insert 写库（兼容），读取一律走 JSON。
  */
 import { readFileSync } from 'fs'

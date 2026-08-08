@@ -53,7 +53,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
-import type { PromptModuleData } from '@/renderer/api/types'
 
 const route = useRoute()
 const router = useRouter()

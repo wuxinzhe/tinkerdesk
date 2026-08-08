@@ -6,13 +6,13 @@ import type { Message } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class MessagesApi {
-  async listBySession(sessionId: string, limit = 50, offset = 0): Promise<Message[]> {
-    const data = await window.api.messages.bySession(sessionId, 'default', limit, offset)
+  async listBySession(sessionId: string, profile: string, limit = 50, offset = 0): Promise<Message[]> {
+    const data = await window.api.messages.bySession(sessionId, profile, limit, offset)
     return normalizeMessages((data as Message[]) ?? [])
   }
 
-  async listByConversation(conversationId: string): Promise<Message[]> {
-    const data = await window.api.messages.byConversation(conversationId, 'default')
+  async listByConversation(conversationId: string, profile: string): Promise<Message[]> {
+    const data = await window.api.messages.byConversation(conversationId, profile)
     return normalizeMessages((data as Message[]) ?? [])
   }
 
@@ -21,13 +21,13 @@ export class MessagesApi {
    * normalizeMessages 会把 toolCall map 拆成第一个 ToolCall 对象（keys[0]），
    * 多组工具调用时第二组起全部丢失——原文详情页需要完整原始数据。
    */
-  async listByConversationRaw(conversationId: string): Promise<Message[]> {
-    const data = await window.api.messages.byConversation(conversationId, 'default')
+  async listByConversationRaw(conversationId: string, profile: string): Promise<Message[]> {
+    const data = await window.api.messages.byConversation(conversationId, profile)
     return (data as Message[]) ?? []
   }
 
-  async deleteConversation(conversationId: string): Promise<void> {
-    await window.api.messages.deleteConversation(conversationId, 'default')
+  async deleteConversation(conversationId: string, profile: string): Promise<void> {
+    await window.api.messages.deleteConversation(conversationId, profile)
   }
 }
 
@@ -38,24 +38,15 @@ export class MessagesApi {
  */
 function normalizeMessages(msgs: Message[]): Message[] {
   return msgs.map(m => {
-    // ── 将 toolCall JSON string → ToolCall 对象 ──
+    // ── 将 toolCall JSON string → 完整 map 对象 ──
+    // 保留全部工具调用（多工具：{call_0:{name,arguments}, call_1:{...}}）——
+    // MessageBubble parseToolCallEntries 支持 map 渲染多胶囊；不拆第一个
     if (typeof m.toolCall === 'string') {
       try {
         const parsed = JSON.parse(m.toolCall) as Record<string, unknown>
-        // 格式: { [toolCallId]: { name, arguments } }
         const keys = Object.keys(parsed)
-        const id = keys[0] || m.toolCallId || ''
-        const entry = parsed[id] as Record<string, unknown> | undefined
-        if (entry && typeof entry === 'object') {
-          m = {
-            ...m,
-            toolCall: {
-              id,
-              name: (entry['name'] as string) ?? '',
-              arguments: (entry['arguments'] as Record<string, unknown>) ?? {},
-              status: 'completed'
-            }
-          }
+        if (keys.length > 0 && parsed[keys[0]] && typeof parsed[keys[0]] === 'object') {
+          m = { ...m, toolCall: parsed as Message['toolCall'] }
         }
       } catch { /* keep raw string */ }
     }
@@ -66,27 +57,33 @@ function normalizeMessages(msgs: Message[]): Message[] {
     const tc = m.toolCall
     if (!tc) return m
 
-    try {
-      const toolCallStr = typeof tc === 'string' ? tc : JSON.stringify(tc)
-      if (!toolCallStr) return m
-
-      const parsed = JSON.parse(toolCallStr) as Record<string, unknown>
-      const keys = Object.keys(parsed)
-      const firstEntry = Object.values(parsed)[0] as Record<string, unknown> | undefined
-      if (!firstEntry) return m
-
-      const args = firstEntry['arguments'] as Record<string, unknown> | undefined
-      if (!args) return m
-
-      return {
-        ...m,
-        toolCallId: keys[0] || m.toolCallId || '',
-        clarifyQuestion: (args['question'] as string) ?? '',
-        clarifyChoices: (args['choices'] as string[]) ?? null
-      } as Message
-    } catch {
-      return m
+    // 兼容三种 toolCall 形态：
+    //  1) 原始格式（string）: { [callId]: { name, arguments } }
+    //  2) 已转换格式（对象·平铺）: { id, name, arguments, status }（单工具）
+    //  3) 已转换格式（对象·map）: { [callId]: { name, arguments } }（多工具——取第一个）
+    let args: Record<string, unknown> | undefined
+    if (typeof tc === 'string') {
+      try {
+        const parsed = JSON.parse(tc) as Record<string, unknown>
+        const firstEntry = Object.values(parsed)[0] as Record<string, unknown> | undefined
+        args = firstEntry?.['arguments'] as Record<string, unknown> | undefined
+      } catch {
+        return m
+      }
+    } else if ((tc as unknown as Record<string, unknown>)['name']) {
+      args = (tc as unknown as { arguments?: Record<string, unknown> })['arguments']
+    } else {
+      // map 对象（多工具）：取第一个 entry 的 arguments
+      const firstEntry = Object.values(tc as Record<string, unknown>)[0] as Record<string, unknown> | undefined
+      args = firstEntry?.['arguments'] as Record<string, unknown> | undefined
     }
+    if (!args) return m
+
+    return {
+      ...m,
+      clarifyQuestion: (args['question'] as string) ?? '',
+      clarifyChoices: (args['choices'] as string[]) ?? null
+    } as Message
   })
 }
 

@@ -24,9 +24,83 @@ export function initDatabase(): DatabaseSync {
   db = new DatabaseSync(dbPath());
   db.exec('PRAGMA journal_mode = WAL;');
   createTables(db);
+  ensureSkillRelatedSchema(db);
+  ensureSceneModelSchema(db);
+  ensureSessionSchema(db);
   seedProviders(db);
   seedDefaultSkills(db);
   return db;
+}
+
+/** 结构对齐（开发阶段）：sessions 缺 reasoning_depth 列（推理深度 per-session）直接重建——不迁移数据 */
+function ensureSessionSchema(database: DatabaseSync): void {
+  const cols = new Set(database.prepare('PRAGMA table_info(sessions)').all().map((c) => String((c as { name: unknown }).name)))
+  if (cols.has('reasoning_depth')) return
+  database.exec('DROP TABLE sessions')
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id                 TEXT PRIMARY KEY,
+      profile            TEXT NOT NULL DEFAULT 'default',
+      source             TEXT NOT NULL DEFAULT 'gateway',
+      system_prompt      TEXT NOT NULL DEFAULT '',
+      parent_session_id  TEXT REFERENCES sessions(id),
+      title              TEXT NOT NULL DEFAULT '',
+      input_tokens       INTEGER NOT NULL DEFAULT 0,
+      output_tokens      INTEGER NOT NULL DEFAULT 0,
+      cache_read_tokens  INTEGER NOT NULL DEFAULT 0,
+      cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+      estimated_cost_usd REAL NOT NULL DEFAULT 0,
+      message_count      INTEGER NOT NULL DEFAULT 0,
+      tool_call_count    INTEGER NOT NULL DEFAULT 0,
+      rewind_count       INTEGER NOT NULL DEFAULT 0,
+      total_duration_ms   INTEGER NOT NULL DEFAULT 0,
+      total_iterations    INTEGER NOT NULL DEFAULT 0,
+      total_llm_requests  INTEGER NOT NULL DEFAULT 0,
+      current_context_tokens INTEGER NOT NULL DEFAULT 0,
+      started_at         TEXT NOT NULL DEFAULT (datetime('now')),
+      archived           INTEGER NOT NULL DEFAULT 0,
+      yolo               INTEGER NOT NULL DEFAULT 0,
+      reasoning_depth    TEXT NOT NULL DEFAULT 'medium'
+    )
+  `)
+}
+
+/** 结构对齐（开发阶段）：user_scene_models 旧版（PK 含 priority——单模型替换语义）直接重建为多模型结构——不迁移数据 */
+function ensureSceneModelSchema(database: DatabaseSync): void {
+  const cols = new Set(database.prepare('PRAGMA table_info(user_scene_models)').all().map((c) => String((c as { name: unknown }).name) + ':' + String((c as { type: unknown }).type)))
+  if (cols.has('is_main:INTEGER')) return
+  database.exec('DROP TABLE user_scene_models')
+  database.exec(`
+    CREATE TABLE user_scene_models (
+      profile   TEXT NOT NULL DEFAULT 'default',
+      scene_id  TEXT NOT NULL,
+      model_id  TEXT NOT NULL REFERENCES custom_models(id) ON DELETE CASCADE,
+      priority  INTEGER NOT NULL DEFAULT 0,
+      is_main   INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (profile, scene_id, model_id)
+    )
+  `)
+  database.exec('CREATE INDEX IF NOT EXISTS idx_user_scene_models_scene ON user_scene_models(profile, scene_id)')
+}
+
+/** 结构对齐（开发阶段）：private_skill_related 旧 UUID 版（id TEXT）直接重建为自增——不迁移数据 */
+function ensureSkillRelatedSchema(database: DatabaseSync): void {
+  const cols = new Set(database.prepare('PRAGMA table_info(private_skill_related)').all().map((c) => String((c as { name: unknown }).name) + ':' + String((c as { type: unknown }).type)))
+  if (cols.has('id:TEXT')) {
+    database.exec('DROP TABLE private_skill_related')
+    database.exec(`
+      CREATE TABLE private_skill_related (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        skill_id         INTEGER NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
+        related_skill_id INTEGER NOT NULL,
+        relation_type    TEXT NOT NULL DEFAULT 'related',
+        created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(skill_id, related_skill_id, relation_type)
+      );
+    `)
+    database.exec('CREATE INDEX IF NOT EXISTS idx_private_skill_related_skill ON private_skill_related(skill_id)')
+  }
 }
 
 /** 种子：默认技能（tinkerdesk-plugin-install / tinkerdesk-skill-authoring），name 冲突忽略（幂等） */
@@ -152,7 +226,8 @@ function createTables(database: DatabaseSync): void {
       current_context_tokens INTEGER NOT NULL DEFAULT 0,
       started_at         TEXT NOT NULL DEFAULT (datetime('now')),
       archived           INTEGER NOT NULL DEFAULT 0,
-      yolo               INTEGER NOT NULL DEFAULT 0
+      yolo               INTEGER NOT NULL DEFAULT 0,
+      reasoning_depth    TEXT NOT NULL DEFAULT 'medium'
     );
     CREATE INDEX IF NOT EXISTS idx_sessions_profile ON sessions(profile, started_at DESC);
     CREATE INDEX IF NOT EXISTS idx_sessions_parent ON sessions(parent_session_id);
@@ -297,9 +372,9 @@ function createTables(database: DatabaseSync): void {
 
     -- ── private_skill_related ──
     CREATE TABLE IF NOT EXISTS private_skill_related (
-      id               TEXT PRIMARY KEY,
+      id               INTEGER PRIMARY KEY AUTOINCREMENT,
       skill_id         INTEGER NOT NULL REFERENCES private_skills(id) ON DELETE CASCADE,
-      related_skill_id TEXT NOT NULL,
+      related_skill_id INTEGER NOT NULL,
       relation_type    TEXT NOT NULL DEFAULT 'related',
       created_at       TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(skill_id, related_skill_id, relation_type)
@@ -349,15 +424,17 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_upm_profile ON prompt_modules(profile);
 
-    -- ── user_scene_models（场景 = 代码注册的 LlmOperation，不建 scenes 表；scene_id 仅存绑定关系） ──
+    -- ── user_scene_models（场景模型绑定——多模型：is_main 主模型 + priority 备用顺序） ──
     CREATE TABLE IF NOT EXISTS user_scene_models (
       profile   TEXT NOT NULL DEFAULT 'default',
       scene_id  TEXT NOT NULL,
       model_id  TEXT NOT NULL REFERENCES custom_models(id) ON DELETE CASCADE,
       priority  INTEGER NOT NULL DEFAULT 0,
+      is_main   INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
-      PRIMARY KEY (profile, scene_id, priority)
+      PRIMARY KEY (profile, scene_id, model_id)
     );
+    CREATE INDEX IF NOT EXISTS idx_user_scene_models_scene ON user_scene_models(profile, scene_id);
 
     -- ── tool-center 持久化（原 tool-center/db.ts，统一并入主库） ──
     CREATE TABLE IF NOT EXISTS tool_registry (
@@ -459,7 +536,7 @@ function seedProviders(database: DatabaseSync): void {
     ['volcengine', '火山方舟', 'https://ark.cn-beijing.volces.com/api/v3', 'openai', '火山引擎方舟大模型', 21],
     ['hunyuan', '腾讯混元', 'https://api.hunyuan.cloud.tencent.com/v1', 'openai', '腾讯混元大模型', 22],
     ['wenxin', '文心一言', 'https://qianfan.baidubyan.com/v2', 'openai', '百度文心一言大模型', 23],
-    ['google', 'Google Gemini', 'https://generativelanguage.googleapis.com/v1beta/openai', 'openai', 'Google Gemini 系列模型', 30],
+    ['google', 'Google Gemini', 'https://generativelanguage.googleapis.com', 'google', 'Google Gemini 系列模型（官方 SDK）', 30],
     ['xai', 'xAI Grok', 'https://api.x.ai/v1', 'openai', 'xAI Grok 系列模型', 31],
     ['mistralai', 'Mistral AI', 'https://api.mistral.ai/v1', 'openai', 'Mistral AI 系列模型', 32],
     ['cohere', 'Cohere', 'https://api.cohere.com/v1', 'openai', 'Cohere 系列模型', 33],
@@ -470,6 +547,7 @@ function seedProviders(database: DatabaseSync): void {
     ['replicate', 'Replicate', 'https://api.replicate.com/v1', 'openai', 'Replicate 模型托管平台', 38],
     ['novita', 'Novita AI', 'https://api.novita.ai/v3/openai', 'openai', 'Novita AI 模型 API', 39],
     ['perfxcloud', 'PerfXCloud', 'https://api.perfxcloud.ai/v1', 'openai', 'PerfXCloud 模型推理', 40],
+    ['opencode', 'OpenCode Go', 'https://api.opencode.ai/v1', 'openai', 'OpenCode Go 订阅聚合（OpenAI 兼容）', 42],
     ['sambanova', 'SambaNova', 'https://api.sambanova.ai/v1', 'openai', 'SambaNova 高性能推理', 41],
     ['ollama', 'Ollama', 'http://localhost:11434/v1', 'openai', 'Ollama 本地模型', 50],
   ];

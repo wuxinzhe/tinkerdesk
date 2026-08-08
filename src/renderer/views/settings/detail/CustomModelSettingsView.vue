@@ -7,7 +7,7 @@
 
         <div v-else class="cms-rows">
           <SaCardRow
-            v-for="(m, i) in models"
+            v-for="m in models"
             :key="m.id"
             :title="m.alias"
             :badge="m.testPassed ? '已测试' : '未测试'"
@@ -83,7 +83,7 @@ async function testModel(m: CustomModelInfo) {
     // 由前端根据返回结果手动吊起全局提示
     if (result && !result.success) {
       window.dispatchEvent(new CustomEvent('global-tip', {
-        detail: { type: 'error', code: 'MODEL_TEST', message: result.message || '模型测试失败' }
+        detail: { type: 'error', code: 'model:test:failed', message: result.message || '模型测试失败' }
       }))
     }
     await loadModels()

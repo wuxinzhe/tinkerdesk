@@ -124,7 +124,7 @@ export class AgentConfigService {
     this.configRepo.save(merged)
   }
 
-  /** 重置为默认配置（对齐 Java reset：按 Agent 的 mode 取 getDefaultConfig 预设，Agent 不存在返回 null） */
+  /** 重置为默认配置 */
   reset(profile: string): AgentConfig | null {
     const agent = this.agentService.getAgentInfo(profile)
     if (!agent) {

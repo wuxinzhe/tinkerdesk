@@ -117,9 +117,11 @@ if (props.submittedContent) {
 
 const displayChoices = computed(() => {
   if (!props.choices) return []
+  // 过滤 LLM 生成的"其他/Other"类选项（与内置 Other 重复——统一走 __other__ 输入框）
+  const filtered = props.choices.filter((c) => !/^(其他|其它|Other)([（(：:，,\s]|$)/i.test(c.trim()))
   return [
-    ...props.choices.map(c => ({ value: c, label: c })),
-    { value: '__other__', label: 'Other (type your answer)' }
+    ...filtered.map((c) => ({ value: c, label: c })),
+    { value: '__other__', label: '其他（在下方输入你的答案）' }
   ]
 })
 

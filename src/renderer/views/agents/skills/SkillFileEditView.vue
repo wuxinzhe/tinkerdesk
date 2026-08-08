@@ -74,22 +74,21 @@ onMounted(async () => {
 
 async function handleSave() {
   if (!form.value.fileType.trim()) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'sfe', message: '文件类型不能为空' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:file:invalid_type', message: '文件类型不能为空' } }))
     return
   }
   saving.value = true
   try {
-    const profile = route.params.profile as string
     const skillId = route.params.skillId as string
     if (isEdit.value) {
       await skillsApi.updateSkillFile({ id: Number(route.params.fileId), ...form.value })
     } else {
       await skillsApi.addSkillFile({ skillId, ...form.value })
     }
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'tip', code: 'sfe', message: isEdit.value ? '文件已更新' : '文件已新增' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'tip', code: 'skill:file:saved', message: isEdit.value ? '文件已更新' : '文件已新增' } }))
     goBack()
   } catch (e) {
-    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'sfe', message: (e as Error).message || '保存失败' } }))
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:file:save_failed', message: (e as Error).message || '保存失败' } }))
   } finally {
     saving.value = false
   }

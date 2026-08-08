@@ -38,9 +38,9 @@ export interface IAgentTool {
   check?(): Promise<boolean> | boolean
 }
 
-// ── 工具类型常量（对齐 tinker-agent ToolConstants，本地版调整） ─────
+// ── 工具类型常量 ─────
 
-/** 内建工具：围绕 AgentLoop 的核心工具（memory/todo/skill/session-search 等） */
+/** 内建工具：围绕 TinkerAgent 的核心工具（memory/todo/skill/session-search 等） */
 export const TOOL_TYPE_BUILTIN = 'builtin'
 /** 客户端工具：对外的普通工具（与内建走相同执行器 tool.execute） */
 export const TOOL_TYPE_CLIENT = 'client'
@@ -141,7 +141,7 @@ export interface JsonRpcResponse {
   error?: { code: number; message: string; data?: unknown }
 }
 
-/** MCP 调用结果（对齐 MCP SDK CallToolResult） */
+/** MCP 调用结果 */
 export interface McpCallResult {
   content: Array<{ type: string; text?: string }>
   isError?: boolean

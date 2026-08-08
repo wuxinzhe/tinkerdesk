@@ -63,9 +63,6 @@ function openConfig(p: PluginInfo): void {
   void router.push(`/workspace/settings/plugins/${p.manifest.id}`)
 }
 
-/** 卸载确认弹窗的目标插件（null = 关闭） */
-const uninstallTarget = ref<PluginInfo | null>(null)
-
 /** 点「卸载」→ 全局确认弹窗 → 确认后删除插件及模型 */
 async function askUninstall(p: PluginInfo): Promise<void> {
   const ok = await confirm({

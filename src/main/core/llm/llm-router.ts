@@ -1,7 +1,6 @@
 /**
  * llm-router.ts — LLM 路由：按场景分发到 Operation + 多模型回退
  *
- * 复刻 showing-agent LlmOrchestrator：
  * - LlmRouterOptions 装载全部调用参数（scene/messages/tools/modelConfigs 数据）
  * - 模型回退：按 modelConfigs 顺序逐个尝试，Operation 判决决定是否回退
  */
@@ -24,7 +23,7 @@ export class LlmRouter {
   async chat(options: LlmRouterOptions, onToken: ChunkCallback): Promise<LlmResponse> {
     return this.caller(options, async (config, input) => {
       const client = this.clientManager.getClient(config)
-      return client.callStreaming(config, input, options.tools, onToken)
+      return client.callStreaming({ config, messages: input, tools: options.tools, reasoningDepth: options.reasoningDepth }, onToken)
     })
   }
 
@@ -32,7 +31,7 @@ export class LlmRouter {
   async execute(options: LlmRouterOptions): Promise<LlmResponse> {
     return this.caller(options, async (config, input) => {
       const client = this.clientManager.getClient(config)
-      return client.callNonStreaming(config, input, options.tools)
+      return client.callNonStreaming({ config, messages: input, tools: options.tools, reasoningDepth: options.reasoningDepth })
     })
   }
 

@@ -33,7 +33,7 @@ export class AgentModeService {
     return this.registry.findById(id, version)
   }
 
-  /** 检查当前 agent 的模式配置（对齐 Java checkAgentMode） */
+  /** 检查当前 agent 的模式配置 */
   checkAgentMode(profile: string): { ok: boolean; detail: string } {
     const agent = this.agentService.getAgentInfo(profile)
     if (!agent) {

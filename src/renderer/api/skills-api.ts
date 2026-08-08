@@ -23,9 +23,9 @@ export class SkillsApi {
     return (data as SkillCategory[]) ?? []
   }
 
-  async installed(params: { profile?: string; offset?: number; limit?: number; category?: string; name?: string }): Promise<{ items: SkillInfo[]; total: number; offset: number; limit: number }> {
+  async installed(params: { profile: string; offset?: number; limit?: number; category?: string; name?: string }): Promise<{ items: SkillInfo[]; total: number; offset: number; limit: number }> {
     const data = await window.api.skills.list({
-      profile: params.profile ?? 'default',
+      profile: params.profile,
       offset: params.offset ?? 0,
       limit: params.limit ?? 20,
     })
@@ -33,7 +33,7 @@ export class SkillsApi {
   }
 
   /** 私有技能详情（按 id 走 IPC 查询，不依赖路由 state） */
-  async detail(id: string, profile = 'default'): Promise<SkillInfo | null> {
+  async detail(id: string, profile: string): Promise<SkillInfo | null> {
     const data = await window.api.skills.get(id, profile)
     return (data as SkillInfo) ?? null
   }
@@ -46,6 +46,7 @@ export class SkillsApi {
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
     config?: string; envVars?: string; commands?: string; body?: string
     files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
+    related?: string[]
   }): Promise<SkillInfo> {
     const data = await window.api.skills.install(payload)
     return data as SkillInfo
@@ -58,13 +59,14 @@ export class SkillsApi {
     tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
     config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    related?: string[]
   }): Promise<SkillInfo> {
     const data = await window.api.skills.update(payload)
     return data as SkillInfo
   }
 
   /** 删除技能（软删） */
-  async deleteSkill(id: string, profile = 'default'): Promise<void> {
+  async deleteSkill(id: string, profile: string): Promise<void> {
     await window.api.skills.delete(id, profile)
   }
 
@@ -73,18 +75,18 @@ export class SkillsApi {
     return { success: false, error: '本地客户端无官方技能市场' }
   }
 
-  async activate(skillId: string, profile = 'default'): Promise<ApiResponse> {
+  async activate(skillId: string, profile: string): Promise<ApiResponse> {
     try {
-      await window.api.skills.activate(skillId, profile ?? 'default')
+      await window.api.skills.activate(skillId, profile)
       return { success: true, data: null }
     } catch (e) {
       return { success: false, error: (e as Error).message }
     }
   }
 
-  async deactivate(skillId: string, profile = 'default'): Promise<ApiResponse> {
+  async deactivate(skillId: string, profile: string): Promise<ApiResponse> {
     try {
-      await window.api.skills.deactivate(skillId, profile ?? 'default')
+      await window.api.skills.deactivate(skillId, profile)
       return { success: true, data: null }
     } catch (e) {
       return { success: false, error: (e as Error).message }
