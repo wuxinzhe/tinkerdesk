@@ -2,6 +2,8 @@
    HarmonyOS Sans — 华为鸿蒙字体
    可免费商用（SIL Open Font License）
    来源: https://github.com/IKKI2000/harmonyos-fonts
+   本地化：2026-08-09 下载至 public/fonts（CSP font-src 'self' 允许，
+   离线可用，不依赖 CDN）
    ═══════════════════════════════════════════════ */
 
 @font-face {
@@ -9,7 +11,7 @@
   font-weight: 300;
   font-style: normal;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Light.woff2') format('woff2');
+  src: url('/fonts/HarmonyOS_Sans_SC_Light.woff2') format('woff2');
 }
 
 @font-face {
@@ -17,7 +19,7 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.woff2') format('woff2');
+  src: url('/fonts/HarmonyOS_Sans_SC_Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -25,7 +27,7 @@
   font-weight: 500;
   font-style: normal;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Medium.woff2') format('woff2');
+  src: url('/fonts/HarmonyOS_Sans_SC_Medium.woff2') format('woff2');
 }
 
 @font-face {
@@ -33,7 +35,7 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
+  src: url('/fonts/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -41,5 +43,5 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@main/fonts/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
+  src: url('/fonts/HarmonyOS_Sans_SC_Bold.woff2') format('woff2');
 }
