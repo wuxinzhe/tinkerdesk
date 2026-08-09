@@ -12,6 +12,7 @@ import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
 import { ROLE_SYSTEM, ROLE_USER, ROLE_ASSISTANT, ROLE_APPROVAL, ROLE_TOOL } from '../core/constants'
 import { STATUS_APPROVED, STATUS_REJECTED, CONV_COMPLETED } from '../core/constants'
+import { nowDb } from '../utils/time'
 import {
   MSG_TYPE_USER, MSG_TYPE_ASSISTANT_TEXT, MSG_TYPE_ASSISTANT_TOOL_CALL,
   MSG_TYPE_ASSISTANT_HYBRID, MSG_TYPE_ASSISTANT_THINKING, MSG_TYPE_TOOL_RESULT,
@@ -46,6 +47,7 @@ export class MessageFactory {
       interactionStatus: '',
       messageType: MSG_TYPE_USER,
       deleted: false,
+      createdAt: nowDb(),
     }
   }
 
@@ -70,6 +72,7 @@ export class MessageFactory {
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_TEXT,
       deleted: false,
+      createdAt: nowDb(),
       ...usage,
     }
   }
@@ -100,6 +103,7 @@ export class MessageFactory {
       // 文本 + 工具混合：content 非空时标记 assistant_hybrid（否则纯工具轮次 assistant_tool_call）
       messageType: text ? MSG_TYPE_ASSISTANT_HYBRID : MSG_TYPE_ASSISTANT_TOOL_CALL,
       deleted: false,
+      createdAt: nowDb(),
     }
   }
 
@@ -118,6 +122,7 @@ export class MessageFactory {
       interactionStatus: '',
       messageType: MSG_TYPE_ASSISTANT_THINKING,
       deleted: false,
+      createdAt: nowDb(),
     }
   }
 
@@ -147,6 +152,7 @@ export class MessageFactory {
       reasoningContent: '',
       finishReason: FINISH_COMPLETE,
       deleted: false,
+      createdAt: nowDb(),
     }
   }
 
@@ -165,6 +171,7 @@ export class MessageFactory {
       interactionStatus: '',
       messageType: MSG_TYPE_TOOL_RESULT,
       deleted: false,
+      createdAt: nowDb(),
     }
   }
 }
@@ -273,9 +280,13 @@ export class MessageService {
       return [summary, ...history.filter(inContext).map(entityToApiMessage), ...current.filter(inContext).map(entityToApiMessage)]
     }
 
-    const all = [...history.filter(inContext), ...current.filter(inContext)]
-    all.sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0))
-    return all.map(entityToApiMessage)
+    // 排序：历史按时间升序；暂存（当前轮新消息）无条件排最后——
+    // 暂存消息 createdAt 可能为空（builder 未设），空串排序会排到最前，
+    // 导致新消息被 136K 历史淹没、LLM 误以为没有新输入（延续上一轮话题）
+    const historySorted = history
+      .filter(inContext)
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || (a.id ?? 0) - (b.id ?? 0))
+    return [...historySorted.map(entityToApiMessage), ...current.filter(inContext).map(entityToApiMessage)]
   }
 
   /** 对话完成：暂存消息批量落库，清理暂存；返回该轮最后一条 assistant 消息的 prompt_tokens（当前上下文总量） */
@@ -384,6 +395,7 @@ export class MessageService {
       interactionStatus: '',
       messageType: MSG_TYPE_SYSTEM_SUMMARY,
       deleted: false,
+      createdAt: nowDb(),
     })
   }
 }

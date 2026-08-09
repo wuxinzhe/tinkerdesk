@@ -6,6 +6,7 @@
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
 import { getDatabase } from './database'
+import { nowDb } from '../utils/time'
 import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
 import { STATUS_PENDING, STATUS_TIMED_OUT } from '../core/constants'
 
@@ -80,11 +81,14 @@ export class MessageRepository {
     const stmt = db.prepare(
       `INSERT INTO messages (session_id, conversation_id, profile, role,
           content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
-          interaction_status, message_type, deleted, prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          interaction_status, message_type, deleted, created_at, updated_at,
+          prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     let count = 0
     for (const e of entities) {
+      // 显式写时间：统一走 nowDb 格式（不依赖 SQLite 隐式 DEFAULT），createdAt 缺省兜底
+      const now = e.createdAt ?? nowDb()
       stmt.run(
         e.sessionId,
         e.conversationId,
@@ -99,6 +103,8 @@ export class MessageRepository {
         e.interactionStatus ?? '',
         e.messageType ?? '',
         e.deleted ? 1 : 0,
+        now,
+        now,
         e.promptTokens ?? 0,
         e.completionTokens ?? 0,
         e.cacheReadTokens ?? 0,

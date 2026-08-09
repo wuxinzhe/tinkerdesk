@@ -6,7 +6,7 @@
  * 行类型（ToolRegistryRow/McpServerRow）定义集中在 ./types.ts。
  */
 import { getDatabase } from './database'
-import { nowIso } from '../utils/time'
+import { nowDb } from '../utils/time'
 import type { ToolRegistryRow, McpServerRow, McpToolRow } from './types'
 
 /** 工具注册中心仓库 */
@@ -20,7 +20,7 @@ export class ToolCenterRepository {
     const stmt = db.prepare(
       'INSERT INTO tool_registry (id, source, available, reason, schema_json, checked_at) VALUES (?, ?, ?, ?, ?, ?)'
     )
-    const now = nowIso()
+    const now = nowDb()
     for (const t of tools) {
       stmt.run(t.id, t.source, t.available ? 1 : 0, t.reason ?? null, JSON.stringify(t.schema), now)
     }
@@ -51,7 +51,7 @@ export class ToolCenterRepository {
     const stmt = db.prepare(
       'INSERT INTO mcp_servers (name, transport, command, args_json, url, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    const now = nowIso()
+    const now = nowDb()
     for (const s of servers) {
       stmt.run(s.name, s.transport, s.command ?? null, JSON.stringify(s.args ?? []), s.url ?? null, s.enabled ? 1 : 0, now, now)
     }
@@ -78,7 +78,7 @@ export class ToolCenterRepository {
   /** 添加/更新单个 MCP 服务器（保留 created_at） */
   addMcpServer(server: {name: string; transport: string; command?: string | null; args?: string[]; url?: string | null; enabled: boolean}): void {
     const db = getDatabase()
-    const now = nowIso()
+    const now = nowDb()
     db.prepare(
       `INSERT OR REPLACE INTO mcp_servers (name, transport, command, args_json, url, enabled, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM mcp_servers WHERE name = ?), ?), ?)`
@@ -100,7 +100,7 @@ export class ToolCenterRepository {
     const stmt = db.prepare(
       'INSERT INTO mcp_tools (name, server_name, tool_name, description, input_schema, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     )
-    const now = nowIso()
+    const now = nowDb()
     for (const t of tools) {
       stmt.run(t.name, t.serverName, t.toolName, t.description, JSON.stringify(t.inputSchema), 1, now, now)
     }
