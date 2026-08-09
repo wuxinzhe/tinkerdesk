@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { SessionService } from '../service/session-service'
 import { MemoryStore } from '../service/memory-store'
 import type { AgentConfigService } from '../service/agent-config-service'
@@ -46,15 +47,15 @@ export class SessionController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('session:list', (_event, payload) => this.listSessions(payload))
-    ipcMain.handle('session:create', (_event, payload) => this.createSession(payload))
-    ipcMain.handle('session:update', (_event, payload) => this.renameSession(payload))
-    ipcMain.handle('session:set-reasoning-depth', (_event, payload) => this.setReasoningDepth(payload))
-    ipcMain.handle('session:get-reasoning-depth', (_event, payload) => this.getReasoningDepth(payload))
-    ipcMain.handle('session:getYolo', (_event, payload) => this.getYolo(payload))
-    ipcMain.handle('session:toggleYolo', (_event, payload) => this.toggleYolo(payload))
-    ipcMain.handle('session:stats', (_event, payload) => this.getStats(payload))
-    ipcMain.handle('dashboard:get', (_event, payload) => this.getDashboard(payload))
+    handleTrusted('session:list', (_event, payload) => this.listSessions(payload))
+    handleTrusted('session:create', (_event, payload) => this.createSession(payload))
+    handleTrusted('session:update', (_event, payload) => this.renameSession(payload))
+    handleTrusted('session:set-reasoning-depth', (_event, payload) => this.setReasoningDepth(payload))
+    handleTrusted('session:get-reasoning-depth', (_event, payload) => this.getReasoningDepth(payload))
+    handleTrusted('session:getYolo', (_event, payload) => this.getYolo(payload))
+    handleTrusted('session:toggleYolo', (_event, payload) => this.toggleYolo(payload))
+    handleTrusted('session:stats', (_event, payload) => this.getStats(payload))
+    handleTrusted('dashboard:get', (_event, payload) => this.getDashboard(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -8,7 +8,8 @@
  * 分层：controller → WebProvider（工具域 service 层）。
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { WebProvider, WebInterfaceId, WebProviderInfo, WebProviderConfig } from '../service/web-provider'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -40,8 +41,8 @@ export class WebProviderController {
   constructor(private readonly webProviderService: WebProvider) { }
 
   register(): void {
-    ipcMain.handle('web-provider:list', (_event, payload) => this.listProviders(payload))
-    ipcMain.handle('web-provider:set', (_event, payload) => this.setProvider(payload))
+    handleTrusted('web-provider:list', (_event, payload) => this.listProviders(payload))
+    handleTrusted('web-provider:set', (_event, payload) => this.setProvider(payload))
   }
 
   private listProviders(payload: WebProviderListDTO): ApiResponse<WebProviderListVO> {

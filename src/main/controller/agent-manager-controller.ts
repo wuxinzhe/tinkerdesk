@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { AgentService } from '../service/agent-service'
 import { MemoryStore } from '../service/memory-store'
 import type { AgentConfigService } from '../service/agent-config-service'
@@ -59,11 +60,11 @@ export class AgentCrudController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('agent-cfg:list', (_event, payload) => this.listAgents(payload))
-    ipcMain.handle('agent-cfg:create', (_event, payload) => this.createAgent(payload))
-    ipcMain.handle('agent-cfg:get', (_event, profile) => this.getAgent(profile))
-    ipcMain.handle('agent-cfg:update', (_event, payload) => this.updateAgent(payload))
-    ipcMain.handle('agent-cfg:delete', (_event, profile) => this.deleteAgent(profile))
+    handleTrusted('agent-cfg:list', (_event, payload) => this.listAgents(payload))
+    handleTrusted('agent-cfg:create', (_event, payload) => this.createAgent(payload))
+    handleTrusted('agent-cfg:get', (_event, profile) => this.getAgent(profile))
+    handleTrusted('agent-cfg:update', (_event, payload) => this.updateAgent(payload))
+    handleTrusted('agent-cfg:delete', (_event, profile) => this.deleteAgent(profile))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -12,7 +12,8 @@
  *
  * 流式 token 通过 agent:token 事件推送；最终响应以 MessageVO 返回（同源）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import { TinkerAgent } from '../core/loop/tinker-agent'
 import type { TinkerAgentOptions } from '../core/loop/types'
 import type { SessionContextFactory } from '../service/session-context-factory'
@@ -51,13 +52,13 @@ export class AgentController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('agent:chat', (event, req) => this.sendChatMessage(event, req))
-    ipcMain.handle('agent:toolResult', (_event, payload) => this.submitToolResult(_event, payload))
-    ipcMain.handle('agent:approval', (_event, payload) => this.respondApproval(_event, payload))
-    ipcMain.handle('agent:autoApprove', (_event, payload) => this.autoApprove(_event, payload))
-    ipcMain.handle('agent:revoke', (_event, payload) => this.revokeChatMessage(_event, payload))
-    ipcMain.handle('agent:interrupt', (_event, payload) => this.interruptSession(_event, payload))
-    ipcMain.handle('agent:clearAll', (_event, payload) => this.clearSessionState(_event, payload))
+    handleTrusted('agent:chat', (event, req) => this.sendChatMessage(event, req))
+    handleTrusted('agent:toolResult', (_event, payload) => this.submitToolResult(_event, payload))
+    handleTrusted('agent:approval', (_event, payload) => this.respondApproval(_event, payload))
+    handleTrusted('agent:autoApprove', (_event, payload) => this.autoApprove(_event, payload))
+    handleTrusted('agent:revoke', (_event, payload) => this.revokeChatMessage(_event, payload))
+    handleTrusted('agent:interrupt', (_event, payload) => this.interruptSession(_event, payload))
+    handleTrusted('agent:clearAll', (_event, payload) => this.clearSessionState(_event, payload))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -9,7 +9,8 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { dialog, BrowserWindow} from 'electron'
+import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { PluginManager } from '../core/plugin/plugin-manager'
@@ -32,29 +33,29 @@ export class PluginController {
   ) {}
 
   register(): void {
-    ipcMain.handle('plugin:list', () => this.listPlugins())
-    ipcMain.handle('plugin:toggle', (_event, payload: { id: string; enabled: boolean }) =>
+    handleTrusted('plugin:list', () => this.listPlugins())
+    handleTrusted('plugin:toggle', (_event, payload: { id: string; enabled: boolean }) =>
       this.toggle(payload),
     )
-    ipcMain.handle('plugin:check', (_event, payload: { id: string }) => this.check(payload))
-    ipcMain.handle('plugin:get-status', (_event, payload: { id: string }) =>
+    handleTrusted('plugin:check', (_event, payload: { id: string }) => this.check(payload))
+    handleTrusted('plugin:get-status', (_event, payload: { id: string }) =>
       this.getPluginStatus(payload),
     )
-    ipcMain.handle('plugin:get-schema', (_event, payload: { id: string }) =>
+    handleTrusted('plugin:get-schema', (_event, payload: { id: string }) =>
       this.getPluginSchema(payload),
     )
-    ipcMain.handle('plugin:pick-file', (_event, payload: { filters?: { name: string; extensions: string[] }[] }) =>
+    handleTrusted('plugin:pick-file', (_event, payload: { filters?: { name: string; extensions: string[] }[] }) =>
       this.pickFile(payload),
     )
-    ipcMain.handle('plugin:install', (_event, payload: { path: string }) => this.install(payload))
-    ipcMain.handle('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
-    ipcMain.handle('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
+    handleTrusted('plugin:install', (_event, payload: { path: string }) => this.install(payload))
+    handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
+    handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
     )
-    ipcMain.handle('plugin:get-config', (_event, payload: { id: string }) =>
+    handleTrusted('plugin:get-config', (_event, payload: { id: string }) =>
       this.getPluginConfig(payload),
     )
-    ipcMain.handle('plugin:save-config', (_event, payload: { id: string; patch: Record<string, unknown> }) =>
+    handleTrusted('plugin:save-config', (_event, payload: { id: string; patch: Record<string, unknown> }) =>
       this.savePluginConfig(payload),
     )
   }

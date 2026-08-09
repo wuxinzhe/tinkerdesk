@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { ToolManager } from '../core/tool/tool-manager'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -20,8 +21,8 @@ export class ToolController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('tool-config:list', (_event, payload) => this.listToolConfigs(payload))
-    ipcMain.handle('tool-config:toggle', (_event, payload) => this.toggleToolConfig(payload))
+    handleTrusted('tool-config:list', (_event, payload) => this.listToolConfigs(payload))
+    handleTrusted('tool-config:toggle', (_event, payload) => this.toggleToolConfig(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

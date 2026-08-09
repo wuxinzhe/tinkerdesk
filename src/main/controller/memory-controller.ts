@@ -5,7 +5,8 @@
  * 数据源：MemoryStore（文件系统 userData/memory/{target}-{profile}.json——entries: string[]）。
  * target: 'memory'（Agent 记忆）或 'user'（用户画像记忆）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import { MemoryStore } from '../service/memory-store'
 import { ok, fail, type ApiResponse } from './api-response'
 
@@ -22,11 +23,11 @@ export class MemoryController {
   constructor(private readonly memoryStore: MemoryStore) {}
 
   register(): void {
-    ipcMain.handle('memory:list', (_event, payload: MemoryOpPayload) => this.listMemory(payload))
-    ipcMain.handle('memory:add', (_event, payload: MemoryOpPayload) => this.addMemory(payload))
-    ipcMain.handle('memory:update', (_event, payload: MemoryOpPayload) => this.updateMemory(payload))
-    ipcMain.handle('memory:remove', (_event, payload: MemoryOpPayload) => this.removeMemory(payload))
-    ipcMain.handle('memory:reorder', (_event, payload: MemoryOpPayload) => this.reorderMemory(payload))
+    handleTrusted('memory:list', (_event, payload: MemoryOpPayload) => this.listMemory(payload))
+    handleTrusted('memory:add', (_event, payload: MemoryOpPayload) => this.addMemory(payload))
+    handleTrusted('memory:update', (_event, payload: MemoryOpPayload) => this.updateMemory(payload))
+    handleTrusted('memory:remove', (_event, payload: MemoryOpPayload) => this.removeMemory(payload))
+    handleTrusted('memory:reorder', (_event, payload: MemoryOpPayload) => this.reorderMemory(payload))
   }
 
   /** 读取记忆条目列表 */

@@ -7,7 +7,8 @@
  * Nginx 反向代理，后续切换存储不需改客户端。
  */
 import { autoUpdater } from 'electron-updater'
-import { BrowserWindow, ipcMain, app } from 'electron'
+import { handleTrusted } from './security/ipc-guard'
+import { BrowserWindow, app} from 'electron'
 
 // ── 常量 ──
 
@@ -83,7 +84,7 @@ export function initUpdater(): void {
 
 export function registerUpdaterHandlers(): void {
   // 检查更新
-  ipcMain.handle('update:check', async (_event, manual: boolean = false): Promise<{ok: boolean; error?: string}> => {
+  handleTrusted('update:check', async (_event, manual: boolean = false): Promise<{ok: boolean; error?: string}> => {
     try {
       log(`检查更新 (manual=${manual})`)
       autoUpdater.autoDownload = !manual // 手动检查时只通知不下发
@@ -95,7 +96,7 @@ export function registerUpdaterHandlers(): void {
   })
 
   // 安装更新
-  ipcMain.handle('update:install', async (): Promise<{ok: boolean; error?: string}> => {
+  handleTrusted('update:install', async (): Promise<{ok: boolean; error?: string}> => {
     try {
       log('安装更新...')
       setImmediate(() => {
@@ -108,7 +109,7 @@ export function registerUpdaterHandlers(): void {
   })
 
   // 获取当前版本
-  ipcMain.handle('app:version', async (): Promise<{ok: boolean; error?: string; data?: {version: string}}> => {
+  handleTrusted('app:version', async (): Promise<{ok: boolean; error?: string; data?: {version: string}}> => {
     return { ok: true, data: { version: app.getVersion() } }
   })
 }

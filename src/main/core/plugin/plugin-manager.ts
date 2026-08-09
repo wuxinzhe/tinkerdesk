@@ -10,7 +10,8 @@
  *
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */
-import { app, ipcMain } from 'electron'
+import { app} from 'electron'
+import { handleTrusted } from '../../security/ipc-guard'
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
@@ -305,7 +306,7 @@ export class PluginManager {
       return
     }
     this.ipcHandlers.set(full, handler)
-    ipcMain.handle(full, async (_event, payload: unknown) => {
+    handleTrusted(full, async (_event, payload: unknown) => {
       try {
         return { success: true, data: await handler(payload) }
       } catch (e) {

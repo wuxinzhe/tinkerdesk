@@ -14,7 +14,8 @@
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  * IPC 前缀：model:*
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import { SCENE_CHAT } from '../core/llm/types'
 import type { UserCustomModelService } from '../service/user-custom-model-service'
 import type { SceneModelService } from '../service/scene-model-service'
@@ -47,22 +48,22 @@ export class ModelController {
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
     // ── 自定义模型 CRUD（profile 必传）──
-    ipcMain.handle('model:list', (_event, payload) => this.listCustomModels(payload))
-    ipcMain.handle('model:get', (_event, payload) => this.getCustomModel(payload))
-    ipcMain.handle('model:create', (_event, payload) => this.createCustomModel(payload))
-    ipcMain.handle('model:update', (_event, payload) => this.updateCustomModel(payload))
-    ipcMain.handle('model:delete', (_event, payload) => this.deleteCustomModel(payload))
-    ipcMain.handle('model:test', (_event, payload) => this.testCustomModel(payload))
+    handleTrusted('model:list', (_event, payload) => this.listCustomModels(payload))
+    handleTrusted('model:get', (_event, payload) => this.getCustomModel(payload))
+    handleTrusted('model:create', (_event, payload) => this.createCustomModel(payload))
+    handleTrusted('model:update', (_event, payload) => this.updateCustomModel(payload))
+    handleTrusted('model:delete', (_event, payload) => this.deleteCustomModel(payload))
+    handleTrusted('model:test', (_event, payload) => this.testCustomModel(payload))
     // ── 系统供应商（全局，无 profile）──
-    ipcMain.handle('model:list-providers', () => this.listProviders())
-    ipcMain.handle('model:get-provider', (_event, id) => this.getProvider(id))
-    ipcMain.handle('model:fetch-models', (_event, input) => this.fetchProviderModels(input))
+    handleTrusted('model:list-providers', () => this.listProviders())
+    handleTrusted('model:get-provider', (_event, id) => this.getProvider(id))
+    handleTrusted('model:fetch-models', (_event, input) => this.fetchProviderModels(input))
     // ── 场景模型绑定（profile 必传）──
-    ipcMain.handle('model:list-scenes', (_event, payload) => this.listSceneBindings(payload))
-    ipcMain.handle('model:bind-scene', (_event, payload) => this.bindSceneModel(payload))
-    ipcMain.handle('model:update-scene', (_event, payload) => this.updateSceneBinding(payload))
-    ipcMain.handle('model:reorder-scenes', (_event, payload) => this.reorderSceneBindings(payload))
-    ipcMain.handle('model:unbind-scene', (_event, payload) => this.unbindSceneModel(payload))
+    handleTrusted('model:list-scenes', (_event, payload) => this.listSceneBindings(payload))
+    handleTrusted('model:bind-scene', (_event, payload) => this.bindSceneModel(payload))
+    handleTrusted('model:update-scene', (_event, payload) => this.updateSceneBinding(payload))
+    handleTrusted('model:reorder-scenes', (_event, payload) => this.reorderSceneBindings(payload))
+    handleTrusted('model:unbind-scene', (_event, payload) => this.unbindSceneModel(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

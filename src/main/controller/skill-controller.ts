@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { dialog, BrowserWindow} from 'electron'
+import { handleTrusted } from '../security/ipc-guard'
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
 import { dirname, join, relative, basename } from 'path'
 import type { PrivateSkillService } from '../service/private-skill-service'
@@ -76,20 +77,20 @@ export class SkillController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('skill:list', (_event, payload) => this.listSkills(payload))
-    ipcMain.handle('skill:byName', (_event, payload) => this.getSkillByName(payload))
-    ipcMain.handle('skill:get', (_event, payload) => this.getSkill(payload))
-    ipcMain.handle('skill:deactivate', (_event, payload) => this.deactivateSkill(payload))
-    ipcMain.handle('skill:activate', (_event, payload) => this.activateSkill(payload))
-    ipcMain.handle('skill:categories', () => this.listSkillCategories())
-    ipcMain.handle('skill:install', (_event, payload) => this.installSkill(payload))
-    ipcMain.handle('skill:pick-install-file', () => this.pickInstallFile())
-    ipcMain.handle('skill:update', (_event, payload) => this.updateSkill(payload))
-    ipcMain.handle('skill:delete', (_event, payload) => this.deleteSkill(payload))
-    ipcMain.handle('skill:file-list', (_event, payload) => this.listSkillFiles(payload))
-    ipcMain.handle('skill:file-save', (_event, payload) => this.saveSkillFile(payload))
-    ipcMain.handle('skill:file-update', (_event, payload) => this.updateSkillFile(payload))
-    ipcMain.handle('skill:file-delete', (_event, payload) => this.deleteSkillFile(payload))
+    handleTrusted('skill:list', (_event, payload) => this.listSkills(payload))
+    handleTrusted('skill:byName', (_event, payload) => this.getSkillByName(payload))
+    handleTrusted('skill:get', (_event, payload) => this.getSkill(payload))
+    handleTrusted('skill:deactivate', (_event, payload) => this.deactivateSkill(payload))
+    handleTrusted('skill:activate', (_event, payload) => this.activateSkill(payload))
+    handleTrusted('skill:categories', () => this.listSkillCategories())
+    handleTrusted('skill:install', (_event, payload) => this.installSkill(payload))
+    handleTrusted('skill:pick-install-file', () => this.pickInstallFile())
+    handleTrusted('skill:update', (_event, payload) => this.updateSkill(payload))
+    handleTrusted('skill:delete', (_event, payload) => this.deleteSkill(payload))
+    handleTrusted('skill:file-list', (_event, payload) => this.listSkillFiles(payload))
+    handleTrusted('skill:file-save', (_event, payload) => this.saveSkillFile(payload))
+    handleTrusted('skill:file-update', (_event, payload) => this.updateSkillFile(payload))
+    handleTrusted('skill:file-delete', (_event, payload) => this.deleteSkillFile(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

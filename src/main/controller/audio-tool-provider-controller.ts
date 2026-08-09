@@ -6,7 +6,8 @@
  *   audio-tool-provider:list  → 某接口的插件 provider 列表 + 内置 Edge + 激活配置
  *   audio-tool-provider:set   → 设置激活 provider / 回退开关
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { AudioToolProvider, AudioToolInterfaceId, AudioToolProviderInfo, AudioToolProviderConfig } from '../service/audio-tool-provider'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -38,8 +39,8 @@ export class AudioToolProviderController {
   constructor(private readonly audioToolProvider: AudioToolProvider) { }
 
   register(): void {
-    ipcMain.handle('audio-tool-provider:list', (_event, payload) => this.listProviders(payload))
-    ipcMain.handle('audio-tool-provider:set', (_event, payload) => this.setProvider(payload))
+    handleTrusted('audio-tool-provider:list', (_event, payload) => this.listProviders(payload))
+    handleTrusted('audio-tool-provider:set', (_event, payload) => this.setProvider(payload))
   }
 
   private listProviders(payload: AudioToolProviderListDTO): ApiResponse<AudioToolProviderListVO> {

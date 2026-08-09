@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { MessageService } from '../service/message-service'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -20,9 +21,9 @@ export class MessageController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('message:bySession', (_event, payload) => this.listSessionMessages(payload))
-    ipcMain.handle('message:byConversation', (_event, payload) => this.listConversationMessages(payload))
-    ipcMain.handle('message:deleteConversation', (_event, payload) => this.deleteConversationMessages(payload))
+    handleTrusted('message:bySession', (_event, payload) => this.listSessionMessages(payload))
+    handleTrusted('message:byConversation', (_event, payload) => this.listConversationMessages(payload))
+    handleTrusted('message:deleteConversation', (_event, payload) => this.deleteConversationMessages(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

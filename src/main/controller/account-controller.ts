@@ -11,7 +11,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { AccountService } from '../service/account-service'
 import type { AgentInfoDTO, InitRequestDTO, InitStatusResponseDTO, StepStatusDTO } from '../service/types'
 import { ok, fail } from './api-response'
@@ -26,12 +27,12 @@ export class AccountController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('account:init-status', () => this.getInitStatus())
-    ipcMain.handle('account:init-step-status', (_event, input) => this.checkStepStatus(input))
-    ipcMain.handle('account:init-step1', (_event, input) => this.runInitStep1(input))
-    ipcMain.handle('account:init-step2', (_event, input) => this.saveAgentConfig(input))
-    ipcMain.handle('account:init-step3', (_event, input) => this.createDefaultModel(input))
-    ipcMain.handle('account:init-step4', (_event, input) => this.bindMainSceneModel(input))
+    handleTrusted('account:init-status', () => this.getInitStatus())
+    handleTrusted('account:init-step-status', (_event, input) => this.checkStepStatus(input))
+    handleTrusted('account:init-step1', (_event, input) => this.runInitStep1(input))
+    handleTrusted('account:init-step2', (_event, input) => this.saveAgentConfig(input))
+    handleTrusted('account:init-step3', (_event, input) => this.createDefaultModel(input))
+    handleTrusted('account:init-step4', (_event, input) => this.bindMainSceneModel(input))
   }
 
   // ══════════════════════════════════════════════════════════════

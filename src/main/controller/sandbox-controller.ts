@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { SandboxWhitelistService } from '../service/sandbox-whitelist-service'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -21,13 +22,13 @@ export class SandboxController {
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
     // ── URL 白名单 ──
-    ipcMain.handle('sandbox:listUrl', (_event, profile) => this.listUrlWhitelist(profile))
-    ipcMain.handle('sandbox:addUrl', (_event, payload) => this.addUrlWhitelist(payload))
-    ipcMain.handle('sandbox:deleteUrl', (_event, payload) => this.deleteUrlWhitelist(payload))
+    handleTrusted('sandbox:listUrl', (_event, profile) => this.listUrlWhitelist(profile))
+    handleTrusted('sandbox:addUrl', (_event, payload) => this.addUrlWhitelist(payload))
+    handleTrusted('sandbox:deleteUrl', (_event, payload) => this.deleteUrlWhitelist(payload))
     // ── 路径白名单 ──
-    ipcMain.handle('sandbox:listPath', (_event, profile) => this.listPathWhitelist(profile))
-    ipcMain.handle('sandbox:addPath', (_event, payload) => this.addPathWhitelist(payload))
-    ipcMain.handle('sandbox:deletePath', (_event, payload) => this.deletePathWhitelist(payload))
+    handleTrusted('sandbox:listPath', (_event, profile) => this.listPathWhitelist(profile))
+    handleTrusted('sandbox:addPath', (_event, payload) => this.addPathWhitelist(payload))
+    handleTrusted('sandbox:deletePath', (_event, payload) => this.deletePathWhitelist(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

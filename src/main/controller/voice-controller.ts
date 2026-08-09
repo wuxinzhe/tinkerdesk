@@ -9,7 +9,8 @@
  *   voice:stt:transcribe → { samples: Float32Array } → { text } 转发当前 STT provider
  *   voice:tts:speak      → { text } → { audio } 转发当前 TTS provider
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import { VoiceProviderService, type VoiceConfig, type VoiceProviderInfo } from '../service/voice-provider-service'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -25,18 +26,18 @@ export class VoiceController {
   constructor(private readonly voiceService: VoiceProviderService) {}
 
   register(): void {
-    ipcMain.handle('voice:providers', () => this.listProviders())
-    ipcMain.handle('voice:get-config', () => this.getConfig())
-    ipcMain.handle('voice:set-provider', (_event, payload: Partial<VoiceConfig>) =>
+    handleTrusted('voice:providers', () => this.listProviders())
+    handleTrusted('voice:get-config', () => this.getConfig())
+    handleTrusted('voice:set-provider', (_event, payload: Partial<VoiceConfig>) =>
       this.setProvider(payload),
     )
-    ipcMain.handle('voice:provider-ready', (_event, payload: { pluginId: string }) =>
+    handleTrusted('voice:provider-ready', (_event, payload: { pluginId: string }) =>
       this.providerReady(payload),
     )
-    ipcMain.handle('voice:stt:transcribe', (_event, payload: { samples: Float32Array }) =>
+    handleTrusted('voice:stt:transcribe', (_event, payload: { samples: Float32Array }) =>
       this.transcribe(payload),
     )
-    ipcMain.handle('voice:tts:speak', (_event, payload: { text: string }) =>
+    handleTrusted('voice:tts:speak', (_event, payload: { text: string }) =>
       this.speak(payload),
     )
   }

@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { AgentConfigService } from '../service/agent-config-service'
 import type { AgentConfig } from '../core/loop/types'
 import { ok, fail } from './api-response'
@@ -20,9 +21,9 @@ export class AgentConfigController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('agent-config:get', (_event, profile) => this.getAgentConfig(profile))
-    ipcMain.handle('agent-config:update', (_event, payload) => this.updateAgentConfig(payload))
-    ipcMain.handle('agent-config:reset', (_event, profile) => this.resetAgentConfig(profile))
+    handleTrusted('agent-config:get', (_event, profile) => this.getAgentConfig(profile))
+    handleTrusted('agent-config:update', (_event, payload) => this.updateAgentConfig(payload))
+    handleTrusted('agent-config:reset', (_event, profile) => this.resetAgentConfig(profile))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -7,7 +7,8 @@
  * 表含 profile 字段 → 全链路 profile 必传限定（controller → service → repository）。
  * IPC 前缀：prompt-module:*
  */
-import {ipcMain} from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type {PromptService} from '../service/prompt-service'
 import type {UserPromptModuleEntity} from '../repository/types'
 import type {ApiResponse} from './api-response'
@@ -20,11 +21,11 @@ export class PromptModuleController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立方法） */
   register(): void {
-    ipcMain.handle('prompt-module:list', (_event, profile?: string) => this.listPromptModules(profile))
-    ipcMain.handle('prompt-module:create', (_event, payload: CreatePromptModuleRequestDTO) => this.createPromptModule(payload))
-    ipcMain.handle('prompt-module:update', (_event, payload: UpdatePromptModuleRequestDTO) => this.updatePromptModule(payload))
-    ipcMain.handle('prompt-module:delete', (_event, payload: PromptModuleIdRequestDTO) => this.deletePromptModule(payload))
-    ipcMain.handle('prompt-module:toggle', (_event, payload: TogglePromptModuleRequestDTO) => this.togglePromptModule(payload))
+    handleTrusted('prompt-module:list', (_event, profile?: string) => this.listPromptModules(profile))
+    handleTrusted('prompt-module:create', (_event, payload: CreatePromptModuleRequestDTO) => this.createPromptModule(payload))
+    handleTrusted('prompt-module:update', (_event, payload: UpdatePromptModuleRequestDTO) => this.updatePromptModule(payload))
+    handleTrusted('prompt-module:delete', (_event, payload: PromptModuleIdRequestDTO) => this.deletePromptModule(payload))
+    handleTrusted('prompt-module:toggle', (_event, payload: TogglePromptModuleRequestDTO) => this.togglePromptModule(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain, Menu, session } from 'electron'
+import { app, BrowserWindow, Menu, session} from 'electron'
+import { handleTrusted } from './security/ipc-guard'
 import { join } from 'path'
 import { initLogger } from './utils/logger'
 import { initDatabase, closeDatabase } from './repository/database'
@@ -103,17 +104,17 @@ app.whenReady().then(() => {
   new GeneralSettingsController().register()
 
   // ── 窗口控制 IPC ──
-  ipcMain.handle('window:minimize', () => { mainWindow?.minimize() })
-  ipcMain.handle('window:maximize', () => {
+  handleTrusted('window:minimize', () => { mainWindow?.minimize() })
+  handleTrusted('window:maximize', () => {
     if (mainWindow?.isMaximized()) { mainWindow.unmaximize() } else { mainWindow?.maximize() }
   })
-  ipcMain.handle('window:close', () => { mainWindow?.close() })
-  ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+  handleTrusted('window:close', () => { mainWindow?.close() })
+  handleTrusted('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
 
   // ── 专注模式（TitleBar 切换——临时突破 minWidth 768） ──
   // 点击进入：最小宽 375 + 窗口 375×812（窄窗聚焦）；再点恢复：minWidth 768 + 1200×800
   let phoneModeActive = false
-  ipcMain.handle('window:phoneMode', () => {
+  handleTrusted('window:phoneMode', () => {
     phoneModeActive = !phoneModeActive
     if (phoneModeActive) {
       mainWindow?.setMinimumSize(375, 600)

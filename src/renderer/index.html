@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Showing Ai</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <!--
+    CSP（安全加固）：限制 renderer 资源来源——XSS 注入的外链脚本/图片/请求全部被拦。
+    - script 'self'：只允许本地打包脚本（dev 的 /@vite/client 同源）
+    - style 'unsafe-inline'：Vue/naive-ui 运行时样式注入
+    - connect ws://localhost:* http://localhost:*：仅 dev HMR；prod 无 renderer 网络请求
+  -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:*;">
 </head>
 <body>
   <div id="app"></div>

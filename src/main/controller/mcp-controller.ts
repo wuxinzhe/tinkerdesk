@@ -8,7 +8,8 @@
  *
  * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import * as nodeOs from 'os'
 import * as nodeFs from 'fs'
 import type { McpToolCenter } from '../core/tool/mcp-tool-center'
@@ -24,13 +25,13 @@ export class McpController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('tool-center:initialize', () => this.initializeToolCenter())
-    ipcMain.handle('tool-center:recheck-mcp', () => this.recheckMcp())
-    ipcMain.handle('tool-center:get-state', () => this.getToolCenterState())
-    ipcMain.handle('tool-center:get-mcp-configs', () => this.listMcpConfigs())
-    ipcMain.handle('tool-center:upsert-mcp-server', (_event, config) => this.upsertMcpServer(config))
-    ipcMain.handle('tool-center:remove-mcp-server', (_event, name) => this.removeMcpServer(name))
-    ipcMain.handle('tool-center:collect-env', () => this.collectClientEnv())
+    handleTrusted('tool-center:initialize', () => this.initializeToolCenter())
+    handleTrusted('tool-center:recheck-mcp', () => this.recheckMcp())
+    handleTrusted('tool-center:get-state', () => this.getToolCenterState())
+    handleTrusted('tool-center:get-mcp-configs', () => this.listMcpConfigs())
+    handleTrusted('tool-center:upsert-mcp-server', (_event, config) => this.upsertMcpServer(config))
+    handleTrusted('tool-center:remove-mcp-server', (_event, name) => this.removeMcpServer(name))
+    handleTrusted('tool-center:collect-env', () => this.collectClientEnv())
   }
 
   // ══════════════════════════════════════════════════════════════

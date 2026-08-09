@@ -6,7 +6,8 @@
  * 分层：controller → service（AgentModeService），不直接访问 registry。
  * IPC 前缀：agent-mode:*
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import type { AgentModeService } from '../service/agent-mode-service'
 import type { ModeInfoDTO, ModeOptionDTO } from '../core/mode/agent-mode'
 import { ok, fail } from './api-response'
@@ -18,10 +19,10 @@ export class AgentModeController {
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
   register(): void {
-    ipcMain.handle('agent-mode:list', () => this.listModes())
-    ipcMain.handle('agent-mode:options', () => this.listModeOptions())
-    ipcMain.handle('agent-mode:get', (_event, payload: { id: string; version: string }) => this.getMode(payload))
-    ipcMain.handle('agent-mode:check', (_event, payload: { profile: string }) => this.checkModeConfig(payload))
+    handleTrusted('agent-mode:list', () => this.listModes())
+    handleTrusted('agent-mode:options', () => this.listModeOptions())
+    handleTrusted('agent-mode:get', (_event, payload: { id: string; version: string }) => this.getMode(payload))
+    handleTrusted('agent-mode:check', (_event, payload: { profile: string }) => this.checkModeConfig(payload))
   }
 
   // ══════════════════════════════════════════════════════════════

@@ -6,7 +6,8 @@
  *   settings:general:set  → 写入单个配置 { key, value }
  *   settings:general:reset → 重置单个配置为默认 { key }
  */
-import { ipcMain } from 'electron'
+
+import { handleTrusted } from '../security/ipc-guard'
 import { getAppSettings, setAppSetting, resetAppSetting } from '../service/general-settings-service'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -20,11 +21,11 @@ function fail(error: string): ApiResult<never> {
 
 export class GeneralSettingsController {
   register(): void {
-    ipcMain.handle('settings:general:get', () => this.get())
-    ipcMain.handle('settings:general:set', (_event, payload: { key: string; value: string }) =>
+    handleTrusted('settings:general:get', () => this.get())
+    handleTrusted('settings:general:set', (_event, payload: { key: string; value: string }) =>
       this.set(payload),
     )
-    ipcMain.handle('settings:general:reset', (_event, payload: { key: string }) =>
+    handleTrusted('settings:general:reset', (_event, payload: { key: string }) =>
       this.reset(payload),
     )
   }
