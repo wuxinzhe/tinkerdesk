@@ -47,6 +47,18 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
 
 /** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder */
 async function installPlugin(kind: 'zip' | 'folder' = 'zip'): Promise<void> {
+  // 安装前知情同意：完全权限提示
+  const ok = await confirm({
+    title: '安装插件',
+    message:
+      kind === 'zip'
+        ? '插件将以完全权限运行（可读写文件、执行命令、访问网络），仅安装你信任的来源。\n\nzip 分发包必须附带 sha256sums.json 哈希清单，校验不通过将被拒绝安装。'
+        : '插件将以完全权限运行（可读写文件、执行命令、访问网络）。\n\n目录安装仅建议用于本地开发调试（不校验哈希清单）。',
+    confirmText: '继续安装',
+    cancelText: '取消',
+    destructive: true,
+  })
+  if (!ok) return
   try {
     const path = await window.api.plugins.pickInstallPackage(kind)
     if (!path) return
@@ -167,6 +179,39 @@ onMounted(() => {
             <div class="plugin-card__desc">
               {{ p.manifest.description || '—' }}
             </div>
+            <div class="plugin-card__meta">
+              <span v-if="p.manifest.author" class="plugin-card__meta-item">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                {{ p.manifest.author }}
+              </span>
+              <span v-if="p.manifest.publisher" class="plugin-card__meta-item">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 00-3-3.87" />
+                  <path d="M16 3.13a4 4 0 010 7.75" />
+                </svg>
+                {{ p.manifest.publisher }}
+              </span>
+              <a
+                v-if="p.manifest.homepage"
+                :href="p.manifest.homepage"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="plugin-card__meta-item plugin-card__meta-link"
+                @click.stop
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                主页
+              </a>
+            </div>
             <div class="plugin-card__caps">
               <span v-for="cap in p.manifest.capabilities ?? []" :key="cap" class="plugin-card__cap">
                 {{ cap }}
@@ -216,11 +261,11 @@ onMounted(() => {
   overflow-y: auto;
 }
 
-/* 头部：标题 + 右侧安装按钮 */
+/* 头部：右侧安装按钮（header 仅按钮组——靠右；菜单 right:0 对齐右缘不超出） */
 .plugin-settings-page__header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
 }
 
@@ -278,6 +323,7 @@ onMounted(() => {
   top: calc(100% + 6px);
   right: 0;
   min-width: 168px;
+  width: max-content;
   padding: 4px;
   background: var(--tk-bg-elevated);
   border: 1px solid var(--tk-border);
@@ -301,6 +347,7 @@ onMounted(() => {
   border-radius: 7px;
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
 }
 
 .plugin-settings-page__install-menu-item:hover {
@@ -417,13 +464,41 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-.plugin-card__caps {
+.plugin-card__meta {
   display: flex;
-  gap: 6px;
-  margin-top: 8px;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
 }
 
+.plugin-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-card__meta-link {
+  color: var(--tk-accent);
+  text-decoration: none;
+}
+
+.plugin-card__meta-link:hover {
+  text-decoration: underline;
+}
+
+.plugin-card__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
 .plugin-card__cap {
   padding: 2px 8px;
   font-size: 11px;

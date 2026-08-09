@@ -14,6 +14,7 @@ import { app} from 'electron'
 import { handleTrusted } from '../../security/ipc-guard'
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
 import { join } from 'path'
+import { createHash } from 'crypto'
 import { execFileSync } from 'child_process'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
@@ -166,6 +167,12 @@ export class PluginManager {
 
     // 加载入口（插件自带依赖，require 解析相对其目录）
     const entryPath = join(dir, manifest.entry)
+    // 清 require 缓存：插件更新/重装时目录内容已覆盖，但 require 同路径会命中旧缓存
+    try {
+      delete require.cache[require.resolve(entryPath)]
+    } catch {
+      // 首次加载无缓存——忽略
+    }
     const entryModule = require(entryPath) as { default?: TinkerPlugin } | TinkerPlugin
     const plugin: TinkerPlugin = (entryModule as { default?: TinkerPlugin }).default ?? (entryModule as TinkerPlugin)
 
@@ -391,6 +398,7 @@ export class PluginManager {
     try {
       let pluginDir: string
       if (stat.isDirectory()) {
+        // 目录安装（本地开发调试）：源码直接可见——不校验哈希清单
         pluginDir = src
       } else if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
         mkdirSync(tmpDir, { recursive: true })
@@ -400,6 +408,8 @@ export class PluginManager {
           throw new Error('zip 内未找到 manifest.json（插件包结构无效）')
         }
         pluginDir = located
+        // 分发 zip：require 前校验 sha256sums.json 哈希清单（防篡改——不匹配直接拒绝）
+        this.verifyHashes(pluginDir)
       } else {
         throw new Error('请选择插件文件夹或 .zip 插件包')
       }
@@ -423,6 +433,44 @@ export class PluginManager {
       // 忽略不可读子目录
     }
     return null
+  }
+
+  /**
+   * 校验插件目录哈希清单（sha256sums.json——分发 zip 必须附带）
+   *
+   * 清单格式：{ "相对路径": "sha256hex", ... }——覆盖包内每个文件（不含清单自身）。
+   * 校验策略：缺失清单 / 清单列出的文件缺失 / 哈希不匹配 → 一律拒绝（防传输损坏与部分篡改）。
+   * 注意：哈希校验防的是「包内文件与清单不一致」——完整防伪需要发布者签名（后续增强）。
+   */
+  private verifyHashes(pluginDir: string): void {
+    const sumsFile = join(pluginDir, 'sha256sums.json')
+    if (!existsSync(sumsFile)) {
+      throw new Error('zip 插件包缺少 sha256sums.json 哈希清单（分发包必须附带——缺失拒绝安装）')
+    }
+    let sums: Record<string, string>
+    try {
+      sums = JSON.parse(readFileSync(sumsFile, 'utf-8')) as Record<string, string>
+    } catch {
+      throw new Error('sha256sums.json 解析失败（哈希清单损坏）')
+    }
+    if (Object.keys(sums).length === 0) {
+      throw new Error('sha256sums.json 为空（哈希清单无效）')
+    }
+    for (const [rel, expected] of Object.entries(sums)) {
+      // 路径安全：清单内路径必须是相对路径且不得逃逸插件目录
+      const normalized = rel.replace(/\\/g, '/')
+      if (normalized.startsWith('/') || normalized.includes('../') || normalized.includes('..\\')) {
+        throw new Error(`sha256sums.json 含非法路径: ${rel}`)
+      }
+      const file = join(pluginDir, rel)
+      if (!existsSync(file)) {
+        throw new Error(`sha256sums.json 列出的文件缺失: ${rel}`)
+      }
+      const actual = createHash('sha256').update(readFileSync(file)).digest('hex')
+      if (actual.toLowerCase() !== String(expected).toLowerCase()) {
+        throw new Error(`插件文件哈希不匹配（可能被篡改或传输损坏）: ${rel}`)
+      }
+    }
   }
 
   /** tar 命令：Windows 用 System32 自带 bsdtar（Electron PATH 的 tar 不可用）；Linux/macOS 用系统 tar */

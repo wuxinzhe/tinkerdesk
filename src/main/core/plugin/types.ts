@@ -32,6 +32,12 @@ export interface PluginManifest {
   permissions?: string[]
   /** 描述 */
   description?: string
+  /** 作者（来源标注——列表展示用） */
+  author?: string
+  /** 项目主页（来源标注——列表展示链接） */
+  homepage?: string
+  /** 发布者（发布渠道标识） */
+  publisher?: string
   /** 模型依赖（设置页引导下载） */
   modelDeps?: ModelDep[]
 }

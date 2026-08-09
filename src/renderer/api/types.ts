@@ -705,6 +705,12 @@ export interface PluginManifest {
   builtin?: boolean
   permissions?: string[]
   description?: string
+  /** 作者（来源标注——列表展示用） */
+  author?: string
+  /** 项目主页（来源标注——列表展示链接） */
+  homepage?: string
+  /** 发布者（发布渠道标识） */
+  publisher?: string
   modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
 }
 
