@@ -413,7 +413,9 @@ function toolCallSummary(tc: string): string {
 
 .conv-detail-table {
   width: 100%;
-  border-collapse: collapse;
+  /* separate 才能让 thead 圆角生效（collapse 会裁掉 border-radius） */
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
   table-layout: fixed;
 }
@@ -434,6 +436,14 @@ function toolCallSummary(tc: string): string {
   background: var(--tk-bg-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+/* 表头圆角（首尾列）——毛玻璃圆角收边 */
+.conv-detail-table thead th:first-child {
+  border-top-left-radius: 8px;
+}
+.conv-detail-table thead th:last-child {
+  border-top-right-radius: 8px;
 }
 
 .conv-detail-table th {
