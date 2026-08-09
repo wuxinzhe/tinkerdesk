@@ -182,7 +182,7 @@ export class TinkerAgent {
             approvalManager: this.approvalManager,
           }),
         })
-        lastResult = await conversation.run(this.sessionId, this.profile, ctx, combined)
+        lastResult = await conversation.run(this.sessionId, this.profile, ctx, combined, items[0]?.createdAt)
       }
       return lastResult ?? {
         response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '无消息处理' } as LlmResponse,

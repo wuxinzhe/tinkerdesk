@@ -32,7 +32,7 @@ export {
 
 /** 消息实体构建器（对应 MessageEntity.buildXxx 静态工厂） */
 export class MessageFactory {
-  static buildUserMessage(convId: string, sessionId: string, profile: string, content: string): MessageEntity {
+  static buildUserMessage(convId: string, sessionId: string, profile: string, content: string, createdAt?: string): MessageEntity {
     return {
       sessionId,
       conversationId: convId,
@@ -46,8 +46,9 @@ export class MessageFactory {
       finishReason: FINISH_COMPLETE,
       interactionStatus: '',
       messageType: MSG_TYPE_USER,
+      // 接收时刻优先（队列 item 在入队时已记录）；缺省兜底当前时刻
+      createdAt: createdAt ?? nowDb(),
       deleted: false,
-      createdAt: nowDb(),
     }
   }
 

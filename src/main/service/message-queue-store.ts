@@ -11,6 +11,7 @@
  */
 import type { UserMessageQueueItem } from './types'
 export type { UserMessageQueueItem } from './types'
+import { nowDb } from '../utils/time'
 
 /** 消息队列存储（内存实现，per-session） */
 export class MessageQueueStore {
@@ -27,6 +28,8 @@ export class MessageQueueStore {
       id: `msg_${Date.now()}_${++this.idCounter}`,
       content,
       profile,
+      // 接收时刻即取（不能等处理时再取——排队会失真）
+      createdAt: nowDb(),
     }
     let queue = this.queues.get(sessionId)
     if (!queue) {

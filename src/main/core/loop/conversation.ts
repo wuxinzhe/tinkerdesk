@@ -59,7 +59,7 @@ export class Conversation {
   private maxIter = 0
 
   /** 一轮对话完整链路（纯调度：初始化 → while 循环 → 响应分发）——身份由 TinkerAgent 传入（单一来源） */
-  async run(sessionId: string, profile: string, ctx: SessionContext, userMessage: string): Promise<TinkerAgentResult> {
+  async run(sessionId: string, profile: string, ctx: SessionContext, userMessage: string, userCreatedAt?: string): Promise<TinkerAgentResult> {
     this.sessionId = sessionId
     this.profile = profile
     this.ctx = ctx
@@ -77,7 +77,7 @@ export class Conversation {
     this.convCtx = buildConvCtx(ctx, this.convId, toolNames, allConfigs)
 
     // ── 用户消息入暂存 ──
-    messageService.saveTempMessage(MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, userMessage))
+    messageService.saveTempMessage(MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, userMessage, userCreatedAt))
 
     // ── 上下文加载（摘要 + 历史 + 暂存）→ 转 ApiMessage ──
     const history = messageService.loadContextMessages(this.sessionId, this.convId, this.profile)

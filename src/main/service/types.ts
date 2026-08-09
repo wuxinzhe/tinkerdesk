@@ -357,4 +357,6 @@ export interface UserMessageQueueItem {
   content: string
   /** 用户使用的 AI 角色配置名称 */
   profile: string
+  /** 接收时刻（入队时取——nowDb 格式；处理时可能已排队很久，不能现场取） */
+  createdAt: string
 }
