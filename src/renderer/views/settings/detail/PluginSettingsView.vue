@@ -62,8 +62,9 @@ async function installPlugin(kind: 'zip' | 'folder' = 'zip'): Promise<void> {
   try {
     const path = await window.api.plugins.pickInstallPackage(kind)
     if (!path) return
-    const info = await pluginsApi.install(path)
-    plugins.value.push(info)
+    await pluginsApi.install(path)
+    // 安装成功后自动刷新整个列表（状态可能变化——push 单条不可靠）
+    await loadPlugins()
     installMenuOpen.value = false
   } catch {
     // 错误提示由 inv 拦截统一派发
