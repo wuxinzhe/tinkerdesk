@@ -781,6 +781,8 @@ export interface WindowApi {
   windowMaximize: () => Promise<void>
   windowClose: () => Promise<void>
   isMaximized: () => Promise<boolean>
+  /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
+  setPhoneMode: () => Promise<boolean>
 
   toolCenter: {
     initialize: () => Promise<ToolCenterState>
@@ -842,7 +844,7 @@ export interface WindowApi {
   }
 
   agents: {
-    list: (payload?: {profile?: string}) => Promise<AgentInfo[]>
+    list: (payload?: {profile?: string; limit?: number; offset?: number}) => Promise<AgentInfo[]>
     create: (payload: {profile: string; displayName?: string; description?: string; avatar?: string}) => Promise<AgentInfo>
     get: (profile: string) => Promise<AgentInfo>
     update: (payload: {profile: string; displayName?: string; description?: string; avatar?: string; isActive?: boolean}) => Promise<AgentInfo>

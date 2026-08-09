@@ -614,6 +614,11 @@ export const useChatStore = defineStore('chat', () => {
     return messagesApi.listByConversationRaw(conversationId, sessionStore.profile ?? 'default')
   }
 
+  /** 对话模式专用：normalize 后的消息（MessageBubble 按 messageType 渲染工具/混合/审批/澄清卡） */
+  async function listByConversation(conversationId: string): Promise<ApiMessage[]> {
+    return messagesApi.listByConversation(conversationId, sessionStore.profile ?? 'default')
+  }
+
   async function deleteConversation(conversationId: string, sessionId: string): Promise<void> {
     await messagesApi.deleteConversation(conversationId, sessionStore.profile ?? 'default')
     messagesBySession.value[sessionId] = []
@@ -693,6 +698,7 @@ export const useChatStore = defineStore('chat', () => {
     loadMessagesFromApi,
     loadOlderMessages,
     listByConversationRaw,
+    listByConversation,
     deleteConversation,
   }
 })

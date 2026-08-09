@@ -134,6 +134,8 @@ const api = {
   windowMaximize: () => inv('window:maximize'),
   windowClose: () => inv('window:close'),
   isMaximized: () => inv('window:isMaximized'),
+  /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
+  setPhoneMode: () => inv('window:phoneMode'),
 
   // Tool Center
   toolCenter: {
@@ -228,7 +230,7 @@ const api = {
 
   // ── Agent 配置（AgentCrudController）──
   agents: {
-    list: (payload?: { profile?: string }) => inv('agent-cfg:list', payload).then(unwrap),
+    list: (payload?: { profile?: string; limit?: number; offset?: number }) => inv('agent-cfg:list', payload).then(unwrap),
     create: (payload: { profile: string; displayName?: string; description?: string; avatar?: string }) =>
       inv('agent-cfg:create', payload).then(unwrap),
     get: (profile: string) => inv('agent-cfg:get', profile).then(unwrap),

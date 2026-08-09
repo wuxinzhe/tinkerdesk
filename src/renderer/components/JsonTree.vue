@@ -5,9 +5,23 @@
         <button
           v-if="isObj(entry.v)"
           class="json-tree__toggle"
-          @click="entry.open = !entry.open"
+          :aria-expanded="entry.open"
+          @click="toggleEntry(entry)"
         >
-          {{ entry.open ? '▼' : '▶' }}
+          <svg
+            class="json-tree__chevron"
+            :class="{ 'json-tree__chevron--open': entry.open }"
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
         <span v-else class="json-tree__toggle json-tree__toggle--empty" />
         <span class="json-tree__key">{{ entry.k }}</span>
@@ -27,10 +41,11 @@
 /**
  * JSON 树形展示组件（递归）：
  * - 对象/数组层级缩进，可折叠（默认展开）
+ * - ⚠ 折叠状态存组件级 reactive Map（不能用 computed 临时对象——非响应式赋值不触发重渲染）
  * - 原始值按类型着色：字符串(绿+引号) / 数字(蓝) / 布尔(橙) / null(灰)
  * - 嵌套 JSON 字符串（如 toolCall.arguments = "{\"query\":...}"）自动二次解析展开
  */
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 import { deepParseJson } from '@/renderer/utils/json-utils'
 
 defineOptions({ name: 'JsonTree' })
@@ -46,18 +61,31 @@ interface Entry {
   open: boolean
 }
 
+/** 折叠状态（组件实例级）——key = 条目在 entries 中的位置 */
+const openState = reactive(new Map<number, boolean>())
+
 const parsed = computed<unknown>(() => deepParseJson(props.value))
 
 const entries = computed<Entry[]>(() => {
   const v = parsed.value
   if (Array.isArray(v)) {
-    return v.map((item, i) => ({ k: String(i), v: item, open: true }))
+    return v.map((item, i) => ({ k: String(i), v: item, open: openState.get(i) ?? true }))
   }
   if (v && typeof v === 'object') {
-    return Object.entries(v as Record<string, unknown>).map(([k, val]) => ({ k, v: val, open: true }))
+    return Object.entries(v as Record<string, unknown>).map(([k, val], i) => ({
+      k,
+      v: val,
+      open: openState.get(i) ?? true,
+    }))
   }
   return []
 })
+
+function toggleEntry(entry: Entry): void {
+  const i = entries.value.indexOf(entry)
+  if (i === -1) return
+  openState.set(i, !(openState.get(i) ?? true))
+}
 
 function isObj(v: unknown): boolean {
   return v !== null && typeof v === 'object'
@@ -98,18 +126,28 @@ function valText(v: unknown): string {
 .json-tree__toggle {
   flex-shrink: 0;
   width: 16px;
+  height: 20px;
   padding: 0;
   border: none;
   background: transparent;
   color: var(--tk-text-tertiary);
-  font-size: 10px;
   cursor: pointer;
   text-align: center;
-  line-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .json-tree__toggle--empty {
   cursor: default;
+}
+
+.json-tree__chevron {
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.json-tree__chevron--open {
+  transform: rotate(180deg);
 }
 
 .json-tree__key {

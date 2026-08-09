@@ -5,6 +5,34 @@
       <!-- ── 气泡容器（user/assistant 文本类 + 工具调用）─── -->
       <div v-if="showBubble" class="message-bubble"
         :class="[`bubble--${bubbleStyleClass}`, { 'bubble--streaming': isStreaming }]" @click="toggleTimestamp">
+
+        <!-- 思考过程（仅 showReasoning=true 时显示——对话详情页；气泡内 content 上方） -->
+        <div v-if="showReasoning && message.reasoningContent" class="bubble-reasoning">
+          <div class="bubble-reasoning__head" @click.stop="toggleBubbleReasoning">
+            <svg class="bubble-reasoning__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span class="bubble-reasoning__label">思考过程</span>
+            <svg
+              class="bubble-reasoning__arrow"
+              :class="{ 'bubble-reasoning__arrow--open': bubbleReasoningOpen }"
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+          <pre v-if="bubbleReasoningOpen" class="bubble-reasoning__body">{{ message.reasoningContent }}</pre>
+        </div>
+
         <!-- assistant_text → Markdown 实时渲染 + 流式接收区 -->
         <template v-if="isAssistantText">
 
@@ -45,7 +73,31 @@
         </template>
       </div>
 
-      <!-- ── 时间戳（SVG 按钮 + 时间） ── -->
+      <!-- ── 审批卡片 ── -->
+      <ApprovalCard
+        v-if="isApprovalRequest"
+        :interaction-status="message.interactionStatus"
+        :tool-name="message.toolName"
+        :approval-arguments="message.approvalArguments"
+        :tool-call-id="message.toolCallId ?? ''"
+        @approve="emit('approve', $event)"
+        @reject="emit('reject', $event)"
+        @auto-approve="emit('auto-approve', $event)"
+      />
+
+      <!-- ── Clarify 提问卡片 ── -->
+      <ClarifyCard
+        v-if="isClarifyRequest"
+        :question="message.clarifyQuestion ?? ''"
+        :choices="message.clarifyChoices"
+        :tool-call-id="message.toolCallId ?? ''"
+        :session-id="message.sessionId"
+        :submitted-content="message.content"
+        :interaction-status="message.interactionStatus"
+      />
+
+      <!-- ── 时间戳（SVG 按钮 + 时间）──
+           统一 hover 显示（触屏点击）；位置在所有卡片之后 -->
       <div class="message-timestamp" :class="{ visible: showTimestamp }">
         <button
           v-if="canSpeak"
@@ -81,29 +133,6 @@
         </template>
       </div>
 
-      <!-- ── 审批卡片 ── -->
-      <ApprovalCard
-        v-if="isApprovalRequest"
-        :interaction-status="message.interactionStatus"
-        :tool-name="message.toolName"
-        :approval-arguments="message.approvalArguments"
-        :tool-call-id="message.toolCallId ?? ''"
-        @approve="emit('approve', $event)"
-        @reject="emit('reject', $event)"
-        @auto-approve="emit('auto-approve', $event)"
-      />
-
-      <!-- ── Clarify 提问卡片 ── -->
-      <ClarifyCard
-        v-if="isClarifyRequest"
-        :question="message.clarifyQuestion ?? ''"
-        :choices="message.clarifyChoices"
-        :tool-call-id="message.toolCallId ?? ''"
-        :session-id="message.sessionId"
-        :submitted-content="message.content"
-        :interaction-status="message.interactionStatus"
-      />
-
     </div>
   </div>
 </template>
@@ -132,11 +161,21 @@ const props = withDefaults(defineProps<{
   isStreaming?: boolean
   isLast?: boolean
   pendingBuffer?: string
+  /** 气泡内显示思考过程区块（仅对话详情页传入 true——普通聊天不显示） */
+  showReasoning?: boolean
 }>(), {
   isStreaming: false,
   isLast: false,
-  pendingBuffer: ''
+  pendingBuffer: '',
+  showReasoning: false
 })
+
+/** 气泡内思考过程展开状态（按消息 id——组件实例级） */
+const bubbleReasoningOpen = ref(false)
+
+function toggleBubbleReasoning(): void {
+  bubbleReasoningOpen.value = !bubbleReasoningOpen.value
+}
 
 const emit = defineEmits<{
   approve: [toolCallId: string]
@@ -328,6 +367,67 @@ const bubbleStyleClass = computed(() =>
 
 .message-bubble :deep(.markdown-body > :first-child) {
   margin-top: 0;
+}
+
+/* ── 气泡内思考过程（仅对话详情：showReasoning=true） ── */
+
+.bubble-reasoning {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--tk-border-card);
+}
+
+.bubble-reasoning__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--tk-warning);
+}
+
+.bubble-reasoning__icon {
+  flex-shrink: 0;
+}
+
+.bubble-reasoning__label {
+  font-weight: 500;
+}
+
+.bubble-reasoning__arrow {
+  margin-left: auto;
+  display: flex;
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.bubble-reasoning__arrow--open {
+  transform: rotate(180deg);
+}
+
+.bubble-reasoning__body {
+  margin: 8px 0 0;
+  font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--tk-text-secondary);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* user 渐变气泡内的思考过程：半透明白（渐变底上 warning 橙不可读） */
+.bubble--user .bubble-reasoning {
+  border-bottom-color: rgba(255, 255, 255, 0.25);
+}
+
+.bubble--user .bubble-reasoning__head {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.bubble--user .bubble-reasoning__body {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .message-bubble :deep(.markdown-body > :last-child) {

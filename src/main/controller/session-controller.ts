@@ -64,7 +64,7 @@ export class SessionController {
   /** 查询会话列表（按 profile 限定 + 分页） */
   private listSessions(payload: ListSessionsQueryDTO): ApiResponse<SessionListItemVO[]> {
     const profile = payload?.profile ?? 'default'
-    const limit = Math.min(payload?.limit ?? 50, MAX_LIMIT)
+    const limit = Math.min(payload?.limit ?? 20, MAX_LIMIT)
     const offset = payload?.offset ?? 0
     const entities = this.sessionService.listSessions(profile, limit, offset)
     return ok(entities.map(toSessionListItemVO))

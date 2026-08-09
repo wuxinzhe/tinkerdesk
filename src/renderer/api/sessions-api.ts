@@ -6,7 +6,7 @@ import type { Session } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class SessionsApi {
-  async list(profile: string, limit = 50, offset = 0): Promise<Session[]> {
+  async list(profile: string, limit = 20, offset = 0): Promise<Session[]> {
     const data = await window.api.sessions.list({ profile, limit, offset })
     return (data as Session[]) ?? []
   }

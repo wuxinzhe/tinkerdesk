@@ -42,6 +42,7 @@
     <div
       v-else
       class="agent-list__items"
+      @scroll.passive="onScroll"
     >
       <div
         v-for="(a, index) in agents"
@@ -118,8 +119,17 @@
         </div>
       </div>
     </div>
+
+      <!-- 加载更多（向下滚动到底触发） -->
+      <div v-if="loadingMore" class="agent-list__more">
+        <SaSpinner size="small" />
+        <span>加载中…</span>
+      </div>
+      <div v-else-if="!hasMore && agents.length > 0" class="agent-list__bottom">
+        <span class="agent-list__bottom-text">凡事都有底线</span>
+      </div>
+    </div>
   </div>
-</div>
 </template>
 
 <script setup lang="ts">
@@ -129,7 +139,7 @@ import type { AgentInfo } from '@/renderer/api/types'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
 import { agentsApi } from '@/renderer/api/agents-api'
-import { SaSkeleton } from '@/renderer/components'
+import { SaSkeleton, SaSpinner } from '@/renderer/components'
 
 const router = useRouter()
 const route = useRoute()
@@ -146,12 +156,43 @@ const selectedProfile = ref<string | null>(null)
 
 async function loadAgents(skipLoading = false) {
   if (!skipLoading) loading.value = true
+  offset.value = 0
+  hasMore.value = true
   try {
     agents.value = await agentsApi.list()
+    offset.value = agents.value.length
+    hasMore.value = agents.value.length === PAGE_SIZE
   } catch {
     agents.value = []
   } finally {
     loading.value = false
+  }
+}
+
+/* ── 分页加载（每页 20——向下滚动到底触发加载更多） ── */
+const PAGE_SIZE = 20
+const offset = ref(0)
+const hasMore = ref(true)
+const loadingMore = ref(false)
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const list = await agentsApi.list(undefined, PAGE_SIZE, offset.value)
+    agents.value.push(...list)
+    offset.value += list.length
+    hasMore.value = list.length === PAGE_SIZE
+  } catch { /* silent */ } finally {
+    loadingMore.value = false
+  }
+}
+
+/** 向下滚动到底触发加载更多 */
+function onScroll(e: Event) {
+  const el = e.target as HTMLElement
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) {
+    void loadMore()
   }
 }
 
@@ -352,6 +393,38 @@ onMounted(async () => {
   flex: 1;
   overflow-y: auto;
   padding: 4px 20px 16px;
+}
+
+/* 加载更多 / 到底线（分割线 + 文案） */
+.agent-list__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 0 6px;
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
+}
+
+.agent-list__bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 10px;
+}
+
+.agent-list__bottom::before,
+.agent-list__bottom::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tk-border);
+}
+
+.agent-list__bottom-text {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  white-space: nowrap;
 }
 
 /* ── Agent 卡片（emil：进入 stagger + 指示条选中态 + hover 反馈） ── */

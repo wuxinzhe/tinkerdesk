@@ -10,7 +10,7 @@
       </button>
     </div>
 
-    <div class="sl-list">
+    <div class="sl-list" @scroll.passive="onScroll">
       <!-- 首次加载骨架屏 -->
       <div v-if="loading && sessions.length === 0" class="sl-skeleton">
         <div v-for="i in 5" :key="'s'+i" class="sl-skeleton-item">
@@ -43,6 +43,15 @@
         <span class="sl-empty__text">暂无对话</span>
         <span class="sl-empty__hint">点击右上角 + 开启新对话</span>
       </p>
+
+      <!-- 加载更多（向下滚动到底触发——旧会话 append） -->
+      <div v-if="loadingMore" class="sl-more">
+        <SaSpinner size="small" />
+        <span>加载中…</span>
+      </div>
+      <div v-else-if="!hasMore && sessions.length > 0" class="sl-bottom">
+        <span class="sl-bottom__text">凡事都有底线</span>
+      </div>
     </div>
   </div>
 </template>
@@ -54,7 +63,7 @@ import SessionItemComponent from '@/renderer/components/workspace/SessionItemCom
 import { useChatStore } from '@/renderer/stores/chat-store'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { sessionsApi } from '@/renderer/api/sessions-api'
-import { SaSkeleton } from '@/renderer/components'
+import { SaSkeleton, SaSpinner } from '@/renderer/components'
 
 const props = defineProps<{
   activeSessionId: string | null
@@ -75,14 +84,47 @@ const pendingSessionId = ref<string | null>(null)
 const realIdMap = new Map<string, string>()
 const loading = ref(false)
 
+/* ── 分页加载（每页 20——向下滚动到底触发加载更多） ── */
+const PAGE_SIZE = 20
+const offset = ref(0)
+const hasMore = ref(true)
+const loadingMore = ref(false)
+
 /* ── Session loading ── */
 async function loadSessions() {
   loading.value = true
+  offset.value = 0
+  hasMore.value = true
   try {
-    sessions.value = await sessionsApi.list(props.profile)
+    const list = await sessionsApi.list(props.profile, PAGE_SIZE, 0)
+    sessions.value = list
+    offset.value = list.length
+    hasMore.value = list.length === PAGE_SIZE
   } catch { /* silent */
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const list = await sessionsApi.list(props.profile, PAGE_SIZE, offset.value)
+    sessions.value.push(...list)
+    offset.value += list.length
+    hasMore.value = list.length === PAGE_SIZE
+  } catch { /* silent */
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+/** 向下滚动到底触发加载更多（新在上——旧会话 append 到底部） */
+function onScroll(e: Event) {
+  const el = e.target as HTMLElement
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 60) {
+    void loadMore()
   }
 }
 
@@ -242,6 +284,39 @@ defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePend
 .sl-empty__hint {
   font-size: 12px;
   color: var(--tk-text-tertiary);
+  margin-top: 2px;
+}
+
+/* 加载更多 / 到底线（分割线 + 文案） */
+.sl-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
+}
+
+.sl-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 10px;
+}
+
+.sl-bottom::before,
+.sl-bottom::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tk-border);
+}
+
+.sl-bottom__text {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  white-space: nowrap;
 }
 
 /* ── TransitionGroup（emil：指定属性 + 强 ease-out；离开时绝对定位避免挤位） ── */

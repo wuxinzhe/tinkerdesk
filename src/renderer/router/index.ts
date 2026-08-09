@@ -303,17 +303,6 @@ const router = createRouter({
             level3: () => import('@/renderer/views/workshop/detail/WorkshopDetailView.vue'),
           },
         },
-
-        // 兼容旧路由 /workspace/agent → /workspace/agents
-        {
-          path: 'agent',
-          redirect: { path: '/workspace/agents' },
-        },
-        // 兼容旧路由 /workspace/skills
-        {
-          path: 'skills',
-          redirect: { path: '/workspace/agents' },
-        },
       ],
     },
     {

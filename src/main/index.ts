@@ -39,7 +39,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
-    minWidth: 320,
+    /* 最小宽度 768（断点下限——低于此手机布局不再出现；minHeight 720 保持） */
+    minWidth: 768,
     minHeight:720,
     frame: false,
     webPreferences: {
@@ -109,6 +110,21 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('window:close', () => { mainWindow?.close() })
   ipcMain.handle('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+
+  // ── 专注模式（TitleBar 切换——临时突破 minWidth 768） ──
+  // 点击进入：最小宽 375 + 窗口 375×812（窄窗聚焦）；再点恢复：minWidth 768 + 1200×800
+  let phoneModeActive = false
+  ipcMain.handle('window:phoneMode', () => {
+    phoneModeActive = !phoneModeActive
+    if (phoneModeActive) {
+      mainWindow?.setMinimumSize(375, 600)
+      mainWindow?.setSize(375, 812)
+    } else {
+      mainWindow?.setMinimumSize(768, 720)
+      mainWindow?.setSize(1200, 800)
+    }
+    return phoneModeActive
+  })
 
   // 自动更新初始化
   initUpdater()

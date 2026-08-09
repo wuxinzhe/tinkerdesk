@@ -16,6 +16,9 @@ import type { AgentInfoDTO, CreateAgentRequestDTO, UpdateAgentRequestDTO } from 
 import type { ApiResponse } from './api-response'
 import { fail, ok } from './api-response'
 
+/** 单用户版查询上限 */
+const MAX_LIMIT = 200
+
 /** Agent 配置 controller */
 export class AgentCrudController {
   constructor(
@@ -67,13 +70,15 @@ export class AgentCrudController {
   // 各 IPC 方法（具名方法 + 完整入参出参类型）
   // ══════════════════════════════════════════════════════════════
 
-  /** 查询 Agent 列表（可按 profile 过滤） */
-  private listAgents(payload: { profile?: string }): ApiResponse<AgentInfoDTO[]> {
+  /** 查询 Agent 列表（分页，每页 20；可按 profile 精确过滤） */
+  private listAgents(payload: { profile?: string; limit?: number; offset?: number }): ApiResponse<AgentInfoDTO[]> {
     if (payload?.profile) {
       const agent = this.agentService.getAgentInfo(payload.profile)
       return ok(agent ? [this.enrichAgent(agent)] : [])
     }
-    const { items } = this.agentService.listByUser('', 0, 50)
+    const limit = Math.min(payload?.limit ?? 20, MAX_LIMIT)
+    const offset = payload?.offset ?? 0
+    const { items } = this.agentService.listByUser('', offset, limit)
     return ok(items.map((a) => this.enrichAgent(a)))
   }
 

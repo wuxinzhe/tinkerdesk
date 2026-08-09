@@ -6,8 +6,8 @@ import type { AgentInfo, CreateAgentRequest, UpdateAgentRequest, ModeInfo, ModeO
 import '@/renderer/api/types'
 
 export class AgentsApi {
-  async list(userId?: string): Promise<AgentInfo[]> {
-    const data = await window.api.agents.list({ profile: userId })
+  async list(userId?: string, limit = 20, offset = 0): Promise<AgentInfo[]> {
+    const data = await window.api.agents.list({ profile: userId, limit, offset })
     return (data as AgentInfo[]) ?? []
   }
 

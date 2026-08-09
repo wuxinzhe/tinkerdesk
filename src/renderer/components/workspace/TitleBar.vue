@@ -33,12 +33,12 @@
     <!-- 可拖拽区域 -->
     <div class="title-bar__drag"></div>
 
-    <!-- 侧栏折叠按钮（锁屏左侧） -->
-    <button class="title-bar__collapse" title="折叠/展开列表" @click="toggleSidebar">
+    <!-- 专注模式预览按钮（锁屏左侧——窗口收窄到 375 聚焦内容） -->
+    <button class="title-bar__collapse" title="专注模式" @click="togglePhoneMode">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="13" height="16" rx="2" />
-        <path d="M20 4v16" />
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <rect x="9" y="7" width="6" height="10" rx="1" />
       </svg>
     </button>
 
@@ -56,6 +56,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import '@/renderer/api/types'
 
@@ -63,14 +64,21 @@ const maximized = ref(false)
 
 const api = window.api
 const sessionStore = useSessionStore()
+const router = useRouter()
 
 function handleLock() {
   sessionStore.setLocked(true)
 }
 
-/** 侧栏折叠：通知 WorkspaceView 切换 lv2 列（原 sidebar-toggle 的控制移到这里） */
-function toggleSidebar() {
-  window.dispatchEvent(new CustomEvent('toggle-sidebar'))
+/** 专注模式：窗口收窄到 375×812（临时突破 minWidth 768——再点恢复桌面） */
+function togglePhoneMode() {
+  void window.api.setPhoneMode().then(() => {
+    // 路由重置：清空历史栈 + 直接定位对话页 lv2 session-list（/workspace/chat）
+    const target = '#/workspace/chat'
+    // hash 模式下用 replaceState 硬切（不产生新历史条目——后退不回之前的详情页）
+    history.replaceState(null, '', location.pathname + location.search + target)
+    void router.replace('/workspace/chat')
+  })
 }
 
 async function handleMinimize() {
@@ -197,12 +205,7 @@ onUnmounted(() => {
   color: var(--tk-text-primary);
 }
 
-/* 手机模式（<768px）：折叠按钮隐藏（手机用抽屉导航，无 lv2 折叠需求） */
-@media (max-width: 767px) {
-  .title-bar__collapse {
-    display: none;
-  }
-}
+/* 注意：专注模式（窗口 375）下按钮必须保留——否则无法再点恢复桌面 */
 
 .title-bar__lock {
   -webkit-app-region: no-drag;
