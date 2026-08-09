@@ -5,6 +5,7 @@
  * 对话 CRUD、状态变更、压缩选择。
  */
 import { getDatabase } from './database'
+import { nowDb } from '../utils/time'
 import type { ConversationEntity, ConversationStatusUpdate } from './types'
 
 /** 对话状态常量（单一来源在 core/constants/conversation；此处 re-export 保持既有导入链） */
@@ -72,7 +73,7 @@ export class ConversationRepository {
       entity.iterationCount ?? 0,
       entity.llmRequestCount ?? 0,
       entity.roundContextTokens ?? 0,
-      entity.startedAt ?? new Date().toISOString().slice(0, 19).replace('T', ' '),
+      entity.startedAt ?? nowDb(),
       entity.completedAt ?? null
     )
   }
@@ -140,8 +141,8 @@ export class ConversationRepository {
   /** 更新对话状态及相关统计 */
   updateStatus(id: string, sessionId: string, status: string, update?: ConversationStatusUpdate): number {
     const db = getDatabase()
-    const sets = ['status = ?', "completed_at = datetime('now')"]
-    const params: Array<string | number> = [status]
+    const sets = ['status = ?', 'completed_at = ?']
+    const params: Array<string | number> = [status, nowDb()]
 
     if (update?.messageCount !== undefined) {
       sets.push('message_count = ?')
@@ -196,10 +197,10 @@ export class ConversationRepository {
     const placeholders = ids.map(() => '?').join(',')
     const result = db
       .prepare(
-        `UPDATE conversations SET status = ?, completed_at = datetime('now')
+        `UPDATE conversations SET status = ?, completed_at = ?
          WHERE session_id = ? AND id IN (${placeholders})`
       )
-      .run(status, sessionId, ...ids)
+      .run(status, nowDb(), sessionId, ...ids)
     return Number(result.changes)
   }
 }

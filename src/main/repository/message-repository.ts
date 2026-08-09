@@ -293,11 +293,11 @@ export class MessageRepository {
     const db = getDatabase()
     const result = db
       .prepare(
-        `UPDATE messages SET interaction_status = ?, content = ?, updated_at = datetime('now')
+        `UPDATE messages SET interaction_status = ?, content = ?, updated_at = ?
          WHERE role = 'approval' AND tool_call_id = ?
            AND profile = ? AND session_id = ?`
       )
-      .run(status, content, toolCallId, profile, sessionId)
+      .run(status, content, nowDb(), toolCallId, profile, sessionId)
     return Number(result.changes)
   }
 
@@ -306,11 +306,11 @@ export class MessageRepository {
     const db = getDatabase()
     const result = db
       .prepare(
-        `UPDATE messages SET interaction_status = ?, content = '⏳ 已过期', updated_at = datetime('now')
+        `UPDATE messages SET interaction_status = ?, content = '⏳ 已过期', updated_at = ?
          WHERE role = 'approval' AND tool_call_id = ? AND interaction_status = ?
            AND profile = ? AND session_id = ?`
       )
-      .run(STATUS_TIMED_OUT, toolCallId, STATUS_PENDING, profile, sessionId)
+      .run(STATUS_TIMED_OUT, nowDb(), toolCallId, STATUS_PENDING, profile, sessionId)
     return Number(result.changes)
   }
 
