@@ -170,7 +170,7 @@ function set(field: keyof SkillFormModel, value: string): void {
 .sfp__label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -188,7 +188,7 @@ function set(field: keyof SkillFormModel, value: string): void {
 
 .sfp__field-label {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-bottom: 4px;
 }
 
@@ -196,16 +196,16 @@ function set(field: keyof SkillFormModel, value: string): void {
   width: 100%;
   font-size: 13px;
   padding: 7px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
 }
 
 .sfp__input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .sfp__textarea,
@@ -214,10 +214,10 @@ function set(field: keyof SkillFormModel, value: string): void {
   font-size: 13px;
   font-family: inherit;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   resize: vertical;
   line-height: 1.5;
@@ -226,15 +226,15 @@ function set(field: keyof SkillFormModel, value: string): void {
 
 .sfp__textarea:focus,
 .sfp__body:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* 高级折叠（白卡片） */
 .advanced-section {
   margin-top: 4px;
   margin-bottom: 14px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -246,7 +246,7 @@ function set(field: keyof SkillFormModel, value: string): void {
   width: 100%;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   background: transparent;
   border: none;
   padding: 10px 12px;
@@ -255,7 +255,7 @@ function set(field: keyof SkillFormModel, value: string): void {
 }
 
 .advanced-toggle:hover {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .advanced-chevron {

@@ -334,8 +334,8 @@ onUnmounted(() => {
   min-height: 0;
   overflow: hidden;
   /* 浅色渐变——为毛玻璃 blur 提供可穿透内容 */
-  background: linear-gradient(180deg, #f5f5f7 0%, #e9e9ef 100%);
-  border-top: 1px solid var(--sa-border, #d2d2d7);
+  background: linear-gradient(180deg, var(--tk-bg-secondary) 0%, #e9e9ef 100%);
+  border-top: 1px solid var(--tk-border);
 }
 
 /* 深色：带蓝紫调的渐变（玻璃背后有色彩层次，blur 才可见） */
@@ -357,11 +357,11 @@ html[data-theme='dark'] .workspace {
 .workspace__sidebar {
   display: none;
   /* Liquid Glass（功能层——lv1 图标栏：玻璃 + 右侧边缘） */
-  background: var(--sa-bg-glass);
+  background: var(--tk-bg-glass);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
   backdrop-filter: blur(30px) saturate(200%);
-  border-right: 0.5px solid var(--sa-border, #e8e8ed);
-  box-shadow: inset -0.5px 0 0 var(--sa-glass-edge, rgba(255, 255, 255, 0.5));
+  border-right: 0.5px solid var(--tk-border);
+  box-shadow: inset -0.5px 0 0 var(--tk-glass-edge);
 }
 
 /* ── 顶栏可见性（纯 CSS 控制） ── */
@@ -369,21 +369,20 @@ html[data-theme='dark'] .workspace {
 .workspace__mobile-bar {
   display: none;
   /* Liquid Glass（功能层——移动顶栏） */
-  background: var(--sa-bg-glass);
+  background: var(--tk-bg-glass);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--sa-shadow-hairline);
+  box-shadow: var(--tk-shadow-hairline);
 }
 
 .workspace__l3-bar {
   display: none;
   /* Liquid Glass（功能层——l3 工具条：玻璃 + 顶部高光边缘 + hairline） */
-  background: var(--sa-bg-glass);
+  background: var(--tk-bg-glass);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
-    0 0.5px 0 var(--sa-glass-edge, rgba(255, 255, 255, 0.5)),
-    0 0.5px 0 var(--sa-border, #e8e8ed);
+    0 0.5px 0 var(--tk-glass-edge);
 }
 
 /* ── Lv2 列 ── */
@@ -405,10 +404,10 @@ html[data-theme='dark'] .workspace {
   padding: 10px 12px;
   height: 44px;
   box-sizing: border-box;
-  background: var(--sa-bg-glass);
+  background: var(--tk-bg-glass);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--sa-shadow-hairline);
+  box-shadow: var(--tk-shadow-hairline);
   flex-shrink: 0;
   position: relative;
   z-index: 100;
@@ -424,14 +423,14 @@ html[data-theme='dark'] .workspace {
   background: transparent;
   border-radius: 6px;
   cursor: pointer;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   flex-shrink: 0;
   position: absolute;
   left: 12px;
 }
 
 .workspace__lv2-hamburger:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .workspace__lv2-hamburger svg {
@@ -444,7 +443,7 @@ html[data-theme='dark'] .workspace {
   text-align: center;
   font-size: 14px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -477,7 +476,7 @@ html[data-theme='dark'] .workspace {
   flex: 1;
   min-width: 0;
   display: flex;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
 }
 
 .workspace__l2-col--collapsed {
@@ -556,8 +555,8 @@ html[data-theme='dark'] .workspace {
   .workspace__l2-col {
     width: 280px;
     flex-shrink: 0;
-    border-right: 1px solid var(--sa-border, #d2d2d7);
-    background: var(--sa-bg-primary, #ffffff);
+    border-right: 1px solid var(--tk-border);
+    background: var(--tk-bg-primary);
   }
 
   .workspace__l3-col {
@@ -590,8 +589,8 @@ html[data-theme='dark'] .workspace {
   .workspace__l2-col {
     width: 280px;
     flex-shrink: 0;
-    border-right: 1px solid var(--sa-border, #d2d2d7);
-    background: var(--sa-bg-primary, #ffffff);
+    border-right: 1px solid var(--tk-border);
+    background: var(--tk-bg-primary);
   }
 
   .workspace__l3-col {

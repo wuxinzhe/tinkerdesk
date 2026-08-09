@@ -1,9 +1,12 @@
 <template>
   <div class="mcp-settings-page">
-    <div class="mcp-settings-page__header">
-      <div class="mcp-settings-page__title">MCP 工具服务器</div>
-      <div class="mcp-settings-page__desc">管理通过 MCP 协议接入的第三方工具。添加 MCP 服务器后，其提供的工具将自动注册到 Agent。</div>
-    </div>
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      gradient="linear-gradient(135deg, #52e57f 0%, var(--tk-success) 100%)"
+      title="MCP 工具"
+      desc="管理通过 MCP 协议接入的第三方工具"
+    />
 
     <!-- 服务器列表 -->
     <div class="mcp-settings-page__list">
@@ -60,7 +63,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getToolCenterApi, type McpServerState } from '@/renderer/api/tool-center-api'
-import { SaLoading, SaEmpty } from '@/renderer/components'
+import { SaLoading, SaEmpty, SaPageHero } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 
 const router = useRouter()
@@ -92,7 +95,9 @@ onMounted(load)
 .mcp-settings-page {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 0;
+  max-width: 680px;
+  width: 100%;
 }
 
 .mcp-settings-page__header {
@@ -102,23 +107,31 @@ onMounted(load)
 .mcp-settings-page__title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 8px;
 }
 
 .mcp-settings-page__desc {
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1.5;
 }
 
 /* 服务器卡片 */
 .mcp-server-card {
-  background: var(--sa-bg-primary, #fff);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 10px;
-  padding: 16px;
+  background: var(--tk-bg-primary);
+  /* emil：大圆角 + 分层阴影 */
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
+  padding: 18px;
   margin-bottom: 12px;
+  transition: box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mcp-server-card:hover {
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 
 .mcp-server-card__header {
@@ -130,12 +143,12 @@ onMounted(load)
 .mcp-server-card__name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .mcp-server-card__transport {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-top: 2px;
   font-family: 'SF Mono', 'Menlo', monospace;
 }
@@ -145,7 +158,7 @@ onMounted(load)
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .status-dot {
@@ -154,8 +167,8 @@ onMounted(load)
   border-radius: 50%;
   display: inline-block;
 }
-.status-dot.online { background: #34c759; }
-.status-dot.offline { background: #aeaeb2; }
+.status-dot.online { background: var(--tk-success); }
+.status-dot.offline { background: var(--tk-text-quaternary); }
 
 .mcp-server-card__tools {
   margin-top: 8px;
@@ -163,7 +176,7 @@ onMounted(load)
 
 .mcp-server-card__tools-title {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-bottom: 8px;
 }
 
@@ -175,7 +188,7 @@ onMounted(load)
 
 .mcp-server-card__tool-tag {
   background: rgba(0, 122, 255, 0.08);
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   font-size: 12px;
   padding: 2px 10px;
   border-radius: 10px;
@@ -183,14 +196,14 @@ onMounted(load)
 
 .mcp-server-card__tools-empty {
   font-size: 12px;
-  color: var(--sa-warning, #ff9500);
+  color: var(--tk-warning);
   margin-top: 8px;
 }
 
 .mcp-server-card__error {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.06);
   padding: 6px 10px;
   border-radius: 6px;
@@ -217,18 +230,18 @@ onMounted(load)
 
 .mcp-server-card__btn--edit {
   background: rgba(0, 122, 255, 0.08);
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .mcp-server-card__btn--delete {
   background: rgba(255, 59, 48, 0.08);
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 /* ── 手机模式 ── */
 @media (max-width: 767px) {
   .mcp-settings-page {
-    padding: 16px 8px;
+    padding: 0;
   }
 }
 </style>

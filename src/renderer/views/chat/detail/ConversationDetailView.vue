@@ -328,11 +328,11 @@ function toolCallSummary(tc: string): string {
 .conv-detail-error {
   text-align: center;
   padding: 48px 20px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 14px;
 }
 .conv-detail-error {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 /* ══════════════════════
@@ -358,15 +358,15 @@ function toolCallSummary(tc: string): string {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
 }
 
 .conv-detail-table th {
   text-align: left;
   /* 顶部 20px 留白（替代 conv-detail-body 的原顶部 padding——sticky 跟随不泄漏） */
   padding: 20px 12px 10px;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
-  color: var(--sa-text-secondary, #86868b);
+  border-bottom: 1px solid var(--tk-border);
+  color: var(--tk-text-secondary);
   font-weight: 500;
   font-size: 11px;
   text-transform: uppercase;
@@ -383,8 +383,8 @@ function toolCallSummary(tc: string): string {
 
 .conv-detail-table td {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
-  color: var(--sa-text-primary, #1d1d1f);
+  border-bottom: 1px solid var(--tk-border);
+  color: var(--tk-text-primary);
   vertical-align: top;
   line-height: 1.5;
 }
@@ -393,7 +393,7 @@ function toolCallSummary(tc: string): string {
 
 .cell-idx {
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 11px;
   font-weight: 500;
   padding-top: 12px !important;
@@ -410,10 +410,10 @@ function toolCallSummary(tc: string): string {
   white-space: nowrap;
   line-height: 1.4;
 }
-.role-badge--user      { background: var(--sa-accent, #007aff); color: #fff; }
-.role-badge--assistant { background: #34c759; color: #fff; }
-.role-badge--tool      { background: #ff9500; color: #fff; }
-.role-badge--system    { background: var(--sa-text-tertiary, #aeaeb2); color: #fff; }
+.role-badge--user      { background: var(--tk-accent); color: #fff; }
+.role-badge--assistant { background: var(--tk-success); color: #fff; }
+.role-badge--tool      { background: var(--tk-warning); color: #fff; }
+.role-badge--system    { background: var(--tk-text-tertiary); color: #fff; }
 .role-badge--approval  { background: #af52de; color: #fff; }
 
 /* ── Type / Tool ── */
@@ -421,7 +421,7 @@ function toolCallSummary(tc: string): string {
 .cell-type,
 .cell-tool {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   word-break: break-all;
 }
 .cell-tool { max-width: none; }
@@ -440,10 +440,10 @@ function toolCallSummary(tc: string): string {
 
 .reasoning-section {
   margin-bottom: 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .reasoning-header {
@@ -455,7 +455,7 @@ function toolCallSummary(tc: string): string {
   user-select: none;
   font-size: 12px;
   color: #b8860b;
-  transition: background 0.15s;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .reasoning-header:hover {
   background: color-mix(in srgb, #b8860b 6%, transparent);
@@ -473,7 +473,7 @@ function toolCallSummary(tc: string): string {
 .reasoning-body {
   margin: 0;
   padding: 8px 10px;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
+  border-top: 1px solid var(--tk-border);
   font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
   font-size: 11px;
   line-height: 1.6;
@@ -500,22 +500,22 @@ function toolCallSummary(tc: string): string {
   border-radius: 6px;
   user-select: none;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
-  transition: background 0.15s;
+  color: var(--tk-text-secondary);
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .detail-block__header:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .detail-block__label {
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .detail-block__toggle {
   margin-left: auto;
   font-size: 10px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .detail-block__body {
@@ -526,8 +526,8 @@ function toolCallSummary(tc: string): string {
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
   border-radius: 6px;
   max-height: 400px;
   overflow-y: auto;
@@ -550,8 +550,8 @@ function toolCallSummary(tc: string): string {
   line-height: 1.5;
   word-break: break-all;
   white-space: pre-wrap;
-  color: var(--sa-text-secondary, #86868b);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--tk-text-secondary);
+  background: var(--tk-bg-secondary);
   border-radius: 6px;
 }
 
@@ -596,8 +596,8 @@ function toolCallSummary(tc: string): string {
 
   .conv-detail-table tr {
     position: relative;
-    background: var(--sa-bg-primary, #ffffff);
-    border: 1px solid var(--sa-border, #d2d2d7);
+    background: var(--tk-bg-primary);
+    border: 1px solid var(--tk-border);
     border-radius: 10px;
     padding: 10px 0 4px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04);
@@ -614,7 +614,7 @@ function toolCallSummary(tc: string): string {
     line-height: 1.5;
     border: none;
     border-radius: 0 10px 0 8px;
-    background: var(--sa-accent, #007aff);
+    background: var(--tk-accent);
     color: #ffffff;
     width: auto;
     text-align: center;
@@ -644,7 +644,7 @@ function toolCallSummary(tc: string): string {
   .conv-detail-table td::before {
     font-weight: 500;
     font-size: 10px;
-    color: var(--sa-text-tertiary, #aeaeb2);
+    color: var(--tk-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     flex-shrink: 0;
@@ -663,7 +663,7 @@ function toolCallSummary(tc: string): string {
     content: 'Content';
     font-weight: 500;
     font-size: 10px;
-    color: var(--sa-text-tertiary, #aeaeb2);
+    color: var(--tk-text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -687,7 +687,7 @@ function toolCallSummary(tc: string): string {
 .view-mode-switch {
   display: flex;
   align-items: center;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 7px;
   padding: 2px;
   gap: 2px;
@@ -701,18 +701,19 @@ function toolCallSummary(tc: string): string {
   font-size: 12px;
   line-height: 1.4;
   border-radius: 5px;
-  color: var(--sa-text-secondary, #86868b);
-  transition: background 0.12s, color 0.12s;
+  color: var(--tk-text-secondary);
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
   white-space: nowrap;
 }
 
 .view-mode-switch__item:hover {
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .view-mode-switch__item--active {
-  background: var(--sa-bg-primary, #ffffff);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-primary);
+  color: var(--tk-accent);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -733,7 +734,7 @@ function toolCallSummary(tc: string): string {
 .conv-detail-chat__empty {
   padding: 48px 0;
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 14px;
 }
 
@@ -754,7 +755,7 @@ function toolCallSummary(tc: string): string {
 /* iMessage 式时间戳：细灰、小号、居中于发送侧 */
 .chat-bubble__time {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-bottom: 4px;
 }
 
@@ -766,14 +767,14 @@ function toolCallSummary(tc: string): string {
 }
 
 .chat-bubble--user {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #ffffff;
   border-bottom-right-radius: 4px;
 }
 
 .chat-bubble--assistant {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   border-bottom-left-radius: 4px;
 }
 
@@ -787,18 +788,18 @@ function toolCallSummary(tc: string): string {
 .chat-bubble--assistant :deep(.markdown-body) {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .chat-bubble__reasoning {
   margin-bottom: 8px;
-  border-left: 3px solid var(--sa-accent-secondary, #5856d6);
+  border-left: 3px solid var(--tk-accent-secondary);
   padding-left: 8px;
 }
 
 .chat-bubble__reasoning-toggle {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   user-select: none;
 }
@@ -807,7 +808,7 @@ function toolCallSummary(tc: string): string {
   margin: 6px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'SF Mono', 'Menlo', monospace;

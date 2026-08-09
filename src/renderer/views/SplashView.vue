@@ -191,7 +191,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sa-space-5, 20px);
+  gap: var(--tk-space-5, 20px);
 }
 
 /* ── 背景光晕（低透明度径向渐变） ── */
@@ -239,8 +239,8 @@ onMounted(() => {
   z-index: 1;
   padding: 10px;
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: var(--sa-radius-lg, 12px);
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-lg);
   box-shadow:
     0 4px 16px rgba(0, 0, 0, 0.06),
     0 1px 3px rgba(0, 0, 0, 0.04);
@@ -251,9 +251,9 @@ onMounted(() => {
   position: relative;
   z-index: 1;
   min-width: 240px;
-  padding: var(--sa-space-5, 20px) var(--sa-space-6, 24px);
-  background: var(--sa-bg-glass, rgba(255, 255, 255, 0.72));
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: var(--tk-space-5, 20px) var(--tk-space-6, 24px);
+  background: var(--tk-bg-glass);
+  border: 1px solid var(--tk-border-card);
   border-radius: 20px;
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
@@ -267,7 +267,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--sa-space-4, 16px);
+  gap: var(--tk-space-4, 16px);
 }
 
 /* ── 步骤项（连接线在图标左侧纵向贯穿） ── */
@@ -275,9 +275,9 @@ onMounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--sa-space-3, 12px);
-  font-size: var(--sa-fs-body, 13px);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  gap: var(--tk-space-3, 12px);
+  font-size: var(--tk-fs-body);
+  color: var(--tk-text-tertiary);
   transition: color 0.2s ease-in-out;
 }
 
@@ -292,15 +292,15 @@ onMounted(() => {
 }
 
 .splash__step.step--active {
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .splash__step.step--done {
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 .splash__step.step--error {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 /* ── 图标区 ── */
@@ -319,7 +319,7 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--sa-text-quaternary, #c7c7cc);
+  background: var(--tk-text-quaternary);
   transition: background-color 0.2s ease-in-out;
 }
 
@@ -328,7 +328,7 @@ onMounted(() => {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.35);
   animation: splash-pulse 1.6s ease-out infinite;
 }
@@ -347,12 +347,12 @@ onMounted(() => {
 
 /* done：绿色对勾 */
 .splash__check {
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 /* error：红色叉 */
 .splash__cross {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .splash__step-label {
@@ -361,9 +361,9 @@ onMounted(() => {
 
 /* ── 错误提示 ── */
 .splash__error {
-  font-size: var(--sa-fs-body, 13px);
-  color: var(--sa-destructive, #ff3b30);
-  margin: var(--sa-space-3, 12px) 0 0;
+  font-size: var(--tk-fs-body);
+  color: var(--tk-destructive);
+  margin: var(--tk-space-3, 12px) 0 0;
   text-align: center;
 }
 
@@ -371,8 +371,8 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sa-space-3, 12px);
-  margin-top: var(--sa-space-2, 8px);
+  gap: var(--tk-space-3, 12px);
+  margin-top: var(--tk-space-2, 8px);
 }
 
 /* ── 动效降级 ── */

@@ -49,13 +49,18 @@ const section = computed(() => route.params.section as string || '')
 </script>
 
 <style scoped>
+/* 设置详情容器：窄列统一（与 Agent 域 L3 一致——680 宽） */
+.settings-detail {
+  max-width: 680px;
+  width: 100%;
+}
 .settings-page {
   padding: 24px;
   width: 100%;
 }
 .settings-page__placeholder {
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   text-align: center;
   margin-top: 40px;
 }
@@ -71,7 +76,7 @@ const section = computed(() => route.params.section as string || '')
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .settings-placeholder__icon-wrap {
   opacity: 0.4;

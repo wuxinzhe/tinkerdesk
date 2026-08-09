@@ -45,27 +45,37 @@ defineProps<SaEmptyProps>()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 40px 20px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  gap: 8px;
+  padding: 48px 24px;
+  color: var(--tk-text-tertiary);
   text-align: center;
 }
 .sa-empty__icon {
-  opacity: 0.4;
-  margin-bottom: 4px;
+  /* emil：图标放入柔和圆角容器——具象而非干瘪线条 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
+  opacity: 1;
+  margin-bottom: 6px;
 }
 .sa-empty__text {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #48484a);
+  color: var(--tk-text-primary);
 }
 .sa-empty__hint {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 320px;
 }
 .sa-empty__actions {
-  margin-top: 8px;
+  margin-top: 10px;
 }
 </style>

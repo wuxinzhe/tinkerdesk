@@ -92,8 +92,8 @@ const navItems = [
   width: 200px;
   transition: width 0.2s ease;
   display: flex;
-  background: var(--sa-bg-primary, #ffffff);
-  border-right: 1px solid var(--sa-border, #d2d2d7);
+  background: var(--tk-bg-primary);
+  border-right: 1px solid var(--tk-border);
 }
 
 .nav-wrapper.collapsed {
@@ -127,7 +127,7 @@ const navItems = [
   padding: 8px 12px;
   border: none;
   background: transparent;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   cursor: pointer;
   border-radius: 7px;
   transition: background 0.12s, color 0.12s;
@@ -138,12 +138,12 @@ const navItems = [
 }
 
 .nav-sidebar__item:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
 }
 
 .nav-sidebar__item.active {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #ffffff;
 }
 

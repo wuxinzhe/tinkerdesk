@@ -148,23 +148,23 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
 .pcf {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-4, 16px);
+  gap: var(--tk-space-4, 16px);
 }
 
 .pcf__field {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-1, 4px);
+  gap: var(--tk-space-1, 4px);
 }
 
 .pcf__label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .pcf__required {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
   margin-left: 2px;
 }
 
@@ -173,16 +173,16 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   padding: 8px 12px;
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   outline: none;
   transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pcf__input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 
@@ -194,7 +194,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
 .pcf__desc {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 /* file 字段：输入框 + 浏览按钮 */
@@ -206,7 +206,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
 .pcf__file .pcf__input {
   flex: 1;
   cursor: default;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .pcf__file-btn {
@@ -215,9 +215,9 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -246,7 +246,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   position: absolute;
   inset: 0;
   border-radius: 11px;
-  background: var(--sa-bg-tertiary, #e5e5ea);
+  background: var(--tk-bg-tertiary);
   transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -264,7 +264,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
 }
 
 .pcf__switch input:checked + .pcf__switch-track {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .pcf__switch input:checked + .pcf__switch-track::after {
@@ -282,7 +282,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   font-weight: 500;
   font-family: inherit;
   color: #ffffff;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -290,7 +290,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
 }
 
 .pcf__btn:hover {
-  background: var(--sa-accent-hover, #0066d6);
+  background: var(--tk-accent-hover);
 }
 
 .pcf__btn:disabled {

@@ -7,6 +7,7 @@
  */
 import { ref, onMounted } from 'vue'
 import type { VoiceProviderInfo } from '@/renderer/api/types'
+import { SaPageHero } from '@/renderer/components'
 
 /** 进入动画标记（stagger 触发） */
 const mounted = ref(false)
@@ -50,13 +51,13 @@ onMounted(() => {
 
 <template>
   <div class="voice-settings-page" :data-mounted="mounted">
-    <div class="voice-settings-page__header">
-      <div class="voice-settings-page__title">语音设置</div>
-      <div class="voice-settings-page__desc">
-        语音输入（STT）与朗读（TTS）由插件提供（多 provider 可选）。录音是应用固有功能，
-        安装声明 <code>voice.stt / voice.tts</code> 接口的插件后即可使用。
-      </div>
-    </div>
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
+      gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
+      title="语音设置"
+      desc="选择语音输入（STT）和朗读（TTS）提供商"
+    />
 
     <!-- 无 provider -->
     <div v-if="providers.stt.length === 0 && providers.tts.length === 0" class="voice-settings-page__empty">
@@ -134,29 +135,31 @@ onMounted(() => {
 .voice-settings-page {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-5, 20px);
-  padding: var(--sa-space-5, 20px) var(--sa-space-6, 24px);
+  gap: var(--tk-space-5, 20px);
+  padding: 0;
+  max-width: 680px;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
 }
 
 .voice-settings-page__title {
-  font-size: var(--sa-fs-title, 20px);
+  font-size: var(--tk-fs-title);
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .voice-settings-page__desc {
-  margin-top: var(--sa-space-1, 4px);
-  font-size: var(--sa-fs-body, 13px);
+  margin-top: var(--tk-space-1, 4px);
+  font-size: var(--tk-fs-body);
   line-height: 1.5;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .voice-settings-page__desc code {
   font-family: ui-monospace, monospace;
   font-size: 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -167,54 +170,56 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sa-space-2, 8px);
+  gap: var(--tk-space-2, 8px);
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .voice-settings-page__empty-text {
-  font-size: var(--sa-fs-body, 13px);
+  font-size: var(--tk-fs-body);
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .voice-settings-page__empty-hint {
-  font-size: var(--sa-fs-caption, 11px);
+  font-size: var(--tk-fs-caption);
 }
 
 .voice-settings-page__sections {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-5, 20px);
+  gap: var(--tk-space-5, 20px);
 }
 
 .voice-card {
-  padding: var(--sa-space-4, 16px);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: var(--sa-radius-lg, 12px);
+  padding: var(--tk-space-4, 16px);
+  background: var(--tk-bg-primary);
+  /* emil：大圆角 + 分层阴影 */
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
 }
 
 .voice-card__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
-  margin-bottom: var(--sa-space-3, 12px);
+  color: var(--tk-text-primary);
+  margin-bottom: var(--tk-space-3, 12px);
 }
 
 .voice-card__list {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-2, 8px);
+  gap: var(--tk-space-2, 8px);
 }
 
 .voice-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sa-space-3, 12px);
-  padding: var(--sa-space-3, 12px);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  gap: var(--tk-space-3, 12px);
+  padding: var(--tk-space-3, 12px);
+  background: var(--tk-bg-secondary);
   border-radius: 10px;
   /* emil：进入 stagger（transitionDelay 由模板按 index 注入） */
   opacity: 0;
@@ -244,32 +249,32 @@ onMounted(() => {
 .voice-item__name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .voice-item__version {
   margin-left: 6px;
   font-size: 11px;
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .voice-item__ready {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .voice-item__ready.ok {
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 .voice-item__ready.no {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .voice-item__actions {
   display: flex;
-  gap: var(--sa-space-2, 8px);
+  gap: var(--tk-space-2, 8px);
   flex-shrink: 0;
 }
 
@@ -278,9 +283,9 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   cursor: pointer;
   /* emil：指定属性过渡 + 强 ease-out + 按压（transform 由全局 button:active 提供） */
@@ -292,7 +297,7 @@ onMounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .voice-item__btn:hover:not(:disabled) {
-    border-color: var(--sa-accent, #007aff);
+    border-color: var(--tk-accent);
   }
 }
 
@@ -302,15 +307,15 @@ onMounted(() => {
 }
 
 .voice-item__btn--primary.active {
-  color: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
+  border-color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
 }
 
 .voice-card__hint {
-  margin-top: var(--sa-space-3, 12px);
+  margin-top: var(--tk-space-3, 12px);
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   text-align: right;
 }
 </style>

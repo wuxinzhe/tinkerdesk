@@ -26,7 +26,7 @@ withDefaults(defineProps<FullScreenCenterLayoutProps>(), {
   justify-content: center;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--sa-bg-primary);
+  background: var(--tk-bg-primary);
   width: 100%;
   position: relative;
 }
@@ -41,8 +41,8 @@ withDefaults(defineProps<FullScreenCenterLayoutProps>(), {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: var(--sa-fs-caption);
-  color: var(--sa-text-quaternary);
+  font-size: var(--tk-fs-caption);
+  color: var(--tk-text-quaternary);
   margin: 0;
 }
 </style>

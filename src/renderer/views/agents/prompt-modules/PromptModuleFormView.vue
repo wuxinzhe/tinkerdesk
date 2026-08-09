@@ -1,8 +1,12 @@
 <template>
   <div class="prompt-form">
-    <div class="prompt-form__header">
-      <span>{{ isEdit ? '编辑模块' : '新增模块' }}</span>
-    </div>
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>'
+      gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
+      :title="isEdit ? '编辑模块' : '新增模块'"
+      desc="提示词模块的编辑表单"
+    />
 
     <div class="prompt-form__body">
       <div v-if="loading" class="prompt-form__loading">加载中...</div>
@@ -52,6 +56,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
 
 const route = useRoute()
@@ -121,7 +126,9 @@ async function saveModule() {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 20px 24px;
+  max-width: 680px;
+  width: 100%;
 }
 
 .prompt-form__header {
@@ -143,7 +150,7 @@ async function saveModule() {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 
@@ -153,25 +160,25 @@ async function saveModule() {
 .prompt-form__field label {
   display: block;
   font-size: 12px;
-  color: var(--sa-text-secondary);
+  color: var(--tk-text-secondary);
   margin-bottom: 4px;
 }
 .prompt-form__field input,
 .prompt-form__field textarea {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #e5e5ea);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
   font-family: inherit;
 }
 .prompt-form__field input:focus,
 .prompt-form__field textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 .prompt-form__field textarea {
   resize: vertical;
@@ -180,7 +187,7 @@ async function saveModule() {
 .prompt-form__counter {
   text-align: right;
   font-size: 11px;
-  color: var(--sa-text-tertiary);
+  color: var(--tk-text-tertiary);
   margin-top: 2px;
 }
 
@@ -191,7 +198,7 @@ async function saveModule() {
 }
 .prompt-form__vars summary {
   cursor: pointer;
-  color: var(--sa-text-secondary);
+  color: var(--tk-text-secondary);
 }
 .prompt-form__vars table {
   width: 100%;
@@ -201,11 +208,11 @@ async function saveModule() {
 .prompt-form__vars td {
   padding: 2px 8px;
   font-size: 11px;
-  color: var(--sa-text-tertiary);
+  color: var(--tk-text-tertiary);
 }
 .prompt-form__vars td:first-child {
   font-family: monospace;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   width: 100px;
 }
 
@@ -219,10 +226,10 @@ async function saveModule() {
 }
 .prompt-form__cancel {
   padding: 6px 14px;
-  border: 1px solid var(--sa-border);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-secondary);
+  color: var(--tk-text-secondary);
   font-size: 13px;
   cursor: pointer;
 }
@@ -230,7 +237,7 @@ async function saveModule() {
   padding: 6px 14px;
   border: none;
   border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 13px;
   cursor: pointer;
@@ -240,7 +247,7 @@ async function saveModule() {
   cursor: not-allowed;
 }
 .prompt-form__error {
-  color: #ff3b30;
+  color: var(--tk-destructive);
   font-size: 12px;
   margin-top: 8px;
 }

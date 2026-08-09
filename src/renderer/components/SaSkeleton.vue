@@ -60,7 +60,7 @@ withDefaults(defineProps<SaSkeletonProps>(), {
 <style scoped>
 .sa-skeleton {
   display: block;
-  background: var(--sa-skeleton-bg, var(--sa-border, #e8e8ed));
+  background: var(--tk-skeleton-bg);
   border-radius: 6px;
   animation: sa-skeleton-shimmer 1.5s ease-in-out infinite;
 }

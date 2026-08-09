@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="skill-file-edit">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+      gradient="linear-gradient(135deg, #5ac8fa 0%, var(--tk-accent) 100%)"
+      title="技能文件"
+      desc="编辑技能的说明文件"
+    />
     <!-- 新增/编辑技能文件 -->
     <div class="sfe">
       <div class="sfe__heading">{{ isEdit ? '编辑文件' : '新增文件' }}</div>
@@ -48,7 +55,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { skillsApi } from '@/renderer/api/skills-api'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 
 const router = useRouter()
 const route = useRoute()
@@ -103,18 +110,20 @@ function goBack() {
 
 <style scoped>
 .skill-file-edit {
-  padding: 20px 24px;
+  /* padding 由 L3PageLayout 统一提供 */
+  max-width: 680px;
+  width: 100%;
 }
 
 .sfe {
-  max-width: 640px;
+  /* 宽度由 L3PageLayout（680）统一——此处不限制 */
 }
 
 .sfe__heading {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .sfe__section {
@@ -135,22 +144,22 @@ function goBack() {
 
 .sfe__label {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .sfe__input {
   width: 100%;
   font-size: 13px;
   padding: 7px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
 }
 
 .sfe__input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .sfe__textarea {
@@ -158,17 +167,17 @@ function goBack() {
   font-size: 13px;
   font-family: inherit;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   resize: vertical;
   line-height: 1.5;
 }
 
 .sfe__textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .sfe__actions {
@@ -182,25 +191,25 @@ function goBack() {
   padding: 7px 16px;
   font-size: 13px;
   border-radius: 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   cursor: pointer;
 }
 
 .action-btn:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
 }
 
 .action-btn--primary {
-  background: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
   color: #fff;
 }
 
 .action-btn--primary:hover {
-  background: var(--sa-accent-hover, #0071e3);
+  background: var(--tk-accent-hover);
   color: #fff;
 }
 

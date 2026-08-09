@@ -67,13 +67,40 @@
         </div>
       </SaFormGroup>
       <SaFormGroup label="上下文窗口" required class="cm-form__group cm-form__group--narrow">
-        <input
-          v-model.number="form.contextLimit"
-          type="number"
-          class="cm-input"
-          min="1"
-          placeholder="128000"
-        />
+        <div ref="contextRowRef" class="cm-context-row">
+          <input
+            v-model.number="form.contextLimit"
+            type="number"
+            class="cm-input cm-context-row__input"
+            min="1"
+            placeholder="128000"
+          />
+          <!-- 组合式按钮：右侧向下箭头——点开预设菜单 -->
+          <button
+            class="cm-context-trigger"
+            type="button"
+            :class="{ 'cm-context-trigger--open': contextMenuOpen }"
+            title="快捷预设"
+            @click.stop="contextMenuOpen = !contextMenuOpen"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          <!-- 下拉菜单（向下展开——选项为预设标签，选中填入纯数字） -->
+          <Transition name="context-menu">
+            <div v-if="contextMenuOpen" class="cm-context-menu">
+              <button
+                v-for="p in CONTEXT_PRESETS"
+                :key="p.value"
+                class="cm-context-menu__item"
+                @click="applyContextPreset(p.value)"
+              >
+                {{ p.label }}
+              </button>
+            </div>
+          </Transition>
+        </div>
       </SaFormGroup>
     </div>
 
@@ -101,7 +128,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import type { SystemProvider } from '@/renderer/api/types'
 import { SaFormGroup } from '@/renderer/components'
 import { modelsApi } from '@/renderer/api/models-api'
@@ -128,6 +155,39 @@ onMounted(async () => {
 
 // ── Show/hide API key ──
 const showApiKey = ref(false)
+
+// ── 上下文窗口快捷预设（组合式下拉：输入框 + 右侧箭头展开） ──
+/** 预设（标签显示 128K/256K/1M——填入的是无单位纯数字） */
+const CONTEXT_PRESETS = [
+  { label: '128K', value: 128000 },
+  { label: '256K', value: 256000 },
+  { label: '1M', value: 1000000 },
+]
+
+const contextMenuOpen = ref(false)
+const contextRowRef = ref<HTMLElement | null>(null)
+
+function applyContextPreset(value: number): void {
+  props.form.contextLimit = value
+  contextMenuOpen.value = false
+}
+
+/** 点击外部关闭菜单（document mousedown——排除菜单/触发器自身） */
+function onDocMouseDown(e: MouseEvent): void {
+  const row = contextRowRef.value
+  if (!row) return
+  if (!row.contains(e.target as Node)) {
+    contextMenuOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('mousedown', onDocMouseDown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', onDocMouseDown)
+})
 
 // ── Model fetching ──
 const fetchingModels = ref(false)
@@ -170,8 +230,8 @@ async function fetchModelList() {
 .cm-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px 24px;
+  gap: 12px;
+  padding: 20px 28px;
 }
 
 /* 清除 SaFormGroup 自带 margin，用 gap 统一控制 */
@@ -184,6 +244,109 @@ async function fetchModelList() {
 .cm-form__row {
   display: flex;
   gap: 16px;
+}
+
+/* ── 上下文窗口：手动输入 + 组合式下拉（右侧箭头展开预设） ── */
+
+.cm-context-row {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.cm-context-row__input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 44px;   /* 预留右侧箭头按钮空间——输入框视觉完整 */
+}
+
+/* 组合式按钮（输入框右侧——向下箭头） */
+.cm-context-trigger {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--tk-text-tertiary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.cm-context-trigger svg {
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.cm-context-trigger--open svg {
+  transform: rotate(180deg);
+}
+/* 无 hover 背景色（用户指定）——仅颜色反馈 */
+@media (hover: hover) and (pointer: fine) {
+  .cm-context-trigger:hover {
+    color: var(--tk-accent);
+  }
+}
+
+/* 下拉菜单（向下展开——与输入框等宽：输入框占满 row——菜单同宽） */
+.cm-context-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cm-context-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--tk-text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cm-context-menu__item:hover {
+    background: rgba(0, 122, 255, 0.08);
+    color: var(--tk-accent);
+  }
+}
+
+/* 菜单展开动画（emil：从触发器向下——translateY + 淡入） */
+.context-menu-enter-active {
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.context-menu-leave-active {
+  transition: opacity 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.context-menu-enter-from,
+.context-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* ── Group overrides ── */
@@ -213,14 +376,14 @@ async function fetchModelList() {
 .cm-input {
   display: block;
   width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
-  border-radius: 7px;
-  background: var(--sa-bg-primary, #fff);
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--tk-border-light);
+  border-radius: 8px;
+  background: var(--tk-bg-primary);
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
   transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -233,12 +396,12 @@ async function fetchModelList() {
 }
 
 .cm-input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.10);
 }
 
 .cm-input::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .cm-input[type="number"]::-webkit-outer-spin-button,
@@ -263,7 +426,7 @@ input.cm-input[type="number"] {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 /* ── Model row (select + fetch button) ── */
@@ -286,10 +449,10 @@ input.cm-input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   border-radius: 7px;
   background: transparent;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   cursor: pointer;
   transition: background 0.12s, opacity 0.12s;
 }
@@ -328,7 +491,7 @@ input.cm-input[type="number"] {
   transform: translateY(-50%);
   border: none;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   width: 28px;
   height: 28px;
@@ -341,7 +504,7 @@ input.cm-input[type="number"] {
 
 .cm-key-toggle:hover {
   background: rgba(0, 122, 255, 0.06);
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 /* ── Actions ── */
@@ -355,7 +518,7 @@ input.cm-input[type="number"] {
 .cm-error {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 
 .cm-test-msg {
@@ -363,6 +526,6 @@ input.cm-input[type="number"] {
   font-size: 12px;
 }
 
-.cm-test-msg--ok { color: #34c759; }
-.cm-test-msg--fail { color: #ff3b30; }
+.cm-test-msg--ok { color: var(--tk-success); }
+.cm-test-msg--fail { color: var(--tk-destructive); }
 </style>

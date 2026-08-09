@@ -25,8 +25,8 @@ withDefaults(defineProps<SaSpinnerProps>(), {
   border-radius: 50%;
   animation: sa-spin 0.6s linear infinite;
   border-style: solid;
-  border-color: var(--sa-border, #e8e8ed);
-  border-top-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-border);
+  border-top-color: var(--tk-accent);
 }
 
 .sa-spinner--small {

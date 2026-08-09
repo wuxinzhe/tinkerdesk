@@ -96,7 +96,7 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
 .sa-modal {
   width: 320px;
   padding: 24px;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
   border-radius: 14px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
@@ -109,12 +109,12 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
   height: 40px;
   margin-bottom: 14px;
   border-radius: 50%;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.1);
 }
 
 .sa-modal__icon.is-danger {
-  color: var(--sa-danger, #ff3b30);
+  color: var(--tk-danger);
   background: rgba(255, 59, 48, 0.1);
 }
 
@@ -123,14 +123,14 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
   font-size: 17px;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .sa-modal__message {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--sa-text-secondary, #48484a);
+  color: var(--tk-text-secondary);
 }
 
 .sa-modal__actions {
@@ -146,7 +146,7 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: transparent;
   border: none;
   border-radius: 8px;
@@ -155,12 +155,12 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
 }
 
 .sa-modal__btn:hover {
-  background: var(--sa-bg-hover, rgba(0, 0, 0, 0.05));
+  background: var(--tk-bg-hover);
 }
 
 .sa-modal__btn--destructive {
   color: #ffffff;
-  background: var(--sa-danger, #ff3b30);
+  background: var(--tk-danger);
 }
 
 .sa-modal__btn--destructive:hover {

@@ -92,7 +92,7 @@ async function onNewSession() {
   width: 280px;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--sa-border, #d2d2d7);
+  border-right: 1px solid var(--tk-border);
   background: transparent;
   height: 100%;
   flex-shrink: 0;

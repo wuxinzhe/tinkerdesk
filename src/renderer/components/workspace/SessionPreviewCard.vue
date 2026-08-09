@@ -45,8 +45,8 @@ function formatTime(ts: number): string {
 
 <style scoped>
 .preview-card {
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #e5e5ea);
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
   border-radius: 12px;
   padding: 12px 14px;
   cursor: pointer;
@@ -58,7 +58,7 @@ function formatTime(ts: number): string {
 }
 
 .preview-card:hover {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
 }
@@ -72,13 +72,13 @@ function formatTime(ts: number): string {
 
 .preview-card__time {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
 }
 
 .preview-card__count {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
 }
 
@@ -95,7 +95,7 @@ function formatTime(ts: number): string {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 11px;
   line-height: 20px;
@@ -103,14 +103,14 @@ function formatTime(ts: number): string {
 }
 
 .preview-card__label--ai {
-  background: var(--sa-accent-secondary, #5856d6);
+  background: var(--tk-accent-secondary);
 }
 
 .preview-card__text {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -120,7 +120,7 @@ function formatTime(ts: number): string {
 }
 
 .preview-card__text--ai {
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .preview-card__divider {
@@ -131,11 +131,11 @@ function formatTime(ts: number): string {
 .preview-card__divider-line {
   flex: 1;
   height: 1px;
-  background: var(--sa-border, #e5e5ea);
+  background: var(--tk-border);
 }
 
 .preview-card__tools {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 </style>

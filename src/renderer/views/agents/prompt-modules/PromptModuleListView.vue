@@ -1,7 +1,13 @@
 <template>
   <div class="prompt-modules">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>'
+      gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
+      title="提示词模块"
+      desc="管理 Agent 的提示词模块"
+    />
     <div class="prompt-modules__header">
-      <span class="prompt-modules__title">提示词模块</span>
       <button class="prompt-modules__add-btn" @click="openCreate">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -61,6 +67,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
 import type { PromptModuleData } from '@/renderer/api/types'
 
@@ -133,7 +140,9 @@ async function confirmDelete(mod: PromptModuleData) {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 20px 24px;
+  max-width: 680px;
+  width: 100%;
 }
 
 .prompt-modules__header {
@@ -154,7 +163,7 @@ async function confirmDelete(mod: PromptModuleData) {
   padding: 5px 10px;
   border: none;
   border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 12px;
   cursor: pointer;
@@ -171,7 +180,7 @@ async function confirmDelete(mod: PromptModuleData) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 .prompt-modules__empty-hint {
@@ -192,7 +201,7 @@ async function confirmDelete(mod: PromptModuleData) {
   padding: 8px 0;
 }
 .prompt-module-item + .prompt-module-item {
-  border-top: 1px solid var(--sa-border, #e5e5ea);
+  border-top: 1px solid var(--tk-border);
 }
 .prompt-module-item__body {
   display: flex;
@@ -207,14 +216,14 @@ async function confirmDelete(mod: PromptModuleData) {
 .prompt-module-item__name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .prompt-module-item__preview {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -234,16 +243,16 @@ async function confirmDelete(mod: PromptModuleData) {
   width: 26px;
   height: 26px;
   border-radius: 4px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
 .prompt-module-item__btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
 }
 .prompt-module-item__btn--danger:hover {
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 
 /* ── Switch ── */
@@ -279,7 +288,7 @@ async function confirmDelete(mod: PromptModuleData) {
   transition: 0.2s;
 }
 .prompt-module-item__switch input:checked + .prompt-module-item__slider {
-  background: #34c759;
+  background: var(--tk-success);
 }
 .prompt-module-item__switch input:checked + .prompt-module-item__slider::before {
   transform: translateX(14px);

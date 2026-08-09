@@ -30,7 +30,7 @@ withDefaults(defineProps<SaLoadingProps>(), {
   justify-content: center;
   gap: 8px;
   padding: 40px 20px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .sa-loading__text {
   margin: 0;

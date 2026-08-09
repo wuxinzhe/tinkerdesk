@@ -59,7 +59,7 @@ function onSelect(id: string) {
   left: 0;
   bottom: 0;
   width: 280px;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   z-index: 300;
   transform: translateX(-100%);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,7 +77,7 @@ function onSelect(id: string) {
 .workspace__drawer-logo {
   width: 32px;
   height: 32px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   border-radius: 10px;
   display: flex;
@@ -97,7 +97,7 @@ function onSelect(id: string) {
 
 .workspace__drawer-footer {
   padding: 12px;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
+  border-top: 1px solid var(--tk-border);
 }
 
 .workspace__drawer-item {
@@ -112,17 +112,17 @@ function onSelect(id: string) {
   cursor: pointer;
   font-size: 15px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   font-family: inherit;
   transition: background 0.12s;
 }
 
 .workspace__drawer-item:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .workspace__drawer-item.active {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
 }
 

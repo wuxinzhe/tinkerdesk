@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="tool-provider-settings">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
+      :title="toolLabel + ' Provider'"
+      desc="选择该工具的 provider——内置为工具自带实现，插件可接入自己的服务"
+    />
     <div v-if="loading" class="tps-loading">加载中…</div>
     <div v-else class="tps-body">
       <!-- 工具信息 -->
@@ -78,7 +85,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { webProviderApi, type WebProviderInfo } from '@/renderer/api/web-provider-api'
 import { audioToolProviderApi, type AudioToolProviderInfo } from '@/renderer/api/audio-tool-provider-api'
 
@@ -182,12 +189,14 @@ onMounted(load)
 
 <style scoped>
 .tool-provider-settings {
-  padding: 12px;
+  /* padding 由 L3PageLayout 统一提供 */
+  max-width: 680px;
+  width: 100%;
 }
 .tps-loading {
   padding: 24px;
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 .tps-body {
@@ -197,8 +206,8 @@ onMounted(load)
 }
 .tps-tool-info {
   padding: 12px;
-  background: var(--sa-card-bg, #fff);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--tk-card-bg);
+  border: 1px solid var(--tk-border-card);
   border-radius: 12px;
 }
 .tps-tool-name {
@@ -208,7 +217,7 @@ onMounted(load)
 }
 .tps-tool-desc {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1.5;
 }
 .tps-section-title {
@@ -226,18 +235,18 @@ onMounted(load)
   align-items: flex-start;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--sa-card-bg, #fff);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--tk-card-bg);
+  border: 1px solid var(--tk-border-card);
   border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.15s;
 }
 .tps-provider-row.active {
-  border-color: var(--sa-accent, #0a84ff);
+  border-color: var(--tk-accent);
 }
 .tps-provider-row input[type='radio'] {
   margin-top: 2px;
-  accent-color: var(--sa-accent, #0a84ff);
+  accent-color: var(--tk-accent);
 }
 .tps-provider-info {
   flex: 1;
@@ -252,23 +261,23 @@ onMounted(load)
   padding: 1px 6px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--sa-accent, #0a84ff);
+  color: var(--tk-accent);
   background: rgba(10, 132, 255, 0.1);
   border-radius: 4px;
   vertical-align: 1px;
 }
 .tps-provider-desc {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-top: 2px;
 }
 .tps-provider-empty {
   padding: 16px;
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 12px;
-  background: var(--sa-card-bg, #fff);
-  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: var(--tk-card-bg);
+  border: 1px dashed var(--tk-border-card);
   border-radius: 10px;
 }
 .tps-fallback-row {
@@ -276,8 +285,8 @@ onMounted(load)
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: var(--sa-card-bg, #fff);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--tk-card-bg);
+  border: 1px solid var(--tk-border-card);
   border-radius: 10px;
   cursor: pointer;
 }
@@ -287,11 +296,11 @@ onMounted(load)
 }
 .tps-fallback-desc {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-top: 2px;
 }
 .tps-fallback-row input[type='checkbox'] {
-  accent-color: var(--sa-accent, #0a84ff);
+  accent-color: var(--tk-accent);
 }
 
 /* Switch 开关（iOS 风格：36×22 track + 滑块 transform 过渡） */
@@ -315,7 +324,7 @@ onMounted(load)
   position: absolute;
   inset: 0;
   border-radius: 11px;
-  background: var(--sa-bg-tertiary, #e5e5ea);
+  background: var(--tk-bg-tertiary);
   transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -333,7 +342,7 @@ onMounted(load)
 }
 
 .tps-switch input:checked + .tps-switch-track {
-  background: var(--sa-accent, #0a84ff);
+  background: var(--tk-accent);
 }
 
 .tps-switch input:checked + .tps-switch-track::after {
@@ -346,6 +355,6 @@ onMounted(load)
 }
 .tps-saving {
   font-size: 12px;
-  color: var(--sa-accent, #0a84ff);
+  color: var(--tk-accent);
 }
 </style>

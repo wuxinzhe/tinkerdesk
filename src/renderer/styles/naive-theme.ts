@@ -8,22 +8,22 @@ import { type GlobalThemeOverrides } from 'naive-ui'
  */
 export const naiveThemeOverrides: GlobalThemeOverrides = {
   common: {
-    primaryColor: '#007aff',
-    primaryColorHover: '#0066d6',
-    primaryColorPressed: '#004d99',
-    primaryColorSuppl: '#007aff',
+    primaryColor: 'var(--tk-accent)',
+    primaryColorHover: 'var(--tk-accent-hover)',
+    primaryColorPressed: 'var(--tk-accent-active)',
+    primaryColorSuppl: 'var(--tk-accent)',
 
-    errorColor: '#ff3b30',
+    errorColor: 'var(--tk-destructive)',
     errorColorHover: '#ff453a',
     errorColorPressed: '#d70015',
-    errorColorSuppl: '#ff3b30',
+    errorColorSuppl: 'var(--tk-destructive)',
 
-    successColor: '#34c759',
-    warningColor: '#ff9500',
+    successColor: 'var(--tk-success)',
+    warningColor: 'var(--tk-warning)',
 
-    textColor1: '#1d1d1f',
-    textColor2: '#86868b',
-    textColor3: '#aeaeb2',
+    textColor1: 'var(--tk-text-primary)',
+    textColor2: 'var(--tk-text-tertiary)',
+    textColor3: 'var(--tk-text-quaternary)',
 
     bodyColor: '#ffffff',
     borderRadius: '8px',
@@ -58,38 +58,38 @@ export const naiveThemeOverrides: GlobalThemeOverrides = {
   Button: {
     borderRadiusMedium: '8px',
     textColor: '#ffffff',
-    color: '#007aff',
-    colorHover: '#0066d6',
-    colorPressed: '#004d99',
-    colorFocus: '#007aff',
+    color: 'var(--tk-accent)',
+    colorHover: 'var(--tk-accent-hover)',
+    colorPressed: 'var(--tk-accent-active)',
+    colorFocus: 'var(--tk-accent)',
     heightLarge: '44px',
     fontSizeLarge: '15px',
   },
 
   Input: {
     borderRadius: '6px',
-    color: '#f5f5f7',
-    colorFocus: '#f5f5f7',
-    border: '1px solid #d2d2d7',
-    borderHover: '1px solid #d2d2d7',
-    borderFocus: '1px solid #007aff',
+    color: 'var(--tk-bg-secondary)',
+    colorFocus: 'var(--tk-bg-secondary)',
+    border: '1px solid var(--tk-border)',
+    borderHover: '1px solid var(--tk-border)',
+    borderFocus: '1px solid var(--tk-accent)',
     boxShadowFocus: '0 0 0 3px rgba(0, 122, 255, 0.15)',
-    placeholderColor: '#aeaeb2',
-    textColor: '#1d1d1f',
+    placeholderColor: 'var(--tk-text-quaternary)',
+    textColor: 'var(--tk-text-primary)',
     heightMedium: '40px',
     fontSizeMedium: '14px',
     paddingMedium: '0 12px',
   },
 
   Form: {
-    labelTextColor: '#1d1d1f',
+    labelTextColor: 'var(--tk-text-primary)',
     labelFontWeight: '500',
-    feedbackTextColorError: '#ff3b30',
+    feedbackTextColorError: 'var(--tk-destructive)',
     blankHeightMedium: '40px',
   },
 
   Spin: {
-    color: '#007aff',
+    color: 'var(--tk-accent)',
   },
 }
 

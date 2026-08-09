@@ -73,18 +73,18 @@ onUnmounted(() => {
 .preview-view__state {
   padding: 48px 0;
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 14px;
 }
 
 .preview-view__state--error {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .preview-view__more {
   padding: 16px 0;
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 12px;
 }
 </style>

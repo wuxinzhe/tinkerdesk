@@ -7,6 +7,7 @@
  */
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { pluginsApi, onPluginEvent } from '@/renderer/api/plugins-api'
 import PluginConfigForm from '@/renderer/components/settings/PluginConfigForm.vue'
 import type { ConfigSchema, PluginCheckItem, PluginInfo } from '@/renderer/api/types'
@@ -152,6 +153,13 @@ watch(pluginId, () => {
 
 <template>
   <div class="plugin-config-page">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
+      gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
+      title="插件配置"
+      desc="插件的参数与运行状态"
+    />
     <!-- 加载态 -->
     <div v-if="loading" class="plugin-config-page__state">加载中…</div>
 
@@ -259,7 +267,9 @@ watch(pluginId, () => {
 .plugin-config-page {
   display: flex;
   flex-direction: column;
-  padding: var(--sa-space-5, 20px) var(--sa-space-6, 24px);
+  padding: 20px 24px;
+  max-width: 680px;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
 }
@@ -270,13 +280,13 @@ watch(pluginId, () => {
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-config-page__body {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-5, 20px);
+  gap: var(--tk-space-5, 20px);
   max-width: 640px;
 }
 
@@ -284,26 +294,26 @@ watch(pluginId, () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--sa-space-4, 16px);
+  gap: var(--tk-space-4, 16px);
 }
 
 .plugin-config-page__name {
-  font-size: var(--sa-fs-title, 20px);
+  font-size: var(--tk-fs-title);
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .plugin-config-page__version {
   margin-left: 8px;
   font-size: 12px;
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-config-page__desc {
   margin-top: 4px;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   line-height: 1.5;
 }
 
@@ -317,7 +327,7 @@ watch(pluginId, () => {
   padding: 2px 8px;
   font-size: 11px;
   border-radius: 999px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.08);
 }
 
@@ -337,18 +347,18 @@ watch(pluginId, () => {
 }
 
 .plugin-config-page__status-badge.ok {
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
   background: rgba(52, 199, 89, 0.1);
 }
 
 .plugin-config-page__status-badge.warn {
-  color: var(--sa-warning, #ff9f0a);
+  color: var(--tk-warning);
   background: rgba(255, 159, 10, 0.1);
 }
 
 .plugin-config-page__status-badge.off {
-  color: var(--sa-text-tertiary, #aeaeb2);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--tk-text-tertiary);
+  background: var(--tk-bg-secondary);
 }
 
 .plugin-config-page__toggle {
@@ -356,9 +366,9 @@ watch(pluginId, () => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -368,37 +378,39 @@ watch(pluginId, () => {
 }
 
 .plugin-config-page__toggle.off {
-  color: var(--sa-text-secondary, #86868b);
-  background: var(--sa-bg-primary, #ffffff);
-  border-color: var(--sa-border, #d2d2d7);
+  color: var(--tk-text-secondary);
+  background: var(--tk-bg-primary);
+  border-color: var(--tk-border);
 }
 
 .plugin-config-page__toggle.off:hover {
-  border-color: var(--sa-text-secondary, #86868b);
+  border-color: var(--tk-text-secondary);
 }
 
 .plugin-config-page__section {
-  padding: var(--sa-space-4, 16px);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: var(--sa-radius-lg, 12px);
+  padding: 20px;
+  background: var(--tk-bg-primary);
+  /* emil：大圆角 + 分层阴影 */
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
 }
 
 .plugin-config-page__section-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
-  margin-bottom: var(--sa-space-3, 12px);
+  color: var(--tk-text-primary);
+  margin-bottom: var(--tk-space-3, 12px);
 }
 
 .plugin-config-page__muted {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-config-page__check-ok {
   font-size: 13px;
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 .plugin-config-page__check-fail {
@@ -426,20 +438,20 @@ watch(pluginId, () => {
   border-radius: 50%;
   font-size: 12px;
   font-weight: 700;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.12);
 }
 
 .plugin-config-page__check-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .plugin-config-page__check-hint {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .plugin-config-page__model {
@@ -448,20 +460,20 @@ watch(pluginId, () => {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 10px;
   margin-bottom: 8px;
 }
 
 .plugin-config-page__model-name {
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .plugin-config-page__model-size {
   margin-top: 2px;
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-config-page__model-right {
@@ -473,11 +485,11 @@ watch(pluginId, () => {
 
 .plugin-config-page__ready {
   font-size: 11px;
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 .plugin-config-page__ready--no {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .plugin-config-page__progress {
@@ -490,13 +502,13 @@ watch(pluginId, () => {
 .plugin-config-page__progress-bar {
   height: 4px;
   border-radius: 2px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   transition: width 0.2s;
 }
 
 .plugin-config-page__progress-text {
   font-size: 11px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: nowrap;
 }
 
@@ -506,9 +518,9 @@ watch(pluginId, () => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   border-radius: 8px;
   cursor: pointer;
 }

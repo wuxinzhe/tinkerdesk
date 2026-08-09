@@ -9,8 +9,8 @@
         width="64"
         height="64"
       >
-        <circle cx="16" cy="16" r="14" fill="#007aff" opacity="0.08" />
-        <path d="M10 22V10l8 6-8 6Z" fill="#007aff" />
+        <circle cx="16" cy="16" r="14" fill="var(--tk-accent)" opacity="0.08" />
+        <path d="M10 22V10l8 6-8 6Z" fill="var(--tk-accent)" />
       </svg>
 
       <h2 class="lock-screen-overlay__title">您已离开一段时间</h2>
@@ -59,8 +59,8 @@ defineEmits<{
 .lock-screen-overlay {
   position: fixed;
   inset: 0;
-  z-index: var(--sa-z-lock-screen);
-  background: var(--sa-overlay);
+  z-index: var(--tk-z-lock-screen);
+  background: var(--tk-overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -100,13 +100,13 @@ defineEmits<{
   padding: 10px 32px;
   font-size: 14px;
   font-weight: 500;
-  font-family: var(--sa-font-stack);
+  font-family: var(--tk-font-stack);
   color: #ffffff;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: var(--sa-radius-md);
+  border-radius: var(--tk-radius-md);
   cursor: pointer;
-  transition: background var(--sa-duration-fast) ease;
+  transition: background var(--tk-duration-fast) ease;
 }
 
 .lock-screen-overlay__btn:hover:not(:disabled) {
@@ -143,7 +143,7 @@ defineEmits<{
   left: 0;
   right: 0;
   text-align: center;
-  font-size: var(--sa-fs-caption);
+  font-size: var(--tk-fs-caption);
   color: rgba(255, 255, 255, 0.4);
   margin: 0;
 }

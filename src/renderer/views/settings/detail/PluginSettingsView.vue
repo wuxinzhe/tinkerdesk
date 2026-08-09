@@ -8,6 +8,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { SaPageHero } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 import { confirm } from '@/renderer/api/confirm'
 import type { PluginInfo } from '@/renderer/api/types'
@@ -92,13 +93,14 @@ onMounted(() => {
 
 <template>
   <div class="plugin-settings-page" :data-mounted="mounted">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
+      gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
+      title="插件设置"
+      desc="管理客户端插件和扩展能力"
+    />
     <div class="plugin-settings-page__header">
-      <div class="plugin-settings-page__header-text">
-        <div class="plugin-settings-page__title">插件设置</div>
-        <div class="plugin-settings-page__desc">
-          插件独立于应用分发：可直接安装 zip 插件包或插件文件夹。启用后按插件声明的接口注册为 provider。
-        </div>
-      </div>
       <div class="plugin-settings-page__install-group">
         <button class="plugin-settings-page__install plugin-settings-page__install--main" @click="installPlugin('zip')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -196,8 +198,10 @@ onMounted(() => {
 .plugin-settings-page {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-5, 20px);
-  padding: var(--sa-space-5, 20px) var(--sa-space-6, 24px);
+  gap: var(--tk-space-5, 20px);
+  padding: 0;
+  max-width: 680px;
+  width: 100%;
   height: 100%;
   overflow-y: auto;
 }
@@ -216,9 +220,9 @@ onMounted(() => {
 }
 
 .plugin-settings-page__title {
-  font-size: var(--sa-fs-title, 20px);
+  font-size: var(--tk-fs-title);
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 /* 头部右侧安装按钮（组合按钮） */
@@ -237,9 +241,9 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   cursor: pointer;
   transition: background 0.2s ease-in-out;
 }
@@ -265,8 +269,8 @@ onMounted(() => {
   right: 0;
   min-width: 168px;
   padding: 4px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border, rgba(0, 0, 0, 0.1));
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   z-index: 30;
@@ -281,7 +285,7 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   background: transparent;
   border: none;
   border-radius: 7px;
@@ -290,20 +294,20 @@ onMounted(() => {
 }
 
 .plugin-settings-page__install-menu-item:hover {
-  background: var(--sa-bg-hover, rgba(0, 0, 0, 0.05));
+  background: var(--tk-bg-hover);
 }
 
 .plugin-settings-page__desc {
-  margin-top: var(--sa-space-1, 4px);
+  margin-top: var(--tk-space-1, 4px);
   font-size: 13px;
   line-height: 1.5;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .plugin-settings-page__path {
   font-family: ui-monospace, monospace;
   font-size: 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -314,7 +318,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-settings-page__empty {
@@ -323,15 +327,15 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sa-space-2, 8px);
+  gap: var(--tk-space-2, 8px);
   text-align: center;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-settings-page__empty-text {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .plugin-settings-page__empty-hint {
@@ -341,19 +345,28 @@ onMounted(() => {
 .plugin-settings-page__list {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-3, 12px);
+  gap: var(--tk-space-3, 12px);
 }
 
 .plugin-card {
-  padding: var(--sa-space-4, 16px);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: var(--sa-radius-lg, 12px);
+  padding: var(--tk-space-4, 16px);
+  background: var(--tk-bg-primary);
+  /* emil：大圆角 + 分层阴影 */
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
+  transition: box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
   /* emil：进入 stagger（transitionDelay 由模板按 index 注入） */
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 240ms cubic-bezier(0.23, 1, 0.32, 1),
-    transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
+    transform 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .plugin-card:hover {
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 .plugin-settings-page[data-mounted='true'] .plugin-card {
   opacity: 1;
@@ -371,26 +384,26 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--sa-space-3, 12px);
+  gap: var(--tk-space-3, 12px);
 }
 
 .plugin-card__name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .plugin-card__version {
   margin-left: 6px;
   font-size: 11px;
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .plugin-card__desc {
   margin-top: 2px;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   line-height: 1.5;
 }
 
@@ -405,7 +418,7 @@ onMounted(() => {
   padding: 2px 8px;
   font-size: 11px;
   border-radius: 999px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.08);
 }
 
@@ -414,7 +427,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   flex-shrink: 0;
 }
 
@@ -425,24 +438,24 @@ onMounted(() => {
 }
 
 .plugin-card__dot.on {
-  background: var(--sa-success, #34c759);
+  background: var(--tk-success);
 }
 
 .plugin-card__dot.off {
-  background: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-text-tertiary);
 }
 
 .plugin-card__error {
-  margin-top: var(--sa-space-2, 8px);
+  margin-top: var(--tk-space-2, 8px);
   font-size: 12px;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .plugin-card__actions {
   display: flex;
   justify-content: flex-end;
-  gap: var(--sa-space-2, 8px);
-  margin-top: var(--sa-space-3, 12px);
+  gap: var(--tk-space-2, 8px);
+  margin-top: var(--tk-space-3, 12px);
 }
 
 .plugin-card__btn {
@@ -450,9 +463,9 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   cursor: pointer;
   /* emil：指定属性过渡 + 强 ease-out + 按压（transform 由全局 button:active 提供） */
@@ -464,7 +477,7 @@ onMounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .plugin-card__btn:hover:not(:disabled) {
-    border-color: var(--sa-accent, #007aff);
+    border-color: var(--tk-accent);
   }
 }
 
@@ -474,15 +487,15 @@ onMounted(() => {
 }
 
 .plugin-card__btn--config {
-  color: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
+  border-color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
 }
 
 /* 卸载（危险操作） */
 .plugin-card__btn--danger {
-  color: var(--sa-danger, #ff3b30);
-  border-color: var(--sa-danger, #ff3b30);
+  color: var(--tk-danger);
+  border-color: var(--tk-danger);
   background: rgba(255, 59, 48, 0.06);
 }
 

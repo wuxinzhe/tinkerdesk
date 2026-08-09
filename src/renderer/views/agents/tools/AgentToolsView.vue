@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="tools-manage">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
+      title="工具配置"
+      desc="启用/停用该 Agent 可用的工具"
+    />
     <div v-if="toolsLoading" class="tools-loading">加载中…</div>
     <div v-else-if="toolsList.length === 0" class="tools-empty">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -52,7 +59,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import type { ToolItem } from '@/renderer/api/types'
 import { parseDisplayName } from '@/renderer/utils/tool-name'
 import { toolsApi } from '@/renderer/api/tools-api'
@@ -131,11 +138,16 @@ onMounted(() => loadTools())
 </script>
 
 <style scoped>
+/* 窄列布局（与系统设置 L3 对齐：680px 宽，靠左） */
+.tools-manage {
+  max-width: 680px;
+  width: 100%;
+}
 .tools-loading,
 .tools-empty {
   text-align: center;
   padding: 40px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 .tools-list {
@@ -150,28 +162,28 @@ onMounted(() => loadTools())
   padding: 12px 0 4px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   letter-spacing: 0.3px;
 }
 .tool-group-header__count {
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .tool-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   /* 卡片辨识度：白底（深色 elevated）+ 轻阴影，与页面背景区分 */
-  background: var(--sa-bg-elevated, #ffffff);
-  box-shadow: var(--sa-shadow-sm);
+  background: var(--tk-bg-elevated);
+  box-shadow: var(--tk-shadow-sm);
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 .tool-row:hover {
-  border-color: var(--sa-accent, #007aff);
-  box-shadow: var(--sa-shadow-md);
+  border-color: var(--tk-accent);
+  box-shadow: var(--tk-shadow-md);
 }
 .tool-row__info {
   flex: 1;
@@ -197,11 +209,11 @@ onMounted(() => loadTools())
 .tool-row__name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 .tool-row__desc {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   max-height: 7.8em;
   overflow: auto;
   scrollbar-width: none;
@@ -223,7 +235,7 @@ onMounted(() => loadTools())
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: #e5e5ea;
+  background: var(--tk-bg-tertiary);
   position: relative;
   transition: background 0.15s;
 }
@@ -240,14 +252,14 @@ onMounted(() => loadTools())
   transition: transform 0.15s;
 }
 .tool-row__checkbox.checked .tool-row__checkbox-visual {
-  background: #34c759;
+  background: var(--tk-success);
 }
 .tool-row__checkbox.checked .tool-row__checkbox-visual::after {
   transform: translateX(16px);
 }
 .tool-row__checkbox-text {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .tool-row__provider-btn {
   display: inline-flex;
@@ -259,12 +271,12 @@ onMounted(() => loadTools())
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 .tool-row__provider-btn:hover {
-  color: var(--sa-accent, #0a84ff);
+  color: var(--tk-accent);
   background: rgba(10, 132, 255, 0.08);
 }
 </style>

@@ -1,6 +1,15 @@
 <template>
-  <L3PageLayout class="general-settings">
+  <!-- 注意：SettingsDetailView 已套 L3PageLayout——此处用普通 div（避免嵌套双重 padding） -->
+  <div class="general-settings">
     <div class="general-settings__body" :data-mounted="mounted">
+      <!-- 页头：彩色渐变图标徽章 + 标题（iOS Settings 风格）——在窄列内与其他页对齐 -->
+      <SaPageHero
+        icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="7" y2="9"/><line x1="12" y1="9" x2="12" y2="9"/><line x1="17" y1="9" x2="17" y2="9"/><line x1="7" y1="15" x2="17" y2="15"/></svg>'
+        gradient="linear-gradient(135deg, #8e9eff 0%, #5b6cff 100%)"
+        title="通用设置"
+        desc="主题与快捷键等全局偏好"
+      />
+
       <!-- ── 主题组（浅色/深色/跟随系统） ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
@@ -8,16 +17,20 @@
           <span class="general-settings__group-desc">选择应用外观</span>
         </div>
         <div class="theme-row">
-          <div class="theme-segmented" role="radiogroup" aria-label="主题">
+          <div class="theme-picker" role="radiogroup" aria-label="主题">
             <button
-              v-for="t in themeOptions"
-              :key="t.value"
-              class="theme-segmented__item"
-              :class="{ selected: theme === t.value }"
+              v-for="t in themes"
+              :key="t.id"
+              class="theme-picker__item"
+              :class="{ selected: theme === t.id }"
               role="radio"
-              :aria-checked="theme === t.value"
-              @click="setTheme(t.value)"
-            >{{ t.label }}</button>
+              :aria-checked="theme === t.id"
+              :title="t.description ?? ''"
+              @click="setTheme(t.id)"
+            >
+              <span class="theme-picker__swatch" :style="{ background: t.swatch ?? t.light['--tk-accent'] }" />
+              <span class="theme-picker__name">{{ t.name }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -54,14 +67,16 @@
         </div>
       </div>
     </div>
-  </L3PageLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { L3PageLayout } from '@/renderer/components'
+import { SaPageHero } from '@/renderer/components'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
-import { applyTheme, type ThemePreference } from '@/renderer/utils/theme'
+import { applyTheme } from '@/renderer/utils/theme'
+import { invalidateRecordShortcut } from '@/renderer/utils/shortcut-cache'
+import { THEMES } from '@/renderer/styles/themes'
 
 interface ShortcutItem {
   key: string
@@ -78,18 +93,16 @@ const capturingKey = ref<string | null>(null)
 const mounted = ref(false)
 
 /* ── 主题 ── */
-const themeOptions: Array<{ value: ThemePreference; label: string }> = [
-  { value: 'light', label: '浅色' },
-  { value: 'dark', label: '深色' },
-  { value: 'system', label: '跟随系统' },
-]
-const theme = ref<ThemePreference>('light')
 
-async function setTheme(value: ThemePreference): Promise<void> {
-  theme.value = value
-  applyTheme(value)
+/** 主题模板（styles/themes 注册表——平铺：浅色/深色/海洋/森林……新增自动出现） */
+const themes = THEMES
+const theme = ref('light')
+
+async function setTheme(id: string): Promise<void> {
+  theme.value = id
+  applyTheme(id)
   try {
-    await window.api.generalSettings.set('theme', value)
+    await window.api.generalSettings.set('theme', id)
   } catch {
     showErrorToast({ code: 'theme:save:error', message: '主题保存失败' })
   }
@@ -111,8 +124,8 @@ async function load(): Promise<void> {
   try {
     const { settings, shortcuts: list } = await window.api.generalSettings.get()
     shortcuts.value = list
-    const saved = settings['theme'] as ThemePreference | undefined
-    if (saved === 'dark' || saved === 'system' || saved === 'light') {
+    const saved = settings['theme'] as string | undefined
+    if (saved && THEMES.some((t) => t.id === saved)) {
       theme.value = saved
     }
   } catch {
@@ -166,6 +179,8 @@ async function saveShortcut(key: string, value: string): Promise<void> {
     const item = shortcuts.value.find((s) => s.key === key)
     if (item) item.value = value
     showInfo('快捷键已保存')
+    // 缓存失效——ChatInput 下次挂载重新读
+    invalidateRecordShortcut()
   } catch {
     showErrorToast({ code: 'shortcut:save:error', message: '保存快捷键失败' })
   }
@@ -176,6 +191,8 @@ async function resetShortcut(item: ShortcutItem): Promise<void> {
     await window.api.generalSettings.reset(item.key)
     item.value = DEFAULT_RECORD
     showInfo('已恢复默认快捷键')
+    // 缓存失效——ChatInput 下次挂载重新读
+    invalidateRecordShortcut()
   } catch {
     showErrorToast({ code: 'shortcut:reset:error', message: '恢复默认失败' })
   }
@@ -201,12 +218,12 @@ onUnmounted(() => {
 <style scoped>
 /* ── 设计基调：emil-design-eng 打磨（自定义 ease-out 曲线、<300ms、只动 transform/opacity） ── */
 .general-settings__body {
-  padding: 20px;
-  max-width: 560px;
+  padding: 0;
+  max-width: 680px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 /* 进入动画：分组 stagger（30ms 间隔，ease-out 300ms）——动画只放父容器带动子 */
@@ -233,9 +250,11 @@ onUnmounted(() => {
 
 /* ── 组卡片（Apple HIG 轻量设置分组） ── */
 .general-settings__group {
-  background: var(--sa-bg-primary, #ffffff);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
+  background: var(--tk-bg-primary);
+  /* emil：大圆角 + 分层阴影（浮起而非框住）+ 极淡边框 */
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
   overflow: hidden;
 }
 
@@ -246,26 +265,26 @@ onUnmounted(() => {
 .general-settings__group-title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .general-settings__group-desc {
   display: block;
   margin-top: 2px;
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 /* ── 主题 Segmented（选中态 transition + 按压反馈） ── */
 .theme-row {
   padding: 8px 16px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--tk-border);
 }
 
 .theme-segmented {
   display: inline-flex;
   padding: 2px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 8px;
   gap: 2px;
 }
@@ -277,7 +296,7 @@ onUnmounted(() => {
   border-radius: 6px;
   background: transparent;
   font-size: 12px;
-  color: var(--sa-text-secondary, #48484a);
+  color: var(--tk-text-secondary);
   cursor: pointer;
   /* 指定属性过渡（禁 all）；选中态 180ms ease-out 即时反馈 */
   transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -294,15 +313,68 @@ onUnmounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .theme-segmented__item:hover {
-    color: var(--sa-text-primary, #1d1d1f);
+    color: var(--tk-text-primary);
   }
 }
 
 .theme-segmented__item.selected {
-  background: var(--sa-bg-elevated, #ffffff);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-elevated);
+  color: var(--tk-text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   font-weight: 500;
+}
+
+/* ── 主题选择（平铺卡片——swatch 色块 + 名称） ── */
+
+.theme-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.theme-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: 9px;
+  background: var(--tk-bg-secondary);
+  cursor: pointer;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.theme-picker__item:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-picker__item:hover {
+    border-color: var(--tk-accent);
+  }
+}
+
+.theme-picker__item.selected {
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
+  box-shadow: 0 0 0 1px var(--tk-accent);
+}
+
+.theme-picker__swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.theme-picker__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+  white-space: nowrap;
 }
 
 /* ── 快捷键行 ── */
@@ -312,7 +384,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 11px 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--tk-border);
   cursor: pointer;
   transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -320,7 +392,7 @@ onUnmounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .shortcut-row:hover {
-    background: var(--sa-bg-secondary, #f5f5f7);
+    background: var(--tk-bg-secondary);
   }
 }
 
@@ -335,14 +407,14 @@ onUnmounted(() => {
 
 .shortcut-row__label {
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .shortcut-row__desc {
   display: block;
   margin-top: 1px;
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .shortcut-row__value {
@@ -368,9 +440,9 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 11px;
   font-weight: 500;
-  color: var(--sa-text-secondary, #48484a);
-  background: var(--sa-bg-secondary, #f5f5f7);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--tk-text-secondary);
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
   border-bottom-width: 2px;
   border-radius: 5px;
   font-variant-numeric: tabular-nums;
@@ -384,13 +456,13 @@ onUnmounted(() => {
 /* 捕获态：蓝色文字提示 */
 .shortcut-row__capturing {
   font-size: 13px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 /* 恢复默认：文本链接（低调）+ 按压反馈 */
 .shortcut-row__reset {
   font-size: 11px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: none;
   border: none;
   padding: 3px 6px;
@@ -413,7 +485,7 @@ onUnmounted(() => {
 /* ── 手机模式（767px 断点）：压缩内边距，避免拥挤 ── */
 @media (max-width: 767px) {
   .general-settings__body {
-    padding: 12px;
+    padding: 0;
     gap: 12px;
   }
 

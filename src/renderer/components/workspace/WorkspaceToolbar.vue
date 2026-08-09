@@ -207,7 +207,7 @@ watch(() => props.isProcessing, (processing) => {
 }
 
 .workspace-toolbar__btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .workspace-toolbar__center {
@@ -221,7 +221,7 @@ watch(() => props.isProcessing, (processing) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   backface-visibility: hidden;
   will-change: transform, opacity;
 }
@@ -252,8 +252,8 @@ watch(() => props.isProcessing, (processing) => {
   height: 56px;
   padding: 12px 16px;
   box-sizing: border-box;
-  background: #ffffff;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
+  background: var(--tk-bg-primary);
+  border-bottom: 1px solid var(--tk-border);
 }
 
 .workspace-toolbar--mobile .workspace-toolbar__btn--left {
@@ -262,7 +262,7 @@ watch(() => props.isProcessing, (processing) => {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   z-index: 1;   /* 保证在 center 之上可点击 */
 }
 
@@ -273,7 +273,7 @@ watch(() => props.isProcessing, (processing) => {
 }
 
 .workspace-toolbar--mobile .workspace-toolbar__btn--left:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .workspace-toolbar--mobile .workspace-toolbar__title {
@@ -319,11 +319,11 @@ watch(() => props.isProcessing, (processing) => {
   height: 28px;
   border-radius: 6px;
   margin-right: 8px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .workspace-toolbar--l3 .workspace-toolbar__btn--left:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .workspace-toolbar--l3 .workspace-toolbar__center {
@@ -338,36 +338,49 @@ watch(() => props.isProcessing, (processing) => {
 }
 
 .workspace-toolbar--l3 .workspace-toolbar__actions :deep(.toolbar-btn) {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
 }
 
-/* ── Teleported 动作按钮通用样式 ── */
+/* ── Teleported 动作按钮通用样式（emil：主入口图标按钮——hairline 边框 + 白底浮起，与 Agent List 加号同款） ── */
 
 .workspace-toolbar__actions :deep(.toolbar-btn) {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-border-card);
+  border-radius: 9px;
+  background: var(--tk-bg-primary);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-accent);
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.12s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.workspace-toolbar__actions :deep(.toolbar-btn:hover) {
-  background: color-mix(in srgb, var(--sa-accent, #007aff) 10%, transparent);
+.workspace-toolbar__actions :deep(.toolbar-btn:active) {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace-toolbar__actions :deep(.toolbar-btn:hover) {
+    background: var(--tk-bg-secondary);
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 
 .workspace-toolbar__actions :deep(.toolbar-btn--danger) {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .workspace-toolbar__actions :deep(.toolbar-btn--danger:hover) {
-  background: color-mix(in srgb, var(--sa-destructive, #ff3b30) 10%, transparent);
+  background: color-mix(in srgb, var(--tk-destructive) 10%, transparent);
 }
 
 .workspace-toolbar__actions :deep(.toolbar-btn:disabled) {
@@ -409,11 +422,11 @@ watch(() => props.isProcessing, (processing) => {
   white-space: nowrap;
   font-family: 'SF Mono', 'Menlo', monospace;
   font-size: 15px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .tool-chip--done .tool-chip__name {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 /* ── 标题 ↔ 工具进度 切换动画（3D 透视上下滚动） ── */

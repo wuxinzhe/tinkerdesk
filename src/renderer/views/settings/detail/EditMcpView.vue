@@ -1,6 +1,13 @@
 <template>
   <L3PageLayout class="mcp-page">
-    <SaSection title="编辑 MCP 服务器">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      gradient="linear-gradient(135deg, #52e57f 0%, var(--tk-success) 100%)"
+      title="编辑 MCP 服务器"
+      desc="修改 MCP 服务器配置"
+    />
+    <SaSection>
       <McpServerForm :form="form" :error-message="error">
         <SaFormActions
           primary-text="保存"
@@ -20,7 +27,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getToolCenterApi } from '@/renderer/api/tool-center-api'
-import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
+import { L3PageLayout, SaSection, SaFormActions, SaPageHero } from '@/renderer/components'
 import McpServerForm from '@/renderer/components/settings/McpServerForm.vue'
 
 const route = useRoute()
@@ -95,7 +102,8 @@ onMounted(loadServer)
 
 <style scoped>
 .mcp-page {
-  padding: 24px;
+  /* padding 由 L3PageLayout 统一提供 */
+  max-width: 680px;
   width: 100%;
   overflow-y: auto;
   scrollbar-width: none;

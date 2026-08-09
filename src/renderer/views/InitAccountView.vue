@@ -601,7 +601,7 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   flex-shrink: 0;   /* 步骤条整体不收缩（圆形节点不被压缩） */
-  margin: 0 0 var(--sa-space-7);
+  margin: 0 0 var(--tk-space-7);
   padding: 4px 0 0;   /* 顶部留 4px：active 节点 halo（box-shadow 0 0 0 4px）不被滚动容器裁剪 */
   list-style: none;
 }
@@ -613,7 +613,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sa-space-2);
+  gap: var(--tk-space-2);
 }
 
 /* Step2 表单滚动由外层 layout-card__form 统一负责（隐藏滚动条） */
@@ -626,13 +626,13 @@ onMounted(async () => {
   left: -50%;
   width: 100%;
   height: 2px;
-  background: var(--sa-border);
+  background: var(--tk-border);
   z-index: 0;
-  transition: background-color var(--sa-duration-normal) ease-in-out;
+  transition: background-color var(--tk-duration-normal) ease-in-out;
 }
 
 .init-step--done::before {
-  background: var(--sa-accent);
+  background: var(--tk-accent);
 }
 
 .init-step__node {
@@ -647,17 +647,17 @@ onMounted(async () => {
   justify-content: center;
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary);
+  color: var(--tk-text-primary);
   transition:
-    background-color var(--sa-duration-normal) ease-in-out,
-    border-color var(--sa-duration-normal) ease-in-out,
-    color var(--sa-duration-normal) ease-in-out,
-    box-shadow var(--sa-duration-normal) ease-in-out;
+    background-color var(--tk-duration-normal) ease-in-out,
+    border-color var(--tk-duration-normal) ease-in-out,
+    color var(--tk-duration-normal) ease-in-out,
+    box-shadow var(--tk-duration-normal) ease-in-out;
 }
 
 /* 完成：实心蓝 + 白勾 */
 .init-step--done .init-step__node {
-  background: var(--sa-accent);
+  background: var(--tk-accent);
   color: #ffffff;
 }
 
@@ -667,16 +667,16 @@ onMounted(async () => {
 
 /* 进行中：实心蓝 + halo 聚焦 */
 .init-step--active .init-step__node {
-  background: var(--sa-accent);
+  background: var(--tk-accent);
   color: #ffffff;
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
 }
 
 /* 未完成：浅灰底 + 灰描边 */
 .init-step--pending .init-step__node {
-  background: var(--sa-bg-secondary);
-  border: 1px solid var(--sa-border);
-  color: var(--sa-text-tertiary);
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
+  color: var(--tk-text-tertiary);
 }
 
 .init-step__label {
@@ -689,13 +689,13 @@ onMounted(async () => {
   font-size: 12px;
   font-weight: 500;
   line-height: 16px;
-  color: var(--sa-text-primary);
+  color: var(--tk-text-primary);
   text-align: center;
-  transition: color var(--sa-duration-normal) ease-in-out;
+  transition: color var(--tk-duration-normal) ease-in-out;
 }
 
 .init-step--pending .init-step__title {
-  color: var(--sa-text-tertiary);
+  color: var(--tk-text-tertiary);
 }
 
 .init-step--active .init-step__title {
@@ -715,12 +715,12 @@ onMounted(async () => {
 .init__api-key-row {
   display: flex;
   width: 100%;
-  gap: var(--sa-space-2);
+  gap: var(--tk-space-2);
 }
 
 .init__desc {
-  font-size: var(--sa-fs-body);
-  color: var(--sa-text-secondary);
+  font-size: var(--tk-fs-body);
+  color: var(--tk-text-secondary);
   line-height: 1.6;
   margin: 0;
 }
@@ -730,22 +730,22 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--sa-space-8) 0;
-  gap: var(--sa-space-4);
+  padding: var(--tk-space-8) 0;
+  gap: var(--tk-space-4);
 }
 
 .init__transition-spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid var(--sa-bg-secondary);
-  border-top-color: var(--sa-accent);
+  border: 3px solid var(--tk-bg-secondary);
+  border-top-color: var(--tk-accent);
   border-radius: 50%;
   animation: init-spin 0.8s linear infinite;
 }
 
 .init__transition-text {
-  font-size: var(--sa-fs-body);
-  color: var(--sa-text-secondary);
+  font-size: var(--tk-fs-body);
+  color: var(--tk-text-secondary);
   margin: 0;
 }
 
@@ -757,7 +757,7 @@ onMounted(async () => {
 
 .init-fade-enter-active,
 .init-fade-leave-active {
-  transition: opacity var(--sa-duration-normal) ease-in-out;
+  transition: opacity var(--tk-duration-normal) ease-in-out;
 }
 
 .init-fade-enter-from,

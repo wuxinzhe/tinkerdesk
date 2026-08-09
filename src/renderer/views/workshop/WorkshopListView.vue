@@ -29,7 +29,7 @@
 .workshop-list__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   letter-spacing: 0.5px;
 }
 .workshop-list__placeholder {
@@ -39,7 +39,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
   padding: 20px;
 }

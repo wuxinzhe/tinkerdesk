@@ -72,26 +72,26 @@ defineEmits<{
 .mcp-input {
   display: block;
   width: 100%;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--tk-border-light);
+  border-radius: 8px;
   font-size: 13px;
   font-family: inherit;
-  background: var(--sa-bg-primary, #fff);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-primary);
+  color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .mcp-input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.10);
 }
 
 .mcp-input::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .mcp-form__actions {
@@ -101,6 +101,6 @@ defineEmits<{
 .mcp-form__error {
   margin: 4px 0 0;
   font-size: 12px;
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 </style>

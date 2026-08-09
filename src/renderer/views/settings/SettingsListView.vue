@@ -1,30 +1,34 @@
 <template>
-  <div class="settings-list">
+  <div class="settings-list" :data-mounted="mounted">
     <div class="settings-list__header">
       <h2 class="settings-list__title">系统设置</h2>
+      <p class="settings-list__subtitle">应用偏好、模型与扩展</p>
     </div>
     <nav class="settings-list__items">
-      <div
-        v-for="item in settingItems"
-        :key="item.key"
-        :class="['settings-row', { selected: isSelected(item.key) }]"
-        @click="selectSetting(item)"
-      >
-        <div class="settings-row__icon" v-html="item.icon"></div>
-        <div class="settings-row__body">
-          <div class="settings-row__name">{{ item.label }}</div>
-          <div class="settings-row__desc">{{ item.desc }}</div>
+      <div class="settings-list__card">
+        <div
+          v-for="(item, i) in settingItems"
+          :key="item.key"
+          :class="['settings-row', { selected: isSelected(item.key) }]"
+          :style="{ transitionDelay: `${i * 35}ms` }"
+          @click="selectSetting(item)"
+        >
+          <div class="settings-row__icon" v-html="item.icon"></div>
+          <div class="settings-row__body">
+            <div class="settings-row__name">{{ item.label }}</div>
+            <div class="settings-row__desc">{{ item.desc }}</div>
+          </div>
+          <svg class="settings-row__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </div>
-        <svg class="settings-row__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
       </div>
     </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 interface SettingItem {
@@ -33,6 +37,9 @@ interface SettingItem {
   desc: string
   icon: string
 }
+
+/** 进入动画标记（stagger 触发） */
+const mounted = ref(false)
 
 const settingItems: SettingItem[] = [
   {
@@ -79,10 +86,16 @@ function selectSetting(item: SettingItem) {
 function isSelected(key: string): boolean {
   return selectedKey.value === key
 }
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
+})
 </script>
 
 <style scoped>
-/* ── Apple 风格设置列表 ── */
+/* ── emil 风格设置导航：分组卡片 + 行间分隔 + 图标色块 ── */
 .settings-list {
   display: flex;
   flex-direction: column;
@@ -93,7 +106,7 @@ function isSelected(key: string): boolean {
 
 /* ── Header ── */
 .settings-list__header {
-  padding: 28px 20px 12px;
+  padding: 28px 24px 16px;
   flex-shrink: 0;
 }
 
@@ -101,15 +114,31 @@ function isSelected(key: string): boolean {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   letter-spacing: -0.3px;
+}
+
+.settings-list__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
 }
 
 /* ── Items ── */
 .settings-list__items {
   flex: 1;
   overflow-y: auto;
-  padding: 0 12px 12px;
+  padding: 0 20px 16px;
+}
+
+/* 分组卡片（与 L3 页卡片统一：大圆角 + 分层阴影） */
+.settings-list__card {
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  border-radius: var(--tk-radius-xl);
+  box-shadow: var(--tk-shadow-card);
+  overflow: hidden;
+  padding: 4px 0;
 }
 
 /* ── Row ── */
@@ -117,37 +146,59 @@ function isSelected(key: string): boolean {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 11px 14px;
   cursor: pointer;
   user-select: none;
-  transition: background 0.12s;
+  /* emil：指定属性过渡 + 强 ease-out；行间分隔线 */
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 240ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* 进入 stagger（transitionDelay 由模板按 index 注入） */
+  opacity: 0;
+  transform: translateY(4px);
 }
-.settings-row + .settings-row {
-  margin-top: 2px;
+.settings-row:not(:last-child) {
+  border-bottom: 1px solid var(--tk-border-light);
 }
-.settings-row:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+.settings-list[data-mounted='true'] .settings-row {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-row {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+.settings-row:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .settings-row:hover {
+    background: var(--tk-bg-secondary);
+  }
 }
 .settings-row.selected {
-  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
+  background: var(--tk-bg-selected);
 }
 
-/* ── Icon ── */
+/* ── Icon（iOS 彩色色块） ── */
 .settings-row__icon {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 9px;
   color: #fff;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
 /* 每个图标对应不同背景色（iOS Settings 风格）——顺序与 items 数组一致 */
-.settings-row:nth-child(1) .settings-row__icon { background: #007aff; }   /* 模型 — 蓝色 */
-.settings-row:nth-child(2) .settings-row__icon { background: #34c759; }   /* MCP — 绿色 */
-.settings-row:nth-child(3) .settings-row__icon { background: #ff9500; }   /* 插件 — 橙色 */
+.settings-row:nth-child(1) .settings-row__icon { background: var(--tk-accent); }   /* 模型 — 蓝色 */
+.settings-row:nth-child(2) .settings-row__icon { background: var(--tk-success); }   /* MCP — 绿色 */
+.settings-row:nth-child(3) .settings-row__icon { background: var(--tk-warning); }   /* 插件 — 橙色 */
 .settings-row:nth-child(4) .settings-row__icon { background: #af52de; }   /* 语音 — 紫色 */
 .settings-row:nth-child(5) .settings-row__icon { background: #8e8e93; }   /* 通用 — 灰色 */
 
@@ -160,15 +211,15 @@ function isSelected(key: string): boolean {
 .settings-row__name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   line-height: 1.3;
 }
 
 .settings-row__desc {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1.3;
-  margin-top: 1px;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -177,19 +228,24 @@ function isSelected(key: string): boolean {
 /* ── Chevron ── */
 .settings-row__chevron {
   flex-shrink: 0;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   opacity: 0.6;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.settings-row:hover .settings-row__chevron {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 @media (max-width: 767px) {
   .settings-list__header {
-    padding: 16px 16px 8px;
+    padding: 16px 16px 10px;
   }
   .settings-list__title {
     font-size: 18px;
   }
   .settings-list__items {
-    padding: 0 8px 8px;
+    padding: 0 12px 12px;
   }
 }
 </style>

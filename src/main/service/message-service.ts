@@ -323,7 +323,11 @@ export class MessageService {
   /** 按对话 ID 列表加载消息（压缩用） */
   loadConversationsMessages(convIds: string[], sessionId: string, profile: string): ApiMessage[] {
     const entities = this.messageRepo.findByConversationIds(convIds, sessionId, profile)
-    return entities.map(entityToApiMessage)
+    // 过滤：审批/澄清等交互消息不进 LLM 摘要请求（与 loadContextMessages 一致——
+    // 部分 API（如 DeepSeek）不接受 role=approval，会导致 400 → 压缩失败 fallback）
+    const inContext = (m: MessageEntity): boolean =>
+      m.messageType != null && MSG_TYPE_LLM_CONTEXT_SET.has(m.messageType)
+    return entities.filter(inContext).map(entityToApiMessage)
   }
 
   /** 查找对话实体 */

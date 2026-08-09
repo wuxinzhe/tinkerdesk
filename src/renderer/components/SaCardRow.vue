@@ -54,23 +54,29 @@ defineEmits<{ click: [] }>()
 .sa-card-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  /* emil：指定属性 + 强 ease-out；行间分隔线（iOS 列表风格） */
+  /* emil：指定属性 + 强 ease-out；行间分隔线（iOS 分组列表风格） */
   transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
   user-select: none;
 }
 .sa-card-row:not(:last-child) {
-  border-bottom: 1px solid var(--sa-border-light, #e8e8ed);
+  border-bottom: 1px solid var(--tk-border-light);
 }
 .sa-card-row:active {
   transform: scale(0.99);
 }
 @media (hover: hover) and (pointer: fine) {
   .sa-card-row:hover {
-    background: var(--sa-bg-secondary, #f5f5f7);
+    background: var(--tk-bg-secondary);
+  }
+}
+/* 自适应：手机压缩行高 */
+@media (max-width: 767px) {
+  .sa-card-row {
+    padding: 10px 12px;
   }
 }
 /* ── Prepend (avatar/icon) ── */
@@ -90,7 +96,7 @@ defineEmits<{ click: [] }>()
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 12px;
 }
@@ -108,14 +114,14 @@ defineEmits<{ click: [] }>()
 .sa-card-row__title {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .sa-card-row__meta {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -123,12 +129,12 @@ defineEmits<{ click: [] }>()
 }
 .sa-card-row__desc {
   font-size: 11px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   line-height: 1.4;
 }
 .sa-card-row__extra {
   font-size: 12px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 /* ── Actions ── */
 .sa-card-row__actions {

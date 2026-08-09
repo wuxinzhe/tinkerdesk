@@ -117,7 +117,19 @@ export class CompactionService {
     this.messageService.saveSummary(sessionId, profile, finalSummary)
     this.conversationService.batchUpdateStatus(sessionId, compressConvIds, CONV_COMPRESSED)
 
-    console.log(`action=COMPACTION_DONE sessionId=${sessionId} summaryLen=${finalSummary.length} fallback=${usedFallback}`)
+    // 完整可追溯日志：压缩结果 + 影响范围（归档对话数/消息数/是否 fallback）
+    console.log(
+      `action=COMPACTION_DONE sessionId=${sessionId} ` +
+      `convCount=${compressConvIds.length} msgCount=${oldMessages.length} ` +
+      `summaryLen=${finalSummary.length} fallback=${usedFallback}`
+    )
+    if (usedFallback) {
+      console.warn(
+        `压缩摘要为 fallback（记忆未保留）：sessionId=${sessionId} ` +
+        `归档对话=${compressConvIds.length} 条、消息=${oldMessages.length} 条——` +
+        `该部分对话内容不会进入后续上下文`
+      )
+    }
     return true
   }
 

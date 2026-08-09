@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<{
   renderLinks: false,
   highlightCode: false,
   breaks: false,
-  codeBlockBg: 'var(--sa-bg-tertiary, #fafafa)',
+  codeBlockBg: 'var(--tk-bg-tertiary)',
 })
 
 const isMobile = useMobile()
@@ -80,7 +80,7 @@ const rendered = computed(() => {
 .markdown-body {
   font-size: 13px;
   line-height: 1.7;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
@@ -96,7 +96,7 @@ const rendered = computed(() => {
   margin: 1.2em 0 0.5em;
   font-weight: 600;
   line-height: 1.3;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .markdown-body :deep(h1) { font-size: 18px; }
@@ -121,14 +121,14 @@ const rendered = computed(() => {
 .markdown-body :deep(blockquote) {
   margin: 0.6em 0;
   padding: 6px 12px;
-  border-left: 3px solid var(--sa-accent, #007aff);
-  color: var(--sa-text-secondary, #86868b);
+  border-left: 3px solid var(--tk-accent);
+  color: var(--tk-text-secondary);
   background: rgba(0, 122, 255, 0.04);
   border-radius: 0 6px 6px 0;
 }
 
 .markdown-body :deep(a) {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   text-decoration: none;
   word-break: break-all;
 }
@@ -139,7 +139,7 @@ const rendered = computed(() => {
 
 .markdown-body :deep(hr) {
   border: none;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
+  border-top: 1px solid var(--tk-border);
   margin: 1.2em 0;
 }
 
@@ -162,7 +162,7 @@ html[data-theme='dark'] .markdown-body :deep(code) {
   padding: 12px;
   border-radius: 8px;
   overflow-x: auto;
-  background: var(--code-block-bg, var(--sa-bg-tertiary, #fafafa));
+  background: var(--code-block-bg, var(--tk-bg-tertiary));
 }
 
 .markdown-body :deep(pre code) {
@@ -217,20 +217,20 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
   border-collapse: collapse;
   margin: 0.8em 0;
   font-size: 12px;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
 }
 
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #e8e8ed);
+  border: 1px solid var(--tk-border);
   text-align: left;
   vertical-align: top;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
 }
 
 .markdown-body :deep(th) {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   font-weight: 600;
 }
 
@@ -241,12 +241,12 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
 }
 
 .markdown-body :deep(.table-card) {
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   padding: 12px 24px 12px 16px;
   margin-bottom: 8px;
   position: relative;
-  background: var(--sa-bg-primary, #fff);
+  background: var(--tk-bg-primary);
 }
 
 .markdown-body :deep(.table-card__num) {
@@ -255,15 +255,15 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
   right: -1px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1;
   min-width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--sa-bg-tertiary, #e8e8ed);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  background: var(--tk-bg-tertiary);
+  border: 1px solid var(--tk-border);
   border-radius: 0 8px 0 8px;
 }
 
@@ -276,7 +276,7 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
 }
 
 .markdown-body :deep(.table-card__row + .table-card__row) {
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
   margin-top: 2px;
   padding-top: 5px;
 }
@@ -284,14 +284,14 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
 .markdown-body :deep(.table-card__label) {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .markdown-body :deep(.table-card__value) {
   font-size: 12px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   text-align: right;
   word-break: break-word;
 }
@@ -321,7 +321,7 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
     font-size: 11px;
     font-weight: 600;
     padding: 6px 0 2px;
-    color: var(--sa-accent, #007aff);
+    color: var(--tk-accent);
     cursor: pointer;
     user-select: none;
   }

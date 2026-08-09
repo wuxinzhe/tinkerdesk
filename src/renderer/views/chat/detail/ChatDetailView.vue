@@ -36,8 +36,8 @@
     <!-- 打断对话按钮 + 预览/气泡切换按钮（横向并排，teleport 到 L3 顶栏右侧） -->
     <ToolbarActions>
       <button
-        class="stop-toggle-btn"
-        :class="{ 'stop-toggle-btn--active': isStreamingActive }"
+        class="toolbar-btn stop-btn"
+        :class="{ 'stop-btn--active': isStreamingActive }"
         :disabled="!isStreamingActive"
         :title="isStreamingActive ? '打断对话' : '对话空闲'"
         @click="onInterrupt"
@@ -53,7 +53,7 @@
     <ToolbarActions v-if="isMobile">
       <button
         v-if="agent"
-        :class="['agent-toggle-btn', { 'agent-toggle-btn--thinking': isThinking }]"
+        :class="['toolbar-btn agent-toggle-btn', { 'agent-toggle-btn--thinking': isThinking }]"
         :title="showAgentCard ? '收起 Agent 信息' : '查看 Agent 信息'"
         @click="showAgentCard = !showAgentCard"
       >
@@ -253,7 +253,12 @@ onUnmounted(() => {
 
 .agent-slide-enter-active,
 .agent-slide-leave-active {
-  transition: all 0.25s ease;
+  transition: max-height 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-top 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-bottom 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    margin-top 250ms cubic-bezier(0.23, 1, 0.32, 1),
+    margin-bottom 250ms cubic-bezier(0.23, 1, 0.32, 1);
   overflow: hidden;
 }
 
@@ -273,30 +278,11 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* ── Toolbar 切换按钮 ── */
-
-.agent-toggle-btn {
-  all: unset;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: var(--sa-text-secondary, #86868b);
-  transition: background 0.12s;
-  line-height: 0;
-  padding: 0;
-}
-
-.agent-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
+/* ── Toolbar 切换按钮（基于 toolbar-btn 边框浮起式——WorkspaceToolbar 提供基础） ── */
 
 .agent-toggle-btn__avatar {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -306,41 +292,25 @@ onUnmounted(() => {
   font-weight: 700;
   letter-spacing: 0.3px;
   line-height: 1;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
-/* ── 打断对话按钮 ── */
+/* ── 打断对话按钮（toolbar-btn 基础 + 状态色覆盖） ── */
 
-.stop-toggle-btn {
-  all: unset;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  color: var(--sa-text-secondary, #86868b);
-  transition: background 0.12s;
-  line-height: 0;
-  padding: 0;
+.stop-btn {
+  color: var(--tk-text-secondary);
 }
 
-.stop-toggle-btn:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06);
+.stop-btn--active {
+  color: var(--tk-destructive);
+  border-color: rgba(255, 59, 48, 0.35);
+  background: rgba(255, 59, 48, 0.06);
 }
 
-.stop-toggle-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.stop-toggle-btn--active {
-  color: #ff3b30;
-}
-
-.stop-toggle-btn--active:hover:not(:disabled) {
-  background: color-mix(in srgb, #ff3b30 10%, transparent);
+@media (hover: hover) and (pointer: fine) {
+  .stop-btn--active:hover {
+    background: rgba(255, 59, 48, 0.12);
+  }
 }
 
 /* ── Thinking 态：呼吸动效 ── */

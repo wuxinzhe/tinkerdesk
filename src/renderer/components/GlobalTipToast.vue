@@ -171,12 +171,12 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
   z-index: 3000;
   display: flex;
   align-items: flex-start;
-  gap: var(--sa-space-3, 12px);
+  gap: var(--tk-space-3, 12px);
   max-width: 380px;
   min-width: 260px;
-  padding: var(--sa-space-3, 12px) var(--sa-space-4, 16px);
-  background: var(--sa-bg-elevated, #ffffff);
-  border-radius: var(--sa-radius-lg, 12px);
+  padding: var(--tk-space-3, 12px) var(--tk-space-4, 16px);
+  background: var(--tk-bg-elevated);
+  border-radius: var(--tk-radius-lg);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.08),
     0 1px 3px rgba(0, 0, 0, 0.04);
@@ -185,30 +185,30 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
 
 /* ── 类型差异：error = 红边框/红图标；tip = 灰边框/灰图标 ── */
 .gtoast--error {
-  border: 1px solid var(--sa-border-error, #ff3b30);
+  border: 1px solid var(--tk-border-error);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.08),
     0 0 0 3px rgba(255, 59, 48, 0.12);
 }
 
 .gtoast--error .gtoast__icon {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .gtoast--error .gtoast__code {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 
 .gtoast--tip {
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
 }
 
 .gtoast--tip .gtoast__icon {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .gtoast--tip .gtoast__code {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .gtoast__icon {
@@ -219,7 +219,7 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
 .gtoast__body {
   display: flex;
   flex-direction: column;
-  gap: var(--sa-space-1, 4px);
+  gap: var(--tk-space-1, 4px);
   min-width: 0;
   padding-right: 20px; /* 给右上角关闭按钮让位 */
 }
@@ -235,7 +235,7 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
 .gtoast__text {
   font-size: 13px;
   line-height: 1.5;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   word-break: break-word;
 }
 
@@ -252,14 +252,14 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-tertiary, #86868b);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .gtoast__close:hover {
   background: rgba(0, 0, 0, 0.05);
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .gtoast__close:active {

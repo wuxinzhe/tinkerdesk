@@ -12,7 +12,8 @@
   <Transition name="collapse">
     <div v-if="isStreaming && pendingBuffer" class="streaming-receiver">
       <div class="streaming-receiver__header">
-        <span class="streaming-receiver__dot" />📡 信息接收中…
+        <span class="streaming-receiver__dot" />
+        接收中
       </div>
       <div class="streaming-receiver__body">{{ pendingBuffer }}</div>
     </div>
@@ -39,11 +40,13 @@ defineProps<{
 </script>
 
 <style scoped>
+/* 流式接收区（与气泡组件同款：呼吸圆点 + hairline 边框） */
 .streaming-receiver {
   margin-top: 6px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-tertiary);
+  border: 1px solid var(--tk-border-light);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -52,7 +55,7 @@ defineProps<{
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 11px;
   margin-bottom: 4px;
 }
@@ -61,20 +64,42 @@ defineProps<{
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--sa-accent, #007aff);
-  animation: receiver-pulse 1s ease-in-out infinite;
+  background: var(--tk-accent);
+  animation: receiver-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes receiver-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
 .streaming-receiver__body {
-  color: var(--sa-text-secondary, #48484a);
+  color: var(--tk-text-secondary);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 120px;
   overflow-y: auto;
+}
+
+/* Collapse transition（emil：指定属性 + 强 ease-out） */
+.collapse-enter-active {
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-top 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-bottom 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.collapse-leave-active {
+  transition: opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-top 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-bottom 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.collapse-enter-from,
+.collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
 }
 </style>

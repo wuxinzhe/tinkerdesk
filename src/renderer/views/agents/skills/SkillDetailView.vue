@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="skill-detail">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+      gradient="linear-gradient(135deg, #2ee6d6 0%, #00c7be 100%)"
+      title="技能详情"
+      desc="查看技能的配置与说明"
+    />
     <!-- 编辑/删除 → workspace-toolbar 右侧 actions（Teleport） -->
     <ToolbarActions>
       <button class="icon-btn" :disabled="!skill" title="编辑" @click="startEdit">
@@ -195,7 +202,7 @@ import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import { skillsApi } from '@/renderer/api/skills-api'
 import { confirm } from '@/renderer/api/confirm'
 import type { SkillInfo, SkillFileInfo } from '@/renderer/api/types'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import SkillFormPanel from '@/renderer/views/agents/skills/SkillFormPanel.vue'
 
@@ -417,8 +424,8 @@ async function handleDelete() {
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--sa-accent-light, rgba(0, 122, 255, 0.1));
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-accent-light);
+  color: var(--tk-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,7 +440,7 @@ async function handleDelete() {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .skill-detail__badges {
@@ -447,8 +454,8 @@ async function handleDelete() {
   font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-secondary, #86868b);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-secondary);
 }
 
 /* ── 信息段落 ── */
@@ -467,7 +474,7 @@ async function handleDelete() {
 .detail-section__label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 4px;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -475,7 +482,7 @@ async function handleDelete() {
 
 .detail-section__value {
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   line-height: 1.6;
 }
 
@@ -489,9 +496,9 @@ async function handleDelete() {
   font-size: 11px;
   padding: 3px 8px;
   border-radius: 4px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-secondary, #86868b);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-secondary);
+  border: 1px solid var(--tk-border-light);
 }
 
 .detail-section__kv {
@@ -503,18 +510,18 @@ async function handleDelete() {
 
 .kv-label {
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   flex-shrink: 0;
 }
 
 .kv-value {
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   word-break: break-all;
 }
 
 .detail-section__code {
   font-size: 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   padding: 10px 12px;
   border-radius: 6px;
   overflow-x: auto;
@@ -523,7 +530,7 @@ async function handleDelete() {
 
 .detail-section__empty {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-style: italic;
 }
 
@@ -534,7 +541,7 @@ async function handleDelete() {
 
 .detail-section__body {
   font-size: 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   padding: 12px;
   border-radius: 6px;
   overflow-x: auto;
@@ -548,7 +555,7 @@ async function handleDelete() {
 .markdown-toggle {
   display: flex;
   gap: 0;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -558,13 +565,13 @@ async function handleDelete() {
   padding: 3px 10px;
   border: none;
   background: transparent;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .markdown-toggle__btn.active {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
@@ -572,10 +579,10 @@ async function handleDelete() {
 
 .skill-detail__updated {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-top: 20px;
   padding-top: 12px;
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
 }
 
 /* ── 操作区（编辑/删除） ── */
@@ -590,21 +597,21 @@ async function handleDelete() {
   font-size: 12px;
   padding: 5px 14px;
   border-radius: 7px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .action-btn:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
 }
 
 .action-btn--danger:hover {
-  border-color: #ff3b30;
-  color: #ff3b30;
+  border-color: var(--tk-destructive);
+  color: var(--tk-destructive);
 }
 
 /* ── 编辑模式 ── */
@@ -635,7 +642,7 @@ async function handleDelete() {
 
 .field-label {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 4px;
 }
 
@@ -644,16 +651,16 @@ async function handleDelete() {
   width: 100%;
   font-size: 13px;
   padding: 7px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
 }
 
 .field-input:focus,
 .field-select:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .field-editor {
@@ -661,35 +668,35 @@ async function handleDelete() {
   font-size: 13px;
   line-height: 1.6;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   resize: vertical;
   outline: none;
 }
 
 .field-editor:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .body-editor {
   width: 100%;
   min-height: 260px;
-  font-family: var(--sa-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--tk-font-mono);
   font-size: 12px;
   line-height: 1.6;
   padding: 10px 12px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   resize: vertical;
   outline: none;
 }
 
 .body-editor:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .edit-actions {
@@ -705,7 +712,7 @@ async function handleDelete() {
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -714,8 +721,8 @@ async function handleDelete() {
 }
 
 .icon-btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
 }
 
 .icon-btn:disabled {
@@ -724,7 +731,7 @@ async function handleDelete() {
 }
 
 .icon-btn--danger:hover {
-  color: #ff3b30;
+  color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.08);
 }
 
@@ -733,8 +740,8 @@ async function handleDelete() {
 .advanced-section {
   margin-top: 4px;
   margin-bottom: 14px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -746,7 +753,7 @@ async function handleDelete() {
   width: 100%;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   background: transparent;
   border: none;
   padding: 10px 12px;
@@ -755,7 +762,7 @@ async function handleDelete() {
 }
 
 .advanced-toggle:hover {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .advanced-chevron {
@@ -780,17 +787,17 @@ async function handleDelete() {
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
 }
 
 .action-btn--primary {
-  background: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
   color: #fff;
 }
 
 .action-btn--primary:hover {
-  background: var(--sa-accent-hover, #0071e3);
+  background: var(--tk-accent-hover);
   color: #fff;
 }
 
@@ -804,7 +811,7 @@ async function handleDelete() {
 
 .skeleton-line,
 .skeleton-block {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 8px;
   position: relative;
   overflow: hidden;
@@ -861,14 +868,14 @@ async function handleDelete() {
   gap: 8px;
   padding: 9px 12px;
   font-size: 12px;
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
   box-sizing: border-box;
   width: 100%;
 }
 
 .file-table__head {
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .file-table__row:first-child {
@@ -879,7 +886,7 @@ async function handleDelete() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .file-actions {
@@ -890,7 +897,7 @@ async function handleDelete() {
 
 .file-empty {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   padding: 14px 4px;
   text-align: center;
 }
@@ -904,19 +911,21 @@ async function handleDelete() {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
   cursor: pointer;
 }
 
 .file-add-btn:hover {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
 /* ── 滚动条隐藏（技能详情页——内容较长时滚动条不显示） ── */
 
 .skill-detail {
+  max-width: 680px;
+  width: 100%;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

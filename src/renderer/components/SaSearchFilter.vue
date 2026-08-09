@@ -91,10 +91,10 @@ watch(() => props.modelValue, (v) => {
 .sa-search-filter__select {
   height: 30px;
   padding: 0 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border: 1px solid var(--tk-border-light);
   border-radius: 6px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   font-size: 12px;
   outline: none;
   cursor: pointer;
@@ -109,7 +109,7 @@ watch(() => props.modelValue, (v) => {
 .sa-search-filter__search-icon {
   position: absolute;
   left: 8px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   pointer-events: none;
 }
 .sa-search-filter__search {
@@ -117,8 +117,8 @@ watch(() => props.modelValue, (v) => {
   padding: 0 10px 0 26px;
   border: 1px solid transparent;
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   font-size: 12px;
   font-family: inherit;
   outline: none;
@@ -126,16 +126,16 @@ watch(() => props.modelValue, (v) => {
   transition: all 0.2s;
 }
 .sa-search-filter__search:focus {
-  border-color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-primary, #fff);
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 .sa-search-filter__search::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .sa-search-filter__count {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-left: auto;
 }
 </style>

@@ -1,6 +1,13 @@
 <template>
   <L3PageLayout class="page-layout">
-    <SaSection title="添加模型">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>'
+      gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
+      title="添加模型"
+      desc="配置一个自定义模型提供商"
+    />
+    <SaSection>
       <CustomModelForm :form="form" mode="add" :error-message="formError">
         <SaFormActions
           primary-text="创建"
@@ -16,7 +23,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { L3PageLayout, SaSection, SaFormActions } from '@/renderer/components'
+import { L3PageLayout, SaSection, SaFormActions, SaPageHero } from '@/renderer/components'
 import CustomModelForm from '@/renderer/components/settings/CustomModelForm.vue'
 import { modelsApi } from '@/renderer/api/models-api'
 
@@ -60,7 +67,8 @@ function goBack() {
 
 <style scoped>
 .page-layout {
-  padding: 24px;
+  /* padding 由 L3PageLayout 统一提供 */
+  max-width: 680px;
   width: 100%;
   overflow-y: auto;
   scrollbar-width: none;

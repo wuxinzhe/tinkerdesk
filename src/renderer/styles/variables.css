@@ -1,132 +1,105 @@
 /* ============================================================
-   Showing Ai — Global Design Variables
+   TinkerDesk — Global Design Variables
    Apple HIG 风格 CSS 变量（2026 版全量对齐）
-   深色模式 / Liquid Glass 材质 / 8pt 网格 / 语义色令牌
-   与 docs/ui-redesign-apple-hig.md 保持一致
+   结构令牌（radius/spacing/motion/font/control）永久保留于此；
+   配色令牌（--tk-accent/text/bg/border/shadow）为「默认浅色兜底」——
+   运行时由 styles/themes/ 模板（palette.ts + index.ts）注入覆盖，
+   新配色 = 新增 ThemePalette 并注册（见 styles/themes/palette.ts）。
    ============================================================ */
 
 :root {
-  /* ── Brand ── */
-  --sa-accent: #007aff;
-  --sa-accent-hover: #0066d6;
-  --sa-accent-active: #004d99;
-  --sa-destructive: #ff3b30;
-  --sa-success: #34c759;
-  --sa-warning: #ff9500;
+  /* ── Brand（默认浅色兜底——实际值由 themes 模板注入） ── */
+  --tk-accent: #007aff;
+  --tk-accent-hover: #0066d6;
+  --tk-accent-active: #004d99;
+  --tk-destructive: #ff3b30;
+  --tk-success: #34c759;
+  --tk-warning: #ff9500;
 
-  /* ── Text（4 级） ── */
-  --sa-text-primary: #1d1d1f;
-  --sa-text-secondary: #48484a;
-  --sa-text-tertiary: #86868b;
-  --sa-text-quaternary: #aeaeb2;
-  --sa-text-link: #007aff;
+  /* ── Text（4 级——层次拉开） ── */
+  --tk-text-primary: #1d1d1f;
+  --tk-text-secondary: #48484a;
+  --tk-text-tertiary: #86868b;
+  --tk-text-quaternary: #aeaeb2;
+  --tk-text-link: #007aff;
 
-  /* ── Backgrounds ── */
-  --sa-bg-primary: #ffffff;
-  --sa-bg-secondary: #f5f5f7;
-  --sa-bg-tertiary: #fafafa;
-  --sa-bg-elevated: #ffffff;
-  --sa-bg-glass: rgba(255, 255, 255, 0.55);
-  --sa-glass-edge: rgba(255, 255, 255, 0.5);
-  --sa-bg-bubble-assistant: #e0e0e5;
-  --sa-bg-selected: rgba(0, 122, 255, 0.08);
+  /* ── Backgrounds（层级：primary 最亮 → tertiary 最暗——容器递进） ── */
+  --tk-bg-primary: #ffffff;
+  --tk-card-bg: #ffffff;        /* 卡片底（深色下同变量切换） */
+  --tk-bg-secondary: #f5f5f7;
+  --tk-bg-tertiary: #f2f2f7;    /* 次级容器（比 secondary 深一档——层次递进） */
+  --tk-bg-elevated: #ffffff;
+  --tk-bg-glass: rgba(255, 255, 255, 0.55);
+  --tk-glass-edge: rgba(255, 255, 255, 0.5);
+  --tk-bg-bubble-assistant: #e0e0e5;
+  --tk-bg-selected: rgba(0, 122, 255, 0.08);
 
   /* ── Border / Separator ── */
-  --sa-border: #e8e8ed;
-  --sa-border-focus: #007aff;
-  --sa-border-error: #ff3b30;
+  --tk-border: #e8e8ed;
+  --tk-border-focus: #007aff;
+  --tk-border-error: #ff3b30;
 
   /* ── Overlay ── */
-  --sa-overlay: rgba(0, 0, 0, 0.65);
+  --tk-overlay: rgba(0, 0, 0, 0.65);
 
   /* ── Focus rings ── */
-  --sa-shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.15);
-  --sa-shadow-error: 0 0 0 3px rgba(255, 59, 48, 0.15);
+  --tk-shadow-focus: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  --tk-shadow-error: 0 0 0 3px rgba(255, 59, 48, 0.15);
 
   /* ── Elevation（阴影层级——替代重阴影） ── */
-  --sa-shadow-hairline: 0 0.5px 0 rgba(0, 0, 0, 0.06);
-  --sa-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
-  --sa-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --tk-shadow-hairline: 0 0.5px 0 rgba(0, 0, 0, 0.06);
+  --tk-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --tk-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
 
   /* ── Radii ── */
-  --sa-radius-sm: 6px;
-  --sa-radius-md: 8px;
-  --sa-radius-lg: 12px;
+  --tk-radius-sm: 6px;
+  --tk-radius-md: 8px;
+  --tk-radius-lg: 12px;
+  /* emil 设计令牌：大圆角 + 分层阴影（卡片"浮起"而非"框住"） */
+  --tk-radius-xl: 14px;
+  --tk-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --tk-shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.05), 0 8px 20px rgba(0, 0, 0, 0.07);
+  --tk-border-card: rgba(0, 0, 0, 0.06);
 
   /* ── Control sizes（控件高度档位） ── */
-  --sa-control-s: 28px;
-  --sa-control-m: 32px;
-  --sa-control-l: 36px;
-  --sa-control-xl: 44px;
-  --sa-hit-min: 36px; /* 桌面最小点击区 */
+  --tk-control-s: 28px;
+  --tk-control-m: 32px;
+  --tk-control-l: 36px;
+  --tk-control-xl: 44px;
+  --tk-hit-min: 36px; /* 桌面最小点击区 */
 
   /* ── Font ── */
-  --sa-font-stack: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+  --tk-font-stack: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
     'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
-  --sa-font-mono: 'SF Mono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  --tk-font-mono: 'SF Mono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
 
   /* ── Font sizes ── */
-  --sa-fs-hero: 28px;
-  --sa-fs-title: 20px;
-  --sa-fs-subtitle: 15px;
-  --sa-fs-body: 13px;
-  --sa-fs-caption: 11px;
+  --tk-fs-hero: 28px;
+  --tk-fs-title: 20px;
+  --tk-fs-subtitle: 15px;
+  --tk-fs-body: 13px;
+  --tk-fs-caption: 11px;
 
   /* ── Spacing (8pt grid) ── */
-  --sa-space-1: 4px;
-  --sa-space-2: 8px;
-  --sa-space-3: 12px;
-  --sa-space-4: 16px;
-  --sa-space-5: 20px;
-  --sa-space-6: 24px;
-  --sa-space-7: 32px;
-  --sa-space-8: 40px;
+  --tk-space-1: 4px;
+  --tk-space-2: 8px;
+  --tk-space-3: 12px;
+  --tk-space-4: 16px;
+  --tk-space-5: 20px;
+  --tk-space-6: 24px;
+  --tk-space-7: 32px;
+  --tk-space-8: 40px;
 
   /* ── Motion（统一 HIG 曲线） ── */
-  --sa-ease: cubic-bezier(0.25, 0.1, 0.25, 1); /* ease-in-out */
-  --sa-ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* emil-design-eng 强 ease-out（UI 交互） */
-  --sa-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 面板展开 */
-  --sa-duration-fast: 120ms;
-  --sa-duration-normal: 200ms;
-  --sa-duration-slow: 300ms;
+  --tk-ease: cubic-bezier(0.25, 0.1, 0.25, 1); /* ease-in-out */
+  --tk-ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* emil-design-eng 强 ease-out（UI 交互） */
+  --tk-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 面板展开 */
+  --tk-duration-fast: 120ms;
+  --tk-duration-normal: 200ms;
+  --tk-duration-slow: 300ms;
 
   /* ── z-index layers ── */
-  --sa-z-lock-screen: 9999;
-}
-
-/* ════════════════════════════════════════════════════════
-   深色模式（由通用设置"主题"驱动——html[data-theme='dark']）
-   默认浅色；设置页可切 浅色/深色/跟随系统
-   ════════════════════════════════════════════════════════ */
-html[data-theme='dark'] {
-  --sa-accent: #0a84ff;
-  --sa-accent-hover: #2d95ff;
-  --sa-accent-active: #5ab0ff;
-
-  --sa-text-primary: #f5f5f7;
-  --sa-text-secondary: #ebebed;
-  --sa-text-tertiary: #98989d;
-  --sa-text-quaternary: #6e6e73;
-  --sa-text-link: #0a84ff;
-
-  --sa-bg-primary: #1e1e1e;   /* base */
-  --sa-bg-secondary: #2c2c2e; /* 组容器 */
-  --sa-bg-tertiary: #3a3a3c;  /* 次级组 */
-  --sa-bg-elevated: #2c2c2e;  /* 弹层/浮层前进 */
-  --sa-bg-glass: rgba(28, 28, 34, 0.55);
-  --sa-glass-edge: rgba(255, 255, 255, 0.12);
-  --sa-bg-bubble-assistant: #3a3a3c;
-  --sa-bg-selected: rgba(10, 132, 255, 0.2);
-
-  --sa-border: #48484a;
-
-  --sa-overlay: rgba(0, 0, 0, 0.72);
-
-  --sa-shadow-focus: 0 0 0 3px rgba(10, 132, 255, 0.3);
-  --sa-shadow-error: 0 0 0 3px rgba(255, 69, 58, 0.3);
-  --sa-shadow-hairline: 0 0.5px 0 rgba(255, 255, 255, 0.08);
-  --sa-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --sa-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --tk-z-lock-screen: 9999;
 }
 
 /* ── Reset ── */
@@ -149,10 +122,10 @@ html, body {
 }
 
 body {
-  font-family: var(--sa-font-stack);
-  font-size: var(--sa-fs-body);
-  color: var(--sa-text-primary);
-  background: var(--sa-bg-primary);
+  font-family: var(--tk-font-stack);
+  font-size: var(--tk-fs-body);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
   line-height: 1.55;
 }
 
@@ -170,10 +143,10 @@ body {
 }
 :hover::-webkit-scrollbar-thumb,
 *:hover::-webkit-scrollbar-thumb {
-  background: var(--sa-scrollbar-thumb, #c7c7cc);
+  background: var(--tk-scrollbar-thumb, #c7c7cc);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sa-scrollbar-thumb-hover, #aeaeb2);
+  background: var(--tk-scrollbar-thumb-hover, #aeaeb2);
 }
 
 /* Firefox */
@@ -182,7 +155,7 @@ body {
   scrollbar-color: transparent transparent;
 }
 *:hover {
-  scrollbar-color: var(--sa-scrollbar-thumb, #c7c7cc) transparent;
+  scrollbar-color: var(--tk-scrollbar-thumb, #c7c7cc) transparent;
 }
 
 /* ── Utility classes ── */
@@ -199,7 +172,7 @@ body {
 /* ── Page transition（统一 HIG 曲线） ── */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s var(--sa-ease);
+  transition: opacity 0.2s var(--tk-ease);
 }
 .fade-enter-from,
 .fade-leave-to {
@@ -210,7 +183,7 @@ body {
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: all 0.25s var(--sa-ease);
+  transition: all 0.25s var(--tk-ease);
 }
 .slide-left-enter-from {
   opacity: 0;
@@ -237,7 +210,7 @@ body {
 /* ── 无障碍：键盘焦点可见（HIG：所有交互元素 focus ring） ── */
 :focus-visible {
   outline: none;
-  box-shadow: var(--sa-shadow-focus);
+  box-shadow: var(--tk-shadow-focus);
   border-radius: 4px;
 }
 

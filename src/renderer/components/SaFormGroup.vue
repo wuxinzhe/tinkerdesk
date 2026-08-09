@@ -31,21 +31,21 @@ defineProps<SaFormGroupProps>()
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 4px;
 }
 .sa-form-group__required {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
   margin-left: 2px;
 }
 .sa-form-group__error {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 .sa-form-group__hint {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 </style>

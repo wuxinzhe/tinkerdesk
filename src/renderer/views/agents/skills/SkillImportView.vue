@@ -1,16 +1,27 @@
 <template>
   <L3PageLayout class="skill-import">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
+      title="创建技能"
+      desc="创建或导入一个新技能"
+    />
+    <!-- L3 工具栏动作：导入 SKILL.md（文件选择 → 解析 → 可修改保存） -->
+    <ToolbarActions>
+      <button class="toolbar-btn" :disabled="loading" title="导入 SKILL.md" @click="handleImport">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <!-- emil 极简：文件轮廓（折角）+ 内部向下箭头（内容收进文件 = 导入） -->
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M12 12v6" />
+          <path d="m9 15 3 3 3-3" />
+        </svg>
+      </button>
+    </ToolbarActions>
     <!-- 技能导入/创建（解析在 render 层——可手动修改后保存） -->
     <div class="si">
-      <div class="si__heading">导入 / 创建技能</div>
-
-      <!-- 导入操作 -->
-      <div class="si__import-row">
-        <button class="action-btn" :disabled="loading" @click="handleImport">
-          {{ loading ? '解析中…' : '📂 导入 SKILL.md（文件夹）' }}
-        </button>
-        <span v-if="importedName" class="si__imported">已解析：{{ importedName }}（可手动修改后保存）</span>
-      </div>
+      <div v-if="importedName" class="si__imported">已解析：{{ importedName }}（可手动修改后保存）</div>
       <div v-if="parseError" class="si__parse-error">⚠️ {{ parseError }}</div>
 
       <!-- 技能表单（公共面板——基本信息 + 高级折叠 + 正文） -->
@@ -40,7 +51,8 @@
 
 <script setup lang="ts">
 import { skillsApi } from '@/renderer/api/skills-api'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
+import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { parseSkillMarkdown } from '@/renderer/utils/skill-parser'
 import SkillFormPanel from '@/renderer/views/agents/skills/SkillFormPanel.vue'
 import { onMounted, ref } from 'vue'
@@ -210,36 +222,57 @@ function goBack() {
 </script>
 
 <style scoped>
+/* 注意：padding 由 L3PageLayout 统一提供（20px 24px）——此处不定义 */
 .skill-import {
-  padding: 20px 24px;
+  max-width: 680px;
+  width: 100%;
 }
-
 .si {
-  max-width: 720px;
+  /* 宽度由 L3PageLayout（680）统一 */
 }
 
-.si__heading {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 14px;
-  color: var(--sa-text-primary, #1d1d1f);
-}
-
-.si__import-row {
-  display: flex;
+/* L3 工具栏图标按钮（emil：主入口图标按钮——hairline 边框 + 白底浮起，
+   与 Agent List 加号同款） */
+.toolbar-btn {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-accent);
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.toolbar-btn:active {
+  transform: scale(0.97);
+}
+.toolbar-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (hover: hover) and (pointer: fine) {
+  .toolbar-btn:hover {
+    background: var(--tk-bg-secondary);
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 
 .si__imported {
   font-size: 12px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
+  margin-bottom: 10px;
 }
 
 .si__parse-error {
   font-size: 12px;
-  color: #ff3b30;
+  color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.08);
   padding: 8px 10px;
   border-radius: 8px;
@@ -253,7 +286,7 @@ function goBack() {
 .si__label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -271,7 +304,7 @@ function goBack() {
 
 .si__field-label {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-bottom: 4px;
 }
 
@@ -279,16 +312,16 @@ function goBack() {
   width: 100%;
   font-size: 13px;
   padding: 7px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
 }
 
 .si__input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .si__textarea,
@@ -297,10 +330,10 @@ function goBack() {
   font-size: 13px;
   font-family: inherit;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   outline: none;
   resize: vertical;
   line-height: 1.5;
@@ -309,7 +342,7 @@ function goBack() {
 
 .si__textarea:focus,
 .si__body:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .si-files {
@@ -323,15 +356,15 @@ function goBack() {
   align-items: center;
   gap: 10px;
   padding: 7px 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border: 1px solid var(--tk-border-light);
   border-radius: 8px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .si-file__name {
   flex: 1;
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -339,12 +372,12 @@ function goBack() {
 
 .si-file__type {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .si__files-empty {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   padding: 8px 0;
 }
 
@@ -354,32 +387,32 @@ function goBack() {
   gap: 10px;
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
 }
 
 .action-btn {
   padding: 7px 16px;
   font-size: 13px;
   border-radius: 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   cursor: pointer;
 }
 
 .action-btn:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
 }
 
 .action-btn--primary {
-  background: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
   color: #fff;
 }
 
 .action-btn--primary:hover {
-  background: var(--sa-accent-hover, #0071e3);
+  background: var(--tk-accent-hover);
   color: #fff;
 }
 
@@ -391,22 +424,22 @@ function goBack() {
 .icon-btn {
   border: none;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   font-size: 12px;
   padding: 2px 6px;
 }
 
 .icon-btn--danger:hover {
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 
 /* 高级折叠（白卡片） */
 .advanced-section {
   margin-top: 4px;
   margin-bottom: 14px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -418,7 +451,7 @@ function goBack() {
   width: 100%;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   background: transparent;
   border: none;
   padding: 10px 12px;
@@ -427,7 +460,7 @@ function goBack() {
 }
 
 .advanced-toggle:hover {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .advanced-chevron {

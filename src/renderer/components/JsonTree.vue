@@ -101,7 +101,7 @@ function valText(v: unknown): string {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 10px;
   cursor: pointer;
   text-align: center;
@@ -113,13 +113,13 @@ function valText(v: unknown): string {
 }
 
 .json-tree__key {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .json-tree__meta {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -129,8 +129,8 @@ function valText(v: unknown): string {
   white-space: pre-wrap;
 }
 
-.json-tree__val--string { color: #34c759; }
-.json-tree__val--number { color: #007aff; }
-.json-tree__val--boolean { color: #ff9500; }
-.json-tree__val--null { color: var(--sa-text-tertiary, #aeaeb2); font-style: italic; }
+.json-tree__val--string { color: var(--tk-success); }
+.json-tree__val--number { color: var(--tk-accent); }
+.json-tree__val--boolean { color: var(--tk-warning); }
+.json-tree__val--null { color: var(--tk-text-tertiary); font-style: italic; }
 </style>

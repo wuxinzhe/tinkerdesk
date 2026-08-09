@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="skills-market">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+      gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
+      title="技能市场"
+      desc="浏览并安装社区技能"
+    />
     <!-- 筛选栏 -->
     <div class="skills-market__toolbar">
       <n-select
@@ -100,7 +107,7 @@ import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import { useRouter, useRoute } from 'vue-router'
 import type { HistoryState } from 'vue-router'
 import { NSelect } from 'naive-ui'
-import { SaEmpty, SaPagination, SaActionBtn, SaSkeleton, L3PageLayout } from '@/renderer/components'
+import { SaEmpty, SaPagination, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
 
 const router = useRouter()
@@ -226,6 +233,8 @@ async function installSkill(skill: SkillInfo) {
 
 <style scoped>
 .skills-market {
+  max-width: 680px;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -256,7 +265,7 @@ async function installSkill(skill: SkillInfo) {
 .skills-market__search-icon {
   position: absolute;
   left: 8px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   pointer-events: none;
 }
 
@@ -265,8 +274,8 @@ async function installSkill(skill: SkillInfo) {
   padding: 0 10px 0 26px;
   border: 1px solid transparent;
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   font-size: 12px;
   outline: none;
   width: 100%;
@@ -275,19 +284,19 @@ async function installSkill(skill: SkillInfo) {
 }
 
 .skills-market__search:focus {
-  border-color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-primary, #fff);
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 
 .skills-market__search::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-weight: 400;
 }
 
 .skills-market__count {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   width: 100%;
   text-align: right;
 }
@@ -311,14 +320,14 @@ async function installSkill(skill: SkillInfo) {
   display: flex;
   flex-direction: column;
   border-radius: 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-primary, #fff);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-primary);
   overflow: hidden;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .skill-card:hover {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
@@ -338,8 +347,8 @@ async function installSkill(skill: SkillInfo) {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
 }
 
 .skill-card__info {
@@ -350,13 +359,13 @@ async function installSkill(skill: SkillInfo) {
 .skill-card__name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 2px;
 }
 
 .skill-card__desc {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -373,14 +382,14 @@ async function installSkill(skill: SkillInfo) {
   display: inline-block;
   padding: 1px 6px;
   border-radius: 3px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   font-size: 10px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .skill-card__version {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-family: 'SF Mono', 'Menlo', monospace;
   margin-left: 6px;
   vertical-align: middle;
@@ -405,9 +414,9 @@ async function installSkill(skill: SkillInfo) {
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 10px;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
 }
 
 .skills-market__skeleton-icon {

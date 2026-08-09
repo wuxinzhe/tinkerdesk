@@ -1,6 +1,13 @@
 <template>
-  <div class="agent-detail">
-    <div class="agent-detail__body">
+  <L3PageLayout class="agent-edit">
+    <div class="agent-edit__body">
+      <!-- 页头 -->
+      <SaPageHero
+        icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+        gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        :title="isCreate ? '创建 Agent' : '编辑 Agent'"
+        :desc="isCreate ? '创建一个新的 Agent 助手' : '修改 Agent 的基本信息与外观'"
+      />
       <!-- ══════════ 编辑表单 ══════════ -->
       <div v-if="!isCreate && editingAgent" class="edit-form">
         <div class="edit-form__section">
@@ -120,12 +127,14 @@
         </div>
       </div>
     </div>
-  </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import type { AgentInfo, ModeOptionVO } from '@/renderer/api/types'
 import { agentsApi } from '@/renderer/api/agents-api'
 
@@ -325,17 +334,14 @@ onMounted(() => syncFromRoute())
 </script>
 
 <style scoped>
-.agent-detail {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
+/* 680 窄列靠左（与其他 L3 页统一——L3PageLayout 提供 padding 20/24） */
+.agent-edit {
+  max-width: 680px;
+  width: 100%;
 }
 
-.agent-detail__body {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--sa-bg-primary, #ffffff);
+.agent-edit__body {
+  min-height: 100%;
 }
 
 .agents-placeholder {
@@ -351,18 +357,17 @@ onMounted(() => syncFromRoute())
   display: inline-flex;
   padding: 12px;
   border-radius: 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
   margin-bottom: 12px;
 }
 .agents-placeholder__text {
   font-size: 14px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .edit-form {
-  padding: 24px 32px;
-  max-width: 560px;
+  /* padding 由 L3PageLayout 统一提供（20/24）——页面自身不定义 */
 }
 .edit-form__section {
   margin-bottom: 20px;
@@ -370,13 +375,13 @@ onMounted(() => syncFromRoute())
 .edit-form__section-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 12px;
   letter-spacing: 0.3px;
 }
 .edit-form__section-divider {
   height: 1px;
-  background: var(--sa-border, #d2d2d7);
+  background: var(--tk-border);
   margin: 16px 0 20px;
 }
 .edit-form__group {
@@ -386,32 +391,32 @@ onMounted(() => syncFromRoute())
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 4px;
 }
-.required { color: #ff3b30; }
+.required { color: var(--tk-destructive); }
 .edit-form__field-error {
   font-size: 12px;
-  color: #ff3b30;
+  color: var(--tk-destructive);
   margin: 2px 0 0;
 }
 .edit-form__input,
 .edit-form__textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #fff);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
   outline: none;
   transition: border-color 0.15s;
 }
 .edit-form__input:focus,
 .edit-form__textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 .edit-form__textarea {
   resize: vertical;
@@ -423,13 +428,13 @@ onMounted(() => syncFromRoute())
 .edit-form__select {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   padding: 8px 32px 8px 12px;
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #fff);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
   outline: none;
   appearance: none;
   cursor: pointer;
@@ -439,7 +444,7 @@ onMounted(() => syncFromRoute())
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   pointer-events: none;
 }
 .edit-form__actions {
@@ -458,21 +463,21 @@ onMounted(() => syncFromRoute())
 }
 .edit-form__btn:disabled { opacity: 0.5; cursor: default; }
 .edit-form__btn.primary {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 .edit-form__btn.subtle {
-  color: var(--sa-text-primary, #1d1d1f);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  color: var(--tk-text-primary);
+  border: 1px solid var(--tk-border);
 }
 .edit-form__btn.danger {
   margin-left: auto;
-  color: #ff3b30;
-  border: 1px solid #ff3b30;
+  color: var(--tk-destructive);
+  border: 1px solid var(--tk-destructive);
 }
 .edit-form__error {
   font-size: 13px;
-  color: #ff3b30;
+  color: var(--tk-destructive);
   margin: 12px 0 0;
 }
 </style>

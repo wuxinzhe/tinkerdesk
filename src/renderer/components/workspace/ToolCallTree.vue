@@ -1,12 +1,15 @@
 <template>
-  <!-- 工具调用树状列表（🔧 节点 + 细连线——纵向排列——顺序感：先调用的在上） -->
+  <!-- 工具调用树状列表（SVG 扳手节点 + 细连线——纵向排列——顺序感：先调用的在上） -->
   <div
     v-for="(entry, i) in toolCallEntries"
     :key="i"
     class="tool-call-tree"
     :style="i === 0 ? { marginTop: `${firstGap}px` } : undefined"
   >
-    <span>🔧 通过调用 <span class="tool-call-tree__name">{{ displayToolName(entry.name) }}</span> 工具解决问题...</span>
+    <svg class="tool-call-tree__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+    </svg>
+    <span>通过调用 <span class="tool-call-tree__name">{{ displayToolName(entry.name) }}</span> 工具解决问题...</span>
   </div>
 </template>
 
@@ -70,12 +73,13 @@ const toolCallEntries = computed(() => {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 6px;
   /* 首行 margin-top 由 firstGap prop 控制（style 绑定） */
-  padding: 1px 8px 1px 24px;    /* 左侧留出竖线 + 横线 + emoji 空间 */
+  padding: 1px 8px 1px 24px;    /* 左侧留出竖线 + 横线 + 图标空间 */
   font-size: 12px;
   font-weight: 500;
   line-height: 1.6;
-  color: var(--sa-text-tertiary, #aeaeb2);   /* 辅助信息——文字淡一些（工具名单独蓝色高亮） */
+  color: var(--tk-text-tertiary);   /* 辅助信息——文字淡一些（工具名单独蓝色高亮） */
 }
 
 /* 工具行之间：小间距（不随正文间距增加） */
@@ -91,11 +95,11 @@ const toolCallEntries = computed(() => {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   opacity: 0.2;
 }
 
-/* 每行水平分支线（细淡——从竖线连到 🔧 节点） */
+/* 每行水平分支线（细淡——从竖线连到图标节点） */
 .tool-call-tree::after {
   content: '';
   position: absolute;
@@ -103,13 +107,21 @@ const toolCallEntries = computed(() => {
   top: 50%;
   width: 8px;
   height: 1px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   opacity: 0.2;
+}
+
+/* 工具节点图标（SVG 扳手——accent 色，替代 emoji） */
+.tool-call-tree__icon {
+  flex-shrink: 0;
+  color: var(--tk-accent);
+  position: relative;
+  z-index: 1;
 }
 
 /* 工具名（蓝色高亮） */
 .tool-call-tree__name {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   font-weight: 600;
 }
 </style>

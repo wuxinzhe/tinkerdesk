@@ -25,7 +25,7 @@ withDefaults(defineProps<{
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 </style>

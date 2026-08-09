@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="ms-page">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'
+      gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
+      title="模型配置"
+      desc="为场景绑定该 Agent 使用的模型"
+    />
     <SaSection title="场景分配">
       <SaLoading v-if="scenesLoading" text="加载中…" size="small" />
 
@@ -76,7 +83,7 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import type { CustomModelInfo, SceneModelDetail } from '@/renderer/api/types'
-import { SaSection, SaLoading, SaActionBtn, L3PageLayout } from '@/renderer/components'
+import { SaSection, SaLoading, SaActionBtn, L3PageLayout, SaPageHero } from '@/renderer/components'
 import { modelsApi } from '@/renderer/api/models-api'
 
 const route = useRoute()
@@ -169,6 +176,12 @@ watch(profile, async () => {
    macOS Settings 风格 — 场景分配
    ═══════════════════════════════════════════════════════ */
 
+/* 窄列布局（与系统设置 L3 对齐：680px 宽，靠左） */
+.ms-page {
+  max-width: 680px;
+  width: 100%;
+}
+
 /* ── Disclosure header ── */
 
 .ms-disc {
@@ -176,20 +189,25 @@ watch(profile, async () => {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: none;
-  border-bottom: 1px solid var(--sa-border-light, #f0f0f2);
+  border-bottom: 1px solid var(--tk-border-light);
   background: transparent;
   cursor: pointer;
   text-align: left;
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
-  transition: background 0.12s;
+  color: var(--tk-text-primary);
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
   -webkit-appearance: none;
 }
-
-.ms-disc:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+.ms-disc:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ms-disc:hover {
+    background: var(--tk-bg-secondary);
+  }
 }
 
 .ms-disc--exp {
@@ -207,7 +225,7 @@ watch(profile, async () => {
 
 .ms-disc__summary {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -217,8 +235,8 @@ watch(profile, async () => {
 
 .ms-disc__chev {
   flex-shrink: 0;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  transition: transform 0.2s ease;
+  color: var(--tk-text-tertiary);
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .ms-disc__chev.open {
@@ -228,8 +246,8 @@ watch(profile, async () => {
 /* ── Expanded body ── */
 
 .ms-disc-body {
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
-  border-bottom: 1px solid var(--sa-border-light, #f0f0f2);
+  border-top: 1px solid var(--tk-border-light);
+  border-bottom: 1px solid var(--tk-border-light);
 }
 
 .ms-subs {
@@ -242,7 +260,7 @@ watch(profile, async () => {
   align-items: center;
   gap: 8px;
   padding: 8px 14px 8px 28px;
-  border-bottom: 1px solid var(--sa-border-light, #f0f0f2);
+  border-bottom: 1px solid var(--tk-border-light);
 }
 
 .ms-sub--last {
@@ -259,24 +277,24 @@ watch(profile, async () => {
 }
 
 .ms-sub__tag--main {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
 .ms-sub__tag--alt {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
 }
 
 .ms-sub__alias {
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .ms-sub__name {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -294,7 +312,7 @@ watch(profile, async () => {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   opacity: 0.5;
   transition: opacity 0.12s, color 0.12s;
@@ -302,7 +320,7 @@ watch(profile, async () => {
 
 .ms-sub__del:hover {
   opacity: 1;
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 
 .ms-sub__del:disabled {
@@ -315,7 +333,7 @@ watch(profile, async () => {
 .ms-empty-inline {
   padding: 12px 14px 12px 28px;
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 /* ── Fallback add row ── */
@@ -325,7 +343,7 @@ watch(profile, async () => {
   gap: 8px;
   align-items: center;
   padding: 8px 14px 8px 28px;
-  border-top: 1px solid var(--sa-border-light, #e8e8ed);
+  border-top: 1px solid var(--tk-border-light);
 }
 
 .ms-fallback__wrap {
@@ -344,19 +362,19 @@ watch(profile, async () => {
   width: 100%;
   height: 32px;
   padding: 0 28px 0 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border: 1px solid var(--tk-border-light);
   border-radius: 6px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   outline: none;
   appearance: none;
   cursor: pointer;
 }
 
 .ms-select:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
 }
 </style>

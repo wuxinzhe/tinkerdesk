@@ -1,66 +1,76 @@
 <template>
-  <!-- 设置抽屉（独立组件：toggle + 抽屉主体——等高贴输入框；bottom 切换展开/收起） -->
-  <div class="chat-settings-drawer" ref="rootRef">
-    <!-- 抽屉主体（与 chat-input 等高——toggle 在顶部中间——一行横排：标题在控件左侧——间距 16px） -->
-    <div
-      class="chat-settings-drawer__panel"
-      :class="{ 'chat-settings-drawer__panel--open': open }"
+  <!-- 设置抽屉（锚定输入行 row——bottom: calc(100% + 6px) 永远在输入行上方；
+       panel 撑高 chat-input 不影响——row 始终在顶部） -->
+  <div class="chat-settings-drawer" :class="{ 'chat-settings-drawer--open': open }">
+    <!-- toggle（在 row 上方——常显把手） -->
+    <button
+      class="chat-settings-drawer__toggle"
+      :class="{ 'chat-settings-drawer__toggle--open': open }"
+      :title="open ? '收起设置' : '展开设置'"
+      @click="open = !open"
     >
-      <!-- toggle（panel 顶部中间——随 panel 一起移动；收起 ︿ / 展开 ﹀） -->
-      <button
-        class="chat-settings-drawer__toggle"
-        :class="{ 'chat-settings-drawer__toggle--open': open }"
-        :title="open ? '收起设置' : '展开设置'"
-        @click="open = !open"
-      >
-        <span
+      <svg
         class="chat-settings-drawer__arrow"
-        :class="open ? 'chat-settings-drawer__arrow--open' : 'chat-settings-drawer__arrow--close'"
-      >{{ open ? '﹀' : '︿' }}</span>
-      </button>
-      <div class="chat-settings-drawer__row">
-        <div class="chat-settings-drawer__field">
-          <span class="chat-settings-drawer__field-label">模型</span>
-          <select
-            class="chat-settings-drawer__select"
-            :value="currentMainId || ''"
-            :disabled="models.length === 0"
-            @change="onModelChange"
-          >
-            <option v-if="models.length === 0" value="">无模型</option>
-            <option v-for="m in models" :key="m.id" :value="m.id">{{ m.modelName }}</option>
-          </select>
-        </div>
-        <div class="chat-settings-drawer__field">
-          <span class="chat-settings-drawer__field-label">推理深度</span>
-          <div
-            class="chat-settings-drawer__range"
-            ref="rangeRef"
-            @pointerdown="onRangePointerDown"
-          >
-            <div class="chat-settings-drawer__range-track">
+        :class="{ 'chat-settings-drawer__arrow--open': open }"
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </button>
+    <!-- 主体（grid 0fr→1fr 折叠——向上生长；收起只露 toggle） -->
+    <div class="chat-settings-drawer__row">
+      <div class="chat-settings-drawer__row-inner">
+        <div class="chat-settings-drawer__fields">
+          <div class="chat-settings-drawer__field">
+            <span class="chat-settings-drawer__field-label">模型</span>
+            <select
+              class="chat-settings-drawer__select"
+              :value="currentMainId || ''"
+              :disabled="models.length === 0"
+              @change="onModelChange"
+            >
+              <option v-if="models.length === 0" value="">无模型</option>
+              <option v-for="m in models" :key="m.id" :value="m.id">{{ m.modelName }}</option>
+            </select>
+          </div>
+          <div class="chat-settings-drawer__field">
+            <span class="chat-settings-drawer__field-label">推理深度</span>
+            <div
+              class="chat-settings-drawer__range"
+              ref="rangeRef"
+              @pointerdown="onRangePointerDown"
+            >
+              <div class="chat-settings-drawer__range-track">
+                <div
+                  class="chat-settings-drawer__range-fill"
+                  :style="{ width: `calc(20px + ${rangeFillPercent * 0.78}px)` }"
+                />
+              </div>
               <div
-                class="chat-settings-drawer__range-fill"
-                :style="{ width: `calc(20px + ${rangeFillPercent * 0.78}px)` }"
+                class="chat-settings-drawer__range-thumb"
+                :style="{ left: `calc(8px + ${rangeFillPercent * 0.78}px)` }"
               />
             </div>
-            <div
-              class="chat-settings-drawer__range-thumb"
-              :style="{ left: `calc(8px + ${rangeFillPercent * 0.78}px)` }"
-            />
           </div>
-        </div>
-        <div class="chat-settings-drawer__field">
-          <span class="chat-settings-drawer__field-label">YOLO</span>
-          <label class="chat-settings-drawer__switch">
-            <input
-              type="checkbox"
-              :checked="yoloEnabled"
-              :disabled="!sessionId"
-              @change="toggleYolo"
-            />
-            <span class="chat-settings-drawer__switch-slider" />
-          </label>
+          <div class="chat-settings-drawer__field">
+            <span class="chat-settings-drawer__field-label">YOLO</span>
+            <label class="chat-settings-drawer__switch">
+              <input
+                type="checkbox"
+                :checked="yoloEnabled"
+                :disabled="!sessionId"
+                @change="toggleYolo"
+              />
+              <span class="chat-settings-drawer__switch-slider" />
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -68,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
 import { modelsApi } from '@/renderer/api/models-api'
 
@@ -89,21 +99,7 @@ const emit = defineEmits<{
   'update:yolo': [value: boolean]
 }>()
 
-const rootRef = ref<HTMLElement | null>(null)
 const open = ref(false)
-
-// ── chat-input 测量（drawer 相对 chat-input-wrap 定位：展开底=输入框顶 / 收起只下移 panel 高） ──
-let resizeObs: ResizeObserver | null = null
-function updateMetrics() {
-  const root = rootRef.value
-  if (!root) return
-  const wrap = root.parentElement
-  const chatInput = wrap?.querySelector('.chat-input') as HTMLElement | null
-  if (!wrap || !chatInput) return
-  const h = chatInput.offsetHeight
-  wrap.style.setProperty('--chat-settings-open', `${h}px`)        // 展开：底 = 输入框顶
-  // 收起偏移由 CSS 变量控制（.chat-settings-drawer 定义 + @media 手机模式覆盖——内联会压过 @media，不能设）
-}
 
 // ── 模型（select 数据源） ──
 const models = ref<Array<{ id: string; alias: string; modelName: string }>>([])
@@ -218,104 +214,97 @@ async function toggleYolo(e: Event): Promise<void> {
 
 onMounted(() => {
   void loadModels()
-  updateMetrics()
-  resizeObs = new ResizeObserver(() => updateMetrics())
-  const chatInput = rootRef.value?.parentElement?.querySelector('.chat-input')
-  if (chatInput) resizeObs.observe(chatInput)
-})
-
-onBeforeUnmount(() => {
-  resizeObs?.disconnect()
-  resizeObs = null
 })
 </script>
 
 <style scoped>
-/* ── 设置抽屉（独立组件——贴 chat-input；展开底=输入框顶 / 收起底=输入框底） ── */
+/* ── 设置抽屉（锚定输入行 row——层级关系天然跟随，无 JS 测量） ── */
 
-/* toggle（panel 顶部中间——随 panel 移动——收起 ︿ / 展开 ﹀） */
+/* 根：absolute 相对 .chat-input-wrap（relative）——bottom: 100% 锚定 wrap 顶 = 输入行顶 */
+.chat-settings-drawer {
+  position: absolute;
+  right: 16px;
+  bottom: 100%;
+  z-index: 9;                 /* 下层（被输入框压住）——收起时主体藏入输入行后 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  max-width: calc(100vw - 32px);
+}
+
+/* toggle（在主体上方——常显把手） */
 .chat-settings-drawer__toggle {
-  align-self: center;         /* 横向居中（panel 中间） */
-  position: relative;
-  z-index: 9;                 /* 与 panel 同层——盖在输入框区域 */
   display: flex;
   align-items: center;
   justify-content: center;
   width: 48px;
   height: 18px;
   padding: 0;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-bottom: none;
   border-radius: 9px 9px 0 0;
-  background: var(--sa-bg-elevated, #ffffff);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-bg-elevated);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
-  transition: color 0.15s;
-}
-
-.chat-settings-drawer__toggle:hover {
-  color: var(--sa-accent, #007aff);
+  z-index: 1;              /* 盖过 row-inner 的 top 描边——连接处无缝 */
+  margin-bottom: -3px;     /* 向下覆盖 border-top——toggle 与主体视觉连续 */
+  transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chat-settings-drawer__toggle--open {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .chat-settings-drawer__toggle:hover {
+    color: var(--tk-accent);
+  }
+}
+
+/* 箭头（SVG chevron——旋转动画） */
 .chat-settings-drawer__arrow {
-  font-size: 11px;
-  line-height: 1;
-  font-weight: 700;
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
 .chat-settings-drawer__arrow--open {
-  padding-top: 10px;         /* 展开（箭头 ﹀）——上移 */
+  transform: rotate(180deg);
 }
 
-.chat-settings-drawer__arrow--close {
-  padding-bottom: 3px;       /* 收起（箭头 ︿）——下移 */
-}
-
-/* 收起偏移（CSS 变量——默认 6px；手机模式 @media 覆盖另一值） */
-.chat-settings-drawer {
-  --chat-settings-closed: 6px;
-}
-
-/* 抽屉主体（高度自适应内容——bottom 切换动画） */
-.chat-settings-drawer__panel {
-  position: absolute;
-  right: 16px;
-  bottom: var(--chat-settings-closed, 0px);   /* 收起：只下移 panel 高——toggle 露在输入框顶 */
-  z-index: 9;                                 /* 下层（被输入框压住） */
-  width: fit-content;
-  max-width: 100%;
-  transition: bottom 0.25s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.chat-settings-drawer__panel--open {
-  bottom: var(--chat-settings-open, 50px);    /* 展开：底 = chat-input 顶（刚好到达） */
-}
-
-/* 内部：一行横排——标题在控件左侧——间距 16px */
+/* 主体（grid 0fr→1fr 折叠——emil 真实高度插值；收起 0fr 只露 toggle） */
 .chat-settings-drawer__row {
-  flex: 1;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chat-settings-drawer--open .chat-settings-drawer__row {
+  grid-template-rows: 1fr;
+}
+.chat-settings-drawer__row-inner {
+  overflow: hidden;
   min-height: 0;
+  border-radius: 8px 8px 0 0;  /* 顶部圆角（fields 随裁剪呈现）——下方角贴输入行 */
+  border-right: 1px solid var(--tk-border);
+  border-left: 1px solid var(--tk-border);
+}
+/* 顶部描边只在展开时添加（收起时 row 折叠 0fr——不应露出一条线） */
+.chat-settings-drawer--open .chat-settings-drawer__row-inner {
+  border-top: 1px solid var(--tk-border);
+}
+
+/* 字段容器（一行横排——标题在控件左侧——间距 16px）
+   卡片从输入行向上生长：顶部圆角由 toggle（9 9 0 0）提供——底部方角贴输入行 */
+.chat-settings-drawer__fields {
   display: flex;
   align-items: center;
   gap: 16px;
-  border-radius: 10px 10px 0 0;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
   box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.12);
-  padding: 10px;         /* 四周 10px */
+  padding: 10px;
 }
 
 /* 手机模式（≤767px）：设置选项从并列改堆叠——每个 field 独占一行 */
 @media (max-width: 767px) {
-  .chat-settings-drawer {
-    --chat-settings-closed: -61px;  /* 手机模式收起偏移：panel 下移 61px（藏入下方——只露 toggle） */
-  }
-  .chat-settings-drawer__row {
+  .chat-settings-drawer__fields {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
@@ -336,7 +325,7 @@ onBeforeUnmount(() => {
 .chat-settings-drawer__field-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: nowrap;
 }
 
@@ -345,16 +334,16 @@ onBeforeUnmount(() => {
   max-width: 140px;
   height: 26px;
   padding: 0 6px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   font-size: 11px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   outline: none;
 }
 
 .chat-settings-drawer__select:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* 推理深度滑块（自绘——粗胶囊轨道 + 圆角长方形把手；26px 高与 YOLO Switch 一致） */
@@ -372,13 +361,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 16px;
   border-radius: 8px;      /* 16px 高——半高圆角胶囊 */
-  background: var(--sa-border, #d2d2d7);
+  background: var(--tk-border);
 }
 
 .chat-settings-drawer__range-fill {
   height: 100%;
   border-radius: 8px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .chat-settings-drawer__range-thumb {
@@ -389,7 +378,7 @@ onBeforeUnmount(() => {
   height: 24px;
   border-radius: 6px;      /* 圆角长方形 */
   background: #ffffff;
-  border: 1px solid var(--sa-accent, #007aff);
+  border: 1px solid var(--tk-accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   pointer-events: none;
 }
@@ -434,9 +423,9 @@ onBeforeUnmount(() => {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background: var(--sa-border, #d2d2d7);
+  background: var(--tk-border);
   border-radius: 13px;
-  transition: background 0.2s;
+  transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chat-settings-drawer__switch-slider::before {
@@ -446,14 +435,14 @@ onBeforeUnmount(() => {
   height: 22px;
   left: 2px;
   bottom: 2px;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   border-radius: 50%;
-  transition: transform 0.2s;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .chat-settings-drawer__switch input:checked + .chat-settings-drawer__switch-slider {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .chat-settings-drawer__switch input:checked + .chat-settings-drawer__switch-slider::before {

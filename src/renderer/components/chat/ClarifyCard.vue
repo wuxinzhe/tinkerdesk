@@ -1,7 +1,9 @@
 <template>
   <div class="clarify-card">
     <div class="clarify-card__header">
-      <span class="clarify-card__icon">❓</span>
+      <span class="clarify-card__icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </span>
       <span class="clarify-card__question">{{ question }}</span>
     </div>
 
@@ -54,7 +56,8 @@
 
     <div class="clarify-card__footer">
       <span v-if="interactionStatus === 'timed_out'" class="clarify-card__timed-out">
-        ⏰ 已过期
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        已过期
       </span>
       <span v-else-if="submitted" class="clarify-card__submitted">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -169,15 +172,16 @@ function handleSubmit(): void {
 
 <style scoped>
 .clarify-card {
-  background: var(--sa-card-bg, #ffffff);
-  border: 1px solid var(--sa-border, #e5e5e5);
-  border-radius: 10px;
+  background: var(--tk-card-bg);
+  border: 1px solid var(--tk-border-card);
+  border-radius: 12px;
   padding: 14px 16px;
   margin: 8px 0;
   font-size: 13px;
   line-height: 1.5;
   width: 100%;
   box-sizing: border-box;
+  box-shadow: var(--tk-shadow-card);
 }
 
 .clarify-card__header {
@@ -189,14 +193,15 @@ function handleSubmit(): void {
 
 .clarify-card__icon {
   flex-shrink: 0;
-  font-size: 16px;
+  display: flex;
   margin-top: 1px;
+  color: var(--tk-accent);
 }
 
 .clarify-card__question {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--sa-text, #1d1d1f);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text);
 }
 
 .clarify-card__choices {
@@ -206,24 +211,30 @@ function handleSubmit(): void {
   margin-bottom: 12px;
 }
 
+/* emil：指定属性过渡 + 按压反馈 */
 .clarify-card__choice {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #e5e5e5);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.clarify-card__choice:hover {
-  border-color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-hover, #f5f5f7);
+.clarify-card__choice:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .clarify-card__choice:hover {
+    border-color: var(--tk-accent);
+    background: var(--tk-bg-hover);
+  }
 }
 
 .clarify-card__choice--selected {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
 }
 
@@ -234,11 +245,11 @@ function handleSubmit(): void {
 }
 
 .clarify-card__radio {
-  accent-color: var(--sa-accent, #007aff);
+  accent-color: var(--tk-accent);
 }
 
 .clarify-card__choice-label {
-  color: var(--sa-text, #1d1d1f);
+  color: var(--tk-text);
 }
 
 .clarify-card__open {
@@ -248,15 +259,15 @@ function handleSubmit(): void {
 .clarify-card__textarea {
   width: 100%;
   padding: 10px;
-  border: 1px solid var(--sa-border, #e5e5e5);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   font-size: 13px;
   font-family: inherit;
   resize: vertical;
-  color: var(--sa-text, #1d1d1f);
-  background: var(--sa-input-bg, #ffffff);
+  color: var(--tk-text);
+  background: var(--tk-input-bg);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
   box-sizing: border-box;
 }
 
@@ -268,7 +279,7 @@ function handleSubmit(): void {
 }
 
 .clarify-card__textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .clarify-card__textarea:disabled,
@@ -284,14 +295,14 @@ function handleSubmit(): void {
 .clarify-card__other-text {
   width: 100%;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #e5e5e5);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   font-size: 13px;
   font-family: inherit;
-  color: var(--sa-text, #1d1d1f);
-  background: var(--sa-input-bg, #ffffff);
+  color: var(--tk-text);
+  background: var(--tk-input-bg);
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
   box-sizing: border-box;
 }
 
@@ -303,7 +314,7 @@ function handleSubmit(): void {
 }
 
 .clarify-card__other-text:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .clarify-card__footer {
@@ -311,32 +322,37 @@ function handleSubmit(): void {
   justify-content: flex-end;
 }
 
+/* 提交按钮（emil：按压 scale + hover gate） */
 .clarify-card__submit {
-  padding: 6px 18px;
+  padding: 7px 20px;
   border: none;
-  border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  border-radius: 8px;
+  background: var(--tk-accent);
   color: #fff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
+.clarify-card__submit:not(:disabled):active {
+  transform: scale(0.97);
+}
 .clarify-card__submit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-.clarify-card__submit:not(:disabled):hover {
-  opacity: 0.85;
+@media (hover: hover) and (pointer: fine) {
+  .clarify-card__submit:not(:disabled):hover {
+    opacity: 0.85;
+  }
 }
 
 .clarify-card__submitted {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--sa-green, #34c759);
+  color: var(--tk-green);
   font-size: 12px;
 }
 
@@ -344,7 +360,7 @@ function handleSubmit(): void {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: var(--sa-orange, #ff9500);
+  color: var(--tk-orange);
   font-size: 12px;
 }
 </style>

@@ -82,27 +82,43 @@ defineEmits<{
 }
 .sa-form-actions__btn:disabled { opacity: 0.5; cursor: default; }
 .sa-form-actions__btn--primary {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 @media (hover: hover) and (pointer: fine) {
   .sa-form-actions__btn--primary:hover {
-    background: color-mix(in srgb, var(--sa-accent, #007aff) 88%, #000);
+    background: color-mix(in srgb, var(--tk-accent) 88%, #000);
   }
   .sa-form-actions__btn--subtle:hover {
-    background: var(--sa-bg-secondary, #f5f5f7);
+    background: var(--tk-bg-secondary);
   }
   .sa-form-actions__btn--danger:hover {
     background: rgba(255, 59, 48, 0.06);
   }
 }
 .sa-form-actions__btn--subtle {
-  color: var(--sa-text-primary, #1d1d1f);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  color: var(--tk-text-primary);
+  border: 1px solid var(--tk-border);
 }
 .sa-form-actions__btn--danger {
   margin-left: auto;
-  color: var(--sa-destructive, #ff3b30);
-  border: 1px solid var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
+  border: 1px solid var(--tk-destructive);
+}
+
+/* 自适应：手机按钮全宽堆叠（触屏目标 ≥44px） */
+@media (max-width: 767px) {
+  .sa-form-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .sa-form-actions__btn {
+    flex: 1 1 100%;
+    padding: 12px 20px;
+    text-align: center;
+  }
+  .sa-form-actions__btn--danger {
+    margin-left: 0;
+  }
 }
 </style>

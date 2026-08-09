@@ -1,5 +1,12 @@
 <template>
   <div class="cms-page">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>'
+      gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
+      title="模型设置"
+      desc="管理 AI 模型提供商和默认模型"
+    />
     <!-- 自定义模型 -->
     <SaSection title="自定义模型">
       <SaLoading v-if="loading" />
@@ -43,7 +50,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { CustomModelInfo, SystemProvider } from '@/renderer/api/types'
-import { SaSection, SaLoading, SaEmpty, SaCardRow } from '@/renderer/components'
+import { SaSection, SaLoading, SaEmpty, SaCardRow, SaPageHero } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { modelsApi } from '@/renderer/api/models-api'
 
@@ -115,7 +122,8 @@ onMounted(async () => {
    ═══════════════════════════════════════════════════════ */
 
 .cms-page {
-  padding: 24px 24px 48px;
+  padding: 0 0 32px;
+  max-width: 680px;
   width: 100%;
   overflow-y: auto;
   scrollbar-width: none;
@@ -141,12 +149,12 @@ onMounted(async () => {
   transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .cms-act:hover {
-    background: var(--sa-bg-secondary, #f5f5f7);
+    background: var(--tk-bg-secondary);
   }
   .cms-act--test:hover {
     background: rgba(52, 199, 89, 0.06);
@@ -162,7 +170,7 @@ onMounted(async () => {
 /* ── 手机模式：模型列表改卡片 ── */
 @media (max-width: 767px) {
   .cms-page {
-    padding: 16px 8px;
+    padding: 0 0 24px;
   }
   .cms-rows {
     gap: 8px;

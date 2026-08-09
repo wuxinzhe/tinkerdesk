@@ -106,7 +106,7 @@ onUnmounted(() => {
   align-items: center;
   height: 32px;
   flex-shrink: 0;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   user-select: none;
 }
 
@@ -187,14 +187,14 @@ onUnmounted(() => {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .title-bar__collapse:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
 }
 
 /* 手机模式（<768px）：折叠按钮隐藏（手机用抽屉导航，无 lv2 折叠需求） */
@@ -215,18 +215,18 @@ onUnmounted(() => {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 .title-bar__lock:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
 }
 
 .title-bar__lock:active {
-  background: var(--sa-bg-tertiary, #fafafa);
+  background: var(--tk-bg-tertiary);
 }
 
 </style>

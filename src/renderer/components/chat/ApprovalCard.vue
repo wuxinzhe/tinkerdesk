@@ -31,7 +31,10 @@
 
     <!-- 底部操作栏 -->
     <template v-if="displayStatus === 'pending'">
-      <div class="approval-card__expiry">⏱ 审批超时时间：10分钟</div>
+      <div class="approval-card__expiry">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        审批超时：1 分钟
+      </div>
       <div class="approval-card__actions">
         <button class="approval-card__btn approval-card__btn--reject" @click="$emit('reject', toolCallId)">拒绝</button>
         <button class="approval-card__btn approval-card__btn--auto" @click="$emit('auto-approve', toolCallId)" title="当前挂起审批全部放行，本轮后续审批不再弹窗">本轮自动批准</button>
@@ -39,7 +42,9 @@
       </div>
     </template>
     <div v-else-if="displayStatus === 'timed_out'" class="approval-card__actions approval-card__actions--resolved">
-      <span class="approval-card__clock">⏰</span>
+      <span class="approval-card__clock">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
       <span>已过期</span>
     </div>
     <div v-else class="approval-card__actions approval-card__actions--resolved">
@@ -92,14 +97,14 @@ function copyArgs() {
 
 <style scoped>
 .approval-card {
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   border-radius: 12px;
   margin: 8px 0;
   overflow: hidden;
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid var(--tk-border-card);
   width: 100%;
   box-sizing: border-box;
 }
@@ -114,13 +119,13 @@ function copyArgs() {
 .approval-card__icon {
   display: flex;
   align-items: center;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .approval-card__title {
   font-weight: 600;
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   letter-spacing: -0.01em;
 }
 
@@ -131,7 +136,7 @@ function copyArgs() {
   padding: 2px 8px;
   border-radius: 4px;
   background: rgba(0,0,0,0.04);
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   font-weight: 500;
 }
 
@@ -140,9 +145,9 @@ function copyArgs() {
 }
 
 .approval-card__code-inner {
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 
 .approval-card__code-bar {
@@ -150,12 +155,12 @@ function copyArgs() {
   align-items: center;
   padding: 7px 12px;
   background: transparent;
-  border-bottom: 1px solid var(--sa-border, #d2d2d7);
+  border-bottom: 1px solid var(--tk-border);
 }
 
 .approval-card__code-lang {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-weight: 500;
 }
 
@@ -163,18 +168,19 @@ function copyArgs() {
   margin-left: auto;
   font-size: 11px;
   font-weight: 500;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: none;
   border: none;
   cursor: pointer;
   padding: 2px 8px;
   border-radius: 4px;
   font-family: inherit;
-  transition: background 0.15s ease;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.approval-card__copy:hover {
-  background: rgba(0, 122, 255, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .approval-card__copy:hover {
+    background: rgba(0, 122, 255, 0.08);
+  }
 }
 
 .approval-card__code-body {
@@ -188,7 +194,7 @@ function copyArgs() {
 .approval-card__code-body code {
   font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: pre;
   line-height: 1.6;
 }
@@ -200,7 +206,7 @@ function copyArgs() {
 .approval-card__question {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   letter-spacing: -0.01em;
   line-height: 20px;
   margin-bottom: 4px;
@@ -208,15 +214,19 @@ function copyArgs() {
 
 .approval-card__desc {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 18px;
   letter-spacing: -0.01em;
 }
 
 .approval-card__expiry {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   padding: 6px 16px 0;
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1;
   text-align: right;
 }
@@ -227,51 +237,51 @@ function copyArgs() {
   padding: 14px 16px;
 }
 
+/* emil：指定属性过渡 + 按压 scale 反馈 */
 .approval-card__btn {
   flex: 1;
   height: 36px;
-  border-radius: 18px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   border: none;
   font-family: inherit;
   letter-spacing: -0.01em;
-  transition: opacity 0.15s ease;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
 .approval-card__btn:active {
-  opacity: 0.7;
+  transform: scale(0.97);
 }
-
+/* 变体基础样式 */
 .approval-card__btn--reject {
   background: transparent;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
   border: 1px solid rgba(255, 59, 48, 0.2);
 }
-
-.approval-card__btn--reject:hover {
-  background: rgba(255, 59, 48, 0.06);
-}
-
 .approval-card__btn--auto {
   background: transparent;
-  color: var(--sa-text-secondary, #86868b);
-  border: 1px solid var(--sa-border, rgba(0, 0, 0, 0.08));
+  color: var(--tk-text-secondary);
+  border: 1px solid var(--tk-border);
 }
-
-.approval-card__btn--auto:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--sa-text-primary, #1d1d1f);
-}
-
 .approval-card__btn--approve {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #ffffff;
 }
-
-.approval-card__btn--approve:hover {
-  opacity: 0.85;
+@media (hover: hover) and (pointer: fine) {
+  .approval-card__btn--reject:hover {
+    background: rgba(255, 59, 48, 0.06);
+  }
+  .approval-card__btn--auto:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--tk-text-primary);
+  }
+  .approval-card__btn--approve:hover {
+    opacity: 0.85;
+  }
 }
 
 .approval-card__actions--resolved {
@@ -280,22 +290,24 @@ function copyArgs() {
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   line-height: 20px;
 }
 
 .approval-card__check {
   display: flex;
-  color: var(--sa-success, #34c759);
+  color: var(--tk-success);
 }
 
 .approval-card__clock {
+  display: flex;
   font-size: 14px;
   line-height: 1;
+  color: var(--tk-text-tertiary);
 }
 
 .approval-card__x {
   display: flex;
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 </style>

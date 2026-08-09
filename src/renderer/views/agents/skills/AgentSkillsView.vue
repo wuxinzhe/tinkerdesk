@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="skill-manage">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+      gradient="linear-gradient(135deg, #2ee6d6 0%, #00c7be 100%)"
+      title="技能管理"
+      desc="管理该 Agent 可用的技能"
+    />
     <div class="skill-manage__toolbar">
       <n-select
         v-model:value="skillsCategory"
@@ -106,7 +113,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { NSelect, NSwitch } from 'naive-ui'
 import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
 
 const route = useRoute()
@@ -217,6 +224,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 窄列布局（与系统设置 L3 对齐：680px 宽，靠左） */
+.skill-manage {
+  max-width: 680px;
+  width: 100%;
+}
 .skill-manage__toolbar {
   display: flex;
   align-items: center;
@@ -234,7 +246,7 @@ onMounted(() => {
 .skill-manage__search-icon {
   position: absolute;
   left: 8px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   pointer-events: none;
 }
 .skill-manage__search {
@@ -242,8 +254,8 @@ onMounted(() => {
   padding: 0 10px 0 26px;
   border: 1px solid transparent;
   border-radius: 7px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   font-size: 12px;
   outline: none;
   width: 100%;
@@ -251,17 +263,17 @@ onMounted(() => {
   transition: all 0.2s;
 }
 .skill-manage__search:focus {
-  border-color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-primary, #fff);
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 .skill-manage__search::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-weight: 400;
 }
 .skill-manage__count {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   width: 100%;
   text-align: right;
 }
@@ -269,7 +281,7 @@ onMounted(() => {
 .skill-manage__empty {
   text-align: center;
   padding: 40px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 .skill-manage__empty p {
@@ -286,8 +298,8 @@ onMounted(() => {
 .install-panel {
   margin-bottom: 16px;
   padding: 14px 16px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -297,18 +309,18 @@ onMounted(() => {
 .install-panel__heading {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
 }
 
 .install-panel__name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .install-panel__desc {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   line-height: 1.5;
   max-height: 48px;
   overflow: hidden;
@@ -316,7 +328,7 @@ onMounted(() => {
 
 .install-panel__meta {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .install-panel__row {
@@ -327,7 +339,7 @@ onMounted(() => {
 
 .install-panel__label {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   flex-shrink: 0;
 }
 
@@ -342,25 +354,25 @@ onMounted(() => {
   padding: 7px 16px;
   font-size: 13px;
   border-radius: 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   cursor: pointer;
 }
 
 .action-btn:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
 }
 
 .action-btn--primary {
-  background: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
   color: #fff;
 }
 
 .action-btn--primary:hover {
-  background: var(--sa-accent-hover, #0071e3);
+  background: var(--tk-accent-hover);
   color: #fff;
 }
 
@@ -391,18 +403,18 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   padding: 14px 16px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 10px;
   cursor: pointer;
   /* 卡片辨识度：白底（深色 elevated）+ 轻阴影，与页面背景区分 */
-  background: var(--sa-bg-elevated, #ffffff);
-  box-shadow: var(--sa-shadow-sm);
+  background: var(--tk-bg-elevated);
+  box-shadow: var(--tk-shadow-sm);
   transition: border-color 0.12s, box-shadow 0.12s;
   gap: 8px;
 }
 .skill-card:hover {
-  border-color: var(--sa-accent, #007aff);
-  box-shadow: var(--sa-shadow-md);
+  border-color: var(--tk-accent);
+  box-shadow: var(--tk-shadow-md);
 }
 .skill-card__body {
   flex: 1;
@@ -419,8 +431,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
 }
 .skill-card__info {
   min-width: 0;
@@ -428,18 +440,18 @@ onMounted(() => {
 .skill-card__name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 2px;
 }
 .skill-card__version {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-weight: 400;
   margin-left: 6px;
 }
 .skill-card__desc {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 4px;
 }
 .skill-card__meta { display: flex; gap: 6px; }
@@ -447,8 +459,8 @@ onMounted(() => {
   font-size: 10px;
   padding: 1px 5px;
   border-radius: 3px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
 }
 .skill-card__actions {
   display: flex;
@@ -470,11 +482,11 @@ onMounted(() => {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   transition: background 0.12s;
 }
 .pagination-btn:hover:not(:disabled) {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 .pagination-btn:disabled {
   opacity: 0.3;
@@ -482,23 +494,36 @@ onMounted(() => {
 }
 .pagination-info {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   min-width: 48px;
   text-align: center;
 }
 
-/* ── 工具栏按钮 ── */
+/* ── 工具栏按钮（emil：主入口图标按钮——hairline 边框 + 白底浮起，与导入按钮同款） ── */
 .toolbar-btn {
   all: unset;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--sa-accent, #007aff);
-  padding: 4px 12px;
-  border-radius: 6px;
-  transition: background 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-accent);
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.toolbar-btn:hover {
-  background: rgba(0, 122, 255, 0.08);
+.toolbar-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .toolbar-btn:hover {
+    background: var(--tk-bg-secondary);
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 </style>

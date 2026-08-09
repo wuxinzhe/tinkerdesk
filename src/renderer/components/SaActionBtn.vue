@@ -47,28 +47,28 @@ defineEmits<{ click: [] }>()
   align-items: center;
   justify-content: center;
   gap: 4px;
-  height: var(--sa-control-m, 32px);
+  height: var(--tk-control-m);
   padding: 0 12px;
   border: none;
-  border-radius: var(--sa-radius-md, 8px);
+  border-radius: var(--tk-radius-md);
   background: transparent;
-  color: var(--sa-accent, #007aff);
-  font-size: var(--sa-fs-body, 13px);
+  color: var(--tk-accent);
+  font-size: var(--tk-fs-body);
   font-weight: 500;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.12s var(--sa-ease), color 0.12s var(--sa-ease), opacity 0.12s var(--sa-ease);
+  transition: background 0.12s var(--tk-ease);
   white-space: nowrap;
 }
 
 /* ── 尺寸档 ── */
 .sa-action-btn--s {
-  height: var(--sa-control-s, 28px);
+  height: var(--tk-control-s);
   padding: 0 8px;
   font-size: 12px;
 }
 .sa-action-btn--l {
-  height: var(--sa-control-l, 36px);
+  height: var(--tk-control-l);
   padding: 0 16px;
 }
 
@@ -79,27 +79,27 @@ defineEmits<{ click: [] }>()
 
 /* ── outline（需要边界感时使用——hover 不填充） ── */
 .sa-action-btn--outline {
-  border: 1px solid var(--sa-border, #e8e8ed);
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-primary, #ffffff);
+  border: 1px solid var(--tk-border);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-primary);
 }
 .sa-action-btn--outline:hover:not(:disabled) {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  border-color: var(--sa-text-quaternary, #aeaeb2);
+  background: var(--tk-bg-secondary);
+  border-color: var(--tk-text-quaternary);
 }
 
 /* ── primary（主操作——solid 填充） ── */
 .sa-action-btn--primary {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #ffffff;
 }
 .sa-action-btn--primary:hover:not(:disabled) {
-  background: var(--sa-accent-hover, #0066d6);
+  background: var(--tk-accent-hover);
 }
 
 /* ── danger（危险操作——红字无边框） ── */
 .sa-action-btn--danger {
-  color: var(--sa-destructive, #ff3b30);
+  color: var(--tk-destructive);
 }
 .sa-action-btn--danger:hover:not(:disabled) {
   background: rgba(255, 59, 48, 0.08);
@@ -114,8 +114,8 @@ defineEmits<{ click: [] }>()
   pointer-events: none;
 }
 .sa-action-btn--done {
-  color: var(--sa-text-tertiary, #86868b);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--tk-text-tertiary);
+  background: var(--tk-bg-secondary);
 }
 @keyframes sa-action-spin {
   to { transform: rotate(360deg); }

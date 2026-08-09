@@ -1,5 +1,12 @@
 <template>
   <div class="agent-settings">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.51.26A1.65 1.65 0 0113 21a2 2 0 01-4 0 1.65 1.65 0 00-1.43-1.01 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
+      gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+      title="Agent 设置"
+      desc="该 Agent 的运行参数与安全策略"
+    />
     <div class="agent-settings__header">
       <span class="agent-settings__title">Agent 设置</span>
       <div class="agent-settings__header-actions">
@@ -294,6 +301,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { agentConfigApi } from '@/renderer/api/agent-config-api'
 import type { AgentConfigData } from '@/renderer/api/types'
 
@@ -413,11 +421,14 @@ onBeforeUnmount(() => {
    ═══════════════════════════════════════════════ */
 
 .agent-settings {
-  padding: 16px;
+  padding: 20px 24px;
+  max-width: 680px;
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: transparent;
+  overflow-y: auto;
 }
 
 .agent-settings__header {
@@ -428,26 +439,37 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 .agent-settings__title {
-  font-size: 15px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tk-text-primary);
+  letter-spacing: -0.3px;
 }
 .agent-settings__header-actions {
   display: flex;
   gap: 8px;
 }
 .agent-settings__reset-btn {
-  padding: 5px 14px;
-  border: 1px solid var(--sa-border, #e5e5ea);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--sa-text-secondary, #86868b);
+  padding: 6px 14px;
+  border: 1px solid var(--tk-border-card);
+  border-radius: 8px;
+  background: var(--tk-bg-primary);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-text-secondary);
   font-size: 13px;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.agent-settings__reset-btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+.agent-settings__reset-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .agent-settings__reset-btn:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-accent);
+  }
 }
 .agent-settings__save-btn {
   width: 28px;
@@ -458,7 +480,7 @@ onBeforeUnmount(() => {
   justify-content: center;
   border: none;
   border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 13px;
   cursor: pointer;
@@ -492,7 +514,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--sa-text-tertiary);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
 }
 
@@ -507,7 +529,7 @@ onBeforeUnmount(() => {
 }
 
 .agent-settings__error {
-  color: #ff3b30;
+  color: var(--tk-destructive);
   font-size: 12px;
   margin-top: 12px;
 }
@@ -521,12 +543,12 @@ onBeforeUnmount(() => {
 .settings-group__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin: 0 0 6px 16px;
 }
 
 .settings-group__card {
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   border-radius: 10px;
   /* overflow:hidden clips absolute-positioned tip bubbles */
 }
@@ -539,15 +561,15 @@ onBeforeUnmount(() => {
 }
 
 .settings-field + .settings-field {
-  border-top: 1px solid var(--sa-border, #e5e5ea);
+  border-top: 1px solid var(--tk-border-light);
 }
 
 .settings-field__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  min-height: 36px;
+  padding: 12px 16px;
+  min-height: 40px;
   gap: 12px;
 }
 
@@ -571,7 +593,7 @@ onBeforeUnmount(() => {
 }
 .settings-field__label label {
   font-size: 13px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   white-space: nowrap;
 }
 
@@ -580,18 +602,18 @@ onBeforeUnmount(() => {
 .settings-field__input[type='number'] {
   width: 72px;
   padding: 4px 8px;
-  border: 1px solid var(--sa-border, #e5e5ea);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   font-size: 13px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   text-align: right;
   flex-shrink: 0;
   outline: none;
   transition: border-color 0.15s;
 }
 .settings-field__input[type='number']:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* ── 输入框单位后缀（如 %） ── */
@@ -609,7 +631,7 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
   line-height: 1;
 }
@@ -620,12 +642,12 @@ onBeforeUnmount(() => {
   width: calc(100% - 32px);
   margin: 0 16px 10px;
   padding: 8px 12px;
-  border: 1px solid var(--sa-border, #e5e5ea);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   font-size: 13px;
   font-family: inherit;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   resize: vertical;
   box-sizing: border-box;
   outline: none;
@@ -633,7 +655,7 @@ onBeforeUnmount(() => {
   display: block;
 }
 .settings-field__textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* ── 问号图标 ── */
@@ -645,8 +667,8 @@ onBeforeUnmount(() => {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--sa-bg-secondary, #e5e5ea);
-  color: var(--sa-text-tertiary, #aeaeb2);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
   font-size: 9px;
   font-weight: 700;
   cursor: pointer;
@@ -656,7 +678,7 @@ onBeforeUnmount(() => {
   line-height: 1;
 }
 .settings-tip:hover {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
@@ -671,11 +693,11 @@ onBeforeUnmount(() => {
   max-width: 300px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: var(--sa-bg-primary, #fff);
+  background: var(--tk-bg-primary);
   box-shadow: 0 4px 16px rgba(0,0,0,0.13);
   font-size: 11px;
   line-height: 1.5;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   pointer-events: auto;
 }
 .settings-tip__bubble p {
@@ -685,7 +707,7 @@ onBeforeUnmount(() => {
   margin-bottom: 0;
 }
 .settings-tip__rec {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 10px;
 }
 
@@ -707,7 +729,7 @@ onBeforeUnmount(() => {
 .settings-switch__slider {
   position: absolute;
   inset: 0;
-  background: var(--sa-border, #e5e5ea);
+  background: var(--tk-border);
   border-radius: 12px;
   transition: background 0.2s;
 }
@@ -724,7 +746,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 .settings-switch input:checked + .settings-switch__slider {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 .settings-switch input:checked + .settings-switch__slider::before {
   transform: translateX(18px);

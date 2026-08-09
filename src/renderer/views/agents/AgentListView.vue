@@ -1,7 +1,10 @@
 <template>
-  <div class="agent-list">
+  <div class="agent-list" :data-mounted="mounted">
     <div class="agent-list__header">
-      <span class="agent-list__title">Agent 列表</span>
+      <div class="agent-list__header-text">
+        <h2 class="agent-list__title">Agent 管理</h2>
+        <p class="agent-list__subtitle">{{ agents.length }} 个 Agent</p>
+      </div>
       <button class="agent-list__create-btn" title="创建 Agent" @click="onCreate">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -23,13 +26,16 @@
 
     <!-- 空状态 -->
     <div v-else-if="agents.length === 0" class="agent-list__empty">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 00-3-3.87" />
-        <path d="M16 3.13a4 4 0 010 7.75" />
-      </svg>
-      <p>还没有 Agent</p>
+      <div class="agent-list__empty-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" />
+          <path d="M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      </div>
+      <p class="agent-list__empty-text">还没有 Agent</p>
+      <p class="agent-list__empty-hint">点击右上角 + 创建第一个 Agent</p>
     </div>
 
     <!-- 列表 -->
@@ -132,6 +138,8 @@ const chatStore = useChatStore()
 
 const agents = ref<AgentInfo[]>([])
 const loading = ref(true)
+/** 进入动画标记（stagger 触发） */
+const mounted = ref(false)
 
 /** 当前选中的 profile（从路由参数同步） */
 const selectedProfile = ref<string | null>(null)
@@ -210,6 +218,9 @@ function syncSelectedProfile() {
 onMounted(async () => {
   await loadAgents()
   syncSelectedProfile()
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
 })
 </script>
 
@@ -226,33 +237,49 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 28px 24px 14px;
   flex-shrink: 0;
 }
 
 .agent-list__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
-  letter-spacing: 0.5px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--tk-text-primary);
+  letter-spacing: -0.3px;
+}
+
+.agent-list__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
 }
 
 .agent-list__create-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--sa-text-secondary, #86868b);
+  border-radius: 9px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-text-secondary);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.agent-list__create-btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+.agent-list__create-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .agent-list__create-btn:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-accent);
+  }
 }
 
 .agent-list__loading,
@@ -264,9 +291,32 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 13px;
   padding: 20px;
+}
+
+/* 空态（与 SaEmpty 一致：图标柔和圆角容器） */
+.agent-list__empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
+  margin-bottom: 6px;
+}
+.agent-list__empty-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+}
+.agent-list__empty-hint {
+  margin: 0;
+  font-size: 12px;
 }
 
 .agent-list__skeleton {
@@ -301,52 +351,80 @@ onMounted(async () => {
 .agent-list__items {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 0;
+  padding: 4px 20px 16px;
 }
 
-/* ── 入场动画 ── */
-@keyframes agent-item-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+/* ── Agent 卡片（emil：进入 stagger + 指示条选中态 + hover 反馈） ── */
+.agent-card-item {
+  padding: 10px 14px 8px;
+  cursor: pointer;
+  user-select: none;
+  /* 进入动画：stagger（--i 由模板注入）——transition 而非 keyframes（可中断） */
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 280ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 280ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition-delay: calc(var(--i) * 35ms);
+  border-radius: 12px;
+  position: relative;
+}
+.agent-list[data-mounted='true'] .agent-card-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-card-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    transition-delay: 0ms;
   }
 }
-
-/* ── Agent 卡片（两行式） ── */
-.agent-card-item {
-  animation: agent-item-enter 0.35s ease both;
-  animation-delay: calc(var(--i) * 28ms);
-  padding: 8px 14px 6px;
-  cursor: pointer;
-  transition: background 0.12s;
-  user-select: none;
+.agent-card-item:active {
+  transform: scale(0.99);
 }
-.agent-card-item:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+@media (hover: hover) and (pointer: fine) {
+  .agent-card-item:hover {
+    background: var(--tk-bg-secondary);
+  }
 }
+/* 选中态：accent 淡色 + 左侧指示条 */
 .agent-card-item.selected {
-  background: rgba(0, 122, 255, 0.06);
+  background: rgba(0, 122, 255, 0.07);
+}
+.agent-card-item.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--tk-accent);
 }
 
 /* Row 1: avatar + info */
 .agent-card-item__row1 {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .agent-card-item__avatar {
   flex-shrink: 0;
-  width: 35px;
-  height: 35px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  background: var(--sa-accent, #007aff);
+  border-radius: 10px;
+  background: var(--tk-accent);
   color: #fff;
   overflow: hidden;
   margin-bottom: 5px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 .agent-card-item__avatar-img {
   width: 100%;
@@ -368,8 +446,8 @@ onMounted(async () => {
 }
 .agent-card-item__name-text {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--sa-text-primary, #1d1d1f);
+  font-weight: 600;
+  color: var(--tk-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -378,7 +456,7 @@ onMounted(async () => {
 
 .agent-card-item__profile-text {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -389,29 +467,30 @@ onMounted(async () => {
   flex: 1;
 }
 
+/* tag：胶囊（与 SaBadge 统一） */
 .agent-card-item__tag {
   font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 3px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
   flex-shrink: 0;
-  font-weight: 500;
+  letter-spacing: 0.2px;
 }
 .tag-default {
-  background: #007aff;
+  background: var(--tk-accent);
   color: #fff;
 }
 .tag-frozen {
-  background: #f2f2f7;
-  color: #86868b;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-secondary);
 }
-
 
 /* ── Row 2: 操作按钮行 ── */
 .agent-card-item__actions {
   display: flex;
   justify-content: flex-end;
   gap: 2px;
-  transition: opacity 0.12s;
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Hover-capable（桌面鼠标）：悬停时显示按钮 */
@@ -446,13 +525,20 @@ onMounted(async () => {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 4px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  border-radius: 6px;
+  color: var(--tk-text-tertiary);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.agent-card-item__action:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+.agent-card-item__action:active {
+  transform: scale(0.93);
+}
+@media (hover: hover) and (pointer: fine) {
+  .agent-card-item__action:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-accent);
+  }
 }
 </style>

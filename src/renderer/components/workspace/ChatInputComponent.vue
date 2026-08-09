@@ -78,27 +78,30 @@
     <!-- 功能面板 -->
     <Transition name="panel-slide">
       <div v-if="panelOpen" class="chat-input__panel">
-        <div class="chat-input__panel-icons">
-          <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
-          <button
-            class="chat-input__panel-icon"
-            :title="'历史预览'"
-            @click="$emit('history-preview')"
-          >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <rect x="3" y="3" width="7" height="9" rx="1.5" />
-              <rect x="14" y="3" width="7" height="5" rx="1.5" />
-              <rect x="14" y="12" width="7" height="9" rx="1.5" />
-              <rect x="3" y="16" width="7" height="5" rx="1.5" />
-            </svg>
-            <span>历史预览</span>
-          </button>
+        <div class="chat-input__panel-inner">
+          <div class="chat-input__panel-icons">
+            <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
+            <button
+              class="chat-input__panel-icon"
+              :title="'历史预览'"
+              @click="$emit('history-preview')"
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                <rect x="3" y="16" width="7" height="5" rx="1.5" />
+              </svg>
+              <span>历史预览</span>
+            </button>
+          </div>
         </div>
       </div>
     </Transition>
     </div>
 
-    <!-- 设置抽屉（独立组件——模型/推理深度/YOLO） -->
+    <!-- 设置抽屉（与 chat-input 同级——wrap 内；bottom: calc(100% + 6px) 锚定
+         wrap 顶部 = 输入行顶部——panel 撑高的是 wrap 底部，锚定不变） -->
     <ChatSettingsDrawer
       :session-id="sessionId"
       :profile="profile"
@@ -112,6 +115,7 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
+import { getCachedRecordShortcut, setCachedRecordShortcut } from '@/renderer/utils/shortcut-cache'
 import ChatSettingsDrawer from './ChatSettingsDrawer.vue'
 
 const props = withDefaults(defineProps<{
@@ -178,14 +182,20 @@ const shortcutLabel = computed(() =>
 const PX_PER_SEC = 60                  // 音波框时间轴：1 秒固定宽度
 const MAX_RECORD_SEC = 120             // 最长录音 120s
 
-/** 启动时检测 STT provider + 加载快捷键配置 */
+/** 启动时检测 STT provider + 加载快捷键配置
+ *  （快捷键走 shortcut-cache 模块级缓存——L3 重建不再重复调 settings:general:get） */
 async function checkSttAvailability(): Promise<void> {
   try {
     const { stt } = await window.api.voice.providers()
     sttAvailable.value = stt.length > 0
     if (sttAvailable.value) {
-      const { settings } = await window.api.generalSettings.get()
-      shortcutRecord.value = settings['shortcut.record'] || 'ctrl+b'
+      let record = getCachedRecordShortcut()
+      if (record === null) {
+        const { settings } = await window.api.generalSettings.get()
+        record = settings['shortcut.record'] || 'ctrl+b'
+        setCachedRecordShortcut(record)
+      }
+      shortcutRecord.value = record
     }
   } catch {
     sttAvailable.value = false
@@ -594,13 +604,15 @@ defineExpose({ focus })
   flex-shrink: 0;
 }
 
-/* ── 输入框主体 ── */
+/* ── 输入框主体（贴边结构——顶部描边 + 向上投射阴影） ── */
 .chat-input {
   position: relative;   /* 设置抽屉定位基准 */
   z-index: 10;          /* 上层——抽屉（z 下层）从输入框背后拉出 */
   padding: 8px 16px;
-  border-top: 1px solid var(--sa-border, #d2d2d7);
-  background: var(--sa-bg-primary, #ffffff);
+  border-top: 1px solid var(--tk-border);
+  background: var(--tk-bg-primary);
+  /* emil：浮起于消息列表之上——向上投射阴影（hairline 分隔 + 极淡大阴影） */
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02), 0 -6px 24px rgba(0, 0, 0, 0.06);
 }
 
 .chat-input--disabled {
@@ -608,6 +620,7 @@ defineExpose({ focus })
 }
 
 .chat-input__row {
+  position: relative;  /* ChatSettingsDrawer 锚定基准（bottom: 100% 在输入行上方） */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -622,37 +635,44 @@ defineExpose({ focus })
   width: 36px;
   height: 36px;
   flex-shrink: 0;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 50%;
-  background: var(--sa-bg-primary, #ffffff);
-  color: var(--sa-text-secondary, #86868b);
+  background: var(--tk-bg-primary);
+  color: var(--tk-text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
   user-select: none;
 }
-
-.chat-input__voice:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+.chat-input__voice:active {
+  transform: scale(0.94);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chat-input__voice:hover {
+    border-color: var(--tk-accent);
+    color: var(--tk-accent);
+  }
 }
 
 .chat-input__voice--recording {
-  background: var(--sa-destructive, #ff3b30);
-  border-color: var(--sa-destructive, #ff3b30);
+  background: var(--tk-destructive);
+  border-color: var(--tk-destructive);
   color: #ffffff;
 }
 
 /* 武装态（点击后待按住）：蓝色描边提示 */
 .chat-input__voice--armed {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.06);
 }
 
 /* 110s 后：录音按钮内部 10 秒倒计时 */
 .chat-input__voice--countdown {
-  background: var(--sa-accent, #007aff);
-  border-color: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
+  border-color: var(--tk-accent);
   color: #ffffff;
 }
 
@@ -682,20 +702,20 @@ defineExpose({ focus })
   flex: 1;
   min-width: 0;
   height: 36px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 10px;
-  background: var(--sa-bg-primary, #ffffff);
+  background: var(--tk-bg-primary);
   overflow: hidden; /* 无滚动条：canvas 内部绘制左滚，禁止拖拽滚动 */
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: border-color 0.2s ease;
+  transition: border-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* 录音中：仅边框提示（无蓝色遮罩背景） */
 .chat-input__wavebox--recording {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .chat-input__wave-canvas {
@@ -716,7 +736,7 @@ defineExpose({ focus })
   top: 50%;
   transform: translateY(-50%);
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   text-align: center;
   pointer-events: none;
 }
@@ -724,7 +744,7 @@ defineExpose({ focus })
 /* 输入框 ↔ 音波框 切换动画 */
 .input-swap-enter-active,
 .input-swap-leave-active {
-  transition: opacity 0.18s ease;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .input-swap-enter-from,
 .input-swap-leave-to {
@@ -736,14 +756,14 @@ defineExpose({ focus })
 .chat-input__textarea {
   flex: 1;
   resize: none;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 12px;
   padding: 7px 14px;
   font-size: 14px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.4;
-  color: var(--sa-text-primary, #1d1d1f);
-  background: var(--sa-bg-secondary, #f5f5f7);
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
   min-height: 36px;
@@ -759,7 +779,7 @@ defineExpose({ focus })
 
 .chat-input__textarea::placeholder {
   line-height: 1.4;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 @media (max-width: 767px) {
@@ -773,12 +793,12 @@ defineExpose({ focus })
 }
 
 .chat-input__textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
   box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.15);
 }
 
 .chat-input__textarea::placeholder {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .chat-input__textarea:disabled {
@@ -801,32 +821,39 @@ defineExpose({ focus })
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 50%;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-secondary, #86868b);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-secondary);
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chat-input__function:active {
+  transform: scale(0.94);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chat-input__function:hover {
+    border-color: var(--tk-accent);
+    color: var(--tk-accent);
+  }
 }
 
 /* + 号图标旋转动画（展开 → 旋转 135° 变 X 关闭符） */
 .chat-input__function-icon {
-  transition: transform 0.2s ease;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chat-input__function--open .chat-input__function-icon {
   transform: rotate(135deg);
 }
 
-.chat-input__function:hover {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
-}
-
 .chat-input__function--open {
-  border-color: var(--sa-accent, #007aff);
-  color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-elevated, #ffffff);
+  border-color: var(--tk-accent);
+  color: var(--tk-accent);
+  background: var(--tk-bg-elevated);
 }
 
 .chat-input__function-icon {
@@ -834,20 +861,29 @@ defineExpose({ focus })
 }
 
 
-/* ── 功能面板（+ 展开——历史预览等） ── */
+/* ── 功能面板（+ 展开——历史预览等）── */
+/* Transition 根元素 = grid 容器。静态 = 展开态（1fr）——Transition class 移除后保持；
+   enter-from/leave-to 用 0fr 覆盖初始/结束——动画后回到 1fr 不会裁内容 */
 .chat-input__panel {
   margin-top: 8px;
-  border-top: 1px solid var(--sa-border, #d2d2d7);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
-  background: var(--sa-bg-primary, #ffffff);
-  padding: 12px;
-  overflow: hidden;
+  border-top: 1px solid var(--tk-border);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
+  background: var(--tk-bg-primary);
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+/* 内层：overflow 裁剪 + 允许压缩（grid 0fr 收起的关键） */
+.chat-input__panel-inner {
+  overflow: hidden;
+  min-height: 0;
+}
 .chat-input__panel-icons {
   display: flex;
   flex-wrap: wrap;      /* 宽度不足时换行排布 */
   gap: 8px;
   width: 100%;
+  padding: 12px;
 }
 
 .chat-input__panel-icon {
@@ -858,45 +894,39 @@ defineExpose({ focus })
   gap: 4px;
   width: 72px;          /* 正方形（不平铺）——图标按钮 */
   height: 72px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 16px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
   cursor: pointer;
   font-size: 13px;
   white-space: nowrap;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chat-input__panel-icon:active {
+  transform: scale(0.96);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chat-input__panel-icon:hover {
+    border-color: var(--tk-accent);
+    background: var(--tk-bg-primary);
+  }
 }
 
-.chat-input__panel-icon:hover {
-  border-color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-primary, #ffffff);
-}
-
-/* ── 面板滑动动画（0.25s） ── */
-.panel-slide-enter-active {
-  transition: all 0.25s ease;
-}
-
+/* ── 面板滑动动画（Transition 包 grid——enter/leave 切 grid-template-rows） ── */
+.panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all 0.2s ease;
+  transition: grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.panel-slide-enter-from {
-  opacity: 0;
-  transform: translateY(-10px);
-  max-height: 0;
-}
-
+.panel-slide-enter-from,
 .panel-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-  max-height: 0;
+  grid-template-rows: 0fr;
 }
-
 .panel-slide-enter-to,
 .panel-slide-leave-from {
-  max-height: 300px;
+  grid-template-rows: 1fr;
 }
 
 /* ── YOLO 详情过渡 ── */

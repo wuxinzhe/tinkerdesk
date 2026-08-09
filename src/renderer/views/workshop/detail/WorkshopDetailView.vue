@@ -45,13 +45,13 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 .workshop-placeholder__inner h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 .workshop-placeholder__inner p {
   margin: 0;

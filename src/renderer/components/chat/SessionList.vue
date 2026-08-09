@@ -34,7 +34,15 @@
         />
       </TransitionGroup>
 
-      <p v-if="sessions.length === 0 && !pendingSessionId" class="sl-empty">暂无对话</p>
+      <p v-if="sessions.length === 0 && !pendingSessionId" class="sl-empty">
+        <span class="sl-empty__icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+          </svg>
+        </span>
+        <span class="sl-empty__text">暂无对话</span>
+        <span class="sl-empty__hint">点击右上角 + 开启新对话</span>
+      </p>
     </div>
   </div>
 </template>
@@ -156,34 +164,48 @@ defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePend
 }
 
 .sl-header {
-  padding: 14px 16px 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
-  letter-spacing: 0.5px;
+  padding: 16px 20px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
+.sl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* 新建按钮（emil：主入口图标按钮——hairline 边框 + 白底浮起，与 Agent 列表加号同款） */
 .sl-add-btn {
-  display: flex;
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: none;
-  background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.15s, color 0.15s;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: var(--tk-shadow-card);
+  color: var(--tk-text-secondary);
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.sl-add-btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+.sl-add-btn:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sl-add-btn:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-accent);
+    box-shadow: var(--tk-shadow-card-hover);
+  }
 }
 
 .sl-list {
@@ -192,36 +214,57 @@ defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePend
   padding-bottom: 8px;
 }
 
+/* 空态（与 SaEmpty 一致：图标柔和圆角容器 + 主/次文案） */
 .sl-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 16px;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  gap: 4px;
+  padding: 48px 16px;
   margin: 0;
 }
+.sl-empty__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
+  margin-bottom: 6px;
+}
+.sl-empty__text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+}
+.sl-empty__hint {
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
+}
 
-/* ── TransitionGroup ── */
+/* ── TransitionGroup（emil：指定属性 + 强 ease-out；离开时绝对定位避免挤位） ── */
 
 .sl-item-enter-active {
-  transition: all 0.25s ease;
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .sl-item-leave-active {
-  transition: all 0.25s ease;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
   position: absolute;
 }
 .sl-item-enter-from {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(-10px);
 }
 .sl-item-leave-to {
   opacity: 0;
-  transform: translateY(-12px);
+  transform: translateY(-8px);
 }
 .sl-item-move {
-  transition: transform 0.25s ease;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* ── 骨架屏 ── */

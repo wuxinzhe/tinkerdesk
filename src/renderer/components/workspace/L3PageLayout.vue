@@ -44,4 +44,18 @@ onMounted(() => {
     transition: none;
   }
 }
+
+/* 平板模式（768–1023px）：padding 介于桌面与手机之间 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .l3-page-layout {
+    padding: 16px 20px;
+  }
+}
+
+/* 手机模式：统一 12px（页面自身 padding 已归零——无叠加） */
+@media (max-width: 767px) {
+  .l3-page-layout {
+    padding: 12px;
+  }
+}
 </style>

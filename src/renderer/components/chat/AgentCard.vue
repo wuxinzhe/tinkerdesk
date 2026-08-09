@@ -37,33 +37,13 @@
         <div class="agent-card__footer-top">
           <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
           <div class="agent-card__actions">
+            <!-- 常显（主操作）：切换 Agent + 记忆 -->
             <button class="agent-card__btn" title="切换 Agent" @click="$emit('switch-agent')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 1l4 4-4 4" />
                 <path d="M3 11V9a4 4 0 014-4h14" />
                 <path d="M7 23l-4-4 4-4" />
                 <path d="M21 13v2a4 4 0 01-4 4H3" />
-              </svg>
-            </button>
-            <!-- 管理入口（技能/工具/提示词/设置/编辑——排在切换按钮后，整排靠右） -->
-            <button class="agent-card__manage-btn" title="技能" @click="goSkills">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 2 7 12 12 22 7 12 2" />
-                <polyline points="2 17 12 22 22 17" />
-                <polyline points="2 12 12 17 22 12" />
-              </svg>
-            </button>
-            <button class="agent-card__manage-btn" title="工具" @click="goTools">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-              </svg>
-            </button>
-            <button class="agent-card__manage-btn" title="提示词" @click="goPromptModules">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="9" y1="13" x2="15" y2="13" />
-                <line x1="9" y1="17" x2="13" y2="17" />
               </svg>
             </button>
             <button class="agent-card__manage-btn" title="记忆" :class="{ 'agent-card__btn--active': memoryOpen }" @click="toggleMemory">
@@ -73,12 +53,35 @@
                 <line x1="9" y1="19" x2="9" y2="22" /><line x1="15" y1="19" x2="15" y2="22" />
               </svg>
             </button>
-            <button class="agent-card__manage-btn" title="设置" @click="goSettings">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-              </svg>
-            </button>
+            <!-- hover 浮现组（桌面悬停显示；触屏常显）：技能/工具/提示词/设置 -->
+            <div class="agent-card__manage-group">
+              <button class="agent-card__manage-btn" title="技能" @click="goSkills">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                  <polyline points="2 17 12 22 22 17" />
+                  <polyline points="2 12 12 17 22 12" />
+                </svg>
+              </button>
+              <button class="agent-card__manage-btn" title="工具" @click="goTools">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+                </svg>
+              </button>
+              <button class="agent-card__manage-btn" title="提示词" @click="goPromptModules">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="9" y1="13" x2="15" y2="13" />
+                  <line x1="9" y1="17" x2="13" y2="17" />
+                </svg>
+              </button>
+              <button class="agent-card__manage-btn" title="设置" @click="goSettings">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -222,10 +225,11 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 8px;
   margin: 12px 12px 0;
-  padding: 10px 12px 8px;
-  border-radius: 10px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  padding: 12px 14px 10px;
+  border-radius: 14px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: var(--tk-shadow-card);
   cursor: default;
   user-select: none;
 }
@@ -238,7 +242,7 @@ onUnmounted(() => {
   font-size: 9px;
   font-weight: 600;
   color: #fff;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   border-radius: 4px;
   padding: 1px 6px;
   line-height: 1.4;
@@ -264,15 +268,16 @@ onUnmounted(() => {
 
 .agent-card__avatar {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: var(--sa-accent, #007aff);
+  border-radius: 12px;
+  background: var(--tk-accent);
   color: #fff;
   overflow: hidden;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 
 .agent-card--thinking .agent-card__avatar {
@@ -283,7 +288,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 .agent-card__info {
@@ -297,7 +302,7 @@ onUnmounted(() => {
   gap: 4px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,7 +313,7 @@ onUnmounted(() => {
 .agent-card__profile {
   font-size: 11px;
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   flex-shrink: 0;
 }
 
@@ -317,7 +322,7 @@ onUnmounted(() => {
 
 .agent-card__model {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -326,7 +331,7 @@ onUnmounted(() => {
 
 /* ── 记忆芯片（分割线常显；芯片默认隐藏——展开时高度动画） ── */
 .agent-card__memory-divider {
-  border-top: 1px solid var(--sa-border, #d2d2d7);
+  border-top: 1px solid var(--tk-border);
   margin-top: 8px;
 }
 
@@ -342,7 +347,7 @@ onUnmounted(() => {
 
 /* 记忆按钮 active 态（展开时高亮） */
 .agent-card__btn--active {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
@@ -384,7 +389,7 @@ onUnmounted(() => {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
     0 2px 6px rgba(0, 0, 0, 0.12);
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* 左侧引脚（金色——四小段竖条） */
@@ -502,6 +507,12 @@ onUnmounted(() => {
   margin-left: auto; /* 无模型名时（footer-top 单子项）也保持靠右 */
 }
 
+/* 管理入口组（常驻显示——用户确认不隐藏：隐藏显得空/怪） */
+.agent-card__manage-group {
+  display: flex;
+  gap: 4px;
+}
+
 .agent-card__footer {
   display: flex;
   align-items: center;
@@ -519,25 +530,31 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* 管理入口（技能/工具/提示词/设置/编辑——对齐 AgentListView action 按钮） */
+/* 管理入口（技能/工具/提示词/设置——对齐 AgentListView action 按钮） */
 .agent-card__manage-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s, color 0.15s;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.agent-card__manage-btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-accent, #007aff);
+.agent-card__manage-btn:active {
+  transform: scale(0.93);
+}
+@media (hover: hover) and (pointer: fine) {
+  .agent-card__manage-btn:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-accent);
+  }
 }
 
 /* ── Thinking 态：分割线蓝色流光 ── */
@@ -554,9 +571,9 @@ onUnmounted(() => {
   height: 2px;
   background: linear-gradient(
     90deg,
-    var(--sa-border, #d2d2d7) 0%,
-    var(--sa-accent, #007aff) 50%,
-    var(--sa-border, #d2d2d7) 100%
+    var(--tk-border) 0%,
+    var(--tk-accent) 50%,
+    var(--tk-border) 100%
   );
   background-size: 200% 100%;
   animation: agent-footer-glow 2s ease-in-out infinite;
@@ -570,7 +587,7 @@ onUnmounted(() => {
 
 .agent-card__model-name {
   font-size: 11px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -587,19 +604,19 @@ onUnmounted(() => {
   border: none;
   border-radius: 5px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .agent-card__btn:hover {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
 }
 
 .agent-card__desc {
   font-size: 11px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -615,8 +632,8 @@ onUnmounted(() => {
 
 .thought-area__inner {
   padding: 10px 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  border: 1px solid var(--sa-border, #d2d2d7);
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
   border-radius: 10px;
 }
 
@@ -631,7 +648,7 @@ onUnmounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   animation: thought-pulse 1.4s ease-in-out infinite;
 }
 
@@ -643,7 +660,7 @@ onUnmounted(() => {
 .thought-area__label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
@@ -657,7 +674,7 @@ onUnmounted(() => {
 .thought-area__text {
   font-size: 12px;
   line-height: 1.6;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
 }

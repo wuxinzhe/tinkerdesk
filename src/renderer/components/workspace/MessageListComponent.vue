@@ -122,6 +122,12 @@ const userScrolledUp = ref(false)
 const loadAttempted = ref(false)
 const noMoreHint = computed(() => loadAttempted.value && !props.hasMore)
 
+/** 加载更多冷却：滚动到顶连发加载会快速膨胀列表（每次 +50 条 prepend）——
+ *  主线程 markdown 渲染 + TransitionGroup move 动画压力爆炸 → 滚轮卡顿。
+ *  两次触发至少间隔 LOAD_MORE_COOLDOWN_MS。 */
+const LOAD_MORE_COOLDOWN_MS = 1200
+let lastLoadMoreAt = 0
+
 /** 按 messageType 过滤后的可见消息（含 isStreaming=true 的占位消息） */
 const visibleMessages = computed(() =>
   props.messages.filter(m => DISPLAY_TYPES.has(m.messageType as string)
@@ -182,6 +188,9 @@ function onScroll() {
   userScrolledUp.value = !isAtBottom
   // 滚动到顶触发加载更多（更旧消息）——替代/补充顶部按钮
   if (el.scrollTop < threshold && props.hasMore && !props.loadingMore && props.messages.length > 0) {
+    const now = Date.now()
+    if (now - lastLoadMoreAt < LOAD_MORE_COOLDOWN_MS) return  // 冷却——防连发
+    lastLoadMoreAt = now
     loadAttempted.value = true
     emit('load-more')
   }
@@ -285,16 +294,16 @@ defineExpose({
 
 .message-list__loading-text {
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
-/* 出现：立即全显示（避免淡入期间底下内容被看到——闪）；隐藏：淡出 0.3s */
+/* 出现：立即全显示（避免淡入期间底下内容被看到——闪）；隐藏：淡出 200ms 强 ease-out */
 .chat-loading-enter-active {
   transition: none;
 }
 
 .chat-loading-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chat-loading-enter-from,
@@ -317,7 +326,7 @@ defineExpose({
   align-items: center;
   padding: 10px 16px 14px;
   font-size: 12px;
-  color: var(--sa-text-tertiary, rgba(60, 60, 67, 0.4));
+  color: var(--tk-text-tertiary);
 }
 
 .message-list__load-btn {
@@ -327,24 +336,28 @@ defineExpose({
   padding: 6px 16px;
   font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   background: transparent;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.message-list__load-btn:hover:not(:disabled) {
-  background: var(--sa-bg-secondary, #f5f5f7);
+.message-list__load-btn:not(:disabled):active {
+  transform: scale(0.97);
 }
-
+@media (hover: hover) and (pointer: fine) {
+  .message-list__load-btn:hover:not(:disabled) {
+    background: var(--tk-bg-secondary);
+  }
+}
 .message-list__load-btn:disabled {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: not-allowed;
 }
 
-/* ── 空状态 ── */
+/* ── 空状态（与 SessionList 一致：图标圆角容器 + 主/次文案） ── */
 
 .message-list__empty {
   display: flex;
@@ -352,33 +365,40 @@ defineExpose({
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  gap: 8px;
+  color: var(--tk-text-tertiary);
+  gap: 4px;
   padding: 40px;
 }
 
 .message-list__empty-icon {
-  opacity: 0.4;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-tertiary);
+  margin-bottom: 10px;
 }
 
 .message-list__empty-text {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin: 0;
 }
 
 .message-list__empty-hint {
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin: 0;
 }
 
-/* ── 消息入场动画（新消息/msg.id 变化时触发） ── */
+/* ── 消息入场动画（emil：200ms 强 ease-out） ── */
 
 .message-enter-active {
-  animation: fadeInUp 0.3s ease-out;
+  animation: fadeInUp 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @keyframes fadeInUp {

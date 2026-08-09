@@ -21,7 +21,8 @@
           <Transition name="collapse">
             <div v-if="showStreamingReceiver" class="streaming-receiver">
               <div class="streaming-receiver__header">
-                📡 信息接收中…
+                <span class="streaming-receiver__dot" />
+                接收中
               </div>
               <div ref="streamBodyRef" class="streaming-receiver__body">{{ pendingBuffer }}</div>
             </div>
@@ -286,43 +287,41 @@ const bubbleStyleClass = computed(() =>
   min-width: 0;
 }
 
-/* ── Bubble ── */
+/* ── Bubble（emil：指定属性过渡 + 强 ease-out） ── */
 
 .message-bubble {
-  padding: 8px 12px;
-  border-radius: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
   font-size: 14px;
   line-height: 1.5;
   word-break: break-word;
-  transition: background 0.15s, border-radius 0.15s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-radius 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.message-bubble:hover {
-  cursor: pointer;
-}
-
+/* user：柔和渐变（iOS 风格）+ 尾部小角 */
 .bubble--user {
-  background: var(--sa-accent, #007aff);
+  background: linear-gradient(135deg, var(--tk-accent) 0%, var(--tk-accent-active) 100%);
   color: #fff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 5px;
   white-space: pre-wrap;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 
+/* assistant：白底浮起（hairline 边框 + 极淡阴影） */
 .bubble--assistant {
-  background: var(--sa-bg-bubble-assistant, #ececed);
-  color: var(--sa-text-primary, #1d1d1f);
-  border-bottom-left-radius: 4px;
+  background: var(--tk-bg-primary);
+  color: var(--tk-text-primary);
+  border: 1px solid var(--tk-border-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.03);
+  border-bottom-left-radius: 5px;
 }
 
-/* ── 气泡容器（user/assistant 文本类消息）─── */
-
-
-.markdown-body {
-  line-height: 1.6;
+/* 流式中的 assistant 气泡：呼吸边框 */
+.bubble--assistant.bubble--streaming {
+  border-color: rgba(0, 122, 255, 0.25);
 }
 
-/* 收紧段落间距，避免全文单 MarkdownRender 时段落 gap 过大 */
-/* ⚠ 优先级必须高于 MarkdownRender 内部的 :deep(p)，用 .message-bubble 加一层类 */
 .message-bubble :deep(.markdown-body p) {
   margin: 0.3em 0;
 }
@@ -335,42 +334,66 @@ const bubbleStyleClass = computed(() =>
   margin-bottom: 0;
 }
 
-/* ── 流式接收区 ── */
+/* ── 流式接收区（emil：极简「接收中」+ 呼吸圆点） ── */
 
 .streaming-receiver {
-  margin-top: 16px;             /* 与上方 Markdown 渲染区的间距 */
-  background: var(--sa-bg-tertiary, #e8e8ed);
-  border: 1px solid var(--sa-border, #d2d2d7);
-  border-radius: 8px;
+  margin-top: 12px;
+  background: var(--tk-bg-tertiary);
+  border: 1px solid var(--tk-border-light);
+  border-radius: 10px;
   overflow: hidden;
 }
 
 .streaming-receiver__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  color: var(--sa-text-tertiary, #aeaeb2);
-  padding: 6px 10px 2px;
+  color: var(--tk-text-tertiary);
+  padding: 8px 12px 2px;
+}
+
+.streaming-receiver__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tk-accent);
+  animation: receiver-pulse 1.2s ease-in-out infinite;
 }
 
 .streaming-receiver__body {
   font-size: 13px;
   line-height: 1.4;
-  color: var(--sa-text-secondary, #86868b);
-  padding: 6px 10px;
-  max-height: 67px;         /* 3 行 × 18.2px + padding 12px ≈ 67px */
-  overflow: hidden;         /* 思考气泡：隐藏滚动条且不允许滚动 */
+  color: var(--tk-text-secondary);
+  padding: 6px 12px 10px;
+  max-height: 67px;         /* 3 行 × 18.2px + padding ≈ 67px */
+  overflow: hidden;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'SF Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
 }
 
-
-/* ── Collapse transition ── */
-
-.collapse-enter-active,
-.collapse-leave-active {
-  transition: all 0.25s ease;
+@keyframes receiver-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
+/* ── Collapse transition（emil：指定属性 + 强 ease-out） ── */
+
+.collapse-enter-active {
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    margin-top 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-top 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-bottom 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.collapse-leave-active {
+  transition: opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    max-height 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    margin-top 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-top 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    padding-bottom 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
 .collapse-enter-from,
 .collapse-leave-to {
   opacity: 0;
@@ -382,52 +405,63 @@ const bubbleStyleClass = computed(() =>
   overflow: hidden;
 }
 
-/* ── Timestamp ── */
+/* ── Timestamp（emil：hover 显示——低频率操作藏进 hover；触屏点击显示） ── */
 
 .message-timestamp {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   line-height: 1;
   padding: 0 4px 0 12px;
   display: flex;
   align-items: center;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
 }
 
 .message-timestamp.visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
-/* 时间戳文本（与按钮区分——hover 后可见） */
+@media (hover: hover) and (pointer: fine) {
+  .message-row:hover .message-timestamp {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .message-timestamp__time {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
-/* 时间戳按钮（SVG 图标——统一样式；父容器 pointer-events:none——必须显式 auto 才能点） */
 .ts-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: none;
   border: none;
   padding: 0;
-  border-radius: 4px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  border-radius: 5px;
+  color: var(--tk-text-tertiary);
   cursor: pointer;
-  pointer-events: auto;   /* 覆盖 .message-timestamp 的 pointer-events: none */
   opacity: 0.75;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-.ts-btn:hover {
-  opacity: 1;
-  color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-selected, rgba(0, 122, 255, 0.08));
+.ts-btn:active {
+  transform: scale(0.92);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ts-btn:hover {
+    opacity: 1;
+    color: var(--tk-accent);
+    background: var(--tk-bg-selected);
+  }
 }
 
 /* ── 发送状态 ── */
@@ -437,7 +471,7 @@ const bubbleStyleClass = computed(() =>
   align-items: center;
   gap: 4px;
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   padding: 0 4px;
 }
 
@@ -449,12 +483,12 @@ const bubbleStyleClass = computed(() =>
 }
 
 .status-dot--sending {
-  background: var(--sa-accent, #007aff);
-  animation: pulse 1.2s infinite;
+  background: var(--tk-accent);
+  animation: pulse 1.2s ease-in-out infinite;
 }
 
 .status-dot--failed {
-  background: var(--sa-destructive, #ff3b30);
+  background: var(--tk-destructive);
 }
 
 @keyframes pulse {

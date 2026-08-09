@@ -54,7 +54,7 @@ import TitleBar from '@/renderer/components/workspace/TitleBar.vue'
 import GlobalTipToast from '@/renderer/components/GlobalTipToast.vue'
 import ConfirmModal from '@/renderer/components/ConfirmModal.vue'
 import { setupAppHost, needsConsent, consentErrorSummary, resolveConsent } from '@/renderer/utils/app-init'
-import { applyTheme, type ThemePreference } from '@/renderer/utils/theme'
+import { applyTheme } from '@/renderer/utils/theme'
 import { NModal } from 'naive-ui'
 
 // ── Application Host 初始化 ──
@@ -66,7 +66,8 @@ setupAppHost()
 void (async () => {
   try {
     const { settings } = await window.api.generalSettings.get()
-    applyTheme((settings['theme'] as ThemePreference) || 'light')
+    const theme = (settings['theme'] as string) || 'light'
+    applyTheme(theme)
   } catch {
     applyTheme('light')
   }
@@ -147,13 +148,13 @@ body.locked {
 .consent__text {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--sa-text-primary);
+  color: var(--tk-text-primary);
   margin: 0 0 8px;
 }
 
 .consent__note {
   font-size: 12px;
-  color: var(--sa-text-tertiary);
+  color: var(--tk-text-tertiary);
   margin: 0;
 }
 

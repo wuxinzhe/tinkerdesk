@@ -264,7 +264,7 @@ onBeforeUnmount(() => {
   width: 280px;
   border-radius: 12px 0 0 12px;
   box-shadow: none;
-  transition: transform 0.22s ease;
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
   transform: translateX(100%);
   pointer-events: none;
 }
@@ -288,8 +288,8 @@ onBeforeUnmount(() => {
 .stats__drawer {
   position: relative;
   max-height: calc(100vh - 48px);
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   border-right: none;
   border-radius: 12px 0 0 12px;
   padding: 16px 14px;
@@ -310,31 +310,38 @@ onBeforeUnmount(() => {
   width: 20px;
   height: 56px;
   border-radius: 10px 0 0 10px;
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  border: 1px solid var(--tk-border-light);
   border-right: none;
-  background: var(--sa-bg-elevated, #ffffff);
-  color: var(--sa-text-secondary, #86868b);
+  background: var(--tk-bg-elevated);
+  color: var(--tk-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
-  transition: right 0.22s ease, color 0.15s, background 0.15s;
+  transition: right 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .stats--open .stats__toggle {
   right: 280px;
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
-.stats__toggle:hover {
-  color: var(--sa-accent, #007aff);
-  background: var(--sa-bg-secondary, #f5f5f7);
+@media (hover: hover) and (pointer: fine) {
+  .stats__toggle:hover {
+    color: var(--tk-accent);
+    background: var(--tk-bg-secondary);
+  }
 }
 
-/* 箭头：关闭 < / 打开 >（旋转 180°） */
+/* 箭头：关闭 < / 打开 >（旋转 180°——emil：指定属性过渡） */
 .stats__chevron--open {
   transform: rotate(180deg);
+}
+.stats__toggle svg {
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .stats__head {
@@ -343,14 +350,14 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   margin-bottom: 10px;
 }
 
 .stats__model {
   font-size: 10px;
   font-weight: 400;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -361,7 +368,7 @@ onBeforeUnmount(() => {
 .ctx-block {
   margin-bottom: 14px;
   padding: 10px 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 10px;
 }
 
@@ -375,20 +382,20 @@ onBeforeUnmount(() => {
 .ctx-block__label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .ctx-block__value {
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   font-variant-numeric: tabular-nums;
 }
 
 .ctx-block__percent {
   font-size: 11px;
   margin-left: 6px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 /* 三层轨道（加粗） */
@@ -396,7 +403,7 @@ onBeforeUnmount(() => {
   position: relative;
   height: 12px;
   border-radius: 6px;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
   overflow: visible;
   margin-bottom: 6px;
 }
@@ -412,8 +419,8 @@ onBeforeUnmount(() => {
 /* 底层：上下文窗口总量（全宽浅灰） */
 .ctx-block__layer--limit {
   width: 100%;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   box-sizing: border-box;
 }
 
@@ -426,7 +433,7 @@ onBeforeUnmount(() => {
 
 /* 上层：当前占用（蓝/橙/红分级） */
 .ctx-block__layer--used {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .ctx-block__legend {
@@ -434,7 +441,7 @@ onBeforeUnmount(() => {
   gap: 10px;
   flex-wrap: wrap;
   font-size: 10px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .ctx-block__legend span {
@@ -451,7 +458,7 @@ onBeforeUnmount(() => {
 }
 
 .dot--used {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .dot--threshold {
@@ -459,21 +466,21 @@ onBeforeUnmount(() => {
 }
 
 .dot--limit {
-  background: var(--sa-border, #d2d2d7);
+  background: var(--tk-border);
 }
 
 /* 会话数据（两栏：标题上/数值下） */
 .sess-block {
   margin-bottom: 14px;
   padding: 10px 12px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 10px;
 }
 
 .sess-block__title {
   font-size: 11px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -495,13 +502,13 @@ onBeforeUnmount(() => {
 
 .sess-block__label {
   font-size: 11px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
 }
 
 .sess-block__num {
   font-size: 15px;
   font-weight: 700;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -511,7 +518,7 @@ onBeforeUnmount(() => {
 }
 
 .sess-block__num--high {
-  color: #34c759;
+  color: var(--tk-success);
 }
 
 .sess-block__num--mid {
@@ -519,7 +526,7 @@ onBeforeUnmount(() => {
 }
 
 .sess-block__num--hit {
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 
 /* 记忆模块已移至 AgentCard——此处样式已删除 */
@@ -528,8 +535,8 @@ onBeforeUnmount(() => {
 .stats__bar {
   height: 4px;
   border-radius: 2px;
-  background: var(--sa-bg-elevated, #ffffff);
-  border: 1px solid var(--sa-border-light, #e8e8ed);
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border-light);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -537,7 +544,7 @@ onBeforeUnmount(() => {
 .stats__bar-fill {
   height: 100%;
   border-radius: 1px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   transition: width 0.3s;
 }
 
@@ -546,22 +553,22 @@ onBeforeUnmount(() => {
 }
 
 .stats__bar-fill--green {
-  background: #34c759;
+  background: var(--tk-success);
 }
 
 .stats__bar-fill--blue {
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
 }
 
 .stats__sub {
   font-size: 10px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   margin-top: 3px;
 }
 
 .stats__empty {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   text-align: center;
   padding: 8px 0;
 }

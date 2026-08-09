@@ -49,15 +49,15 @@ const totalPages = computed(() => Math.max(1, Math.ceil(props.total / (props.pag
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
-  background: var(--sa-bg-primary, #fff);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-primary);
+  color: var(--tk-text-primary);
   cursor: pointer;
   transition: background 0.12s;
 }
 .sa-pagination__btn:hover:not(:disabled) {
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
 }
 .sa-pagination__btn:disabled {
   opacity: 0.35;
@@ -65,7 +65,7 @@ const totalPages = computed(() => Math.max(1, Math.ceil(props.total / (props.pag
 }
 .sa-pagination__info {
   font-size: 12px;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   min-width: 60px;
   text-align: center;
 }

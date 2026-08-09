@@ -1,5 +1,12 @@
 <template>
   <L3PageLayout class="memory-manage">
+    <!-- 页头 -->
+    <SaPageHero
+      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><line x1="9" y1="5" x2="9" y2="2"/><line x1="15" y1="5" x2="15" y2="2"/><line x1="9" y1="19" x2="9" y2="22"/><line x1="15" y1="19" x2="15" y2="22"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>'
+      gradient="linear-gradient(135deg, #5ac8fa 0%, var(--tk-accent) 100%)"
+      title="记忆管理"
+      desc="管理该 Agent 的长期记忆"
+    />
     <!-- 顶部：目标切换（Memory / User）+ 计数 -->
     <div class="memory-manage__toolbar">
       <div class="memory-manage__tabs">
@@ -80,6 +87,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
+import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { memoryApi, type MemoryTarget } from '@/renderer/api/memory-api'
 
 const route = useRoute()
@@ -216,7 +224,8 @@ watch(() => route.params.profile, () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  max-width: 680px;
+  width: 100%;
 }
 
 .memory-manage__toolbar {
@@ -228,7 +237,7 @@ watch(() => route.params.profile, () => {
 .memory-manage__tabs {
   display: flex;
   gap: 6px;
-  background: var(--sa-bg-secondary, #f5f5f7);
+  background: var(--tk-bg-secondary);
   border-radius: 8px;
   padding: 3px;
 }
@@ -238,7 +247,7 @@ watch(() => route.params.profile, () => {
   background: transparent;
   font-size: 12px;
   font-weight: 600;
-  color: var(--sa-text-secondary, #86868b);
+  color: var(--tk-text-secondary);
   padding: 5px 14px;
   border-radius: 6px;
   cursor: pointer;
@@ -246,14 +255,14 @@ watch(() => route.params.profile, () => {
 }
 
 .memory-manage__tab--active {
-  background: var(--sa-bg-elevated, #ffffff);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-elevated);
+  color: var(--tk-text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .memory-manage__count {
   font-size: 11px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .memory-manage__add {
@@ -264,23 +273,23 @@ watch(() => route.params.profile, () => {
 .memory-manage__add-input {
   flex: 1;
   padding: 8px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
   font-size: 12px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   outline: none;
 }
 
 .memory-manage__add-input:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .memory-manage__add-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
-  background: var(--sa-accent, #007aff);
+  background: var(--tk-accent);
   color: #fff;
   font-size: 12px;
   font-weight: 600;
@@ -292,7 +301,7 @@ watch(() => route.params.profile, () => {
   text-align: center;
   padding: 40px 0;
   font-size: 13px;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
 }
 
 .memory-manage__empty-hint {
@@ -311,9 +320,9 @@ watch(() => route.params.profile, () => {
   align-items: center;
   gap: 8px;
   padding: 9px 10px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 8px;
-  background: var(--sa-bg-elevated, #ffffff);
+  background: var(--tk-bg-elevated);
   cursor: grab;
   transition: box-shadow 0.15s, opacity 0.15s;
 }
@@ -324,7 +333,7 @@ watch(() => route.params.profile, () => {
 }
 
 .memory-item--editing {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 /* 行内编辑 textarea */
@@ -332,22 +341,22 @@ watch(() => route.params.profile, () => {
   flex: 1;
   min-width: 0;
   padding: 6px 8px;
-  border: 1px solid var(--sa-border, #d2d2d7);
+  border: 1px solid var(--tk-border);
   border-radius: 6px;
   font-size: 12px;
   font-family: inherit;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   resize: vertical;
   outline: none;
   box-sizing: border-box;
 }
 
 .memory-item__edit-textarea:focus {
-  border-color: var(--sa-accent, #007aff);
+  border-color: var(--tk-accent);
 }
 
 .memory-item__btn--save {
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
   font-weight: 600;
   width: auto;
   padding: 0 8px;
@@ -356,11 +365,11 @@ watch(() => route.params.profile, () => {
 
 .memory-item__btn--save:hover {
   background: rgba(0, 122, 255, 0.1);
-  color: var(--sa-accent, #007aff);
+  color: var(--tk-accent);
 }
 
 .memory-item__handle {
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   font-size: 14px;
   flex-shrink: 0;
   user-select: none;
@@ -369,7 +378,7 @@ watch(() => route.params.profile, () => {
 .memory-item__content {
   flex: 1;
   font-size: 12px;
-  color: var(--sa-text-primary, #1d1d1f);
+  color: var(--tk-text-primary);
   line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -395,18 +404,18 @@ watch(() => route.params.profile, () => {
   border: none;
   border-radius: 5px;
   background: transparent;
-  color: var(--sa-text-tertiary, #aeaeb2);
+  color: var(--tk-text-tertiary);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .memory-item__btn:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-  color: var(--sa-text-primary, #1d1d1f);
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
 }
 
 .memory-item__btn--danger:hover {
   background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30;
+  color: var(--tk-destructive);
 }
 </style>
