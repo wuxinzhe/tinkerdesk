@@ -223,7 +223,7 @@ async function fetchModelList() {
   color: var(--sa-text-primary, #1d1d1f);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .cm-input--select {

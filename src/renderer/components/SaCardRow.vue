@@ -57,11 +57,21 @@ defineEmits<{ click: [] }>()
   gap: 10px;
   padding: 10px 14px;
   cursor: pointer;
-  transition: background 0.12s;
+  /* emil：指定属性 + 强 ease-out；行间分隔线（iOS 列表风格） */
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
   user-select: none;
 }
-.sa-card-row:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+.sa-card-row:not(:last-child) {
+  border-bottom: 1px solid var(--sa-border-light, #e8e8ed);
+}
+.sa-card-row:active {
+  transform: scale(0.99);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sa-card-row:hover {
+    background: var(--sa-bg-secondary, #f5f5f7);
+  }
 }
 /* ── Prepend (avatar/icon) ── */
 .sa-card-row__prepend {

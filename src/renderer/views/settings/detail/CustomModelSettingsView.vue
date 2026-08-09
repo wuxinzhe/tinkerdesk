@@ -137,38 +137,26 @@ onMounted(async () => {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, color 0.12s;
+  /* emil：指定属性过渡 + 强 ease-out + 按压 */
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
   color: var(--sa-text-secondary, #86868b);
 }
 
-.cms-act:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
-}
-
-.cms-act:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.cms-act--test {
-  color: #34c759;
-}
-.cms-act--test:hover {
-  background: rgba(52, 199, 89, 0.06);
-}
-
-.cms-act--edit {
-  color: var(--sa-accent, #007aff);
-}
-.cms-act--edit:hover {
-  background: rgba(0, 122, 255, 0.06);
-}
-
-.cms-act--del {
-  color: #ff3b30;
-}
-.cms-act--del:hover {
-  background: rgba(255, 59, 48, 0.06);
+@media (hover: hover) and (pointer: fine) {
+  .cms-act:hover {
+    background: var(--sa-bg-secondary, #f5f5f7);
+  }
+  .cms-act--test:hover {
+    background: rgba(52, 199, 89, 0.06);
+  }
+  .cms-act--edit:hover {
+    background: rgba(0, 122, 255, 0.06);
+  }
+  .cms-act--del:hover {
+    background: rgba(255, 59, 48, 0.06);
+  }
 }
 
 /* ── 手机模式：模型列表改卡片 ── */

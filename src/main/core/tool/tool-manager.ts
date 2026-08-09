@@ -179,10 +179,38 @@ export class ToolManager {
 
   disableTool(profile: string, toolName: string): void {
     this.getDisabledSet(profile).add(toolName)
+    this.persistDisabled(profile)
   }
 
   enableTool(profile: string, toolName: string): void {
     this.getDisabledSet(profile).delete(toolName)
+    this.persistDisabled(profile)
+  }
+
+  /**
+   * 批量注入已保存的禁用列表（应用启动时调用——持久化于 app_settings）
+   * @param map profile → 禁用的工具名列表
+   */
+  loadDisabled(map: Record<string, string[]>): void {
+    for (const [profile, names] of Object.entries(map)) {
+      if (!Array.isArray(names)) continue
+      for (const name of names) this.getDisabledSet(profile).add(name)
+    }
+  }
+
+  /** 持久化回调（bootstrap 注入——写 app_settings） */
+  setPersistence(onPersist: (profile: string, toolNames: string[]) => void): void {
+    this.persist = onPersist
+  }
+
+  private persist: ((profile: string, toolNames: string[]) => void) | null = null
+
+  private persistDisabled(profile: string): void {
+    try {
+      this.persist?.(profile, this.getDisabledTools(profile))
+    } catch (e) {
+      console.error('[ToolManager] 持久化禁用工具失败:', (e as Error).message)
+    }
   }
 
   private getDisabledSet(profile: string): Set<string> {

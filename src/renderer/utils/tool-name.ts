@@ -8,6 +8,11 @@
  */
 export function parseDisplayName(name: string): string {
   const parts = name.split('_')
-  if (parts.length <= 2) return name
+  if (parts.length <= 2) {
+    // 简短工具名保持原名——TTS/STT 类固定大写展示
+    if (name === 'tts') return 'TTS'
+    if (name === 'stt') return 'STT'
+    return name
+  }
   return parts.slice(2).join('_')
 }

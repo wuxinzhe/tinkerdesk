@@ -138,15 +138,20 @@ module.exports = {
 
 ```ts
 // 当前开放接口（新增 = 在 system-interfaces.ts 追加一行 + 插件声明）
-'voice.stt'  → 必须注册频道 stt:transcribe   // 语音转文本（应用录音，插件识别）
-'voice.tts'  → 必须注册频道 tts:speak        // 文本转语音（返回 audio data URL）
+'voice.stt'   → 必须注册频道 stt:transcribe    // 语音转文本（应用录音，插件识别）
+'voice.tts'   → 必须注册频道 tts:speak         // 文本转语音（返回 audio data URL）
+'web.search'  → 必须注册频道 search:query      // 网页搜索（{ query, limit } → { results: [{title,url,description}] }）
+'web.extract' → 必须注册频道 extract:fetch     // 网页抓取（{ url, limit? } → { content, title? }）
 ```
 
 **契约**：
 1. manifest `systemInterfaces` 声明接口 id
 2. 入口必须注册 `requiredChannel`（未注册 → 加载失败，契约校验）
 3. 启用（自检通过）→ PluginManager 注册到该接口的 **provider 清单**
-4. 系统设置页（如语音设置）从清单中选择绑定该接口调用哪个 provider
+4. 绑定入口按接口维度：
+   - voice.* → 系统设置 → 语音设置选择激活
+   - web.* → 工具管理页（web_search / web_extract 带设置按钮）→ L3 provider 设置页选择激活
+     （未选插件 = 内置兜底；插件失败可自动回退内置——web-provider-config.json 的 fallback 开关）
 5. 一个插件可同时实现多个接口；同一接口可有多个 provider（多选一）
 
 **channel 约定**：插件注册的频道命名自由，但系统接口的 requiredChannel 是**固定契约**（如 `stt:transcribe`），调用经 PluginManager 转发：`voice:stt:transcribe` → 当前绑定的 provider 的 `stt:transcribe`。

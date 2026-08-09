@@ -205,6 +205,8 @@ export interface ToolItemVO {
   description: string
   disabled: boolean
   toolType: string
+  /** 是否支持 provider 模式（工具管理页显示设置按钮 + L3 provider 设置入口） */
+  supportsProvider?: boolean
 }
 
 /** 工具清单查询 DTO */

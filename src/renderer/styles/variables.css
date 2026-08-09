@@ -84,6 +84,7 @@
 
   /* ── Motion（统一 HIG 曲线） ── */
   --sa-ease: cubic-bezier(0.25, 0.1, 0.25, 1); /* ease-in-out */
+  --sa-ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* emil-design-eng 强 ease-out（UI 交互） */
   --sa-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 面板展开 */
   --sa-duration-fast: 120ms;
   --sa-duration-normal: 200ms;
@@ -264,4 +265,13 @@ body {
 /** 在桌面模式（≥768px）下隐藏元素 */
 @media (min-width: 768px) {
   .desktop-hide { display: none !important; }
+}
+
+/* ══════════════════════════════════════
+   emil-design-eng 基础打磨（全局）
+   ══════════════════════════════════════ */
+
+/* 按压反馈：所有按钮物理缩进（emil：按钮必须响应按压；transform 不触发重排） */
+button:active {
+  transform: scale(0.97);
 }

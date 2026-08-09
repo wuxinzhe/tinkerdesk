@@ -209,6 +209,10 @@ onMounted(load)
   border: none;
   cursor: pointer;
   font-family: inherit;
+  /* emil：指定属性过渡 + 强 ease-out + 按压 */
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .mcp-server-card__btn--edit {

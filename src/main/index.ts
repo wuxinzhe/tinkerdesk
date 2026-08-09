@@ -10,6 +10,8 @@ import { MessageController } from './controller/message-controller'
 import { AgentCrudController } from './controller/agent-manager-controller'
 import { AgentConfigController } from './controller/agent-config-controller'
 import { ToolController } from './controller/tool-controller'
+import { WebProviderController } from './controller/web-provider-controller'
+import { AudioToolProviderController } from './controller/audio-tool-provider-controller'
 import { SkillController } from './controller/skill-controller'
 import { PromptModuleController } from './controller/prompt-module-controller'
 import { SandboxController } from './controller/sandbox-controller'
@@ -76,6 +78,8 @@ app.whenReady().then(() => {
   new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
   new AgentConfigController(desk.agentConfigService).register()
   new ToolController(desk.toolManager).register()
+  new WebProviderController(desk.webProviderService).register()
+  new AudioToolProviderController(desk.audioToolProvider).register()
   new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
   new PromptModuleController(desk.promptService).register()
   new SandboxController(desk.sandboxWhitelistService).register()

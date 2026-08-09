@@ -20,6 +20,17 @@
                 {{ toolTypeLabels[tool.toolType || ''] || '未知来源' }}
               </span>
               <div class="tool-row__name">{{ parseDisplayName(tool.name) }}</div>
+              <button
+                v-if="tool.supportsProvider"
+                class="tool-row__provider-btn"
+                title="Provider 设置"
+                @click="openProviderSettings(tool)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </button>
               <label class="tool-row__checkbox" :class="{ checked: !tool.disabled }">
                 <input
                   type="checkbox"
@@ -40,13 +51,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { L3PageLayout } from '@/renderer/components'
 import type { ToolItem } from '@/renderer/api/types'
 import { parseDisplayName } from '@/renderer/utils/tool-name'
 import { toolsApi } from '@/renderer/api/tools-api'
 
 const route = useRoute()
+const router = useRouter()
 
 const detailProfile = computed(() => route.params.profile as string)
 
@@ -92,6 +104,11 @@ async function loadTools() {
   } finally {
     toolsLoading.value = false
   }
+}
+
+/** 打开工具的 provider 设置 L3 页（仅 supportsProvider 的工具显示按钮） */
+function openProviderSettings(tool: ToolItem) {
+  router.push(`/workspace/agents/${detailProfile.value}/tools/${encodeURIComponent(tool.name)}/provider`)
 }
 
 async function toggleTool(tool: ToolItem) {
@@ -231,5 +248,23 @@ onMounted(() => loadTools())
 .tool-row__checkbox-text {
   font-size: 12px;
   color: var(--sa-text-tertiary, #aeaeb2);
+}
+.tool-row__provider-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--sa-text-tertiary, #aeaeb2);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.tool-row__provider-btn:hover {
+  color: var(--sa-accent, #0a84ff);
+  background: rgba(10, 132, 255, 0.08);
 }
 </style>

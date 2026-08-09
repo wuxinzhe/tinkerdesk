@@ -386,6 +386,41 @@ export interface ToolItem {
   description: string
   disabled: boolean
   toolType: string
+  /** 是否支持 provider 模式（显示设置按钮 + L3 provider 设置入口） */
+  supportsProvider?: boolean
+}
+
+// ── Web 工具 provider（web-provider:list/set） ──
+
+export interface WebProviderInfo {
+  pluginId: string
+  name: string
+  version: string
+  interfaceVersion: number
+}
+
+export interface WebProviderListVO {
+  iface: 'web.search' | 'web.extract'
+  providers: WebProviderInfo[]
+  activePluginId: string | null
+  fallback: boolean
+}
+
+// ── Agent 语音工具 provider（audio-tool-provider:list/set） ──
+
+export interface AudioToolProviderInfo {
+  pluginId: string
+  name: string
+  version: string
+  interfaceVersion: number
+}
+
+export interface AudioToolProviderListVO {
+  iface: 'tool.tts' | 'tool.stt'
+  providers: AudioToolProviderInfo[]
+  /** 当前激活 provider id（内置 Edge 插件 id 为 builtin-edge-tts） */
+  activeProviderId: string | null
+  fallback: boolean
 }
 
 // ── 通用 API 响应（原 defines/api/types.ts） ──
@@ -666,6 +701,8 @@ export interface PluginManifest {
   capabilities?: string[]
   /** 插件声明实现的系统开放接口（如 voice.stt / voice.tts） */
   systemInterfaces?: { id: string; version: number }[]
+  /** 内置插件标记（代码注册——显示「内置」、不可卸载） */
+  builtin?: boolean
   permissions?: string[]
   description?: string
   modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
@@ -916,6 +953,16 @@ export interface WindowApi {
   tools: {
     list: (profile?: string) => Promise<ToolItem[]>
     toggle: (toolName: string, disabled: boolean, profile?: string) => Promise<ToolItem>
+  }
+
+  webProvider: {
+    list: (iface: 'web.search' | 'web.extract') => Promise<WebProviderListVO>
+    set: (payload: { iface: 'web.search' | 'web.extract'; pluginId?: string | null; fallback?: boolean }) => Promise<WebProviderListVO>
+  }
+
+  audioToolProvider: {
+    list: (iface: 'tool.tts' | 'tool.stt') => Promise<AudioToolProviderListVO>
+    set: (payload: { iface: 'tool.tts' | 'tool.stt'; providerId?: string | null; fallback?: boolean }) => Promise<AudioToolProviderListVO>
   }
 
   plugins: {

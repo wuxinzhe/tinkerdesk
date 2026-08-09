@@ -38,6 +38,7 @@ export class ToolController {
       description: s.description ?? '',
       disabled: disabled.includes(s.name),
       toolType: s.toolType,
+      supportsProvider: s.supportsProvider,
     }))
     return ok(tools)
   }

@@ -165,6 +165,7 @@ const l3ToolbarTitle = computed(() => {
     if (section === 'mcp') return 'MCP 工具'
     if (section === 'plugins') return '插件设置'
     if (section === 'voice') return '语音设置'
+    if (section === 'general') return '通用设置'
     // 插件配置页（/settings/plugins/:pluginId）
     if (route.path.includes('/settings/plugins/')) return '插件配置'
     return '系统设置'
@@ -206,7 +207,7 @@ const l3ToolbarTitle = computed(() => {
 const sessionTitle = computed(() => sessionStore.currentSession?.title ?? '')
 
 const SECTION_TITLES: Record<string, string> = {
-  model: '模型设置', mcp: 'MCP 工具', plugins: '插件设置', voice: '语音设置',
+  model: '模型设置', mcp: 'MCP 工具', plugins: '插件设置', voice: '语音设置', general: '通用设置',
 }
 const AGENT_SUB_TITLES: Record<string, string> = {
   skills: '技能管理', tools: '工具配置',

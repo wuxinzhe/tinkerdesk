@@ -178,7 +178,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pcf__input:focus {
@@ -247,7 +247,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   inset: 0;
   border-radius: 11px;
   background: var(--sa-bg-tertiary, #e5e5ea);
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pcf__switch-track::after {
@@ -260,7 +260,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease-in-out;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pcf__switch input:checked + .pcf__switch-track {
@@ -286,7 +286,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .pcf__btn:hover {

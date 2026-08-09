@@ -237,53 +237,8 @@ export interface SearchMatch {
   content: string
 }
 
-// ── web-search（原 web-search-types.ts） ──
-
-/** 搜索结果条目 */
-export interface SearchResultItem {
-  title: string
-  url: string
-  description: string
-  position: number
-}
-
-/** 搜索响应数据 */
-export interface WebSearchResponseData {
-  success: boolean
-  error?: string
-  data?: {
-    web: SearchResultItem[]
-  }
-}
-
-/** 搜索 Provider 接口 */
-export interface SearchProvider {
-  readonly id: string
-  readonly name: string
-  supportsSearch(): boolean
-  isAvailable(): boolean
-  search(query: string, limit: number): Promise<WebSearchResponseData>
-}
-
-// ── web-extract（原 web-extract-types.ts） ──
-
-/** 单条提取结果 */
-export interface ExtractResultItem {
-  url: string
-  title: string
-  content: string
-  error?: string | null
-}
-
-/** 提取后端抽象 */
-export interface ExtractProvider {
-  readonly id: string
-  readonly name: string
-  /** 是否支持内容提取（search-only 后端不支持） */
-  supportsExtract(): boolean
-  isAvailable(): boolean
-  extract(urls: string[], format?: string): Promise<ExtractResultItem[]>
-}
+// ── web-search / web-extract provider 接口已迁移到 providers/search|extract/types（2026-08 拆包） ──
+// 类型入口：src/main/providers/index.ts（SearchProvider/ExtractProvider/WebSearchResponseData/ExtractResultItem）
 
 /** execute() 调试日志数据结构（严格类型，替代 Record<string, unknown>） */
 export interface DebugCallData {

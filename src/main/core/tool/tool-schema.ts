@@ -15,6 +15,8 @@ export class ToolSchema {
   toolType: ToolType = 'builtin'
   /** 展示用 emoji 图标，默认 ⚡ */
   emoji = '⚡'
+  /** 是否支持 provider 模式（插件可接入 + 工具管理页显示设置按钮）——默认 false */
+  supportsProvider = false
 
   constructor(name: string, description: string, parameters: Record<string, unknown> | null) {
     this.function = { name, description, parameters }
@@ -65,6 +67,10 @@ export class ToolSchema {
     // 工具类型分类（模板里已有 toolType 字段，如 "server"）
     if (json.toolType !== undefined) {
       schema.toolType = json.toolType as ToolType
+    }
+    // 支持 provider 模式（模板里可选声明）
+    if (json.supportsProvider !== undefined) {
+      schema.supportsProvider = json.supportsProvider === true || json.supportsProvider === 'true'
     }
     return schema
   }

@@ -26,6 +26,8 @@ export interface PluginManifest {
    *   { id: 'voice.tts', version: 1 } → 应用按固定契约调用 plugin:<id>:tts:speak
    */
   systemInterfaces?: { id: string; version: number }[]
+  /** 内置插件标记（代码注册——不出现在 plugins/ 目录、不可卸载） */
+  builtin?: boolean
   /** 权限声明：如 ["mic", "audio-output"] */
   permissions?: string[]
   /** 描述 */

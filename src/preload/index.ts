@@ -356,6 +356,20 @@ const api = {
       inv('tool-config:toggle', { toolName, disabled, profile } satisfies ToggleToolRequestDTO).then(unwrap),
   },
 
+  // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──
+  webProvider: {
+    list: (iface: 'web.search' | 'web.extract') => inv('web-provider:list', { iface }).then(unwrap),
+    set: (payload: { iface: 'web.search' | 'web.extract'; pluginId?: string | null; fallback?: boolean }) =>
+      inv('web-provider:set', payload).then(unwrap),
+  },
+
+  // ── Agent 语音工具 provider（AudioToolProviderController——text_to_speech / speech_to_text）──
+  audioToolProvider: {
+    list: (iface: 'tool.tts' | 'tool.stt') => inv('audio-tool-provider:list', { iface }).then(unwrap),
+    set: (payload: { iface: 'tool.tts' | 'tool.stt'; providerId?: string | null; fallback?: boolean }) =>
+      inv('audio-tool-provider:set', payload).then(unwrap),
+  },
+
   // ── 插件系统 ──
   plugins: {
     list: () => inv('plugin:list').then(unwrap),

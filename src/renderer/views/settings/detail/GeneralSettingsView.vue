@@ -1,6 +1,6 @@
 <template>
   <L3PageLayout class="general-settings">
-    <div class="general-settings__body">
+    <div class="general-settings__body" :data-mounted="mounted">
       <!-- ── 主题组（浅色/深色/跟随系统） ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
@@ -22,20 +22,28 @@
         </div>
       </div>
 
-      <!-- ── 快捷键配置组（未来其他快捷键放同一组） ── -->
+      <!-- ── 快捷键配置组 ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
           <span class="general-settings__group-title">快捷键</span>
           <span class="general-settings__group-desc">按下新组合键即可修改，Esc 取消</span>
         </div>
-        <div v-for="s in shortcuts" :key="s.key" class="shortcut-row" @click="startCapture(s)">
+        <div
+          v-for="s in shortcuts"
+          :key="s.key"
+          class="shortcut-row"
+          :class="{ capturing: capturingKey === s.key }"
+          @click="startCapture(s)"
+        >
           <div class="shortcut-row__info">
             <span class="shortcut-row__label">{{ s.label }}</span>
             <span class="shortcut-row__desc">{{ s.description }}</span>
           </div>
           <div class="shortcut-row__value">
             <span v-if="capturingKey === s.key" class="shortcut-row__capturing">输入新快捷键…</span>
-            <span v-else class="shortcut-row__keys">{{ formatShortcut(s.value) }}</span>
+            <span v-else class="shortcut-row__keys">
+              <span v-for="(part, i) in shortcutParts(s.value)" :key="i" class="keycap">{{ part }}</span>
+            </span>
             <button
               v-if="s.value !== DEFAULT_RECORD && s.key === 'shortcut.record'"
               class="shortcut-row__reset"
@@ -66,6 +74,8 @@ const DEFAULT_RECORD = 'ctrl+b'
 
 const shortcuts = ref<ShortcutItem[]>([])
 const capturingKey = ref<string | null>(null)
+/** 页面进入动画标记（挂载后置 true 触发 stagger transition） */
+const mounted = ref(false)
 
 /* ── 主题 ── */
 const themeOptions: Array<{ value: ThemePreference; label: string }> = [
@@ -85,18 +95,16 @@ async function setTheme(value: ThemePreference): Promise<void> {
   }
 }
 
-/** 格式化快捷键显示（ctrl+backquote → Ctrl + `） */
-function formatShortcut(value: string): string {
-  return value
-    .split('+')
-    .map((part) => {
-      if (part === 'ctrl') return 'Ctrl'
-      if (part === 'shift') return 'Shift'
-      if (part === 'alt') return 'Alt'
-      if (part === 'backquote') return '`'
-      return part.length === 1 ? part.toUpperCase() : part
-    })
-    .join(' + ')
+/** 格式化快捷键显示 → 键帽数组（ctrl+backquote → ['Ctrl', '`']） */
+function shortcutParts(value: string): string[] {
+  return value.split('+').map((part) => {
+    if (part === 'ctrl') return 'Ctrl'
+    if (part === 'shift') return 'Shift'
+    if (part === 'alt') return 'Alt'
+    if (part === 'meta') return '⌘'
+    if (part === 'backquote') return '`'
+    return part.length === 1 ? part.toUpperCase() : part
+  })
 }
 
 async function load(): Promise<void> {
@@ -179,6 +187,10 @@ function showInfo(message: string): void {
 
 onMounted(() => {
   void load()
+  // 下一帧置 true——触发 stagger 进入动画（避免首帧即终态）
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
   window.addEventListener('keydown', onKeyDown, true)
 })
 onUnmounted(() => {
@@ -187,51 +199,39 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 主题 Segmented（HIG Segmented Controls：容器 bg-secondary + 选中白底） */
-.theme-row {
-  padding: 8px 16px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.theme-segmented {
-  display: inline-flex;
-  padding: 2px;
-  background: var(--sa-bg-secondary, #f5f5f7);
-  border-radius: 8px;
-  gap: 2px;
-}
-
-.theme-segmented__item {
-  height: 28px;
-  padding: 0 14px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  font-size: 12px;
-  color: var(--sa-text-secondary, #48484a);
-  cursor: pointer;
-  transition: background 0.15s var(--sa-ease), color 0.15s var(--sa-ease);
-  font-family: inherit;
-}
-
-.theme-segmented__item:hover {
-  color: var(--sa-text-primary, #1d1d1f);
-}
-
-.theme-segmented__item.selected {
-  background: var(--sa-bg-elevated, #ffffff);
-  color: var(--sa-text-primary, #1d1d1f);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  font-weight: 500;
-}
-
-/* ── Apple HIG：轻量设置分组（对齐 macOS System Settings） ── */
+/* ── 设计基调：emil-design-eng 打磨（自定义 ease-out 曲线、<300ms、只动 transform/opacity） ── */
 .general-settings__body {
   padding: 20px;
   max-width: 560px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
+/* 进入动画：分组 stagger（30ms 间隔，ease-out 300ms）——动画只放父容器带动子 */
+.general-settings__group {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1), transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.general-settings__body[data-mounted='true'] .general-settings__group {
+  opacity: 1;
+  transform: translateY(0);
+}
+.general-settings__body[data-mounted='true'] .general-settings__group:nth-child(2) {
+  transition-delay: 40ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .general-settings__group {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── 组卡片（Apple HIG 轻量设置分组） ── */
 .general-settings__group {
   background: var(--sa-bg-primary, #ffffff);
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -256,7 +256,56 @@ onUnmounted(() => {
   color: var(--sa-text-tertiary, #aeaeb2);
 }
 
-/* 行：整行点击捕获，右侧纯文本快捷键值 */
+/* ── 主题 Segmented（选中态 transition + 按压反馈） ── */
+.theme-row {
+  padding: 8px 16px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.theme-segmented {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--sa-bg-secondary, #f5f5f7);
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.theme-segmented__item {
+  height: 28px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--sa-text-secondary, #48484a);
+  cursor: pointer;
+  /* 指定属性过渡（禁 all）；选中态 180ms ease-out 即时反馈 */
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  font-family: inherit;
+}
+
+/* 按压反馈：物理缩进（emil：按钮必须响应按压） */
+.theme-segmented__item:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme-segmented__item:hover {
+    color: var(--sa-text-primary, #1d1d1f);
+  }
+}
+
+.theme-segmented__item.selected {
+  background: var(--sa-bg-elevated, #ffffff);
+  color: var(--sa-text-primary, #1d1d1f);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+}
+
+/* ── 快捷键行 ── */
 .shortcut-row {
   display: flex;
   align-items: center;
@@ -265,11 +314,23 @@ onUnmounted(() => {
   padding: 11px 16px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.shortcut-row:hover {
-  background: var(--sa-bg-secondary, #f5f5f7);
+@media (hover: hover) and (pointer: fine) {
+  .shortcut-row:hover {
+    background: var(--sa-bg-secondary, #f5f5f7);
+  }
+}
+
+.shortcut-row:active {
+  transform: scale(0.99);
+}
+
+/* 捕获态：整行 accent 淡色 + 呼吸提示 */
+.shortcut-row.capturing {
+  background: rgba(0, 122, 255, 0.06);
 }
 
 .shortcut-row__label {
@@ -287,15 +348,37 @@ onUnmounted(() => {
 .shortcut-row__value {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
-/* 快捷键值：纯文本（非按钮框） */
+/* 键帽（macOS 风格：圆角小块 + 细边 + 轻阴影——快捷键值的"看不见的细节"） */
 .shortcut-row__keys {
-  font-size: 13px;
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.keycap {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--sa-text-secondary, #48484a);
+  background: var(--sa-bg-secondary, #f5f5f7);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom-width: 2px;
+  border-radius: 5px;
   font-variant-numeric: tabular-nums;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.shortcut-row:active .keycap {
+  transform: translateY(1px);
 }
 
 /* 捕获态：蓝色文字提示 */
@@ -304,19 +387,55 @@ onUnmounted(() => {
   color: var(--sa-accent, #007aff);
 }
 
-/* 恢复默认：文本链接（低调） */
+/* 恢复默认：文本链接（低调）+ 按压反馈 */
 .shortcut-row__reset {
   font-size: 11px;
   color: var(--sa-accent, #007aff);
   background: none;
   border: none;
-  padding: 2px 4px;
+  padding: 3px 6px;
   cursor: pointer;
   border-radius: 4px;
-  transition: background 0.15s;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.shortcut-row__reset:hover {
-  background: rgba(0, 122, 255, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .shortcut-row__reset:hover {
+    background: rgba(0, 122, 255, 0.08);
+  }
+}
+
+.shortcut-row__reset:active {
+  transform: scale(0.97);
+}
+
+/* ── 手机模式（767px 断点）：压缩内边距，避免拥挤 ── */
+@media (max-width: 767px) {
+  .general-settings__body {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .general-settings__group-header {
+    padding: 12px 14px 4px;
+  }
+
+  .theme-row {
+    padding: 8px 14px 10px;
+  }
+
+  .shortcut-row {
+    padding: 10px 14px;
+  }
+
+  .theme-segmented {
+    width: 100%;
+  }
+
+  .theme-segmented__item {
+    flex: 1;
+    padding: 0 8px;
+  }
 }
 </style>

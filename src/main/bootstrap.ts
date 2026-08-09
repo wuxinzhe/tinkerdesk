@@ -62,6 +62,11 @@ import { UserSceneModelRepository } from './repository/user-scene-model-reposito
 import { UserUrlWhitelistRepository } from './repository/user-url-whitelist-repository'
 import { AccountService } from './service/account-service'
 import { AgentConfigService } from './service/agent-config-service'
+import { WebProvider } from './service/web-provider'
+import { AudioToolProvider } from './service/audio-tool-provider'
+import { EDGE_TTS_MANIFEST, edgeTtsPlugin } from './providers/tts/edge'
+import { UserDisabledToolService } from './service/user-disabled-tool-service'
+import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
 import { DefaultAgentMode } from './service/agent/default-agent-mode'
@@ -116,6 +121,10 @@ import {
   WEB_SEARCH_TOOL_NAME,
   WebExtractTool,
   WebSearchTool,
+  TextToSpeechTool,
+  TEXT_TO_SPEECH_TOOL_NAME,
+  SpeechToTextTool,
+  SPEECH_TO_TEXT_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   WriteFileTool,
 } from './tools/desktop'
@@ -165,6 +174,8 @@ export interface TinkerDesk {
   agentService: AgentService
   agentConfigService: AgentConfigService
   systemProviderService: SystemProviderService
+  webProviderService: WebProvider
+  audioToolProvider: AudioToolProvider
   accountService: AccountService
   sessionContextFactory: SessionContextFactory
   agentModeRegistry: AgentModeRegistry
@@ -262,6 +273,13 @@ export function bootstrap(
     tool: new ComputerUseTool(renderer),
   })
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
+  // ── 插件管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
+  const pluginManager = new PluginManager()
+  // 内置插件（代码注册——出现在插件列表、可配置，不可卸载）
+  pluginManager.registerBuiltinPlugin({ manifest: EDGE_TTS_MANIFEST, plugin: edgeTtsPlugin })
+  const webProvider = new WebProvider(pluginManager)
+  const audioToolProvider = new AudioToolProvider(pluginManager)
+
   const desktopTools: AgentToolRegistration[] = [
     { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻' }, tool: new TerminalTool(renderer) },
     { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️' }, tool: new ProcessTool(renderer) },
@@ -271,13 +289,14 @@ export function bootstrap(
     { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝' }, tool: new WriteFileTool(renderer) },
     { meta: { name: PATCH_TOOL_NAME, emoji: '✂️' }, tool: new PatchTool(renderer) },
     { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍' }, tool: new SearchFilesTool(renderer) },
-    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐' }, tool: new WebSearchTool(renderer) },
-    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰' }, tool: new WebExtractTool(renderer) },
+    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐' }, tool: new WebSearchTool(renderer, webProvider) },
+    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰' }, tool: new WebExtractTool(renderer, webProvider) },
+    { meta: { name: TEXT_TO_SPEECH_TOOL_NAME, emoji: '🔊' }, tool: new TextToSpeechTool(renderer, audioToolProvider) },
+    { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤' }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
     { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
     { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
-  const pluginManager = new PluginManager()
   const pluginTools: AgentToolRegistration[] = [
     { meta: { name: PLUGIN_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new PluginInstallTool(renderer, pluginManager) },
     { meta: { name: PLUGIN_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new PluginConfigureTool(renderer, pluginManager) },
@@ -287,6 +306,10 @@ export function bootstrap(
   ]
 
   const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
+  // 工具禁用黑名单持久化（user_disabled_tools 表——复刻 showing-agent，PK(profile, tool_name)）
+  const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
+  toolManager.loadDisabled(userDisabledToolService.listAll())
+  toolManager.setPersistence((profile, toolNames) => userDisabledToolService.replaceProfile(profile, toolNames))
   // MCP 工具同构注册：McpToolCenter 连接后生成 McpTool 实例 → 动态注册进统一注册中心
   // （toolType=mcp，ToolManager.execute 按类型路由到 MCP 统一执行器）
   const mcpCenter = getMcpToolCenter()
@@ -363,6 +386,8 @@ export function bootstrap(
     systemProviderService,
     accountService,
     sessionContextFactory,
+    webProviderService: webProvider,
+    audioToolProvider,
     agentModeRegistry,
     agentModeService,
     mcpToolCenter: mcpCenter,

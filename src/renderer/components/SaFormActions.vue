@@ -71,13 +71,30 @@ defineEmits<{
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  transition: opacity 0.15s;
+  /* emil：指定属性过渡 + 强 ease-out + 按压反馈（transform） */
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
   white-space: nowrap;
+}
+.sa-form-actions__btn:active {
+  transform: scale(0.97);
 }
 .sa-form-actions__btn:disabled { opacity: 0.5; cursor: default; }
 .sa-form-actions__btn--primary {
   background: var(--sa-accent, #007aff);
   color: #fff;
+}
+@media (hover: hover) and (pointer: fine) {
+  .sa-form-actions__btn--primary:hover {
+    background: color-mix(in srgb, var(--sa-accent, #007aff) 88%, #000);
+  }
+  .sa-form-actions__btn--subtle:hover {
+    background: var(--sa-bg-secondary, #f5f5f7);
+  }
+  .sa-form-actions__btn--danger:hover {
+    background: rgba(255, 59, 48, 0.06);
+  }
 }
 .sa-form-actions__btn--subtle {
   color: var(--sa-text-primary, #1d1d1f);

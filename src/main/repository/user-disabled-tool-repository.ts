@@ -32,4 +32,30 @@ export class UserDisabledToolRepository {
       .run(profile, toolName)
     return Number(result.changes)
   }
+
+  /** 全量加载（应用启动时注入 ToolManager 缓存）：profile → 禁用工具名列表 */
+  listAll(): Record<string, string[]> {
+    const db = getDatabase()
+    const rows = db.prepare('SELECT profile, tool_name FROM user_disabled_tools').all() as Array<{ profile: string; tool_name: string }>
+    const map: Record<string, string[]> = {}
+    for (const r of rows) {
+      ;(map[r.profile] ??= []).push(r.tool_name)
+    }
+    return map
+  }
+
+  /** 整体替换某 profile 的禁用列表（DELETE 全部 + INSERT 新集合，事务） */
+  replaceProfile(profile: string, toolNames: string[]): void {
+    const db = getDatabase()
+    db.exec('BEGIN')
+    try {
+      db.prepare('DELETE FROM user_disabled_tools WHERE profile = ?').run(profile)
+      const stmt = db.prepare('INSERT INTO user_disabled_tools (profile, tool_name) VALUES (?, ?) ON CONFLICT DO NOTHING')
+      for (const name of toolNames) stmt.run(profile, name)
+      db.exec('COMMIT')
+    } catch (e) {
+      db.exec('ROLLBACK')
+      throw e
+    }
+  }
 }

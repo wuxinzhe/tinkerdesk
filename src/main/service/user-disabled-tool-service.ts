@@ -29,4 +29,14 @@ export class UserDisabledToolService {
   enable(profile: string, toolName: string): boolean {
     return this.disabledRepo.delete(profile, toolName) > 0
   }
+
+  /** 全量加载（应用启动注入 ToolManager） */
+  listAll(): Record<string, string[]> {
+    return this.disabledRepo.listAll()
+  }
+
+  /** 整体替换某 profile 的禁用列表（ToolManager 持久化回调用） */
+  replaceProfile(profile: string, toolNames: string[]): void {
+    this.disabledRepo.replaceProfile(profile, toolNames)
+  }
 }

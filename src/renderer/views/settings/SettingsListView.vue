@@ -144,11 +144,12 @@ function isSelected(key: string): boolean {
   border-radius: 7px;
   color: #fff;
 }
-/* 每个图标对应不同背景色（iOS Settings 风格） */
+/* 每个图标对应不同背景色（iOS Settings 风格）——顺序与 items 数组一致 */
 .settings-row:nth-child(1) .settings-row__icon { background: #007aff; }   /* 模型 — 蓝色 */
 .settings-row:nth-child(2) .settings-row__icon { background: #34c759; }   /* MCP — 绿色 */
-.settings-row:nth-child(3) .settings-row__icon { background: #ff9500; }   /* 账户 — 橙色 */
-.settings-row:nth-child(4) .settings-row__icon { background: #af52de; }   /* 主题 — 紫色 */
+.settings-row:nth-child(3) .settings-row__icon { background: #ff9500; }   /* 插件 — 橙色 */
+.settings-row:nth-child(4) .settings-row__icon { background: #af52de; }   /* 语音 — 紫色 */
+.settings-row:nth-child(5) .settings-row__icon { background: #8e8e93; }   /* 通用 — 灰色 */
 
 /* ── Body ── */
 .settings-row__body {

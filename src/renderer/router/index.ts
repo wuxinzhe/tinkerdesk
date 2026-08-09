@@ -136,6 +136,14 @@ const router = createRouter({
           },
         },
         {
+          path: 'agents/:profile/tools/:toolName/provider',
+          components: {
+            default: () => import('@/renderer/views/agents/tools/ToolProviderSettingsView.vue'),
+            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
+            level3: () => import('@/renderer/views/agents/tools/ToolProviderSettingsView.vue'),
+          },
+        },
+        {
           path: 'agents/:profile/memory',
           components: {
             default: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),

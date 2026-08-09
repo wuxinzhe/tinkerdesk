@@ -8,6 +8,9 @@
 import { ref, onMounted } from 'vue'
 import type { VoiceProviderInfo } from '@/renderer/api/types'
 
+/** 进入动画标记（stagger 触发） */
+const mounted = ref(false)
+
 const providers = ref<{ stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] }>({ stt: [], tts: [] })
 const config = ref<{ sttProvider: string | null; ttsProvider: string | null }>({ sttProvider: null, ttsProvider: null })
 const readyMap = ref<Record<string, boolean>>({})
@@ -37,11 +40,16 @@ async function selectTts(pluginId: string): Promise<void> {
   config.value = await window.api.voice.getConfig()
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
+})
 </script>
 
 <template>
-  <div class="voice-settings-page">
+  <div class="voice-settings-page" :data-mounted="mounted">
     <div class="voice-settings-page__header">
       <div class="voice-settings-page__title">语音设置</div>
       <div class="voice-settings-page__desc">
@@ -63,7 +71,7 @@ onMounted(load)
       <section v-if="providers.stt.length > 0" class="voice-card">
         <div class="voice-card__title">语音输入（STT）</div>
         <div class="voice-card__list">
-          <div v-for="p in providers.stt" :key="p.pluginId" class="voice-item">
+          <div v-for="(p, i) in providers.stt" :key="p.pluginId" class="voice-item" :style="{ transitionDelay: `${i * 40}ms` }">
             <div class="voice-item__info">
               <div class="voice-item__name">
                 {{ p.name }}
@@ -93,7 +101,7 @@ onMounted(load)
       <section v-if="providers.tts.length > 0" class="voice-card">
         <div class="voice-card__title">朗读（TTS）</div>
         <div class="voice-card__list">
-          <div v-for="p in providers.tts" :key="p.pluginId" class="voice-item">
+          <div v-for="(p, i) in providers.tts" :key="p.pluginId" class="voice-item" :style="{ transitionDelay: `${i * 40}ms` }">
             <div class="voice-item__info">
               <div class="voice-item__name">
                 {{ p.name }}
@@ -208,6 +216,22 @@ onMounted(load)
   padding: var(--sa-space-3, 12px);
   background: var(--sa-bg-secondary, #f5f5f7);
   border-radius: 10px;
+  /* emil：进入 stagger（transitionDelay 由模板按 index 注入） */
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 240ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.voice-settings-page[data-mounted='true'] .voice-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .voice-item__info {
@@ -259,11 +283,17 @@ onMounted(load)
   border: 1px solid var(--sa-border, #d2d2d7);
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+  /* emil：指定属性过渡 + 强 ease-out + 按压（transform 由全局 button:active 提供） */
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.voice-item__btn:hover:not(:disabled) {
-  border-color: var(--sa-accent, #007aff);
+@media (hover: hover) and (pointer: fine) {
+  .voice-item__btn:hover:not(:disabled) {
+    border-color: var(--sa-accent, #007aff);
+  }
 }
 
 .voice-item__btn:disabled {

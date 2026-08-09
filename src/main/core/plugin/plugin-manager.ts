@@ -86,6 +86,65 @@ export class PluginManager {
     }
   }
 
+  /**
+   * 注册内置插件（代码注册——不落 plugins/ 目录）。
+   * 配置存 userData/plugins-builtin/<id>/config.json；首次默认启用。
+   * 复用 loadPlugin 的完整初始化（ctx/契约校验/自动注册）。
+   */
+  registerBuiltinPlugin(opts: { manifest: PluginManifest; plugin: TinkerPlugin }): void {
+    const { manifest, plugin } = opts
+    if (!manifest.id || !manifest.name) {
+      throw new Error('内置插件 manifest 缺少 id/name')
+    }
+    if (this.registry.has(manifest.id)) {
+      throw new Error(`内置插件已存在: ${manifest.id}`)
+    }
+
+    const configDir = join(app.getPath('userData'), 'plugins-builtin', manifest.id)
+    mkdirSync(configDir, { recursive: true })
+    const configFile = join(configDir, 'config.json')
+    const firstRun = !existsSync(configFile)
+    const { enabled, config } = this.readConfigFile(configFile)
+
+    const record: PluginRecord = {
+      manifest,
+      api: null,
+      ctx: null,
+      // 内置插件首次加载默认启用
+      enabled: firstRun ? true : enabled,
+      started: false,
+    }
+    const ctx: PluginContext = {
+      pluginId: manifest.id,
+      configDir,
+      getManifest: () => manifest,
+      emit: (event, data) => this.forwardEvent(manifest.id, event, data),
+      registerIpc: (channel, handler) => this.registerPluginIpc(manifest.id, channel, handler),
+      getConfig: <T>() => config as T,
+      setConfig: (patch) => {
+        Object.assign(config, patch)
+        this.writeConfigFile(configFile, { enabled: record.enabled, config })
+      },
+    }
+    record.ctx = ctx
+    record.api = plugin.init(ctx)
+    if (typeof record.api.check !== 'function') {
+      throw new Error(`${manifest.id} 未实现 check() 自检接口（插件契约 v1 强制）`)
+    }
+    for (const def of matchSystemInterfaces(manifest.systemInterfaces)) {
+      if (!this.ipcHandlers.has(`plugin:${manifest.id}:${def.requiredChannel}`)) {
+        throw new Error(`${manifest.id} 声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`)
+      }
+    }
+    this.registry.set(manifest.id, record)
+    if (firstRun) this.persistEnabled(record)
+    console.log(`[plugin] 已加载内置 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
+
+    if (record.enabled) {
+      this.autoRegister(record)
+    }
+  }
+
   /** 校验并加载单个插件（读 manifest → require → init）；已存在 → 抛错 */
   private loadPlugin(dir: string): void {
     const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as PluginManifest
@@ -250,6 +309,7 @@ export class PluginManager {
       try {
         return { success: true, data: await handler(payload) }
       } catch (e) {
+        console.error(`[plugin] ${full} 调用失败:`, (e as Error).message)
         return { success: false, error: (e as Error).message }
       }
     })
@@ -415,10 +475,13 @@ export class PluginManager {
     return { ok: true, enabled: record.enabled, started: record.started }
   }
 
-  /** 卸载插件：停用（注销 provider）→ 删除插件目录（含模型/config）→ 移出注册表 */
+  /** 卸载插件：停用（注销 provider）→ 删除插件目录（含模型/config）→ 移出注册表（内置插件禁止卸载） */
   uninstallPlugin(id: string): void {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
+    if (record.manifest.builtin) {
+      throw new Error(`内置插件不可卸载: ${id}`)
+    }
     if (record.started) {
       record.api?.stop?.()
       this.unregisterProviders(record)

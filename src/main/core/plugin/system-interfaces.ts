@@ -37,6 +37,34 @@ export const SYSTEM_INTERFACES: SystemInterfaceDef[] = [
     requiredChannel: 'tts:speak',
     optionalChannels: ['models:status', 'models:download'],
   },
+  {
+    id: 'web.search',
+    name: '网页搜索',
+    description: '把查询词转成搜索结果列表（插件实现自己的搜索源）',
+    requiredChannel: 'search:query',
+    optionalChannels: ['models:status', 'models:download'],
+  },
+  {
+    id: 'web.extract',
+    name: '网页抓取',
+    description: '把 URL 抓成干净文本（插件实现自己的抓取服务）',
+    requiredChannel: 'extract:fetch',
+    optionalChannels: ['models:status', 'models:download'],
+  },
+  {
+    id: 'tool.tts',
+    name: '文本转语音（Agent 工具）',
+    description: 'Agent 工具的 TTS：文本 → 音频文件路径（与系统朗读 voice.tts 分开）',
+    requiredChannel: 'tts:speak_file',
+    optionalChannels: ['models:status', 'models:download'],
+  },
+  {
+    id: 'tool.stt',
+    name: '语音转文本（Agent 工具）',
+    description: 'Agent 工具的 STT：音频文件路径 → 文本（与系统输入 voice.stt 分开）',
+    requiredChannel: 'stt:transcribe_file',
+    optionalChannels: ['models:status', 'models:download'],
+  },
 ]
 
 /** 按 id 查接口定义 */
