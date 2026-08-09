@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  AgentApprovalEvent,
+  
   AgentApprovalRequestDTO,
   AgentSendRequest,
   AgentToolResultRequestDTO,

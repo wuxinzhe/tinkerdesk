@@ -8,7 +8,6 @@
  */
 import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, ipcMain, app } from 'electron'
-import { nowDb } from './utils/time'
 
 // ── 常量 ──
 

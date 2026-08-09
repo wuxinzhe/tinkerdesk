@@ -3,7 +3,9 @@
     <div class="layout-center__content">
       <slot />
     </div>
-    <p v-if="showVersion" class="layout-center__version">{{ versionText }}</p>
+    <p v-if="showVersion" class="layout-center__version">
+      {{ versionText }}
+    </p>
   </div>
 </template>
 

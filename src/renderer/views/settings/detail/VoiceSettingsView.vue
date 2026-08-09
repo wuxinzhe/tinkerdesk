@@ -53,7 +53,7 @@ onMounted(() => {
   <div class="voice-settings-page" :data-mounted="mounted">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z&quot;/><path d=&quot;M19 10v2a7 7 0 01-14 0v-2&quot;/><line x1=&quot;12&quot; y1=&quot;19&quot; x2=&quot;12&quot; y2=&quot;23&quot;/><line x1=&quot;8&quot; y1=&quot;23&quot; x2=&quot;16&quot; y2=&quot;23&quot;/></svg>"
       gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
       title="语音设置"
       desc="选择语音输入（STT）和朗读（TTS）提供商"
@@ -61,7 +61,9 @@ onMounted(() => {
 
     <!-- 无 provider -->
     <div v-if="providers.stt.length === 0 && providers.tts.length === 0" class="voice-settings-page__empty">
-      <div class="voice-settings-page__empty-text">未安装语音插件</div>
+      <div class="voice-settings-page__empty-text">
+        未安装语音插件
+      </div>
       <div class="voice-settings-page__empty-hint">
         到「插件设置」安装声明 voice.stt / voice.tts 接口的插件（如 speech-sherpa）
       </div>
@@ -70,7 +72,9 @@ onMounted(() => {
     <div v-else class="voice-settings-page__sections">
       <!-- STT provider -->
       <section v-if="providers.stt.length > 0" class="voice-card">
-        <div class="voice-card__title">语音输入（STT）</div>
+        <div class="voice-card__title">
+          语音输入（STT）
+        </div>
         <div class="voice-card__list">
           <div v-for="(p, i) in providers.stt" :key="p.pluginId" class="voice-item" :style="{ transitionDelay: `${i * 40}ms` }">
             <div class="voice-item__info">
@@ -100,7 +104,9 @@ onMounted(() => {
 
       <!-- TTS provider -->
       <section v-if="providers.tts.length > 0" class="voice-card">
-        <div class="voice-card__title">朗读（TTS）</div>
+        <div class="voice-card__title">
+          朗读（TTS）
+        </div>
         <div class="voice-card__list">
           <div v-for="(p, i) in providers.tts" :key="p.pluginId" class="voice-item" :style="{ transitionDelay: `${i * 40}ms` }">
             <div class="voice-item__info">

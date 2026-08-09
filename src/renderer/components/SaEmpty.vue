@@ -21,8 +21,12 @@
         </svg>
       </slot>
     </div>
-    <p v-if="text" class="sa-empty__text">{{ text }}</p>
-    <p v-if="hint" class="sa-empty__hint">{{ hint }}</p>
+    <p v-if="text" class="sa-empty__text">
+      {{ text }}
+    </p>
+    <p v-if="hint" class="sa-empty__hint">
+      {{ hint }}
+    </p>
     <div v-if="$slots.actions" class="sa-empty__actions">
       <slot name="actions" />
     </div>

@@ -118,7 +118,7 @@ export class StdioTransport {
     if (this.child) {
       this.child.stdin?.end()
       this.child.kill('SIGTERM')
-      setTimeout(() => { try { this.child?.kill('SIGKILL') } catch {} }, 3000)
+      setTimeout(() => { try { this.child?.kill('SIGKILL') } catch { /* ignore */ } }, 3000)
       this.child = null
     }
     this._connected = false

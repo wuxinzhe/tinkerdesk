@@ -1,8 +1,12 @@
 <template>
   <div class="settings-list" :data-mounted="mounted">
     <div class="settings-list__header">
-      <h2 class="settings-list__title">系统设置</h2>
-      <p class="settings-list__subtitle">应用偏好、模型与扩展</p>
+      <h2 class="settings-list__title">
+        系统设置
+      </h2>
+      <p class="settings-list__subtitle">
+        应用偏好、模型与扩展
+      </p>
     </div>
     <nav class="settings-list__items">
       <div class="settings-list__card">
@@ -15,8 +19,12 @@
         >
           <div class="settings-row__icon" v-html="item.icon"></div>
           <div class="settings-row__body">
-            <div class="settings-row__name">{{ item.label }}</div>
-            <div class="settings-row__desc">{{ item.desc }}</div>
+            <div class="settings-row__name">
+              {{ item.label }}
+            </div>
+            <div class="settings-row__desc">
+              {{ item.desc }}
+            </div>
           </div>
           <svg class="settings-row__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6" />

@@ -243,7 +243,7 @@ export class TinkerAgent {
   /**
    * 中断当前对话（onInterrupt / stop）：通过 AbortController 终止 while-loop。
    */
-  interrupt(sessionId: string): boolean {
+  interrupt(_sessionId: string): boolean {
     return this.runtime.interrupt()
   }
 

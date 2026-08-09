@@ -4,7 +4,7 @@
     <div class="general-settings__body" :data-mounted="mounted">
       <!-- 页头：彩色渐变图标徽章 + 标题（iOS Settings 风格）——在窄列内与其他页对齐 -->
       <SaPageHero
-        icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="7" y2="9"/><line x1="12" y1="9" x2="12" y2="9"/><line x1="17" y1="9" x2="17" y2="9"/><line x1="7" y1="15" x2="17" y2="15"/></svg>'
+        icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;3&quot; y=&quot;5&quot; width=&quot;18&quot; height=&quot;14&quot; rx=&quot;2&quot;/><line x1=&quot;7&quot; y1=&quot;9&quot; x2=&quot;7&quot; y2=&quot;9&quot;/><line x1=&quot;12&quot; y1=&quot;9&quot; x2=&quot;12&quot; y2=&quot;9&quot;/><line x1=&quot;17&quot; y1=&quot;9&quot; x2=&quot;17&quot; y2=&quot;9&quot;/><line x1=&quot;7&quot; y1=&quot;15&quot; x2=&quot;17&quot; y2=&quot;15&quot;/></svg>"
         gradient="linear-gradient(135deg, #8e9eff 0%, #5b6cff 100%)"
         title="通用设置"
         desc="主题与快捷键等全局偏好"
@@ -62,7 +62,9 @@
               class="shortcut-row__reset"
               title="恢复默认"
               @click.stop="resetShortcut(s)"
-            >恢复默认</button>
+            >
+              恢复默认
+            </button>
           </div>
         </div>
       </div>

@@ -132,7 +132,7 @@ function seedDefaultSkills(database: DatabaseSync): void {
       .prepare(`SELECT id FROM private_skills WHERE profile = 'default' AND name = ?`)
       .get(d.name)
     if (exists) continue
-    let body = ''
+    let body: string
     try {
       body = readFileSync(resolveResource('default-skills', d.file), 'utf-8')
     } catch (e) {

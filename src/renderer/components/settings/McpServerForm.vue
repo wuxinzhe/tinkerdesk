@@ -5,8 +5,12 @@
     </SaFormGroup>
     <SaFormGroup label="传输方式" required class="mcp-form__group">
       <select v-model="form.transport" class="mcp-input" @change="$emit('transport-change', form.transport)">
-        <option value="stdio">stdio（子进程）</option>
-        <option value="http">HTTP</option>
+        <option value="stdio">
+          stdio（子进程）
+        </option>
+        <option value="http">
+          HTTP
+        </option>
       </select>
     </SaFormGroup>
     <template v-if="form.transport === 'stdio'">
@@ -28,7 +32,9 @@
       <slot />
     </div>
 
-    <p v-if="errorMessage" class="mcp-form__error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="mcp-form__error">
+      {{ errorMessage }}
+    </p>
   </div>
 </template>
 

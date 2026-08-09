@@ -146,7 +146,7 @@ export class TerminalTool extends BaseTool {
       }
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
-        setTimeout(() => { try { child.kill('SIGKILL') } catch {} }, KILL_GRACE_MS)
+        setTimeout(() => { try { child.kill('SIGKILL') } catch { /* ignore */ } }, KILL_GRACE_MS)
         flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: -1, error: `Command timed out after ${timeoutSec}s` })
       }, timeoutMs)

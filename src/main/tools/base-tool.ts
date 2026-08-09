@@ -37,7 +37,7 @@ export abstract class BaseTool implements IAgentTool {
       const json = JSON.parse(source)
       return ToolSchema.fromJson(json)
     } catch (e) {
-      throw new Error(`工具 Schema 模板加载失败: ${toolName} — ${(e as Error).message}`)
+      throw new Error(`工具 Schema 模板加载失败: ${toolName} — ${(e as Error).message}`, { cause: e })
     }
   }
 }

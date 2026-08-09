@@ -12,7 +12,7 @@ import { readFileSync, statSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { BaseTool } from '../base-tool'
 import { redactSensitiveText } from '../../utils/redact'
-import { coerceInt, normalizeReadPagination } from '../../utils/number'
+import {  normalizeReadPagination } from '../../utils/number'
 import { isBlockedDevicePath, hasBinaryExtension, truncateToCharBudget, addLineNumbers } from '../../utils/file-read'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
@@ -24,32 +24,11 @@ export const TOOL_NAME = 'desktop_tinker_read_file'
 
 // ── 常量──
 
-const DEFAULT_OFFSET = 1
-const DEFAULT_LIMIT = 500
-const MAX_LINES = 2000
-const MAX_LINE_LENGTH = 2000
 const MAX_READ_CHARS = 100_000
 const LARGE_FILE_HINT_BYTES = 512_000
 
 const READ_DEDUP_STATUS_MESSAGE =
   'File unchanged since last read. The content from the earlier read_file result in this conversation is still current — refer to that instead of re-reading.'
-
-// 设备路径守卫（Windows + Unix，纯路径检查不 I/O）
-const BLOCKED_DEVICE_PATHS = new Set([
-  'NUL', 'CON', 'PRN', 'AUX',
-  '/dev/zero', '/dev/random', '/dev/urandom', '/dev/full',
-  '/dev/stdin', '/dev/tty', '/dev/console'
-])
-const BLOCKED_DEVICE_PREFIXES = [
-  'COM', 'LPT'
-]
-
-const BINARY_EXTENSIONS = new Set([
-  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.bmp', '.svg',
-  '.pdf', '.zip', '.tar', '.gz', '.exe', '.dll', '.so', '.bin',
-  '.class', '.jar', '.pyc', '.woff', '.ttf',
-  '.mp3', '.mp4', '.avi', '.mkv', '.mov', '.wav', '.flac'
-])
 
 /** 重复读追踪器 */
 interface ReadTracker {

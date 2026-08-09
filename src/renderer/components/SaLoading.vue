@@ -1,7 +1,9 @@
 <template>
   <div class="sa-loading">
     <SaSpinner :size="size" :light="light" />
-    <p v-if="text" class="sa-loading__text">{{ text }}</p>
+    <p v-if="text" class="sa-loading__text">
+      {{ text }}
+    </p>
   </div>
 </template>
 

@@ -2,7 +2,7 @@
   <L3PageLayout class="ms-page">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;4&quot; y=&quot;4&quot; width=&quot;16&quot; height=&quot;16&quot; rx=&quot;2&quot;/><rect x=&quot;8&quot; y=&quot;8&quot; width=&quot;8&quot; height=&quot;8&quot; rx=&quot;1&quot;/></svg>"
       gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
       title="模型配置"
       desc="为场景绑定该 Agent 使用的模型"
@@ -54,13 +54,19 @@
               </div>
             </div>
 
-            <div v-else class="ms-empty-inline">未配置模型</div>
+            <div v-else class="ms-empty-inline">
+              未配置模型
+            </div>
 
             <div class="ms-fallback">
               <div class="ms-fallback__wrap">
                 <select v-model="addFallbackModel[s.sceneId]" class="ms-select">
-                  <option :value="null" disabled>添加备用模型…</option>
-                  <option v-for="m in availableModels(s)" :key="m.id" :value="m.id">{{ m.alias }}（{{ m.modelName }}）</option>
+                  <option :value="null" disabled>
+                    添加备用模型…
+                  </option>
+                  <option v-for="m in availableModels(s)" :key="m.id" :value="m.id">
+                    {{ m.alias }}（{{ m.modelName }}）
+                  </option>
                 </select>
               </div>
               <SaActionBtn

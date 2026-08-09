@@ -8,7 +8,7 @@
  * - 自动创建父目录，返回 bytes_written / dirs_created / resolved_path
  */
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
-import { resolve, dirname, normalize } from 'path'
+import { resolve, dirname } from 'path'
 import { Buffer } from 'buffer'
 import { BaseTool } from '../base-tool'
 import { ToolResult } from '../../core/tool/tool-result'

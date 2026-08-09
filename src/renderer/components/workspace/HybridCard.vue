@@ -16,7 +16,9 @@
         <span class="streaming-receiver__dot" />
         接收中
       </div>
-      <div class="streaming-receiver__body">{{ pendingBuffer }}</div>
+      <div class="streaming-receiver__body">
+        {{ pendingBuffer }}
+      </div>
     </div>
   </Transition>
 

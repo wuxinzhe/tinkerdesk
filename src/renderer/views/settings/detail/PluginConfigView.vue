@@ -155,13 +155,15 @@ watch(pluginId, () => {
   <div class="plugin-config-page">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       title="插件配置"
       desc="插件的参数与运行状态"
     />
     <!-- 加载态 -->
-    <div v-if="loading" class="plugin-config-page__state">加载中…</div>
+    <div v-if="loading" class="plugin-config-page__state">
+      加载中…
+    </div>
 
     <div v-else-if="!plugin" class="plugin-config-page__state">
       插件不存在（{{ pluginId }}），可能已被移除
@@ -175,7 +177,9 @@ watch(pluginId, () => {
             {{ plugin.manifest.name }}
             <span class="plugin-config-page__version">v{{ plugin.manifest.version }}</span>
           </div>
-          <div class="plugin-config-page__desc">{{ plugin.manifest.description || '—' }}</div>
+          <div class="plugin-config-page__desc">
+            {{ plugin.manifest.description || '—' }}
+          </div>
           <div class="plugin-config-page__caps">
             <span v-for="cap in plugin.manifest.capabilities ?? []" :key="cap" class="plugin-config-page__cap">
               {{ cap }}
@@ -194,8 +198,12 @@ watch(pluginId, () => {
 
       <!-- 自检结果 -->
       <section class="plugin-config-page__section">
-        <div class="plugin-config-page__section-title">自检</div>
-        <div v-if="!check" class="plugin-config-page__muted">未检查</div>
+        <div class="plugin-config-page__section-title">
+          自检
+        </div>
+        <div v-if="!check" class="plugin-config-page__muted">
+          未检查
+        </div>
         <div v-else-if="check.ok" class="plugin-config-page__check-ok">
           ✓ 全部检查项通过
         </div>
@@ -203,8 +211,12 @@ watch(pluginId, () => {
           <div v-for="c in check.checks.filter((x) => !x.ok)" :key="c.name" class="plugin-config-page__check-item">
             <span class="plugin-config-page__check-icon">!</span>
             <div class="plugin-config-page__check-body">
-              <div class="plugin-config-page__check-name">{{ c.name }}</div>
-              <div v-if="c.hint" class="plugin-config-page__check-hint">{{ c.hint }}</div>
+              <div class="plugin-config-page__check-name">
+                {{ c.name }}
+              </div>
+              <div v-if="c.hint" class="plugin-config-page__check-hint">
+                {{ c.hint }}
+              </div>
             </div>
           </div>
         </div>
@@ -212,11 +224,17 @@ watch(pluginId, () => {
 
       <!-- 模型管理 -->
       <section v-if="plugin.manifest.modelDeps?.length" class="plugin-config-page__section">
-        <div class="plugin-config-page__section-title">模型</div>
+        <div class="plugin-config-page__section-title">
+          模型
+        </div>
         <div v-for="dep in plugin.manifest.modelDeps" :key="dep.dest" class="plugin-config-page__model">
           <div class="plugin-config-page__model-info">
-            <div class="plugin-config-page__model-name">{{ dep.name }}</div>
-            <div class="plugin-config-page__model-size">{{ dep.sizeMB }}MB</div>
+            <div class="plugin-config-page__model-name">
+              {{ dep.name }}
+            </div>
+            <div class="plugin-config-page__model-size">
+              {{ dep.sizeMB }}MB
+            </div>
           </div>
           <div class="plugin-config-page__model-right">
             <span v-if="modelsStatus[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
@@ -249,8 +267,12 @@ watch(pluginId, () => {
 
       <!-- 配置表单（schema 驱动，页面内嵌非弹窗） -->
       <section class="plugin-config-page__section">
-        <div class="plugin-config-page__section-title">配置</div>
-        <div v-if="!schema" class="plugin-config-page__muted">该插件未声明配置项</div>
+        <div class="plugin-config-page__section-title">
+          配置
+        </div>
+        <div v-if="!schema" class="plugin-config-page__muted">
+          该插件未声明配置项
+        </div>
         <PluginConfigForm
           v-else
           :plugin-id="plugin.manifest.id"

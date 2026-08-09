@@ -12,7 +12,9 @@
       <SaFormGroup label="供应商" required class="cm-form__group">
         <div class="cm-select-wrap">
           <select v-model="form.providerId" class="cm-input cm-input--select" @change="onProviderChange">
-            <option v-for="p in providers" :key="p.id" :value="p.id">{{ p.name }}</option>
+            <option v-for="p in providers" :key="p.id" :value="p.id">
+              {{ p.name }}
+            </option>
           </select>
           <svg class="cm-select-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
         </div>
@@ -28,7 +30,7 @@
           :type="showApiKey ? 'text' : 'password'"
           :placeholder="mode === 'edit' ? '输入新 Key 以更新（留空不修改）' : 'sk-...'"
         />
-        <button class="cm-key-toggle" @click="showApiKey = !showApiKey" type="button">
+        <button class="cm-key-toggle" type="button" @click="showApiKey = !showApiKey">
           <svg v-if="showApiKey" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
             <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
@@ -48,12 +50,16 @@
         <div class="cm-model-row">
           <div class="cm-select-wrap cm-model-row__select">
             <select v-model="form.modelName" class="cm-input cm-input--select" :disabled="!modelsFetched">
-              <option value="" disabled>{{ modelsFetched ? '请选择模型' : '请先获取模型列表' }}</option>
-              <option v-for="m in fetchedModels" :key="m.id" :value="m.id">{{ m.id }}</option>
+              <option value="" disabled>
+                {{ modelsFetched ? '请选择模型' : '请先获取模型列表' }}
+              </option>
+              <option v-for="m in fetchedModels" :key="m.id" :value="m.id">
+                {{ m.id }}
+              </option>
             </select>
             <svg class="cm-select-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
           </div>
-          <button class="cm-fetch-btn" :disabled="!form.apiKey || fetchingModels" @click="fetchModelList" :title="form.apiKey ? '从供应商接口获取模型列表' : '请先填写 API Key'">
+          <button class="cm-fetch-btn" :disabled="!form.apiKey || fetchingModels" :title="form.apiKey ? '从供应商接口获取模型列表' : '请先填写 API Key'" @click="fetchModelList">
             <svg v-if="fetchingModels" class="cm-fetch-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32" />
             </svg>
@@ -119,10 +125,16 @@
     </div>
 
     <!-- 反馈信息 -->
-    <p v-if="errorMessage" class="cm-error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="cm-error">
+      {{ errorMessage }}
+    </p>
     <p v-if="formTestResult" class="cm-test-msg" :class="formTestResult.success ? 'cm-test-msg--ok' : 'cm-test-msg--fail'">
-      <template v-if="formTestResult.success">✓ 连接成功</template>
-      <template v-else>✗ {{ formTestResult.message }}</template>
+      <template v-if="formTestResult.success">
+        ✓ 连接成功
+      </template>
+      <template v-else>
+        ✗ {{ formTestResult.message }}
+      </template>
     </p>
   </div>
 </template>

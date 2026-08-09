@@ -12,7 +12,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, renameS
 import { unifiedDiff } from '../../utils/diff'
 import { dirname } from 'path'
 import { fuzzyFindAndReplace, formatNoMatchHint } from './fuzzy-match'
-import type { Hunk, HunkLine, OperationType, PatchApplyResult, PatchOperation } from './types'
+import type { Hunk, PatchApplyResult, PatchOperation } from './types'
 
 // ── 解析 ──
 
@@ -263,7 +263,7 @@ function applyMove(op: PatchOperation): { success: boolean; diff: string } {
 // ── 主入口（对齐 apply_v4a_operations）──
 
 export function applyV4aOperations(operations: PatchOperation[]): PatchApplyResult {
-  const { errors: validationErrors, realChangeCount } = validateOperations(operations)
+  const { errors: validationErrors } = validateOperations(operations)
   if (validationErrors.length > 0) {
     return {
       success: false,

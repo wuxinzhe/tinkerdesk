@@ -15,7 +15,9 @@
     </div>
     <div class="session-item__info">
       <div class="session-item__title-row">
-        <div class="session-item__title">{{ session.title || '新对话' }}</div>
+        <div class="session-item__title">
+          {{ session.title || '新对话' }}
+        </div>
         <div v-if="processing" class="session-item__indicator" />
       </div>
       <div class="session-item__meta">

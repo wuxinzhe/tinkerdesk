@@ -146,14 +146,20 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
         </svg>
 
         <div class="gtoast__body">
-          <div v-if="current.code" class="gtoast__code">{{ current.code }}</div>
-          <div class="gtoast__text">{{ current.message }}</div>
+          <div v-if="current.code" class="gtoast__code">
+            {{ current.code }}
+          </div>
+          <div class="gtoast__text">
+            {{ current.message }}
+          </div>
         </div>
 
         <!-- 手动关闭按钮（不自动关闭） -->
         <button class="gtoast__close" title="关闭" aria-label="关闭" @click="closeCurrent">
-          <svg width="9" height="9" viewBox="0 0 8 8" fill="none" stroke="currentColor"
-            stroke-width="1.2" stroke-linecap="round">
+          <svg
+            width="9" height="9" viewBox="0 0 8 8" fill="none" stroke="currentColor"
+            stroke-width="1.2" stroke-linecap="round"
+          >
             <path d="M2 2l4 4M6 2L2 6" />
           </svg>
         </button>

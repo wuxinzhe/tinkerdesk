@@ -2,7 +2,7 @@
   <L3PageLayout class="skill-detail">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><polygon points=&quot;12 2 2 7 12 12 22 7 12 2&quot;/><polyline points=&quot;2 17 12 22 22 17&quot;/><polyline points=&quot;2 12 12 17 22 12&quot;/></svg>"
       gradient="linear-gradient(135deg, #2ee6d6 0%, #00c7be 100%)"
       title="技能详情"
       desc="查看技能的配置与说明"
@@ -22,7 +22,7 @@
         </svg>
       </button>
     </ToolbarActions>
-    <div class="skill-detail__body" v-if="skill">
+    <div v-if="skill" class="skill-detail__body">
       <!-- 头部 -->
       <div class="skill-detail__header">
         <div class="skill-detail__icon">
@@ -49,20 +49,28 @@
 
       <!-- 描述（编辑时隐藏——面板已含） -->
       <div v-if="!editing" class="detail-section">
-        <div class="detail-section__label">描述</div>
-        <div class="detail-section__value">{{ skill.description || '-' }}</div>
+        <div class="detail-section__label">
+          描述
+        </div>
+        <div class="detail-section__value">
+          {{ skill.description || '-' }}
+        </div>
       </div>
 
       <!-- Tags + 平台（编辑时隐藏——面板已含） -->
       <div v-if="!editing && (skill.tags?.length || skill.platforms?.length)" class="detail-section">
         <div v-if="skill.tags?.length" class="detail-section">
-          <div class="detail-section__label">标签</div>
+          <div class="detail-section__label">
+            标签
+          </div>
           <div class="detail-section__tags">
             <span v-for="tag in skill.tags" :key="tag" class="tag">{{ tag }}</span>
           </div>
         </div>
         <div v-if="skill.platforms?.length" class="detail-section">
-          <div class="detail-section__label">支持平台</div>
+          <div class="detail-section__label">
+            支持平台
+          </div>
           <div class="detail-section__tags">
             <span v-for="p in skill.platforms" :key="p" class="tag">{{ p }}</span>
           </div>
@@ -72,21 +80,29 @@
 
       <div v-if="!editing" class="detail-section">
         <div class="detail-section__header">
-          <div class="detail-section__label">正文</div>
+          <div class="detail-section__label">
+            正文
+          </div>
           <div class="markdown-toggle">
             <button
               class="markdown-toggle__btn"
               :class="{ active: !showRaw }"
               @click="showRaw = false"
-            >渲染</button>
+            >
+              渲染
+            </button>
             <button
               class="markdown-toggle__btn"
               :class="{ active: showRaw }"
               @click="showRaw = true"
-            >原始</button>
+            >
+              原始
+            </button>
           </div>
         </div>
-        <div v-if="!skill.body" class="detail-section__empty">(无正文)</div>
+        <div v-if="!skill.body" class="detail-section__empty">
+          (无正文)
+        </div>
         <div
           v-else-if="!showRaw"
           class="detail-section__rendered"
@@ -103,45 +119,59 @@
           高级属性
         </button>
         <div v-show="advancedOpen" class="advanced-content">
-        <div v-if="skill.dependencies?.length" class="detail-section">
-          <div class="detail-section__label">依赖</div>
-          <div class="detail-section__tags">
-            <span v-for="d in skill.dependencies" :key="d" class="tag">{{ d }}</span>
+          <div v-if="skill.dependencies?.length" class="detail-section">
+            <div class="detail-section__label">
+              依赖
+            </div>
+            <div class="detail-section__tags">
+              <span v-for="d in skill.dependencies" :key="d" class="tag">{{ d }}</span>
+            </div>
+          </div>
+          <div v-if="skill.requiresToolsets?.length" class="detail-section">
+            <div class="detail-section__label">
+              必需工具集
+            </div>
+            <div class="detail-section__tags">
+              <span v-for="t in skill.requiresToolsets" :key="t" class="tag">{{ t }}</span>
+            </div>
+          </div>
+          <div v-if="skill.requiresTools?.length" class="detail-section">
+            <div class="detail-section__label">
+              必需工具
+            </div>
+            <div class="detail-section__tags">
+              <span v-for="t in skill.requiresTools" :key="t" class="tag">{{ t }}</span>
+            </div>
+          </div>
+          <div v-if="skill.fallbackForToolsets?.length" class="detail-section">
+            <div class="detail-section__label">
+              工具集回退
+            </div>
+            <div class="detail-section__tags">
+              <span v-for="t in skill.fallbackForToolsets" :key="t" class="tag">{{ t }}</span>
+            </div>
+          </div>
+          <div v-if="skill.fallbackForTools?.length" class="detail-section">
+            <div class="detail-section__label">
+              工具回退
+            </div>
+            <div class="detail-section__tags">
+              <span v-for="t in skill.fallbackForTools" :key="t" class="tag">{{ t }}</span>
+            </div>
+          </div>
+          <div v-if="skill.envVars" class="detail-section">
+            <div class="detail-section__label">
+              环境变量
+            </div>
+            <pre class="detail-section__code">{{ skill.envVars }}</pre>
+          </div>
+          <div v-if="skill.commands" class="detail-section">
+            <div class="detail-section__label">
+              命令
+            </div>
+            <pre class="detail-section__code">{{ skill.commands }}</pre>
           </div>
         </div>
-        <div v-if="skill.requiresToolsets?.length" class="detail-section">
-          <div class="detail-section__label">必需工具集</div>
-          <div class="detail-section__tags">
-            <span v-for="t in skill.requiresToolsets" :key="t" class="tag">{{ t }}</span>
-          </div>
-        </div>
-        <div v-if="skill.requiresTools?.length" class="detail-section">
-          <div class="detail-section__label">必需工具</div>
-          <div class="detail-section__tags">
-            <span v-for="t in skill.requiresTools" :key="t" class="tag">{{ t }}</span>
-          </div>
-        </div>
-        <div v-if="skill.fallbackForToolsets?.length" class="detail-section">
-          <div class="detail-section__label">工具集回退</div>
-          <div class="detail-section__tags">
-            <span v-for="t in skill.fallbackForToolsets" :key="t" class="tag">{{ t }}</span>
-          </div>
-        </div>
-        <div v-if="skill.fallbackForTools?.length" class="detail-section">
-          <div class="detail-section__label">工具回退</div>
-          <div class="detail-section__tags">
-            <span v-for="t in skill.fallbackForTools" :key="t" class="tag">{{ t }}</span>
-          </div>
-        </div>
-        <div v-if="skill.envVars" class="detail-section">
-          <div class="detail-section__label">环境变量</div>
-          <pre class="detail-section__code">{{ skill.envVars }}</pre>
-        </div>
-        <div v-if="skill.commands" class="detail-section">
-          <div class="detail-section__label">命令</div>
-          <pre class="detail-section__code">{{ skill.commands }}</pre>
-        </div>
-      </div>
       </div>
 
       <!-- 技能文件（折叠——按 skill_id 加载清单） -->
@@ -149,7 +179,7 @@
         <button class="advanced-toggle" @click="fileOpen = !fileOpen">
           <span class="advanced-chevron" :class="{ open: fileOpen }">▸</span>
           技能文件（{{ files.length }}）
-          <span class="file-add-btn" @click.stop="goAddFile" title="新增文件">＋</span>
+          <span class="file-add-btn" title="新增文件" @click.stop="goAddFile">＋</span>
         </button>
         <div v-show="fileOpen" class="file-content">
           <div v-if="files.length" class="file-table">
@@ -168,7 +198,9 @@
               </span>
             </div>
           </div>
-          <div v-else class="file-empty">暂无文件——点右上角 ＋ 新增</div>
+          <div v-else class="file-empty">
+            暂无文件——点右上角 ＋ 新增
+          </div>
         </div>
       </div>
 
@@ -179,8 +211,12 @@
 
       <!-- 底部操作（编辑模式） -->
       <div v-if="editing" class="skill-detail__bottom-actions">
-        <button class="action-btn action-btn--primary" @click="saveEdit">保存</button>
-        <button class="action-btn" @click="cancelEdit">取消</button>
+        <button class="action-btn action-btn--primary" @click="saveEdit">
+          保存
+        </button>
+        <button class="action-btn" @click="cancelEdit">
+          取消
+        </button>
       </div>
     </div>
 

@@ -20,7 +20,7 @@ const emit = defineEmits<{
 }>()
 
 // 动态 schema 表单：值类型由插件字段决定（string/number/boolean），运行时才知道，用宽松类型
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const form = reactive<Record<string, any>>({})
 const loaded = ref(false)
 
@@ -36,7 +36,7 @@ watch(
 onMounted(() => rebuild())
 
 function rebuild(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const next: Record<string, any> = {}
   for (const [key, field] of Object.entries(props.schema.properties ?? {})) {
     const initial = props.initial[key]
@@ -123,7 +123,9 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
           :placeholder="field.placeholder ?? '选择文件…'"
           readonly
         />
-        <button class="pcf__file-btn" @click="pickFile(key, field.filters)">浏览…</button>
+        <button class="pcf__file-btn" @click="pickFile(key, field.filters)">
+          浏览…
+        </button>
       </div>
 
       <!-- string / secret -->
@@ -135,11 +137,15 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
         :placeholder="field.placeholder"
       />
 
-      <p v-if="field.description" class="pcf__desc">{{ field.description }}</p>
+      <p v-if="field.description" class="pcf__desc">
+        {{ field.description }}
+      </p>
     </div>
 
     <div class="pcf__actions">
-      <button class="pcf__btn" :disabled="!loaded" @click="submit">保存配置</button>
+      <button class="pcf__btn" :disabled="!loaded" @click="submit">
+        保存配置
+      </button>
     </div>
   </div>
 </template>

@@ -10,7 +10,6 @@
  * - 返回 {"results": [{url, title, content, error}]} JSON 字符串（indent=2）
  */
 import { promises as dns } from 'dns'
-import { stripTags } from '../../utils/html-utils'
 import { createHash } from 'crypto'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -19,7 +18,7 @@ import { BaseTool } from '../base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
-import { fetchUrl, errMessage } from '../../utils/http'
+import {  errMessage } from '../../utils/http'
 
 import type { WebExtractParams, DebugCallData } from './types'
 import { getExtractBackend, getExtractProvider, getActiveExtractProvider } from '../../providers/extract'
@@ -427,7 +426,6 @@ export class WebExtractTool extends BaseTool {
       debugCallData['processing_applied'].push('base64_image_conversion')
       console.log('[web_extract] call:', JSON.stringify(debugCallData))
 
-      const hasError = trimmedResponse.results.some(r => r.error)
       return ToolResult.sync(cleanedResult)
     } catch (exc: unknown) {
       const errorMsg = `Error extracting content: ${errMessage(exc)}`

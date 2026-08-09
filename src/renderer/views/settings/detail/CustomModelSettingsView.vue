@@ -2,7 +2,7 @@
   <div class="cms-page">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M4 7V4h16v3&quot;/><path d=&quot;M9 20h6&quot;/><path d=&quot;M12 4v16&quot;/></svg>"
       gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
       title="模型设置"
       desc="管理 AI 模型提供商和默认模型"
@@ -12,32 +12,35 @@
       <SaLoading v-if="loading" />
       <SaEmpty v-else-if="models.length === 0" icon="box" text="尚未配置自定义模型" />
 
-        <div v-else class="cms-rows">
-          <SaCardRow
-            v-for="m in models"
-            :key="m.id"
-            :title="m.alias"
-            :badge="m.testPassed ? '已测试' : '未测试'"
-            :badge-variant="m.testPassed ? 'success' : 'warning'"
-          >
-            <template #meta>
-              <span>{{ providerName(m.providerId) }} / {{ m.modelName }}</span>
-            </template>
-            <template #actions>
-              <button class="cms-act cms-act--test" :disabled="testingId === m.id" @click="testModel(m)">
-                {{ testingId === m.id ? '测试…' : '测试' }}
-              </button>
-              <button class="cms-act cms-act--edit" @click="router.push('/workspace/settings/model/' + m.id + '/edit')">编辑</button>
-              <button class="cms-act cms-act--del" :disabled="deletingId === m.id" @click="deleteModel(m)">删除</button>
-            </template>
-          </SaCardRow>
-        </div>
-
-      </SaSection>
+      <div v-else class="cms-rows">
+        <SaCardRow
+          v-for="m in models"
+          :key="m.id"
+          :title="m.alias"
+          :badge="m.testPassed ? '已测试' : '未测试'"
+          :badge-variant="m.testPassed ? 'success' : 'warning'"
+        >
+          <template #meta>
+            <span>{{ providerName(m.providerId) }} / {{ m.modelName }}</span>
+          </template>
+          <template #actions>
+            <button class="cms-act cms-act--test" :disabled="testingId === m.id" @click="testModel(m)">
+              {{ testingId === m.id ? '测试…' : '测试' }}
+            </button>
+            <button class="cms-act cms-act--edit" @click="router.push('/workspace/settings/model/' + m.id + '/edit')">
+              编辑
+            </button>
+            <button class="cms-act cms-act--del" :disabled="deletingId === m.id" @click="deleteModel(m)">
+              删除
+            </button>
+          </template>
+        </SaCardRow>
+      </div>
+    </SaSection>
 
     <!-- L3 工具栏动作 -->
     <ToolbarActions>
-      <button class="toolbar-btn" @click="router.push('/workspace/settings/model/create')" title="添加模型">
+      <button class="toolbar-btn" title="添加模型" @click="router.push('/workspace/settings/model/create')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>

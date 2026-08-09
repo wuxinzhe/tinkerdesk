@@ -2,7 +2,7 @@
   <div class="prompt-modules">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/><line x1=&quot;8&quot; y1=&quot;13&quot; x2=&quot;16&quot; y2=&quot;13&quot;/><line x1=&quot;8&quot; y1=&quot;17&quot; x2=&quot;13&quot; y2=&quot;17&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       title="提示词模块"
       desc="管理 Agent 的提示词模块"
@@ -17,11 +17,15 @@
       </button>
     </div>
 
-    <div v-if="loading" class="prompt-modules__loading">加载中...</div>
+    <div v-if="loading" class="prompt-modules__loading">
+      加载中...
+    </div>
 
     <div v-else-if="modules.length === 0" class="prompt-modules__empty">
       <p>暂无提示词模块</p>
-      <p class="prompt-modules__empty-hint">点击「新增」添加自定义提示词，将拼入 Agent 的 system prompt</p>
+      <p class="prompt-modules__empty-hint">
+        点击「新增」添加自定义提示词，将拼入 Agent 的 system prompt
+      </p>
     </div>
 
     <div v-else class="prompt-modules__list">
@@ -32,8 +36,12 @@
       >
         <div class="prompt-module-item__body">
           <div class="prompt-module-item__info">
-            <div class="prompt-module-item__name">{{ mod.name }}</div>
-            <div class="prompt-module-item__preview">{{ preview(mod.content) }}</div>
+            <div class="prompt-module-item__name">
+              {{ mod.name }}
+            </div>
+            <div class="prompt-module-item__preview">
+              {{ preview(mod.content) }}
+            </div>
           </div>
           <div class="prompt-module-item__controls">
             <button class="prompt-module-item__btn" title="编辑" @click="openEdit(mod)">
@@ -60,7 +68,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 

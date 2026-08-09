@@ -194,12 +194,12 @@ export class ApprovalManager {
 
   /** 释放（幂等）：清全部挂起 + 自动批准 */
   dispose(): void {
-    for (const [toolCallId, waiter] of this.approvalWaiters) {
+    for (const [, waiter] of this.approvalWaiters) {
       clearTimeout(waiter.timer)
       waiter.resolve(false)
     }
     this.approvalWaiters.clear()
-    for (const [toolCallId, waiter] of this.toolResultWaiters) {
+    for (const [, waiter] of this.toolResultWaiters) {
       clearTimeout(waiter.timer)
       waiter.resolve('')
     }

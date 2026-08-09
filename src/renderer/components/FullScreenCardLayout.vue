@@ -7,7 +7,9 @@
       </div>
 
       <!-- Heading -->
-      <h1 class="layout-card__heading"><slot name="heading" /></h1>
+      <h1 class="layout-card__heading">
+        <slot name="heading" />
+      </h1>
 
       <!-- Subtitle -->
       <p v-if="$slots.subtitle" class="layout-card__subtitle">

@@ -63,7 +63,7 @@ export const COMPUTER_USE_BLOCKED_TYPE_PATTERNS: RegExp[] = [
 /** 按键组合规范化（+ / - 分隔均可——防连字符绕过） */
 export function canonKeyCombo(keys: string): Set<string> {
   const parts = keys
-    .split(/[\s+\-]+/)
+    .split(/[\s+-]+/)
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean)
     .map((p) => COMPUTER_USE_KEY_ALIASES[p] ?? p)

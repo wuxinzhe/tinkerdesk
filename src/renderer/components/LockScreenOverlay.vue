@@ -13,8 +13,12 @@
         <path d="M10 22V10l8 6-8 6Z" fill="var(--tk-accent)" />
       </svg>
 
-      <h2 class="lock-screen-overlay__title">您已离开一段时间</h2>
-      <p class="lock-screen-overlay__subtitle">智能助手随时待命</p>
+      <h2 class="lock-screen-overlay__title">
+        您已离开一段时间
+      </h2>
+      <p class="lock-screen-overlay__subtitle">
+        智能助手随时待命
+      </p>
 
       <!-- Unlock button -->
       <button
@@ -31,7 +35,9 @@
       </p>
     </div>
 
-    <p class="lock-screen-overlay__version">{{ versionText }}</p>
+    <p class="lock-screen-overlay__version">
+      {{ versionText }}
+    </p>
   </div>
 </template>
 

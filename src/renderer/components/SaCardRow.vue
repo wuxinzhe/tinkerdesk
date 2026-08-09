@@ -4,7 +4,9 @@
     <div v-if="$slots.prepend || avatar" class="sa-card-row__prepend">
       <slot name="prepend">
         <img v-if="typeof avatar === 'string'" :src="avatar" alt="" class="sa-card-row__avatar-img" />
-        <div v-else class="sa-card-row__avatar-icon"><slot name="avatar-fallback" /></div>
+        <div v-else class="sa-card-row__avatar-icon">
+          <slot name="avatar-fallback" />
+        </div>
       </slot>
     </div>
 
@@ -15,9 +17,13 @@
         <SaBadge v-if="badge" :variant="badgeVariant" :text="badge" />
       </div>
       <div v-if="meta || $slots.meta" class="sa-card-row__meta">
-        <slot name="meta"><span>{{ meta }}</span></slot>
+        <slot name="meta">
+          <span>{{ meta }}</span>
+        </slot>
       </div>
-      <div v-if="description && !$slots.default" class="sa-card-row__desc">{{ description }}</div>
+      <div v-if="description && !$slots.default" class="sa-card-row__desc">
+        {{ description }}
+      </div>
       <div v-else-if="$slots.default" class="sa-card-row__extra">
         <slot />
       </div>

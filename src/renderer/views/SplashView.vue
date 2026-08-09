@@ -21,14 +21,18 @@
               </template>
               <template v-else-if="completed(s.key)">
                 <svg class="splash__check" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
-                  <path d="M2 6.5L4.5 9L10 3" fill="none" stroke="currentColor"
-                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                  <path
+                    d="M2 6.5L4.5 9L10 3" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                  />
                 </svg>
               </template>
               <template v-else-if="step === 'error' && s.key === currentStep">
                 <svg class="splash__cross" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
-                  <path d="M3 3l6 6M9 3L3 9" fill="none" stroke="currentColor"
-                    stroke-width="1.8" stroke-linecap="round" />
+                  <path
+                    d="M3 3l6 6M9 3L3 9" fill="none" stroke="currentColor"
+                    stroke-width="1.8" stroke-linecap="round"
+                  />
                 </svg>
               </template>
               <template v-else>
@@ -39,7 +43,9 @@
           </div>
         </div>
 
-        <p v-if="errorText" class="splash__error">{{ errorText }}</p>
+        <p v-if="errorText" class="splash__error">
+          {{ errorText }}
+        </p>
 
         <div v-if="step === 'error'" class="splash__actions">
           <n-button ghost type="primary" size="medium" @click="start">

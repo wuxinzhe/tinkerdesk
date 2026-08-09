@@ -28,7 +28,6 @@ import type {
   ModelInfoDTO,
   ReorderSceneBindingsRequestDTO,
   SceneModelDetailDTO,
-  UnbindSceneModelRequestDTO,
   UpdateCustomModelRequestDTO,
   UpdateSceneModelRequestDTO,
 } from '../service/types'

@@ -16,7 +16,7 @@ import { CONV_COMPRESSED } from '../core/loop/types'
 import type { CompressionCooldownStore } from './compression-cooldown-store'
 import type { ConversationService } from './conversation-service'
 import type { MessageService } from './message-service'
-import type { TodoService, TodoItem } from './todo-service'
+import type { TodoService } from './todo-service'
 
 /** 压缩服务 */
 export class CompactionService {

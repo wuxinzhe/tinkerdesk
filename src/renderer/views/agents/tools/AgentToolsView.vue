@@ -2,12 +2,14 @@
   <L3PageLayout class="tools-manage">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z&quot;/></svg>"
       gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
       title="工具配置"
       desc="启用/停用该 Agent 可用的工具"
     />
-    <div v-if="toolsLoading" class="tools-loading">加载中…</div>
+    <div v-if="toolsLoading" class="tools-loading">
+      加载中…
+    </div>
     <div v-else-if="toolsList.length === 0" class="tools-empty">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
@@ -26,7 +28,9 @@
               <span class="tool-row__tag" :class="'tag-' + (tool.toolType || 'unknown')">
                 {{ toolTypeLabels[tool.toolType || ''] || '未知来源' }}
               </span>
-              <div class="tool-row__name">{{ parseDisplayName(tool.name) }}</div>
+              <div class="tool-row__name">
+                {{ parseDisplayName(tool.name) }}
+              </div>
               <button
                 v-if="tool.supportsProvider"
                 class="tool-row__provider-btn"
@@ -48,7 +52,9 @@
                 <span class="tool-row__checkbox-visual"></span>
               </label>
             </div>
-            <div class="tool-row__desc">{{ tool.description || '暂无描述' }}</div>
+            <div class="tool-row__desc">
+              {{ tool.description || '暂无描述' }}
+            </div>
           </div>
         </div>
       </template>

@@ -17,7 +17,9 @@
       <div class="approval-card__code-inner">
         <div class="approval-card__code-bar">
           <span class="approval-card__code-lang">参数</span>
-          <button class="approval-card__copy" @click.stop="copyArgs">复制</button>
+          <button class="approval-card__copy" @click.stop="copyArgs">
+            复制
+          </button>
         </div>
         <pre class="approval-card__code-body"><code>{{ prettyJson(approvalArguments) }}</code></pre>
       </div>
@@ -25,8 +27,12 @@
 
     <!-- 审批说明 -->
     <div class="approval-card__body">
-      <div class="approval-card__question">是否允许执行该命令？</div>
-      <div class="approval-card__desc">执行代码脚本。该脚本可以在不经过终端命令审批的情况下生成子进程或修改文件；此次运行仅需一次审批。</div>
+      <div class="approval-card__question">
+        是否允许执行该命令？
+      </div>
+      <div class="approval-card__desc">
+        执行代码脚本。该脚本可以在不经过终端命令审批的情况下生成子进程或修改文件；此次运行仅需一次审批。
+      </div>
     </div>
 
     <!-- 底部操作栏 -->
@@ -36,9 +42,15 @@
         审批超时：1 分钟
       </div>
       <div class="approval-card__actions">
-        <button class="approval-card__btn approval-card__btn--reject" @click="$emit('reject', toolCallId)">拒绝</button>
-        <button class="approval-card__btn approval-card__btn--auto" @click="$emit('auto-approve', toolCallId)" title="当前挂起审批全部放行，本轮后续审批不再弹窗">本轮自动批准</button>
-        <button class="approval-card__btn approval-card__btn--approve" @click="$emit('approve', toolCallId)">批准</button>
+        <button class="approval-card__btn approval-card__btn--reject" @click="$emit('reject', toolCallId)">
+          拒绝
+        </button>
+        <button class="approval-card__btn approval-card__btn--auto" title="当前挂起审批全部放行，本轮后续审批不再弹窗" @click="$emit('auto-approve', toolCallId)">
+          本轮自动批准
+        </button>
+        <button class="approval-card__btn approval-card__btn--approve" @click="$emit('approve', toolCallId)">
+          批准
+        </button>
       </div>
     </template>
     <div v-else-if="displayStatus === 'timed_out'" class="approval-card__actions approval-card__actions--resolved">

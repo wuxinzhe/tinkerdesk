@@ -347,7 +347,7 @@ export class ComputerUseTool extends BaseTool {
    * 当前主模型无视觉——图像 base64（~400KB）不返回（会撑爆上下文）。
    * 未来接入视觉模型（supportsVision）时在此按模型能力返回 image_data_url。
    */
-  private captureResponse(res: McpCallResult, maxElements: number): string {
+  private captureResponse(res: McpCallResult, _maxElements: number): string {
     const content = res.content ?? []
     const text = content.filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n')
     const summary = text.length > 6000 ? text.slice(0, 6000) + `\n...(AX 树截断，total ${text.length} 字符——可提高 max_elements 或传 app 缩小范围)` : text

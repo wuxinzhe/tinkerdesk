@@ -12,7 +12,7 @@ import {
   textResponse,
   toolCallsResponse,
 } from '../llm-response'
-import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ModelConfig, ToolCall } from '../types'
+import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ToolCall } from '../types'
 
 /**
  * anthropic-client.ts — Anthropic 客户端

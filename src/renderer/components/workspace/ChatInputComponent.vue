@@ -1,103 +1,105 @@
 <template>
   <div class="chat-input-wrap">
     <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
-    <div class="chat-input__row">
-      <!-- 语音输入（点击武装 → 按住音波框/快捷键录音 → 松开识别发送；录音是应用固有功能，STT 转发给语音 provider） -->
-      <button
-        v-if="sttAvailable"
-        class="chat-input__voice"
-        :class="{
-          'chat-input__voice--armed': voiceMode && !recording,
-          'chat-input__voice--recording': recording,
-          'chat-input__voice--countdown': countdown > 0
-        }"
-        :title="voiceMode ? (recording ? '松开结束并识别' : '点击取消录音') : '点击开始语音输入'"
-        @click="onVoiceButtonClick"
-      >
-        <svg v-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-          <path d="M19 10v2a7 7 0 01-14 0v-2" />
-          <line x1="12" y1="19" x2="12" y2="23" />
-          <line x1="8" y1="23" x2="16" y2="23" />
-        </svg>
-        <span v-else-if="recording && countdown > 0" class="chat-input__countdown">{{ countdown }}</span>
-        <span v-else class="chat-input__voice-dot"></span>
-      </button>
-
-      <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音） -->
-      <Transition name="input-swap" mode="out-in">
-        <div
-          v-if="voiceMode"
-          key="wavebox"
-          class="chat-input__wavebox"
-          :class="{ 'chat-input__wavebox--recording': recording }"
-          @pointerdown="onWaveboxDown"
-          @pointerup="onWaveboxUp"
-          @pointerleave="onWaveboxLeave"
-        >
-          <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
-          <div v-if="!recording" class="chat-input__wave-hint">按住开始录音（或按住 {{ shortcutLabel }}）</div>
-        </div>
-
-        <textarea
-          v-else
-          key="textarea"
-          ref="textareaRef"
-          class="chat-input__textarea"
-          :placeholder="'Enter 发送，Ctrl+Enter 换行'"
-          :disabled="disabled"
-          :value="modelValue"
-          rows="1"
-          enterkeyhint="send"
-          @input="onInput"
-          @keydown="onKeydown"
-        />
-      </Transition>
-      <div class="chat-input__btn-group">
+      <div class="chat-input__row">
+        <!-- 语音输入（点击武装 → 按住音波框/快捷键录音 → 松开识别发送；录音是应用固有功能，STT 转发给语音 provider） -->
         <button
-          class="chat-input__function"
-          :class="{ 'chat-input__function--open': panelOpen }"
-          @click="togglePanel"
+          v-if="sttAvailable"
+          class="chat-input__voice"
+          :class="{
+            'chat-input__voice--armed': voiceMode && !recording,
+            'chat-input__voice--recording': recording,
+            'chat-input__voice--countdown': countdown > 0
+          }"
+          :title="voiceMode ? (recording ? '松开结束并识别' : '点击取消录音') : '点击开始语音输入'"
+          @click="onVoiceButtonClick"
         >
-          <svg
-            class="chat-input__function-icon"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-          >
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <line x1="12" y1="5" x2="12" y2="19" />
+          <svg v-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+            <path d="M19 10v2a7 7 0 01-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
+          <span v-else-if="recording && countdown > 0" class="chat-input__countdown">{{ countdown }}</span>
+          <span v-else class="chat-input__voice-dot"></span>
         </button>
-      </div>
-    </div>
 
-    <!-- 功能面板 -->
-    <Transition name="panel-slide">
-      <div v-if="panelOpen" class="chat-input__panel">
-        <div class="chat-input__panel-inner">
-          <div class="chat-input__panel-icons">
-            <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
-            <button
-              class="chat-input__panel-icon"
-              :title="'历史预览'"
-              @click="$emit('history-preview')"
+        <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音） -->
+        <Transition name="input-swap" mode="out-in">
+          <div
+            v-if="voiceMode"
+            key="wavebox"
+            class="chat-input__wavebox"
+            :class="{ 'chat-input__wavebox--recording': recording }"
+            @pointerdown="onWaveboxDown"
+            @pointerup="onWaveboxUp"
+            @pointerleave="onWaveboxLeave"
+          >
+            <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
+            <div v-if="!recording" class="chat-input__wave-hint">
+              按住开始录音（或按住 {{ shortcutLabel }}）
+            </div>
+          </div>
+
+          <textarea
+            v-else
+            key="textarea"
+            ref="textareaRef"
+            class="chat-input__textarea"
+            :placeholder="'Enter 发送，Ctrl+Enter 换行'"
+            :disabled="disabled"
+            :value="modelValue"
+            rows="1"
+            enterkeyhint="send"
+            @input="onInput"
+            @keydown="onKeydown"
+          />
+        </Transition>
+        <div class="chat-input__btn-group">
+          <button
+            class="chat-input__function"
+            :class="{ 'chat-input__function--open': panelOpen }"
+            @click="togglePanel"
+          >
+            <svg
+              class="chat-input__function-icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
             >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <rect x="3" y="3" width="7" height="9" rx="1.5" />
-                <rect x="14" y="3" width="7" height="5" rx="1.5" />
-                <rect x="14" y="12" width="7" height="9" rx="1.5" />
-                <rect x="3" y="16" width="7" height="5" rx="1.5" />
-              </svg>
-              <span>历史预览</span>
-            </button>
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <line x1="12" y1="5" x2="12" y2="19" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 功能面板 -->
+      <Transition name="panel-slide">
+        <div v-if="panelOpen" class="chat-input__panel">
+          <div class="chat-input__panel-inner">
+            <div class="chat-input__panel-icons">
+              <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
+              <button
+                class="chat-input__panel-icon"
+                :title="'历史预览'"
+                @click="$emit('history-preview')"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                  <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                  <rect x="3" y="16" width="7" height="5" rx="1.5" />
+                </svg>
+                <span>历史预览</span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
     </div>
 
     <!-- 设置抽屉（与 chat-input 同级——wrap 内；bottom: calc(100% + 6px) 锚定
@@ -162,7 +164,7 @@ let recordingStartedAt = 0
 let recordTimer: ReturnType<typeof setTimeout> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let waveHistory: Float32Array[] = []   // 历史波形帧（降采样 64 点/帧）
-let shortcutRecord = ref('ctrl+b')  // 录音快捷键（从通用设置加载）
+const shortcutRecord = ref('ctrl+b')  // 录音快捷键（从通用设置加载）
 let shortcutHeld = false               // 快捷键按住中
 
 /** 快捷键显示文案（ctrl+backquote → Ctrl+`） */

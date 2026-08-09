@@ -2,7 +2,7 @@
   <L3PageLayout class="skills-market">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;8&quot;/><line x1=&quot;21&quot; y1=&quot;21&quot; x2=&quot;16.65&quot; y2=&quot;16.65&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       title="技能市场"
       desc="浏览并安装社区技能"
@@ -71,7 +71,9 @@
               {{ skill.displayName || skill.name }}
               <span v-if="skill.version" class="skill-card__version">v{{ skill.version }}</span>
             </div>
-            <div class="skill-card__desc">{{ skill.description || '-' }}</div>
+            <div class="skill-card__desc">
+              {{ skill.description || '-' }}
+            </div>
             <div class="skill-card__meta">
               <span v-if="skill.category" class="skill-card__tag">{{ skill.category }}</span>
             </div>

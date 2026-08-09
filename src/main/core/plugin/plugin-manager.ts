@@ -14,7 +14,7 @@ import { app, ipcMain } from 'electron'
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
-import { matchSystemInterfaces, findSystemInterface, SYSTEM_INTERFACES } from './system-interfaces'
+import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
   PluginApi,
   PluginCheckResult,

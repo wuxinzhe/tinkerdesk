@@ -4,8 +4,12 @@
       <span v-html="icon"></span>
     </div>
     <div class="sa-page-hero__text">
-      <h1 class="sa-page-hero__title">{{ title }}</h1>
-      <p v-if="desc" class="sa-page-hero__desc">{{ desc }}</p>
+      <h1 class="sa-page-hero__title">
+        {{ title }}
+      </h1>
+      <p v-if="desc" class="sa-page-hero__desc">
+        {{ desc }}
+      </p>
     </div>
   </div>
 </template>

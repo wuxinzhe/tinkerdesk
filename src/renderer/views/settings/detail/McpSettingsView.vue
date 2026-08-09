@@ -2,7 +2,7 @@
   <div class="mcp-settings-page">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z&quot;/></svg>"
       gradient="linear-gradient(135deg, #52e57f 0%, var(--tk-success) 100%)"
       title="MCP 工具"
       desc="管理通过 MCP 协议接入的第三方工具"
@@ -17,8 +17,12 @@
       <div v-for="server in servers" :key="server.name" class="mcp-server-card">
         <div class="mcp-server-card__header">
           <div class="mcp-server-card__info">
-            <div class="mcp-server-card__name">{{ server.name }}</div>
-            <div class="mcp-server-card__transport">{{ server.transport === 'stdio' ? server.command : server.url }}</div>
+            <div class="mcp-server-card__name">
+              {{ server.name }}
+            </div>
+            <div class="mcp-server-card__transport">
+              {{ server.transport === 'stdio' ? server.command : server.url }}
+            </div>
           </div>
           <div class="mcp-server-card__status">
             <span :class="['status-dot', server.connected ? 'online' : 'offline']"></span>
@@ -28,7 +32,9 @@
 
         <!-- 工具列表 -->
         <div v-if="server.tools && server.tools.length > 0" class="mcp-server-card__tools">
-          <div class="mcp-server-card__tools-title">工具 ({{ server.tools.length }})：</div>
+          <div class="mcp-server-card__tools-title">
+            工具 ({{ server.tools.length }})：
+          </div>
           <div class="mcp-server-card__tool-tags">
             <span v-for="tool in server.tools" :key="tool.name" class="mcp-server-card__tool-tag">
               {{ tool.name }}
@@ -39,18 +45,24 @@
           已连接但未发现工具
         </div>
 
-        <div v-if="server.error" class="mcp-server-card__error">{{ server.error }}</div>
+        <div v-if="server.error" class="mcp-server-card__error">
+          {{ server.error }}
+        </div>
 
         <div class="mcp-server-card__actions">
-          <button class="mcp-server-card__btn mcp-server-card__btn--edit" @click="router.push('/workspace/settings/mcp/' + encodeURIComponent(server.name) + '/edit')">编辑</button>
-          <button class="mcp-server-card__btn mcp-server-card__btn--delete" @click="onDelete(server.name)">删除</button>
+          <button class="mcp-server-card__btn mcp-server-card__btn--edit" @click="router.push('/workspace/settings/mcp/' + encodeURIComponent(server.name) + '/edit')">
+            编辑
+          </button>
+          <button class="mcp-server-card__btn mcp-server-card__btn--delete" @click="onDelete(server.name)">
+            删除
+          </button>
         </div>
       </div>
     </div>
 
     <!-- L3 工具栏动作 -->
     <ToolbarActions>
-      <button class="toolbar-btn" @click="router.push('/workspace/settings/mcp/create')" title="添加 MCP 服务器">
+      <button class="toolbar-btn" title="添加 MCP 服务器" @click="router.push('/workspace/settings/mcp/create')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>

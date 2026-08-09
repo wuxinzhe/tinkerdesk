@@ -11,8 +11,14 @@
             {{ agent.displayName || '默认 Agent' }}
             <span class="agent-card__profile">({{ agent.profile }})</span>
           </div>
-          <div v-if="agent.description" class="agent-card__model" :title="agent.description">{{ agent.description }}</div>
-          <div v-else class="agent-card__model">{{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion"> · {{ agent.agentModeVersion }}</template></div>
+          <div v-if="agent.description" class="agent-card__model" :title="agent.description">
+            {{ agent.description }}
+          </div>
+          <div v-else class="agent-card__model">
+            {{ agent.agentModeId || 'default' }}<template v-if="agent.agentModeVersion">
+              · {{ agent.agentModeVersion }}
+            </template>
+          </div>
         </div>
       </div>
       <!-- 默认角标（卡片内部右上角） -->
@@ -97,7 +103,9 @@
             <span class="thought-area__label">思考中</span>
           </div>
           <div ref="thoughtBodyRef" class="thought-area__body">
-            <div class="thought-area__text">{{ currentThought }}</div>
+            <div class="thought-area__text">
+              {{ currentThought }}
+            </div>
           </div>
         </div>
       </div>

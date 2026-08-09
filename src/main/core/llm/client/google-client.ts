@@ -129,7 +129,7 @@ export class GoogleClient implements LlmClient {
       })
 
       let text = ''
-      let reasoning = ''
+      const reasoning = ''
       const toolCalls: ToolCall[] = []
       for await (const chunk of stream) {
         const parts = chunk.candidates?.[0]?.content?.parts ?? []

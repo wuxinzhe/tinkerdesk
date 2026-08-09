@@ -7,8 +7,12 @@
     <div class="sa-form-group__control">
       <slot />
     </div>
-    <p v-if="error" class="sa-form-group__error">{{ error }}</p>
-    <p v-if="hint && !error" class="sa-form-group__hint">{{ hint }}</p>
+    <p v-if="error" class="sa-form-group__error">
+      {{ error }}
+    </p>
+    <p v-if="hint && !error" class="sa-form-group__hint">
+      {{ hint }}
+    </p>
   </div>
 </template>
 

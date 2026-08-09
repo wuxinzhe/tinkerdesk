@@ -41,7 +41,9 @@
         应用发生了一个错误（{{ consentErrorSummary }}）。
         是否允许将错误信息发送给开发团队以帮助改进？
       </p>
-      <p class="consent__note">您可以随时在设置中更改此选项。</p>
+      <p class="consent__note">
+        您可以随时在设置中更改此选项。
+      </p>
     </n-modal>
   </div>
 </template>

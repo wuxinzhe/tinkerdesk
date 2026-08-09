@@ -9,7 +9,7 @@
  * - 重复搜索阻断：连续 ≥3 次 _warning、≥4 次 BLOCKED
  */
 import { spawnSync } from 'child_process'
-import { resolve, join } from 'path'
+import {  join } from 'path'
 import { existsSync, readdirSync, statSync } from 'fs'
 import { BaseTool } from '../base-tool'
 import { redactSensitiveText } from '../../utils/redact'
@@ -26,9 +26,6 @@ export const TOOL_NAME = 'desktop_tinker_search_files'
 
 // ── 常量 ──
 
-const DEFAULT_SEARCH_OFFSET = 0
-const DEFAULT_SEARCH_LIMIT = 50
-const MAX_SEARCH_LIMIT = 2000
 const MAX_MATCH_CONTENT = 500
 
 // ── 重复搜索追踪 ──

@@ -1,11 +1,11 @@
 <template>
   <div class="message-row" :class="`message-row--${bubbleSideClass}`">
     <div class="message-body">
-
       <!-- ── 气泡容器（user/assistant 文本类 + 工具调用）─── -->
-      <div v-if="showBubble" class="message-bubble"
-        :class="[`bubble--${bubbleStyleClass}`, { 'bubble--streaming': isStreaming }]" @click="toggleTimestamp">
-
+      <div
+        v-if="showBubble" class="message-bubble"
+        :class="[`bubble--${bubbleStyleClass}`, { 'bubble--streaming': isStreaming }]" @click="toggleTimestamp"
+      >
         <!-- 思考过程（仅 showReasoning=true 时显示——对话详情页；气泡内 content 上方） -->
         <div v-if="showReasoning && message.reasoningContent" class="bubble-reasoning">
           <div class="bubble-reasoning__head" @click.stop="toggleBubbleReasoning">
@@ -35,7 +35,6 @@
 
         <!-- assistant_text → Markdown 实时渲染 + 流式接收区 -->
         <template v-if="isAssistantText">
-
           <!-- 实时 Markdown 渲染（content 持续积累；MarkdownRender 根自带 markdown-body——不再外层包裹） -->
           <MarkdownRender
             v-if="!!message.content"
@@ -52,7 +51,9 @@
                 <span class="streaming-receiver__dot" />
                 接收中
               </div>
-              <div ref="streamBodyRef" class="streaming-receiver__body">{{ pendingBuffer }}</div>
+              <div ref="streamBodyRef" class="streaming-receiver__body">
+                {{ pendingBuffer }}
+              </div>
             </div>
           </Transition>
         </template>
@@ -110,8 +111,10 @@
           </svg>
         </button>
         <span class="message-timestamp__time">{{ formatTime(message.timestamp) }}</span>
-        <button v-if="message.conversationId" class="ts-btn" title="查看对话详情"
-          @click.stop="openConversationDetail(message.sessionId, message.conversationId)">
+        <button
+          v-if="message.conversationId" class="ts-btn" title="查看对话详情"
+          @click.stop="openConversationDetail(message.sessionId, message.conversationId)"
+        >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="4" width="18" height="16" rx="2" />
             <line x1="8" y1="9" x2="16" y2="9" />
@@ -132,7 +135,6 @@
           发送失败
         </template>
       </div>
-
     </div>
   </div>
 </template>

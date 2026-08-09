@@ -1,14 +1,18 @@
 <template>
   <div class="conv-detail-view">
-    <div v-if="loading" class="conv-detail-loading">加载中...</div>
-    <div v-else-if="error" class="conv-detail-error">{{ error }}</div>
+    <div v-if="loading" class="conv-detail-loading">
+      加载中...
+    </div>
+    <div v-else-if="error" class="conv-detail-error">
+      {{ error }}
+    </div>
     <template v-else>
       <ToolbarActions>
         <button
           class="toolbar-btn toolbar-btn--danger"
           :disabled="deleting"
-          @click="deleteConversation"
           title="删除对话"
+          @click="deleteConversation"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
             <path d="M10 2a2 2 0 00-2 2H4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2h-4a2 2 0 00-2-2h-2zm-3 2h6a.5.5 0 010 1H7a.5.5 0 010-1z" />
@@ -24,12 +28,16 @@
             class="view-mode-switch__item"
             :class="{ 'view-mode-switch__item--active': viewMode === 'chat' }"
             @click="viewMode = 'chat'"
-          >对话</button>
+          >
+            对话
+          </button>
           <button
             class="view-mode-switch__item"
             :class="{ 'view-mode-switch__item--active': viewMode === 'raw' }"
             @click="viewMode = 'raw'"
-          >原文</button>
+          >
+            原文
+          </button>
         </div>
       </div>
 
@@ -46,21 +54,42 @@
           </thead>
           <tbody>
             <tr v-for="(msg, idx) in messages" :key="idx">
-              <td class="cell-idx">{{ msg.id }}</td>
+              <td class="cell-idx">
+                {{ msg.id }}
+              </td>
               <td><span class="role-badge" :class="`role-badge--${msg.role}`">{{ msg.role }}</span></td>
               <td class="cell-content">
-              <div class="detail-block">
-                <div v-if="msg.reasoningContent" class="reasoning-section">
-                  <div class="reasoning-header" @click="toggleReasoning(idx)">
-                    <svg class="reasoning-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                    <span class="reasoning-label">思考过程</span>
+                <div class="detail-block">
+                  <div v-if="msg.reasoningContent" class="reasoning-section">
+                    <div class="reasoning-header" @click="toggleReasoning(idx)">
+                      <svg class="reasoning-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      <span class="reasoning-label">思考过程</span>
+                      <svg
+                        class="reasoning-arrow"
+                        :class="{ 'reasoning-arrow--open': reasoningExpanded.has(idx) }"
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </div>
+                    <pre v-if="reasoningExpanded.has(idx)" class="reasoning-body">{{ msg.reasoningContent }}</pre>
+                  </div>
+                  <div v-if="hasExpandableContent(msg)" class="detail-block__header" @click="toggleRow(idx)">
+                    <span class="detail-block__label">内容</span>
                     <svg
-                      class="reasoning-arrow"
-                      :class="{ 'reasoning-arrow--open': reasoningExpanded.has(idx) }"
+                      class="detail-block__chevron"
+                      :class="{ 'detail-block__chevron--open': expandedRows.has(idx) }"
                       width="10"
                       height="10"
                       viewBox="0 0 24 24"
@@ -72,86 +101,73 @@
                     >
                       <polyline points="6 9 12 15 18 9" />
                     </svg>
+                    <span class="detail-block__toggle">{{ expandedRows.has(idx) ? '收起' : '展开' }}</span>
                   </div>
-                  <pre v-if="reasoningExpanded.has(idx)" class="reasoning-body">{{ msg.reasoningContent }}</pre>
+                  <pre v-if="expandedRows.has(idx) && !isJsonContent(msg.content)" class="detail-block__body">{{ formatContent(msg.content) }}</pre>
+                  <div v-else-if="expandedRows.has(idx) && isJsonContent(msg.content)" class="detail-block__body detail-block__body--json">
+                    <JsonTree :value="msg.content" :depth="0" />
+                  </div>
+                  <pre v-else class="detail-block__body detail-block__body--clamped">{{ msg.content }}</pre>
                 </div>
-                <div class="detail-block__header" @click="toggleRow(idx)" v-if="hasExpandableContent(msg)">
-                  <span class="detail-block__label">内容</span>
-                  <svg
-                    class="detail-block__chevron"
-                    :class="{ 'detail-block__chevron--open': expandedRows.has(idx) }"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                  <span class="detail-block__toggle">{{ expandedRows.has(idx) ? '收起' : '展开' }}</span>
+              </td>
+              <td class="cell-tool">
+                <div v-if="msg.toolCall" class="detail-block detail-block--tool">
+                  <div class="detail-block__header" @click="toggleTool(idx)">
+                    <span class="detail-block__label">{{ msg.toolName ? getShortName(msg.toolName) : 'toolCall' }}</span>
+                    <svg
+                      class="detail-block__chevron"
+                      :class="{ 'detail-block__chevron--open': toolExpanded.has(idx) }"
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    <span class="detail-block__toggle">{{ toolExpanded.has(idx) ? '收起' : '展开' }}</span>
+                  </div>
+                  <div v-if="toolExpanded.has(idx)" class="detail-block__body detail-block__body--json">
+                    <JsonTree :value="msg.toolCall" :depth="0" />
+                  </div>
+                  <div v-else class="detail-block__summary">
+                    {{ toolCallSummary(msg.toolCall) }}
+                  </div>
                 </div>
-                <pre v-if="expandedRows.has(idx) && !isJsonContent(msg.content)" class="detail-block__body">{{ formatContent(msg.content) }}</pre>
-                <div v-else-if="expandedRows.has(idx) && isJsonContent(msg.content)" class="detail-block__body detail-block__body--json"><JsonTree :value="msg.content" :depth="0" /></div>
-                <pre v-else class="detail-block__body detail-block__body--clamped">{{ msg.content }}</pre>
-              </div>
-            </td>
-            <td class="cell-tool">
-              <div v-if="msg.toolCall" class="detail-block detail-block--tool">
-                <div class="detail-block__header" @click="toggleTool(idx)">
-                  <span class="detail-block__label">{{ msg.toolName ? getShortName(msg.toolName) : 'toolCall' }}</span>
-                  <svg
-                    class="detail-block__chevron"
-                    :class="{ 'detail-block__chevron--open': toolExpanded.has(idx) }"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                  <span class="detail-block__toggle">{{ toolExpanded.has(idx) ? '收起' : '展开' }}</span>
-                </div>
-                <div v-if="toolExpanded.has(idx)" class="detail-block__body detail-block__body--json"><JsonTree :value="msg.toolCall" :depth="0" /></div>
-                <div v-else class="detail-block__summary">{{ toolCallSummary(msg.toolCall) }}</div>
-              </div>
-              <span v-else>{{ msg.toolName ? getShortName(msg.toolName) : (msg.toolCall ? '✓' : '-') }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                <span v-else>{{ msg.toolName ? getShortName(msg.toolName) : (msg.toolCall ? '✓' : '-') }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- ── 对话模式：MessageBubble（工具/混合/审批/澄清卡 + 气泡内思考过程——仅本页显示） ── -->
-    <div v-else class="conv-detail-chat">
-      <div
-        v-for="(msg, idx) in visibleChatMessages"
-        :key="String(msg.id ?? idx)"
-        class="conv-chat-item"
-        :class="`conv-chat-item--${msg.role}`"
-      >
-        <MessageBubbleComponent
-          :message="msg"
-          :is-streaming="false"
-          :is-last="idx === visibleChatMessages.length - 1"
-          :show-reasoning="true"
-        />
-      </div>
-      <div v-if="visibleChatMessages.length === 0" class="conv-detail-chat__empty">
-        <div class="conv-detail-chat__empty-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-          </svg>
+      <!-- ── 对话模式：MessageBubble（工具/混合/审批/澄清卡 + 气泡内思考过程——仅本页显示） ── -->
+      <div v-else class="conv-detail-chat">
+        <div
+          v-for="(msg, idx) in visibleChatMessages"
+          :key="String(msg.id ?? idx)"
+          class="conv-chat-item"
+          :class="`conv-chat-item--${msg.role}`"
+        >
+          <MessageBubbleComponent
+            :message="msg"
+            :is-streaming="false"
+            :is-last="idx === visibleChatMessages.length - 1"
+            :show-reasoning="true"
+          />
         </div>
-        <p>该对话没有消息</p>
+        <div v-if="visibleChatMessages.length === 0" class="conv-detail-chat__empty">
+          <div class="conv-detail-chat__empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
+          </div>
+          <p>该对话没有消息</p>
+        </div>
       </div>
-    </div>
     </template>
   </div>
 </template>
@@ -218,13 +234,6 @@ const visibleChatMessages = computed(() =>
     || (m.messageType == null && m.role === 'user')
   )
 )
-
-/** iMessage 式时间戳：HH:mm */
-function formatTime(ts: number): string {
-  const d = new Date(ts)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 onMounted(() => {
   loadMessages()

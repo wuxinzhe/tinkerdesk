@@ -4,8 +4,8 @@
     <button
       v-if="showMenu"
       class="workspace-toolbar__btn workspace-toolbar__btn--left"
-      @click="$emit('menu')"
       title="菜单"
+      @click="$emit('menu')"
     >
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 5h14M3 10h14M3 15h14" />
@@ -15,8 +15,8 @@
     <button
       v-else-if="showBack"
       class="workspace-toolbar__btn workspace-toolbar__btn--left"
-      @click="$emit('back')"
       title="返回"
+      @click="$emit('back')"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6" />

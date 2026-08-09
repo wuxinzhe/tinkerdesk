@@ -2,14 +2,16 @@
   <div class="prompt-form">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/><line x1=&quot;8&quot; y1=&quot;13&quot; x2=&quot;16&quot; y2=&quot;13&quot;/><line x1=&quot;8&quot; y1=&quot;17&quot; x2=&quot;13&quot; y2=&quot;17&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       :title="isEdit ? '编辑模块' : '新增模块'"
       desc="提示词模块的编辑表单"
     />
 
     <div class="prompt-form__body">
-      <div v-if="loading" class="prompt-form__loading">加载中...</div>
+      <div v-if="loading" class="prompt-form__loading">
+        加载中...
+      </div>
 
       <template v-else>
         <div class="prompt-form__field">
@@ -20,7 +22,9 @@
         <div class="prompt-form__field">
           <label>内容</label>
           <textarea v-model="formContent" placeholder="输入提示词内容…" rows="8" maxlength="3000"></textarea>
-          <div class="prompt-form__counter">{{ formContent.length }} / 3000</div>
+          <div class="prompt-form__counter">
+            {{ formContent.length }} / 3000
+          </div>
         </div>
 
         <details class="prompt-form__vars">
@@ -40,13 +44,17 @@
           </table>
         </details>
 
-        <p v-if="formError" class="prompt-form__error">{{ formError }}</p>
+        <p v-if="formError" class="prompt-form__error">
+          {{ formError }}
+        </p>
       </template>
     </div>
 
     <div class="prompt-form__actions">
-      <button class="prompt-form__cancel" @click="goBack">取消</button>
-      <button class="prompt-form__save" @click="saveModule" :disabled="!formName.trim() || saving">
+      <button class="prompt-form__cancel" @click="goBack">
+        取消
+      </button>
+      <button class="prompt-form__save" :disabled="!formName.trim() || saving" @click="saveModule">
         {{ saving ? '保存中…' : '保存' }}
       </button>
     </div>

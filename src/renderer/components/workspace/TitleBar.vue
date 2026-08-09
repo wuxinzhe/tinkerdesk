@@ -3,27 +3,35 @@
     <!-- macOS 风格交通灯按钮（12px 圆、8px 间距、hover 显示图标） -->
     <div class="title-bar__traffic-lights">
       <button class="tl-btn tl-btn--close" title="关闭" @click="handleClose">
-        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
-          stroke="#4d0000" stroke-width="1" stroke-linecap="round">
+        <svg
+          width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#4d0000" stroke-width="1" stroke-linecap="round"
+        >
           <path d="M2.6 2.6l2.8 2.8M5.4 2.6L2.6 5.4" />
         </svg>
       </button>
       <button class="tl-btn tl-btn--minimize" title="最小化" @click="handleMinimize">
-        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
-          stroke="#90591d" stroke-width="1" stroke-linecap="round">
+        <svg
+          width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#90591d" stroke-width="1" stroke-linecap="round"
+        >
           <path d="M2.4 4h3.2" />
         </svg>
       </button>
       <button class="tl-btn tl-btn--maximize" :title="maximized ? '还原' : '最大化'" @click="handleMaximize">
         <!-- expand：两个对角箭头（指向左上/右下）——macOS 全屏标准图标 -->
-        <svg v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
-          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+        >
           <path d="M4.3 4.3L2.2 2.2M2.2 2.2l1.1-.15M2.2 2.2l.15 1.1" />
           <path d="M3.7 3.7l2.1 2.1M5.8 5.8l-1.1.15M5.8 5.8l-.15-1.1" />
         </svg>
         <!-- restore：两个对角箭头（指向右上/左下）——还原标准图标 -->
-        <svg v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
-          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none"
+          stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+        >
           <path d="M4.3 3.7L5.8 2.2M5.8 2.2l-.15-1.1M5.8 2.2l-1.1-.15" />
           <path d="M3.7 4.3L2.2 5.8M2.2 5.8l.15 1.1M2.2 5.8l1.1.15" />
         </svg>
@@ -35,8 +43,10 @@
 
     <!-- 专注模式预览按钮（锁屏左侧——窗口收窄到 375 聚焦内容） -->
     <button class="title-bar__collapse" title="专注模式" @click="togglePhoneMode">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+      >
         <rect x="3" y="4" width="18" height="16" rx="2" />
         <rect x="9" y="7" width="6" height="10" rx="1" />
       </svg>
@@ -44,8 +54,10 @@
 
     <!-- 锁屏按钮（右侧） -->
     <button class="title-bar__lock" title="锁屏 (Ctrl+Shift+L)" @click="handleLock">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+      >
         <rect x="4" y="11" width="16" height="9" rx="2" />
         <path d="M8 11V7a4 4 0 0 1 8 0v4" />
         <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />

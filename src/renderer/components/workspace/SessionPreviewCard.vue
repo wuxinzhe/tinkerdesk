@@ -7,7 +7,9 @@
 
     <div class="preview-card__user">
       <span class="preview-card__label">问</span>
-      <p class="preview-card__text">{{ card.userContent || '（空）' }}</p>
+      <p class="preview-card__text">
+        {{ card.userContent || '（空）' }}
+      </p>
     </div>
 
     <div class="preview-card__divider">
@@ -20,7 +22,9 @@
 
     <div v-if="card.replyPreview" class="preview-card__reply">
       <span class="preview-card__label preview-card__label--ai">答</span>
-      <p class="preview-card__text preview-card__text--ai">{{ card.replyPreview }}</p>
+      <p class="preview-card__text preview-card__text--ai">
+        {{ card.replyPreview }}
+      </p>
     </div>
   </div>
 </template>

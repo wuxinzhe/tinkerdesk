@@ -2,7 +2,7 @@
   <L3PageLayout class="page-layout">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M4 7V4h16v3&quot;/><path d=&quot;M9 20h6&quot;/><path d=&quot;M12 4v16&quot;/></svg>"
       gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
       title="添加模型"
       desc="配置一个自定义模型提供商"

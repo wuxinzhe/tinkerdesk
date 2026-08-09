@@ -34,8 +34,10 @@
         <!-- 上下文使用（顶部模块已展示——此小项删除避免重复） -->
 
         <!-- 会话数据（本 session 累计——两栏：标题上/数值下） -->
-        <div class="sess-block" v-if="avgLoaded">
-          <div class="sess-block__title">会话数据</div>
+        <div v-if="avgLoaded" class="sess-block">
+          <div class="sess-block__title">
+            会话数据
+          </div>
           <div class="sess-block__grid">
             <div class="sess-block__cell">
               <span class="sess-block__label">累计 tokens</span>
@@ -67,7 +69,9 @@
         </div>
 
         <!-- 空态 -->
-        <div v-if="!hasData" class="stats__empty">发一条消息后显示本轮数据</div>
+        <div v-if="!hasData" class="stats__empty">
+          发一条消息后显示本轮数据
+        </div>
       </div>
     </div>
 

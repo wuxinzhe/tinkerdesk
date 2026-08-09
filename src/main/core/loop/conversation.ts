@@ -270,7 +270,7 @@ export class Conversation {
   }
 
   /** RES_EMPTY：空响应——注入继续提示（带重试保护，连续 3 次终止） */
-  private async handleEmpty(response: LlmResponse): Promise<TinkerAgentResult | null> {
+  private async handleEmpty(_response: LlmResponse): Promise<TinkerAgentResult | null> {
     const { messageService } = this.deps
     this.emptyRetry++
     if (this.emptyRetry >= 3) {

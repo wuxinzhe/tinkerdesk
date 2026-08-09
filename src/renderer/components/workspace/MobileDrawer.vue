@@ -3,7 +3,9 @@
     <div v-if="open" class="workspace__drawer-overlay" @click="$emit('close')" />
     <aside :class="['workspace__drawer', { open }]">
       <div class="workspace__drawer-header">
-        <div class="workspace__drawer-logo">SA</div>
+        <div class="workspace__drawer-logo">
+          SA
+        </div>
       </div>
       <nav class="workspace__drawer-nav">
         <button

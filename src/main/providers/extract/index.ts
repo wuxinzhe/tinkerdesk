@@ -130,7 +130,7 @@ class TavilyExtractProvider implements ExtractProvider {
   supportsExtract(): boolean { return true }
   isAvailable(): boolean { return this.apiKey.length > 0 }
 
-  async extract(urls: string[], format?: string): Promise<ExtractResultItem[]> {
+  async extract(urls: string[], _format?: string): Promise<ExtractResultItem[]> {
     const results: ExtractResultItem[] = []
     for (const url of urls) {
       const item: ExtractResultItem = { url, title: '', content: '' }

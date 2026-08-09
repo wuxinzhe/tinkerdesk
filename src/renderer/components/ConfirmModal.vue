@@ -64,8 +64,12 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
               <path d="M12 8h.01" />
             </svg>
           </div>
-          <h2 class="sa-modal__title">{{ request.title }}</h2>
-          <p v-if="request.message" class="sa-modal__message">{{ request.message }}</p>
+          <h2 class="sa-modal__title">
+            {{ request.title }}
+          </h2>
+          <p v-if="request.message" class="sa-modal__message">
+            {{ request.message }}
+          </p>
           <div class="sa-modal__actions">
             <button class="sa-modal__btn" @click="resolveWith(false)">
               {{ request.cancelText ?? '取消' }}

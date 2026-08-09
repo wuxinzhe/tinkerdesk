@@ -2,7 +2,7 @@
   <L3PageLayout class="skill-import">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4&quot;/><polyline points=&quot;7 10 12 15 17 10&quot;/><line x1=&quot;12&quot; y1=&quot;15&quot; x2=&quot;12&quot; y2=&quot;3&quot;/></svg>"
       gradient="linear-gradient(135deg, #bf7af6 0%, #af52de 100%)"
       title="创建技能"
       desc="创建或导入一个新技能"
@@ -21,29 +21,43 @@
     </ToolbarActions>
     <!-- 技能导入/创建（解析在 render 层——可手动修改后保存） -->
     <div class="si">
-      <div v-if="importedName" class="si__imported">已解析：{{ importedName }}（可手动修改后保存）</div>
-      <div v-if="parseError" class="si__parse-error">⚠️ {{ parseError }}</div>
+      <div v-if="importedName" class="si__imported">
+        已解析：{{ importedName }}（可手动修改后保存）
+      </div>
+      <div v-if="parseError" class="si__parse-error">
+        ⚠️ {{ parseError }}
+      </div>
 
       <!-- 技能表单（公共面板——基本信息 + 高级折叠 + 正文） -->
       <SkillFormPanel v-model:model="form" :categories="categories" />
 
       <!-- 附件 -->
       <div class="si__section">
-        <div class="si__label">附件（{{ form.files.length }}）</div>
+        <div class="si__label">
+          附件（{{ form.files.length }}）
+        </div>
         <div v-if="form.files.length" class="si-files">
           <div v-for="(f, i) in form.files" :key="i" class="si-file">
             <span class="si-file__name">{{ f.name || f.fileType }}</span>
             <span class="si-file__type">{{ f.fileType }}</span>
-            <button class="icon-btn icon-btn--danger" title="移除" @click="form.files.splice(i, 1)">✕</button>
+            <button class="icon-btn icon-btn--danger" title="移除" @click="form.files.splice(i, 1)">
+              ✕
+            </button>
           </div>
         </div>
-        <div v-else class="si__files-empty">无附件——导入文件夹时自动收集 references/scripts/templates</div>
+        <div v-else class="si__files-empty">
+          无附件——导入文件夹时自动收集 references/scripts/templates
+        </div>
       </div>
 
       <div class="si__actions">
-        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">{{ saving ? '保存中…' :
-          '保存技能' }}</button>
-        <button class="action-btn" @click="goBack">取消</button>
+        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">
+          {{ saving ? '保存中…' :
+            '保存技能' }}
+        </button>
+        <button class="action-btn" @click="goBack">
+          取消
+        </button>
       </div>
     </div>
   </L3PageLayout>

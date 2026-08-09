@@ -36,15 +36,19 @@
               :disabled="models.length === 0"
               @change="onModelChange"
             >
-              <option v-if="models.length === 0" value="">无模型</option>
-              <option v-for="m in models" :key="m.id" :value="m.id">{{ m.modelName }}</option>
+              <option v-if="models.length === 0" value="">
+                无模型
+              </option>
+              <option v-for="m in models" :key="m.id" :value="m.id">
+                {{ m.modelName }}
+              </option>
             </select>
           </div>
           <div class="chat-settings-drawer__field">
             <span class="chat-settings-drawer__field-label">推理深度</span>
             <div
-              class="chat-settings-drawer__range"
               ref="rangeRef"
+              class="chat-settings-drawer__range"
               @pointerdown="onRangePointerDown"
             >
               <div class="chat-settings-drawer__range-track">

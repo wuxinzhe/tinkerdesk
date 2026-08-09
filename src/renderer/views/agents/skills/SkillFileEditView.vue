@@ -2,50 +2,76 @@
   <L3PageLayout class="skill-file-edit">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/></svg>"
       gradient="linear-gradient(135deg, #5ac8fa 0%, var(--tk-accent) 100%)"
       title="技能文件"
       desc="编辑技能的说明文件"
     />
     <!-- 新增/编辑技能文件 -->
     <div class="sfe">
-      <div class="sfe__heading">{{ isEdit ? '编辑文件' : '新增文件' }}</div>
+      <div class="sfe__heading">
+        {{ isEdit ? '编辑文件' : '新增文件' }}
+      </div>
 
       <div class="sfe__section">
-        <div class="sfe__label">文件类型</div>
+        <div class="sfe__label">
+          文件类型
+        </div>
         <select v-model="form.fileType" class="sfe__input">
-          <option value="references">references</option>
-          <option value="scripts">scripts</option>
-          <option value="templates">templates</option>
-          <option value="assets">assets</option>
-          <option value="other">other</option>
+          <option value="references">
+            references
+          </option>
+          <option value="scripts">
+            scripts
+          </option>
+          <option value="templates">
+            templates
+          </option>
+          <option value="assets">
+            assets
+          </option>
+          <option value="other">
+            other
+          </option>
         </select>
       </div>
 
       <div class="sfe__section">
-        <div class="sfe__label">文件名</div>
+        <div class="sfe__label">
+          文件名
+        </div>
         <input v-model="form.name" class="sfe__input" placeholder="如: guide.md" />
       </div>
 
       <div class="sfe-row">
         <div class="sfe__section">
-          <div class="sfe__label">语言</div>
+          <div class="sfe__label">
+            语言
+          </div>
           <input v-model="form.language" class="sfe__input" placeholder="如: markdown, ts" />
         </div>
         <div class="sfe__section">
-          <div class="sfe__label">排序</div>
+          <div class="sfe__label">
+            排序
+          </div>
           <input v-model.number="form.sortOrder" type="number" class="sfe__input" />
         </div>
       </div>
 
       <div class="sfe__section">
-        <div class="sfe__label">内容</div>
+        <div class="sfe__label">
+          内容
+        </div>
         <textarea v-model="form.content" class="sfe__textarea" rows="14" spellcheck="false" placeholder="文件正文内容"></textarea>
       </div>
 
       <div class="sfe__actions">
-        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">{{ saving ? '保存中…' : '保存' }}</button>
-        <button class="action-btn" @click="goBack">取消</button>
+        <button class="action-btn action-btn--primary" :disabled="saving" @click="handleSave">
+          {{ saving ? '保存中…' : '保存' }}
+        </button>
+        <button class="action-btn" @click="goBack">
+          取消
+        </button>
       </div>
     </div>
   </L3PageLayout>

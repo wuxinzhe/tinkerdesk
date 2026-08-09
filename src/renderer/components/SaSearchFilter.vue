@@ -15,7 +15,9 @@
 
     <!-- Category select + Count — 移动端第二栏 -->
     <select v-if="categories?.length" v-model="localCategory" class="sa-search-filter__select" @change="onFilter">
-      <option value="">全部分类</option>
+      <option value="">
+        全部分类
+      </option>
       <option v-for="cat in categories" :key="cat.id || cat.name " :value="cat.name || cat">
         {{ cat.displayName || cat }}
       </option>

@@ -1,10 +1,14 @@
 <template>
   <section class="sa-section">
     <div v-if="title || $slots.title" class="sa-section__header">
-      <h3 class="sa-section__title">{{ title }}</h3>
+      <h3 class="sa-section__title">
+        {{ title }}
+      </h3>
       <slot name="title" />
     </div>
-    <p v-if="subtitle" class="sa-section__subtitle">{{ subtitle }}</p>
+    <p v-if="subtitle" class="sa-section__subtitle">
+      {{ subtitle }}
+    </p>
     <div v-if="$slots.toolbar" class="sa-section__toolbar">
       <slot name="toolbar" />
     </div>

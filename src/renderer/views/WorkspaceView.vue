@@ -52,7 +52,9 @@
                 <path d="M3 5h14M3 10h14M3 15h14" />
               </svg>
             </button>
-            <h1 class="workspace__lv2-title">{{ lv2Title }}</h1>
+            <h1 class="workspace__lv2-title">
+              {{ lv2Title }}
+            </h1>
           </div>
           <router-view name="level2" class="workspace__l2-router" />
         </div>
@@ -75,8 +77,8 @@
         </WorkspaceToolbar>
         <!-- L3 页面：key=fullPath——切换 agent（profile 参数变）强制重建，避免组件复用不刷新 -->
         <router-view
-          name="level3"
           :key="$route.fullPath"
+          name="level3"
           class="workspace__l3-col"
         />
       </div>

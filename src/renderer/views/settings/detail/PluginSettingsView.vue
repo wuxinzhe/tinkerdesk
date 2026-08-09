@@ -95,7 +95,7 @@ onMounted(() => {
   <div class="plugin-settings-page" :data-mounted="mounted">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       title="插件设置"
       desc="管理客户端插件和扩展能力"
@@ -135,7 +135,9 @@ onMounted(() => {
     </div>
 
     <!-- 加载态 -->
-    <div v-if="loading" class="plugin-settings-page__state">加载中…</div>
+    <div v-if="loading" class="plugin-settings-page__state">
+      加载中…
+    </div>
 
     <!-- 空态 -->
     <div v-else-if="plugins.length === 0" class="plugin-settings-page__empty">
@@ -144,8 +146,12 @@ onMounted(() => {
           <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
         </svg>
       </div>
-      <div class="plugin-settings-page__empty-text">尚未安装插件</div>
-      <div class="plugin-settings-page__empty-hint">下载插件 zip 解压到上述目录后重启应用</div>
+      <div class="plugin-settings-page__empty-text">
+        尚未安装插件
+      </div>
+      <div class="plugin-settings-page__empty-hint">
+        下载插件 zip 解压到上述目录后重启应用
+      </div>
     </div>
 
     <!-- 插件列表 -->
@@ -158,7 +164,9 @@ onMounted(() => {
               <span v-if="p.manifest.builtin" class="plugin-card__builtin">内置</span>
               <span class="plugin-card__version">v{{ p.manifest.version }}</span>
             </div>
-            <div class="plugin-card__desc">{{ p.manifest.description || '—' }}</div>
+            <div class="plugin-card__desc">
+              {{ p.manifest.description || '—' }}
+            </div>
             <div class="plugin-card__caps">
               <span v-for="cap in p.manifest.capabilities ?? []" :key="cap" class="plugin-card__cap">
                 {{ cap }}
@@ -172,7 +180,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="p.status.detail" class="plugin-card__error">{{ p.status.detail }}</div>
+        <div v-if="p.status.detail" class="plugin-card__error">
+          {{ p.status.detail }}
+        </div>
 
         <div class="plugin-card__actions">
           <button class="plugin-card__btn" :disabled="!p.status.loaded" @click="togglePlugin(p)">

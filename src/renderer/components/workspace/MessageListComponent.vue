@@ -12,11 +12,15 @@
         @click="emit('load-more')"
       >
         <SaSpinner v-if="loadingMore" size="small" />
-        <template v-else>加载更多消息</template>
+        <template v-else>
+          加载更多消息
+        </template>
       </button>
     </div>
     <!-- 没有更多消息提示（尝试加载过且 hasMore 变 false） -->
-    <div v-if="noMoreHint" class="message-list__no-more">没有更多消息了</div>
+    <div v-if="noMoreHint" class="message-list__no-more">
+      没有更多消息了
+    </div>
 
     <!-- 空状态 -->
     <div v-if="messages.length === 0 && !isStreaming" class="message-list__empty">
@@ -25,8 +29,12 @@
           <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
         </svg>
       </div>
-      <p class="message-list__empty-text">开始对话</p>
-      <p class="message-list__empty-hint">发送消息以开始与 AI 助手对话</p>
+      <p class="message-list__empty-text">
+        开始对话
+      </p>
+      <p class="message-list__empty-hint">
+        发送消息以开始与 AI 助手对话
+      </p>
     </div>
 
     <!-- 切换 session 加载覆盖层（淡出动画结束后，下方的消息才露出——避免一闪；独立于消息缓存） -->

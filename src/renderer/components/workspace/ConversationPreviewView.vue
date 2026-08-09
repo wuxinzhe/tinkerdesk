@@ -1,10 +1,14 @@
 <template>
   <div class="preview-view" @scroll="onScroll">
-    <div v-if="loading && cards.length === 0" class="preview-view__state">加载中…</div>
+    <div v-if="loading && cards.length === 0" class="preview-view__state">
+      加载中…
+    </div>
     <div v-else-if="error && cards.length === 0" class="preview-view__state preview-view__state--error">
       {{ error }}
     </div>
-    <div v-else-if="cards.length === 0" class="preview-view__state">暂无历史对话</div>
+    <div v-else-if="cards.length === 0" class="preview-view__state">
+      暂无历史对话
+    </div>
 
     <div v-else class="preview-view__grid">
       <SessionPreviewCard
@@ -15,8 +19,12 @@
       />
     </div>
 
-    <div v-if="loading && cards.length > 0" class="preview-view__more">加载更多…</div>
-    <div v-else-if="!hasMore && cards.length > 0" class="preview-view__more">已加载全部</div>
+    <div v-if="loading && cards.length > 0" class="preview-view__more">
+      加载更多…
+    </div>
+    <div v-else-if="!hasMore && cards.length > 0" class="preview-view__more">
+      已加载全部
+    </div>
   </div>
 </template>
 

@@ -10,7 +10,7 @@
  *
  * 录音（麦克风采集）是应用固有功能，不在插件职责内。
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { PluginManager } from '../core/plugin/plugin-manager'
@@ -28,12 +28,6 @@ export interface VoiceProviderInfo {
 export interface VoiceConfig {
   sttProvider: string | null
   ttsProvider: string | null
-}
-
-/** 系统开放接口定义：接口 id → 插件注册的频道名（固定契约） */
-const INTERFACE_CHANNELS: Record<string, { transcribe?: string; speak?: string; status?: string }> = {
-  'voice.stt': { transcribe: 'stt:transcribe', status: 'models:status' },
-  'voice.tts': { speak: 'tts:speak', status: 'models:status' },
 }
 
 export class VoiceProviderService {

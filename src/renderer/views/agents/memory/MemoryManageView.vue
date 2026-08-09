@@ -2,7 +2,7 @@
   <L3PageLayout class="memory-manage">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><line x1="9" y1="5" x2="9" y2="2"/><line x1="15" y1="5" x2="15" y2="2"/><line x1="9" y1="19" x2="9" y2="22"/><line x1="15" y1="19" x2="15" y2="22"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;5&quot; y=&quot;5&quot; width=&quot;14&quot; height=&quot;14&quot; rx=&quot;2&quot;/><line x1=&quot;9&quot; y1=&quot;5&quot; x2=&quot;9&quot; y2=&quot;2&quot;/><line x1=&quot;15&quot; y1=&quot;5&quot; x2=&quot;15&quot; y2=&quot;2&quot;/><line x1=&quot;9&quot; y1=&quot;19&quot; x2=&quot;9&quot; y2=&quot;22&quot;/><line x1=&quot;15&quot; y1=&quot;19&quot; x2=&quot;15&quot; y2=&quot;22&quot;/><line x1=&quot;9&quot; y1=&quot;9&quot; x2=&quot;15&quot; y2=&quot;9&quot;/><line x1=&quot;9&quot; y1=&quot;13&quot; x2=&quot;15&quot; y2=&quot;13&quot;/></svg>"
       gradient="linear-gradient(135deg, #5ac8fa 0%, var(--tk-accent) 100%)"
       title="记忆管理"
       desc="管理该 Agent 的长期记忆"
@@ -10,8 +10,12 @@
     <!-- 顶部：目标切换（Memory / User）+ 计数 -->
     <div class="memory-manage__toolbar">
       <div class="memory-manage__tabs">
-        <button class="memory-manage__tab" :class="{ 'memory-manage__tab--active': tab === 'memory' }" @click="switchTab('memory')">Memory</button>
-        <button class="memory-manage__tab" :class="{ 'memory-manage__tab--active': tab === 'user' }" @click="switchTab('user')">User</button>
+        <button class="memory-manage__tab" :class="{ 'memory-manage__tab--active': tab === 'memory' }" @click="switchTab('memory')">
+          Memory
+        </button>
+        <button class="memory-manage__tab" :class="{ 'memory-manage__tab--active': tab === 'user' }" @click="switchTab('user')">
+          User
+        </button>
       </div>
       <span class="memory-manage__count">{{ entries.length }} 条 · {{ usedChars.toLocaleString() }} / {{ charLimit.toLocaleString() }} 字符</span>
     </div>
@@ -25,14 +29,20 @@
         enterkeyhint="done"
         @keyup.enter="addEntry"
       />
-      <button class="memory-manage__add-btn" @click="addEntry">添加</button>
+      <button class="memory-manage__add-btn" @click="addEntry">
+        添加
+      </button>
     </div>
 
     <!-- 列表（拖拽排序） -->
-    <div v-if="loading" class="memory-manage__loading">加载中…</div>
+    <div v-if="loading" class="memory-manage__loading">
+      加载中…
+    </div>
     <div v-else-if="entries.length === 0" class="memory-manage__empty">
       <p>暂无记忆</p>
-      <p class="memory-manage__empty-hint">在上方输入内容添加第一条记忆</p>
+      <p class="memory-manage__empty-hint">
+        在上方输入内容添加第一条记忆
+      </p>
     </div>
     <div v-else class="memory-manage__list">
       <div
@@ -56,8 +66,12 @@
             @keyup.esc="editing = null"
           />
           <div class="memory-item__actions">
-            <button class="memory-item__btn memory-item__btn--save" title="保存（Ctrl+Enter）" @click="saveEdit">保存</button>
-            <button class="memory-item__btn" title="取消（Esc）" @click="editing = null">取消</button>
+            <button class="memory-item__btn memory-item__btn--save" title="保存（Ctrl+Enter）" @click="saveEdit">
+              保存
+            </button>
+            <button class="memory-item__btn" title="取消（Esc）" @click="editing = null">
+              取消
+            </button>
           </div>
         </template>
         <template v-else>

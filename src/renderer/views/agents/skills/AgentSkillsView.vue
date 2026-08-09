@@ -2,7 +2,7 @@
   <L3PageLayout class="skill-manage">
     <!-- 页头 -->
     <SaPageHero
-      icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><polygon points=&quot;12 2 2 7 12 12 22 7 12 2&quot;/><polyline points=&quot;2 17 12 22 22 17&quot;/><polyline points=&quot;2 12 12 17 22 12&quot;/></svg>"
       gradient="linear-gradient(135deg, #2ee6d6 0%, #00c7be 100%)"
       title="技能管理"
       desc="管理该 Agent 可用的技能"
@@ -34,10 +34,14 @@
 
     <!-- 安装确认面板已废弃——安装走 SkillImportView（render 解析 + 可修改 + 结构化写入） -->
 
-    <div v-if="skillsLoading" class="skill-manage__loading">加载中…</div>
+    <div v-if="skillsLoading" class="skill-manage__loading">
+      加载中…
+    </div>
     <div v-else-if="skillsList.length === 0" class="skill-manage__empty">
       <p>暂无技能</p>
-      <p class="skill-manage__empty-hint">点击右上角安装新技能</p>
+      <p class="skill-manage__empty-hint">
+        点击右上角安装新技能
+      </p>
     </div>
     <div v-else class="skill-manage__grid">
       <div
@@ -59,7 +63,9 @@
               {{ skill.displayName || skill.name }}
               <span class="skill-card__version">v{{ skill.version }}</span>
             </div>
-            <div class="skill-card__desc">{{ skill.description }}</div>
+            <div class="skill-card__desc">
+              {{ skill.description }}
+            </div>
             <div class="skill-card__meta">
               <span class="skill-card__tag">{{ skill.category }}</span>
             </div>
@@ -94,8 +100,8 @@
     <ToolbarActions>
       <button
         class="toolbar-btn"
-        @click="installSkillFromFile"
         title="安装技能"
+        @click="installSkillFromFile"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />

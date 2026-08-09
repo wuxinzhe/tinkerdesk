@@ -3,7 +3,7 @@
     <div class="agent-edit__body">
       <!-- 页头 -->
       <SaPageHero
-        icon='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+        icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2&quot;/><circle cx=&quot;12&quot; cy=&quot;7&quot; r=&quot;4&quot;/></svg>"
         gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
         :title="isCreate ? '创建 Agent' : '编辑 Agent'"
         :desc="isCreate ? '创建一个新的 Agent 助手' : '修改 Agent 的基本信息与外观'"
@@ -11,11 +11,15 @@
       <!-- ══════════ 编辑表单 ══════════ -->
       <div v-if="!isCreate && editingAgent" class="edit-form">
         <div class="edit-form__section">
-          <div class="edit-form__section-label">基本信息</div>
+          <div class="edit-form__section-label">
+            基本信息
+          </div>
           <div class="edit-form__group">
             <label class="edit-form__label">名称 <span class="required">*</span></label>
             <input v-model="form.displayName" class="edit-form__input" placeholder="Agent 名称" />
-            <p v-if="editNameError" class="edit-form__field-error">{{ editNameError }}</p>
+            <p v-if="editNameError" class="edit-form__field-error">
+              {{ editNameError }}
+            </p>
           </div>
           <div class="edit-form__group">
             <label class="edit-form__label">简介</label>
@@ -28,12 +32,16 @@
         </div>
         <div class="edit-form__section-divider" />
         <div class="edit-form__section">
-          <div class="edit-form__section-label">配置</div>
+          <div class="edit-form__section-label">
+            配置
+          </div>
           <div class="edit-form__group">
             <label class="edit-form__label">模式</label>
             <div class="edit-form__select-wrapper">
               <select v-model="form.agentModeId" class="edit-form__select">
-                <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">{{ opt.id }}</option>
+                <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">
+                  {{ opt.id }}
+                </option>
               </select>
               <svg class="edit-form__select-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
@@ -42,7 +50,9 @@
             <label class="edit-form__label">版本</label>
             <div class="edit-form__select-wrapper">
               <select v-model="form.agentModeVersion" class="edit-form__select">
-                <option v-for="v in currentModeVersions" :key="v" :value="v">{{ v }}</option>
+                <option v-for="v in currentModeVersions" :key="v" :value="v">
+                  {{ v }}
+                </option>
               </select>
               <svg class="edit-form__select-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
@@ -52,27 +62,37 @@
           <button class="edit-form__btn primary" :disabled="saving" @click="saveEdit">
             {{ saving ? '保存中...' : '保存' }}
           </button>
-          <button class="edit-form__btn subtle" :disabled="saving" @click="backToList">取消</button>
+          <button class="edit-form__btn subtle" :disabled="saving" @click="backToList">
+            取消
+          </button>
           <button v-if="!editingAgent.isDefault" class="edit-form__btn danger" :disabled="deleting" @click="deleteAgent(editingAgent)">
             删除
           </button>
         </div>
-        <p v-if="editError" class="edit-form__error">{{ editError }}</p>
+        <p v-if="editError" class="edit-form__error">
+          {{ editError }}
+        </p>
       </div>
 
       <!-- ══════════ 创建表单 ══════════ -->
       <div v-else-if="isCreate" class="edit-form">
         <div class="edit-form__section">
-          <div class="edit-form__section-label">基本信息</div>
+          <div class="edit-form__section-label">
+            基本信息
+          </div>
           <div class="edit-form__group">
             <label class="edit-form__label">标识 (profile) <span class="required">*</span></label>
             <input v-model="createForm.profile" class="edit-form__input" placeholder="英文字母，最长 15 字符" />
-            <p v-if="profileError" class="edit-form__field-error">{{ profileError }}</p>
+            <p v-if="profileError" class="edit-form__field-error">
+              {{ profileError }}
+            </p>
           </div>
           <div class="edit-form__group">
             <label class="edit-form__label">名称 <span class="required">*</span></label>
             <input v-model="createForm.displayName" class="edit-form__input" placeholder="Agent 名称" />
-            <p v-if="createNameError" class="edit-form__field-error">{{ createNameError }}</p>
+            <p v-if="createNameError" class="edit-form__field-error">
+              {{ createNameError }}
+            </p>
           </div>
           <div class="edit-form__group">
             <label class="edit-form__label">简介</label>
@@ -85,12 +105,16 @@
         </div>
         <div class="edit-form__section-divider" />
         <div class="edit-form__section">
-          <div class="edit-form__section-label">配置</div>
+          <div class="edit-form__section-label">
+            配置
+          </div>
           <div class="edit-form__group">
             <label class="edit-form__label">模式</label>
             <div class="edit-form__select-wrapper">
               <select v-model="createForm.agentModeId" class="edit-form__select">
-                <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">{{ opt.id }}</option>
+                <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">
+                  {{ opt.id }}
+                </option>
               </select>
               <svg class="edit-form__select-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
@@ -99,7 +123,9 @@
             <label class="edit-form__label">版本</label>
             <div class="edit-form__select-wrapper">
               <select v-model="createForm.agentModeVersion" class="edit-form__select">
-                <option v-for="v in createModeVersions" :key="v" :value="v">{{ v }}</option>
+                <option v-for="v in createModeVersions" :key="v" :value="v">
+                  {{ v }}
+                </option>
               </select>
               <svg class="edit-form__select-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9" /></svg>
             </div>
@@ -109,9 +135,13 @@
           <button class="edit-form__btn primary" :disabled="saving || !createFormValid" @click="saveCreate">
             {{ saving ? '创建中...' : '创建' }}
           </button>
-          <button class="edit-form__btn subtle" :disabled="saving" @click="backToList">取消</button>
+          <button class="edit-form__btn subtle" :disabled="saving" @click="backToList">
+            取消
+          </button>
         </div>
-        <p v-if="editError" class="edit-form__error">{{ editError }}</p>
+        <p v-if="editError" class="edit-form__error">
+          {{ editError }}
+        </p>
       </div>
 
       <!-- ══════════ 占位 ══════════ -->
@@ -123,7 +153,9 @@
               <circle cx="9" cy="7" r="4" />
             </svg>
           </div>
-          <p class="agents-placeholder__text">选择一个 Agent 进行管理</p>
+          <p class="agents-placeholder__text">
+            选择一个 Agent 进行管理
+          </p>
         </div>
       </div>
     </div>
@@ -150,7 +182,7 @@ function backToList() {
 
 /* ── Agent 数据 ── */
 const editingAgent = ref<AgentInfo | null>(null)
-let agentCache = new Map<string, AgentInfo>()
+const agentCache = new Map<string, AgentInfo>()
 
 async function ensureAgent(profile: string): Promise<AgentInfo | null> {
   if (agentCache.has(profile)) return agentCache.get(profile)!

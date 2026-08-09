@@ -40,7 +40,7 @@ export class UserCustomModelService {
   ) { }
 
   /** 查询全部自定义模型（对齐 list） */
-  list(profile: string): CustomModelInfoDTO[] {
+  list(_profile: string): CustomModelInfoDTO[] {
     return this.repo.listEnabled().map(toCustomModelInfoDTO)
   }
 

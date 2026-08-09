@@ -38,11 +38,11 @@ const KNOWN_PREFIX_RE = new RegExp('(?<![A-Za-z0-9_-])(' + PREFIX_PATTERNS.join(
 
 const PRIVATE_KEY_RE = /-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g
 
-const AUTH_HEADER_RE = /([Pp]roxy-[Aa]uthorization|[Aa]uthorization):\s*(?:[A-Za-z0-9._\-]+)\s+([^\s,;]+)/g
+const AUTH_HEADER_RE = /([Pp]roxy-[Aa]uthorization|[Aa]uthorization):\s*(?:[A-Za-z0-9._-]+)\s+([^\s,;]+)/g
 
 const JSON_FIELD_RE = /"([^"]*(?:api[_-]?key|token|secret|password|passwd|client[_-]?secret)[^"]*)":\s*"([^"]+)"/gi
 
-const JWT_RE = /\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/g
+const JWT_RE = /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g
 
 const DB_CONNSTR_RE = /(\w+:\/\/[^:\s/]+:)([^@\s/]+)(@)/g
 

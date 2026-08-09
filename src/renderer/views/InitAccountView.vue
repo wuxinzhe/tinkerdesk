@@ -4,8 +4,12 @@
       <BannerBrand />
     </template>
 
-    <template #heading>初始化设置</template>
-    <template #subtitle>分步配置您的 AI 助手</template>
+    <template #heading>
+      初始化设置
+    </template>
+    <template #subtitle>
+      分步配置您的 AI 助手
+    </template>
 
     <template #form>
       <!-- Apple HIG 节点式步骤进度条 -->
@@ -50,7 +54,9 @@
       <transition name="init-fade" mode="out-in">
         <div v-if="transitioning" key="transition" class="init__transition">
           <div class="init__transition-spinner" />
-          <p class="init__transition-text">{{ transitionText }}</p>
+          <p class="init__transition-text">
+            {{ transitionText }}
+          </p>
         </div>
 
         <!-- Step 1：创建默认 Agent -->
@@ -109,111 +115,111 @@
           </n-button>
         </n-form>
 
-      <!-- Step 3：含 API Key 的模型 -->
-      <n-form v-else-if="currentStep === 2" key="step3" @submit.prevent="submitStep3">
-        <p v-if="step3Existing.length > 0" class="init__desc">
-          检测到已有模型，已为你回显配置，只需填入 API Key 即可。
-        </p>
-        <n-form-item
-          label="AI 提供商"
-          :feedback="errors.provider"
-          :validation-status="errors.provider ? 'error' : undefined"
-        >
-          <n-select
-            v-model:value="form.provider"
-            :options="providerOptions"
-            placeholder="选择提供商"
-            :disabled="loading || providersLoading"
-            :loading="providersLoading"
-            @update:value="onProviderChange"
-          />
-        </n-form-item>
-
-        <n-form-item
-          label="API Key"
-          :feedback="errors.apiKey"
-          :validation-status="errors.apiKey ? 'error' : undefined"
-        >
-          <div class="init__api-key-row">
-            <n-input
-              v-model:value="form.apiKey"
-              type="password"
-              placeholder="sk-..."
-              show-password-toggle
-              :disabled="loading || !form.provider"
-              style="flex: 1"
-              @update:value="onApiKeyChange"
+        <!-- Step 3：含 API Key 的模型 -->
+        <n-form v-else-if="currentStep === 2" key="step3" @submit.prevent="submitStep3">
+          <p v-if="step3Existing.length > 0" class="init__desc">
+            检测到已有模型，已为你回显配置，只需填入 API Key 即可。
+          </p>
+          <n-form-item
+            label="AI 提供商"
+            :feedback="errors.provider"
+            :validation-status="errors.provider ? 'error' : undefined"
+          >
+            <n-select
+              v-model:value="form.provider"
+              :options="providerOptions"
+              placeholder="选择提供商"
+              :disabled="loading || providersLoading"
+              :loading="providersLoading"
+              @update:value="onProviderChange"
             />
-            <n-button
+          </n-form-item>
+
+          <n-form-item
+            label="API Key"
+            :feedback="errors.apiKey"
+            :validation-status="errors.apiKey ? 'error' : undefined"
+          >
+            <div class="init__api-key-row">
+              <n-input
+                v-model:value="form.apiKey"
+                type="password"
+                placeholder="sk-..."
+                show-password-toggle
+                :disabled="loading || !form.provider"
+                style="flex: 1"
+                @update:value="onApiKeyChange"
+              />
+              <n-button
+                :loading="testingConnection"
+                :disabled="!form.apiKey.trim() || !form.provider || testingConnection || connectionTested"
+                :type="connectionTested ? 'success' : 'default'"
+                @click="testConnection"
+              >
+                {{ connectionTested ? '测试成功' : '测试连接' }}
+              </n-button>
+            </div>
+          </n-form-item>
+
+          <n-form-item
+            label="模型"
+            :feedback="errors.model"
+            :validation-status="errors.model ? 'error' : undefined"
+          >
+            <n-select
+              v-model:value="form.model"
+              :options="modelOptions"
+              placeholder="请先测试连接以获取可用模型"
+              :disabled="!connectionTested || loading"
               :loading="testingConnection"
-              :disabled="!form.apiKey.trim() || !form.provider || testingConnection || connectionTested"
-              :type="connectionTested ? 'success' : 'default'"
-              @click="testConnection"
-            >
-              {{ connectionTested ? '测试成功' : '测试连接' }}
-            </n-button>
-          </div>
-        </n-form-item>
+            />
+          </n-form-item>
 
-        <n-form-item
-          label="模型"
-          :feedback="errors.model"
-          :validation-status="errors.model ? 'error' : undefined"
-        >
-          <n-select
-            v-model:value="form.model"
-            :options="modelOptions"
-            placeholder="请先测试连接以获取可用模型"
-            :disabled="!connectionTested || loading"
-            :loading="testingConnection"
-          />
-        </n-form-item>
+          <n-form-item label="API 地址（可选）">
+            <n-input
+              v-model:value="form.baseUrl"
+              :placeholder="selectedProviderBaseUrl || '留空则使用提供商默认地址'"
+              :disabled="loading"
+            />
+          </n-form-item>
 
-        <n-form-item label="API 地址（可选）">
-          <n-input
-            v-model:value="form.baseUrl"
-            :placeholder="selectedProviderBaseUrl || '留空则使用提供商默认地址'"
-            :disabled="loading"
-          />
-        </n-form-item>
+          <n-button
+            type="primary"
+            attr-type="submit"
+            block
+            size="large"
+            :loading="loading"
+            :disabled="!canSubmitStep3"
+          >
+            保存模型
+          </n-button>
+        </n-form>
 
-        <n-button
-          type="primary"
-          attr-type="submit"
-          block
-          size="large"
-          :loading="loading"
-          :disabled="!canSubmitStep3"
-        >
-          保存模型
-        </n-button>
-      </n-form>
-
-      <!-- Step 4：绑定主聊天场景 -->
-      <n-form v-else-if="currentStep === 3" key="step4" @submit.prevent="submitStep4">
-        <n-form-item
-          label="选择模型绑定到主聊天场景"
-          :feedback="errors.model"
-          :validation-status="errors.model ? 'error' : undefined"
-        >
-          <n-select
-            v-model:value="form.bindModelId"
-            :options="bindModelOptions"
-            placeholder="选择已保存的模型"
-            :disabled="loading"
-          />
-        </n-form-item>
-        <n-button
-          type="primary"
-          attr-type="submit"
-          block
-          size="large"
-          :loading="loading"
-          :disabled="!form.bindModelId"
-        >
-          完成绑定
-        </n-button>
-      </n-form>
+        <!-- Step 4：绑定主聊天场景 -->
+        <n-form v-else-if="currentStep === 3" key="step4" @submit.prevent="submitStep4">
+          <n-form-item
+            label="选择模型绑定到主聊天场景"
+            :feedback="errors.model"
+            :validation-status="errors.model ? 'error' : undefined"
+          >
+            <n-select
+              v-model:value="form.bindModelId"
+              :options="bindModelOptions"
+              placeholder="选择已保存的模型"
+              :disabled="loading"
+            />
+          </n-form-item>
+          <n-button
+            type="primary"
+            attr-type="submit"
+            block
+            size="large"
+            :loading="loading"
+            :disabled="!form.bindModelId"
+          >
+            完成绑定
+          </n-button>
+        </n-form>
       </transition>
     </template>
   </FullScreenCardLayout>

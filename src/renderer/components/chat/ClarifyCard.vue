@@ -24,8 +24,8 @@
           :value="choice.value"
           :checked="selectedChoice === choice.value"
           :disabled="submitted"
-          @change="onChoiceChange(choice.value)"
           class="clarify-card__radio"
+          @change="onChoiceChange(choice.value)"
         />
         <span class="clarify-card__choice-label">{{ choice.label }}</span>
       </label>

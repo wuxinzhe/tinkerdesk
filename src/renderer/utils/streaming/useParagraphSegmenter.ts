@@ -96,8 +96,8 @@ export function extractCompleted(
   if (!buffer) return { chunks: [], rest: '', nextIndex: 0 }
 
   const chunks: CompletedChunk[] = []
-  let rest = buffer
-  let idx = fromIndex
+  let rest: string = buffer
+  let idx: number = fromIndex
 
   // 如果 fromIndex >= buffer 长度，说明没有新内容
   if (fromIndex >= buffer.length) {

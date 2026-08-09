@@ -9,10 +9,9 @@
  *   plugin:get-config   → 读取配置（secret 脱敏）
  *   plugin:save-config  → 保存配置 { id, patch }
  */
-import { ipcMain, dialog, BrowserWindow, app } from 'electron'
-import { readFileSync, existsSync, statSync, mkdirSync, rmSync } from 'fs'
+import { ipcMain, dialog, BrowserWindow } from 'electron'
+import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
-import { execFileSync } from 'child_process'
 import { PluginManager } from '../core/plugin/plugin-manager'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
