@@ -28,6 +28,28 @@ import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from '
 
 let mainWindow: BrowserWindow | null = null
 
+// ── 全局异常兜底（不静默：日志 + 推送前端 global-tip 中文提示）──
+// 覆盖漏网的 uncaughtException / unhandledRejection——保证任何异常都有记录 + 用户可见
+function pushFatalTip(message: string): void {
+  try {
+    for (const win of BrowserWindow.getAllWindows()) {
+      win.webContents.send('global-tip', { type: 'error', code: 'fatal', message })
+    }
+  } catch {
+    // 窗口不可用（启动早期/已销毁）——静默（日志已记录）
+  }
+}
+
+process.on('uncaughtException', (err) => {
+  console.error('[fatal] 未捕获异常:', err)
+  pushFatalTip('程序发生内部错误（未捕获异常），请查看日志后重试')
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[fatal-reject] 未处理的 Promise 拒绝:', reason)
+  pushFatalTip('程序发生内部错误（异步操作失败），请查看日志后重试')
+})
+
 function createWindow() {
   Menu.setApplicationMenu(null)
 

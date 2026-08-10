@@ -116,6 +116,12 @@ ipcRenderer.on(IPC_MESSAGE, (_event, payload: { route?: string; data?: unknown }
   }
 })
 
+// ── 全局异常兜底事件：main 进程 fatal（uncaughtException/unhandledRejection）→ global-tip ──
+ipcRenderer.on('global-tip', (_event, payload: { type?: 'error' | 'tip'; code?: string; message?: string } | null) => {
+  if (!payload?.message) return
+  dispatchGlobalTip(payload.type === 'tip' ? 'tip' : 'error', payload.code ?? 'fatal', payload.message)
+})
+
 // ── 插件事件转发：plugin:event → renderer（插件 emit() 的出口）──
 ipcRenderer.on('plugin:event', (_event, payload: { pluginId: string; event: string; data?: unknown } | null) => {
   if (!payload) return
