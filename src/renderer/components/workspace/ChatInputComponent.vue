@@ -236,7 +236,7 @@ function eventKeyNormalized(e: KeyboardEvent): string {
   return ''
 }
 
-/** 快捷键监听（按一下开始 / 再按一下结束——toggle，与全局快捷键交互一致） */
+/** 快捷键监听（按住开始 / 松开结束——原交互） */
 function onGlobalKeyDown(e: KeyboardEvent): void {
   // 快捷键仅在录音模式（武装/录音中）生效——输入框模式一律不响应，避免误触
   if (!sttAvailable.value || voiceMode.value === false) return
@@ -245,32 +245,14 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
     shortcutHeld = true
     e.preventDefault()
     void startRecording()
-  } else if (parseShortcut(shortcutRecord.value)(e) && shortcutHeld && recording.value) {
-    // 再按一下 → 结束录音并发送
-    shortcutHeld = false
-    e.preventDefault()
-    void stopRecording()
   }
 }
 function onGlobalKeyUp(e: KeyboardEvent): void {
-  // toggle 交互：松开只清 held 标记（不触发停止——避免按住误停）
+  if (!shortcutHeld) return
+  // 组合键任意一个松开即结束
   if (parseShortcut(shortcutRecord.value)(e) || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta' || e.key === '`' || e.key === 'Backquote') {
     shortcutHeld = false
-  }
-}
-
-/**
- * 全局录音快捷键（main globalShortcut 按下 → preload → window 'global-shortcut-record'）
- * 方案 A toggle：没在录 → 开始；在录 → 停止 + STT 发送。
- * 必须已切换到语音输入模式（voiceMode=true——点过麦克风按钮）才生效——与局部快捷键同语义；
- * 120s 上限由 startTimers 统一控制。
- */
-function onGlobalRecordShortcut(): void {
-  if (!sttAvailable.value || voiceMode.value === false) return
-  if (recording.value) {
-    void stopRecording()
-  } else {
-    void startRecording()
+    if (recording.value) void stopRecording()
   }
 }
 
@@ -566,14 +548,12 @@ onMounted(() => {
   void checkSttAvailability()
   window.addEventListener('keydown', onGlobalKeyDown, true)
   window.addEventListener('keyup', onGlobalKeyUp, true)
-  window.addEventListener('global-shortcut-record', onGlobalRecordShortcut)
   window.addEventListener('shortcut-record-changed', reloadShortcut)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown, true)
   window.removeEventListener('keyup', onGlobalKeyUp, true)
-  window.removeEventListener('global-shortcut-record', onGlobalRecordShortcut)
   window.removeEventListener('shortcut-record-changed', reloadShortcut)
   exitVoiceMode()
 })

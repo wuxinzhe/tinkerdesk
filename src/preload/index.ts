@@ -122,11 +122,6 @@ ipcRenderer.on('global-tip', (_event, payload: { type?: 'error' | 'tip'; code?: 
   dispatchGlobalTip(payload.type === 'tip' ? 'tip' : 'error', payload.code ?? 'fatal', payload.message)
 })
 
-// ── 全局录音快捷键：main（globalShortcut 按下）→ renderer（ChatInput toggle 录音）──
-ipcRenderer.on('global-shortcut-record', () => {
-  window.dispatchEvent(new CustomEvent('global-shortcut-record'))
-})
-
 // ── 插件事件转发：plugin:event → renderer（插件 emit() 的出口）──
 ipcRenderer.on('plugin:event', (_event, payload: { pluginId: string; event: string; data?: unknown } | null) => {
   if (!payload) return
