@@ -191,12 +191,15 @@ function onKeyDown(e: KeyboardEvent): void {
   if (e.shiftKey) parts.push('shift')
   if (e.altKey) parts.push('alt')
   if (e.metaKey) parts.push('meta')
-  // 主键：backquote（`）或字母数字
-  const key = e.key.toLowerCase()
-  if (key === '`' || key === 'backquote') {
+  // 主键：用 e.code（物理键位——不受 Shift 组合/输入法/键盘布局影响；
+  // e.key 在 Ctrl+数字等组合下可能不是期望字符——如 Ctrl+0 的 e.key 可能非 '0'）
+  const code = e.code
+  if (code === 'Backquote') {
     parts.push('backquote')
-  } else if (/^[a-z0-9]$/.test(key)) {
-    parts.push(key)
+  } else if (/^Key[A-Z]$/.test(code)) {
+    parts.push(code.slice(3).toLowerCase()) // KeyB → b
+  } else if (/^Digit[0-9]$/.test(code) || /^Numpad[0-9]$/.test(code)) {
+    parts.push(code.slice(-1)) // Digit0/Numpad0 → 0
   } else {
     showErrorToast({ code: 'shortcut:invalid:unsupported_key', message: '仅支持字母、数字或反引号（`）作为快捷键主键' })
     return

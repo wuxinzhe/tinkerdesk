@@ -204,7 +204,7 @@ async function checkSttAvailability(): Promise<void> {
   }
 }
 
-/** 解析快捷键字符串 → 匹配函数（如 'ctrl+backquote' / 'ctrl+shift+1'） */
+/** 解析快捷键字符串 → 匹配函数（如 'ctrl+backquote' / 'ctrl+shift+1'；用 e.code 物理键匹配） */
 function parseShortcut(value: string): (e: KeyboardEvent) => boolean {
   const parts = value.split('+')
   const mods = {
@@ -219,7 +219,16 @@ function parseShortcut(value: string): (e: KeyboardEvent) => boolean {
     e.shiftKey === mods.shift &&
     e.altKey === mods.alt &&
     e.metaKey === mods.meta &&
-    (key === 'backquote' ? (e.key === '`' || e.key === 'Backquote') : e.key.toLowerCase() === key)
+    eventKeyNormalized(e) === key
+}
+
+/** 物理键归一（与设置页捕获一致）：Backquote → backquote；KeyB → b；Digit0/Numpad0 → 0 */
+function eventKeyNormalized(e: KeyboardEvent): string {
+  const code = e.code
+  if (code === 'Backquote') return 'backquote'
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase()
+  if (/^Digit[0-9]$/.test(code) || /^Numpad[0-9]$/.test(code)) return code.slice(-1)
+  return ''
 }
 
 /** 快捷键监听（按住开始 / 松开结束） */
