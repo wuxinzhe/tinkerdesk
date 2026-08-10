@@ -28,10 +28,10 @@ export class ApprovalManager {
   /** 本轮自动批准集合（conversationId → 有值则本轮所有审批直接放行） */
   private readonly autoApprove = new Set<string>()
 
-  /** 审批超时（ms）：用户未响应视为拒绝 */
-  private static readonly APPROVAL_TIMEOUT_MS = 60_000
-  /** 澄清/工具结果超时（ms）：客户端未返回视为过期 */
-  private static readonly CLARIFY_TIMEOUT_MS = 60_000
+  /** 审批超时（ms）：用户未响应视为拒绝（300s = 5 分钟） */
+  private static readonly APPROVAL_TIMEOUT_MS = 300_000
+  /** 澄清/工具结果超时（ms）：客户端未返回视为过期（300s = 5 分钟） */
+  private static readonly CLARIFY_TIMEOUT_MS = 300_000
 
   constructor(private readonly messageService: MessageService) { }
 
@@ -83,7 +83,7 @@ export class ApprovalManager {
     return true
   }
 
-  /** 审批请求：注册挂起等待（60s 超时）→ sender 发审批事件 → 等 onApproval 恢复 */
+  /** 审批请求：注册挂起等待（300s 超时）→ sender 发审批事件 → 等 onApproval 恢复 */
   requestApproval(convCtx: ConversationContext, toolCall: ToolCall, reason?: string): Promise<boolean> {
     // 本轮自动批准：conversationId 在缓存中 → 直接放行（不弹审批、不挂起）
     if (this.autoApprove.has(convCtx.conversationId)) {
@@ -136,7 +136,7 @@ export class ApprovalManager {
     })
   }
 
-  /** 等待外部工具结果（60s 超时，直到 onToolResult 恢复） */
+  /** 等待外部工具结果（300s 超时，直到 onToolResult 恢复） */
   waitToolResult(cycle: ConversationContext, toolCallId: string): Promise<string> {
     return new Promise<string>((resolve) => {
       const timer = setTimeout(() => {
@@ -148,7 +148,7 @@ export class ApprovalManager {
           messageType: MSG_TYPE_TOOL_RESULT,
         })
         console.warn(`工具结果等待超时 toolCallId=${toolCallId}`)
-        resolve('Error: 等待客户端工具结果超时（60s），工具调用已过期')
+        resolve('Error: 等待客户端工具结果超时（300s），工具调用已过期')
       }, ApprovalManager.CLARIFY_TIMEOUT_MS)
       this.toolResultWaiters.set(toolCallId, {
         resolve: (result) => {
