@@ -22,7 +22,7 @@ export type {
 } from './types'
 
 // 场景常量（集中在 types.ts）
-export { SCENE_CHAT, SCENE_SUMMARY, SCENE_TITLE } from './types'
+export { SCENE_CHAT, SCENE_SUMMARY, SCENE_TITLE, SCENE_VISION, contentToText } from './types'
 
 // 接口别名（ILlmClient / ILlmOperation 语义保留）
 export type { LlmClient as ILlmClient, LlmOperation as ILlmOperation } from './types'

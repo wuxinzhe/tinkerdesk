@@ -13,6 +13,7 @@ import {
   toolCallsResponse,
 } from '../llm-response'
 import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ToolCall } from '../types'
+import { contentToText } from '../types'
 
 /**
  * anthropic-client.ts — Anthropic 客户端
@@ -32,7 +33,7 @@ export class AnthropicClient implements LlmClient {
   private toAnthropicMessages(messages: ApiMessage[]): Anthropic.MessageParam[] {
     return messages
       .filter((m) => m.role !== 'system')
-      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: typeof m.content === 'string' ? m.content : contentToText(m.content) }))
   }
 
   /** OpenAI 工具 schema → Anthropic tools */

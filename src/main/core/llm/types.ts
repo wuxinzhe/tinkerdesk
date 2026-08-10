@@ -12,6 +12,21 @@ import type { ToolSchema } from '../tool/tool-schema'
 export const SCENE_CHAT = 'main_conversation'
 export const SCENE_SUMMARY = 'conversation_compression'
 export const SCENE_TITLE = 'title_generation'
+export const SCENE_VISION = 'image_recognition'
+
+/** 多模态内容片段（与 OpenAI/Kimi 官方格式对齐——content 数组） */
+export type ApiContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
+/** 多模态内容转纯文本（渲染/压缩等只处理文本的场景用） */
+export function contentToText(content: string | ApiContentPart[]): string {
+  if (typeof content === 'string') return content
+  return content
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('\n')
+}
 
 // ── 工具调用（原 types 的 ToolCall，main 内部契约） ──
 
@@ -43,7 +58,8 @@ export type ApiMessageRole = 'system' | 'user' | 'assistant' | 'tool'
 /** API 消息（不可变） */
 export interface ApiMessage {
   role: ApiMessageRole
-  content: string
+  /** 内容：纯文本（现有调用）或 多模态片段数组（视觉调用——text + image_url 任意组合） */
+  content: string | ApiContentPart[]
   /** 推理内容（DeepSeek/Claude thinking） */
   reasoningContent?: string
   /** 工具调用 JSON 字符串 */

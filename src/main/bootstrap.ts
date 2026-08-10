@@ -45,6 +45,7 @@ import { AnthropicClient, GoogleClient, LlmClientManager, LlmOperationManager, L
 import { ChatOperation } from './core/llm/operations/chat-operation'
 import { SummaryOperation } from './core/llm/operations/summary-operation'
 import { TitleOperation } from './core/llm/operations/title-operation'
+import { VisionOperation } from './core/llm/operations/vision-operation'
 import { AgentModeRegistry } from './core/mode/agent-mode-registry'
 import { PluginManager } from './core/plugin/plugin-manager'
 import type { McpToolCenter } from './core/tool'
@@ -204,6 +205,7 @@ export function bootstrap(
     new ChatOperation(),
     new SummaryOperation(),
     new TitleOperation(renderer),
+    new VisionOperation(),
   ])
   const llmRouter = new LlmRouter(clientManager, operationManager)
 

@@ -9,6 +9,7 @@ import type { ApiMessage, LlmOperation, LlmResponse, OperationContext, Operation
 import { isSuccess } from '../llm-response'
 import type { ToolSchema } from '../../tool/tool-schema'
 import type { PromptRenderer } from '../../prompt/renderer'
+import { contentToText } from '../types'
 
 /** 标题生成场景 */
 export const SCENE = 'title_generation'
@@ -22,7 +23,7 @@ export class TitleOperation implements LlmOperation {
 
   /** Phase 1: 提取首条 user 消息 → 渲染标题模板 */
   buildInput(_ctx: OperationContext, rawMessages: ApiMessage[], _tools: ToolSchema[]): ApiMessage[] {
-    const userMsg = rawMessages.find((m) => m.role === 'user')?.content ?? ''
+    const userMsg = contentToText(rawMessages.find((m) => m.role === 'user')?.content ?? '')
     if (!userMsg || userMsg.trim() === '') {
       return []
     }

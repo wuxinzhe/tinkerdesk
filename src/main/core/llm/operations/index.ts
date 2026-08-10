@@ -4,3 +4,4 @@
 export { ChatOperation } from './chat-operation'
 export { SummaryOperation } from './summary-operation'
 export { TitleOperation } from './title-operation'
+export { VisionOperation } from './vision-operation'
