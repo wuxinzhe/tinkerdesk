@@ -42,9 +42,10 @@ export function getAppSettings(): AppSettingsPayload {
     settings[s.key] = value
     return { ...s, value }
   })
-  // 非快捷键的普通设置（theme 等）也合并 stored
+  // 其余存储值（theme/shortcut.recordGlobal 等 DEFAULT_SETTINGS 里的键）总是覆盖默认值——
+  // 原实现 `if (!(key in settings))` 导致 DEFAULT_SETTINGS 的键永远读默认（保存无效）
   for (const [key, value] of stored) {
-    if (!(key in settings)) settings[key] = value
+    settings[key] = value
   }
   return { settings, shortcuts }
 }
