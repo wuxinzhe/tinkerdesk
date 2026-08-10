@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session} from 'electron'
+import { app, BrowserWindow, Menu, session, screen } from 'electron'
 import { handleTrusted } from './security/ipc-guard'
 import { join } from 'path'
 import { initLogger } from './utils/logger'
@@ -78,6 +78,31 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // ── 无边框窗口贴靠布局修正 ──
+  // 有边框窗口：Windows 贴靠自动扣除任务栏（WM_GETMINMAXINFO）。
+  // frame:false 无边框窗口：Windows 贴靠给的 bounds 高度 = 屏幕高度（含任务栏），
+  // 导致窗口底部伸到任务栏下面（输入框被挡）。
+  // resize 时若窗口超出 workArea（任务栏区域）——clip 回 workArea。
+  let snapFixLock = false
+  mainWindow.on('resize', () => {
+    if (snapFixLock || !mainWindow) return
+    const bounds = mainWindow.getBounds()
+    const wa = screen.getDisplayMatching(bounds).workArea
+    // 下沿超出 workArea（盖住任务栏）或上沿被推出——修正到 workArea 内（±2 容差）
+    const overBottom = bounds.y + bounds.height > wa.y + wa.height + 2
+    const overTop = bounds.y < wa.y - 2
+    if (overBottom || overTop) {
+      snapFixLock = true
+      mainWindow.setBounds({
+        x: bounds.x,
+        y: Math.max(bounds.y, wa.y),
+        width: bounds.width,
+        height: Math.min(bounds.height, wa.height),
+      })
+      snapFixLock = false
+    }
+  })
 
   // 支持 F12 切换 DevTools（开发模式）
   mainWindow.webContents.on('before-input-event', (_event, input) => {
