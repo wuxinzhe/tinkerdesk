@@ -18,6 +18,7 @@ import { BaseTool } from '../base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
+import type { WebProvider } from '../../service/web-provider'
 import {  errMessage } from '../../utils/http'
 
 import type { WebExtractParams, DebugCallData } from './types'
@@ -249,7 +250,7 @@ export class WebExtractTool extends BaseTool {
     + 'Pages over char_limit are head+tail truncated with an explicit footer; the full text is stored locally and the footer tells you how to read_file the omitted middle.'
   readonly category = 'network'
 
-  constructor(renderer: PromptRenderer, private readonly webProvider?: import('../../service/web-provider').WebProvider) {
+  constructor(renderer: PromptRenderer, private readonly webProvider?: WebProvider) {
     super(renderer, TOOL_NAME)
   }
 

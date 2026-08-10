@@ -11,6 +11,7 @@ import { ToolResult } from '../../core/tool/tool-result'
 import { errMessage } from '../../utils/http'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
+import type { WebProvider } from '../../service/web-provider'
 import type { WebSearchResponseData } from '../../providers/search/types'
 import { getConfiguredBackend, getProvider, getActiveSearchProvider } from '../../providers/search'
 import type { WebSearchParams } from './types'
@@ -32,7 +33,7 @@ function clampLimit(raw: unknown): number {
 
 /** 网络搜索工具 */
 export class WebSearchTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly webProvider?: import('../../service/web-provider').WebProvider) {
+  constructor(renderer: PromptRenderer, private readonly webProvider?: WebProvider) {
     super(renderer, TOOL_NAME)
   }
 
