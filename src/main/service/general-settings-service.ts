@@ -14,7 +14,8 @@ export interface AppSettingsPayload {
 }
 
 const DEFAULT_SETTINGS: Record<string, string> = {
-  theme: 'light' // 应用主题：light | dark | system
+  theme: 'light', // 应用主题：light | dark | system
+  'shortcut.recordGlobal': 'false' // 录音快捷键是否全局生效（焦点在其他应用也能用）
 }
 
 const DEFAULT_SHORTCUTS: Array<{ key: string; label: string; description: string; value: string }> = [

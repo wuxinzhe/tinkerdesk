@@ -67,6 +67,24 @@
             </button>
           </div>
         </div>
+        <!-- 录音快捷键的全局生效开关（仅 shortcut.record 行） -->
+        <div v-if="shortcuts.some((s) => s.key === 'shortcut.record')" class="shortcut-row shortcut-row--switch" @click="toggleRecordGlobal">
+          <div class="shortcut-row__info">
+            <span class="shortcut-row__label">全局生效</span>
+            <span class="shortcut-row__desc">焦点在其他应用时，快捷键也能开始/结束录音</span>
+          </div>
+          <div class="shortcut-row__value">
+            <button
+              class="switch"
+              :class="{ on: recordGlobal }"
+              role="switch"
+              :aria-checked="recordGlobal"
+              @click.stop="toggleRecordGlobal"
+            >
+              <span class="switch__knob" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -75,7 +93,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { SaPageHero } from '@/renderer/components'
-import { showErrorToast } from '@/renderer/utils/notification-utils'
+import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 import { applyTheme } from '@/renderer/utils/theme'
 import { invalidateRecordShortcut } from '@/renderer/utils/shortcut-cache'
 import { THEMES } from '@/renderer/styles/themes'
@@ -91,6 +109,8 @@ const DEFAULT_RECORD = 'ctrl+b'
 
 const shortcuts = ref<ShortcutItem[]>([])
 const capturingKey = ref<string | null>(null)
+/** 录音快捷键全局生效开关（settings['shortcut.recordGlobal']） */
+const recordGlobal = ref(false)
 /** 页面进入动画标记（挂载后置 true 触发 stagger transition） */
 const mounted = ref(false)
 
@@ -126,12 +146,24 @@ async function load(): Promise<void> {
   try {
     const { settings, shortcuts: list } = await window.api.generalSettings.get()
     shortcuts.value = list
+    recordGlobal.value = settings['shortcut.recordGlobal'] === 'true'
     const saved = settings['theme'] as string | undefined
     if (saved && THEMES.some((t) => t.id === saved)) {
       theme.value = saved
     }
   } catch {
     showErrorToast({ code: 'shortcut:load:error', message: '读取通用设置失败' })
+  }
+}
+
+/** 切换录音快捷键全局生效（保存设置——main 侧同步注册/注销 globalShortcut） */
+async function toggleRecordGlobal(): Promise<void> {
+  recordGlobal.value = !recordGlobal.value
+  try {
+    await window.api.generalSettings.set('shortcut.recordGlobal', recordGlobal.value ? 'true' : 'false')
+    showInfoToast(recordGlobal.value ? '已开启全局生效（其他应用窗口也能用录音快捷键）' : '已关闭全局生效')
+  } catch {
+    showErrorToast({ code: 'shortcut:global:save:error', message: '保存全局生效设置失败' })
   }
 }
 
@@ -226,6 +258,36 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* 全局生效开关行（Switch——CSS 绘制：轨道 + 滑块，非 unicode 字符） */
+.shortcut-row--switch {
+  cursor: pointer;
+}
+.switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  padding: 2px;
+  background: var(--tk-border, rgba(127, 127, 127, 0.4));
+  transition: background 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.switch.on {
+  background: var(--tk-accent, #3b82f6);
+}
+.switch__knob {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.switch.on .switch__knob {
+  transform: translateX(20px);
 }
 
 /* 进入动画：分组 stagger（30ms 间隔，ease-out 300ms）——动画只放父容器带动子 */

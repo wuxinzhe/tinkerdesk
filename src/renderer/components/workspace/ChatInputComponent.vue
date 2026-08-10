@@ -242,6 +242,21 @@ function onGlobalKeyUp(e: KeyboardEvent): void {
   }
 }
 
+/**
+ * 全局录音快捷键（main globalShortcut 按下 → preload → window 'global-shortcut-record'）
+ * 方案 A toggle：没在录 → 开始；在录 → 停止 + STT 发送。
+ * 必须已切换到语音输入模式（voiceMode=true——点过麦克风按钮）才生效——与局部快捷键同语义；
+ * 120s 上限由 startTimers 统一控制。
+ */
+function onGlobalRecordShortcut(): void {
+  if (!sttAvailable.value || voiceMode.value === false) return
+  if (recording.value) {
+    void stopRecording()
+  } else {
+    void startRecording()
+  }
+}
+
 /** 点击麦克风按钮：idle → 武装；武装 → 取消；录音中忽略 */
 function onVoiceButtonClick(): void {
   if (recording.value) return
@@ -534,11 +549,13 @@ onMounted(() => {
   void checkSttAvailability()
   window.addEventListener('keydown', onGlobalKeyDown, true)
   window.addEventListener('keyup', onGlobalKeyUp, true)
+  window.addEventListener('global-shortcut-record', onGlobalRecordShortcut)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown, true)
   window.removeEventListener('keyup', onGlobalKeyUp, true)
+  window.removeEventListener('global-shortcut-record', onGlobalRecordShortcut)
   exitVoiceMode()
 })
 

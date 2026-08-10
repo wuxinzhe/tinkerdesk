@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, screen } from 'electron'
+import { app, BrowserWindow, Menu, session, screen, globalShortcut } from 'electron'
 import { handleTrusted } from './security/ipc-guard'
 import { join } from 'path'
 import { initLogger } from './utils/logger'
@@ -25,6 +25,7 @@ import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
+import { syncRecordGlobalShortcut } from './global-shortcut-manager'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -158,6 +159,12 @@ app.whenReady().then(() => {
   handleTrusted('window:close', () => { mainWindow?.close() })
   handleTrusted('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
 
+  // ── 录音全局快捷键（按设置注册；焦点在其他应用也能 toggle 录音） ──
+  const shortcutResult = syncRecordGlobalShortcut()
+  if (!shortcutResult.ok) {
+    console.warn(`[shortcut] 全局录音快捷键注册失败: ${shortcutResult.reason ?? ''}`)
+  }
+
   // ── 专注模式（TitleBar 切换——临时突破 minWidth 768） ──
   // 点击进入：最小宽 375 + 窗口 375×812（窄窗聚焦）；再点恢复：minWidth 768 + 1200×800
   let phoneModeActive = false
@@ -181,6 +188,15 @@ app.whenReady().then(() => {
   // 插件事件转发目标（窗口就绪后注入）
   desk.pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
   checkForUpdatesOnStartup()
+})
+
+app.on('will-quit', () => {
+  // 释放全局快捷键（应用退出）
+  try {
+    globalShortcut.unregisterAll()
+  } catch {
+    // 退出清理失败不影响退出
+  }
 })
 
 app.on('window-all-closed', () => {
