@@ -215,9 +215,10 @@ async function saveShortcut(key: string, value: string): Promise<void> {
     await window.api.generalSettings.set(key, value)
     const item = shortcuts.value.find((s) => s.key === key)
     if (item) item.value = value
-    showInfo('快捷键已保存')
-    // 缓存失效——ChatInput 下次挂载重新读
+    showInfoToast('快捷键已保存')
+    // 缓存失效 + 通知已挂载的 ChatInput 重读（常驻组件不重新挂载——事件驱动立即生效）
     invalidateRecordShortcut()
+    window.dispatchEvent(new CustomEvent('shortcut-record-changed'))
   } catch {
     showErrorToast({ code: 'shortcut:save:error', message: '保存快捷键失败' })
   }
@@ -227,16 +228,13 @@ async function resetShortcut(item: ShortcutItem): Promise<void> {
   try {
     await window.api.generalSettings.reset(item.key)
     item.value = DEFAULT_RECORD
-    showInfo('已恢复默认快捷键')
-    // 缓存失效——ChatInput 下次挂载重新读
+    showInfoToast('已恢复默认快捷键')
+    // 缓存失效 + 通知已挂载的 ChatInput 重读
     invalidateRecordShortcut()
+    window.dispatchEvent(new CustomEvent('shortcut-record-changed'))
   } catch {
     showErrorToast({ code: 'shortcut:reset:error', message: '恢复默认失败' })
   }
-}
-
-function showInfo(message: string): void {
-  window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'tip', message } }))
 }
 
 onMounted(() => {

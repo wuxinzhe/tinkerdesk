@@ -191,17 +191,22 @@ async function checkSttAvailability(): Promise<void> {
     const { stt } = await window.api.voice.providers()
     sttAvailable.value = stt.length > 0
     if (sttAvailable.value) {
-      let record = getCachedRecordShortcut()
-      if (record === null) {
-        const { settings } = await window.api.generalSettings.get()
-        record = settings['shortcut.record'] || 'ctrl+b'
-        setCachedRecordShortcut(record)
-      }
-      shortcutRecord.value = record
+      await reloadShortcut()
     }
   } catch {
     sttAvailable.value = false
   }
+}
+
+/** 重读录音快捷键（设置页保存/重置后事件驱动——常驻组件不重新挂载也能立即生效） */
+async function reloadShortcut(): Promise<void> {
+  let record = getCachedRecordShortcut()
+  if (record === null) {
+    const { settings } = await window.api.generalSettings.get()
+    record = settings['shortcut.record'] || 'ctrl+b'
+    setCachedRecordShortcut(record)
+  }
+  shortcutRecord.value = record
 }
 
 /** 解析快捷键字符串 → 匹配函数（如 'ctrl+backquote' / 'ctrl+shift+1'；用 e.code 物理键匹配） */
@@ -559,12 +564,14 @@ onMounted(() => {
   window.addEventListener('keydown', onGlobalKeyDown, true)
   window.addEventListener('keyup', onGlobalKeyUp, true)
   window.addEventListener('global-shortcut-record', onGlobalRecordShortcut)
+  window.addEventListener('shortcut-record-changed', reloadShortcut)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown, true)
   window.removeEventListener('keyup', onGlobalKeyUp, true)
   window.removeEventListener('global-shortcut-record', onGlobalRecordShortcut)
+  window.removeEventListener('shortcut-record-changed', reloadShortcut)
   exitVoiceMode()
 })
 
