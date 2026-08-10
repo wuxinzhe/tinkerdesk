@@ -13,6 +13,7 @@ import type { ApiMessage } from '../core/llm/types'
 import { ROLE_SYSTEM, ROLE_USER, ROLE_ASSISTANT, ROLE_APPROVAL, ROLE_TOOL } from '../core/constants'
 import { STATUS_APPROVED, STATUS_REJECTED, CONV_COMPLETED } from '../core/constants'
 import { nowDb } from '../utils/time'
+import { withTransaction } from '../repository/database'
 import {
   MSG_TYPE_USER, MSG_TYPE_ASSISTANT_TEXT, MSG_TYPE_ASSISTANT_TOOL_CALL,
   MSG_TYPE_ASSISTANT_HYBRID, MSG_TYPE_ASSISTANT_THINKING, MSG_TYPE_TOOL_RESULT,
@@ -366,37 +367,39 @@ export class MessageService {
     }
   }
 
-  /** 保存或覆盖摘要消息（压缩后） */
+  /** 保存或覆盖摘要消息（压缩后）——软删旧摘要 + 写入新摘要事务原子 */
   saveSummary(sessionId: string, profile: string, summaryContent: string): void {
-    // 删除旧的摘要消息（软删），写入新的
-    const existing = this.messageRepo.findMessagesBySession({
-      sessionId,
-      profile,
-      sortOrder: 'DESC',
-      limit: 50,
-      roles: [ROLE_SYSTEM],
-    })
-    for (const m of existing) {
-      if (m.messageType === MSG_TYPE_SYSTEM_SUMMARY) {
-        this.messageRepo.save({ ...m, deleted: true })
+    withTransaction(() => {
+      // 删除旧的摘要消息（软删），写入新的
+      const existing = this.messageRepo.findMessagesBySession({
+        sessionId,
+        profile,
+        sortOrder: 'DESC',
+        limit: 50,
+        roles: [ROLE_SYSTEM],
+      })
+      for (const m of existing) {
+        if (m.messageType === MSG_TYPE_SYSTEM_SUMMARY) {
+          this.messageRepo.save({ ...m, deleted: true })
+        }
       }
-    }
-    // 摘要消息挂在 session 级（无 conversation）
-    this.messageRepo.save({
-      sessionId,
-      conversationId: null,
-      profile,
-      role: ROLE_SYSTEM,
-      content: summaryContent,
-      reasoningContent: '',
-      toolCall: null,
-      toolCallId: '',
-      toolName: '',
-      finishReason: FINISH_COMPLETE,
-      interactionStatus: '',
-      messageType: MSG_TYPE_SYSTEM_SUMMARY,
-      deleted: false,
-      createdAt: nowDb(),
+      // 摘要消息挂在 session 级（无 conversation）
+      this.messageRepo.save({
+        sessionId,
+        conversationId: null,
+        profile,
+        role: ROLE_SYSTEM,
+        content: summaryContent,
+        reasoningContent: '',
+        toolCall: null,
+        toolCallId: '',
+        toolName: '',
+        finishReason: FINISH_COMPLETE,
+        interactionStatus: '',
+        messageType: MSG_TYPE_SYSTEM_SUMMARY,
+        deleted: false,
+        createdAt: nowDb(),
+      })
     })
   }
 }

@@ -1,4 +1,4 @@
-import { getDatabase } from './database'
+import { getDatabase, withTransaction } from './database'
 import type { SceneModelBinding, UserSceneModelEntity } from './types'
 import { SCENE_CHAT } from '../core/llm/types'
 
@@ -105,20 +105,22 @@ export class UserSceneModelRepository {
     return Number(result.changes)
   }
 
-  /** 设置主模型（清场景其他主模型 + 设 is_main=1）——模型已在场景则仅改标记 */
+  /** 设置主模型（清场景其他主模型 + 设 is_main=1）——模型已在场景则仅改标记；事务原子（避免中途失败主模型丢失） */
   setMain(profile: string, sceneId: string, modelId: string): number {
-    const db = getDatabase()
-    db.prepare('UPDATE user_scene_models SET is_main = 0 WHERE profile = ? AND scene_id = ?').run(profile, sceneId)
-    const existing = db
-      .prepare('SELECT 1 FROM user_scene_models WHERE profile = ? AND scene_id = ? AND model_id = ?')
-      .get(profile, sceneId, modelId)
-    if (existing) {
-      const result = db
-        .prepare('UPDATE user_scene_models SET is_main = 1 WHERE profile = ? AND scene_id = ? AND model_id = ?')
-        .run(profile, sceneId, modelId)
-      return Number(result.changes)
-    }
-    return this.bind(profile, sceneId, modelId, true)
+    return withTransaction(() => {
+      const db = getDatabase()
+      db.prepare('UPDATE user_scene_models SET is_main = 0 WHERE profile = ? AND scene_id = ?').run(profile, sceneId)
+      const existing = db
+        .prepare('SELECT 1 FROM user_scene_models WHERE profile = ? AND scene_id = ? AND model_id = ?')
+        .get(profile, sceneId, modelId)
+      if (existing) {
+        const result = db
+          .prepare('UPDATE user_scene_models SET is_main = 1 WHERE profile = ? AND scene_id = ? AND model_id = ?')
+          .run(profile, sceneId, modelId)
+        return Number(result.changes)
+      }
+      return this.bind(profile, sceneId, modelId, true)
+    })
   }
 
   /** 删除指定模型的绑定 */

@@ -33,6 +33,7 @@ import type { ConversationContext, SessionContext } from './context'
 import { buildConvCtx } from './context'
 import type { ConversationDeps, TinkerAgentResult } from './types'
 import { CONV_COMPLETED, RES_INTERRUPTED } from './types'
+import { withTransaction } from '../../repository/database'
 
 /** 对话轮次对象 */
 export class Conversation {
@@ -355,34 +356,38 @@ export class Conversation {
     const cycleStats = { durationMs: Date.now() - this.cycleStart, iterationCount: this.iteration, llmRequestCount: this.llmRequestCount }
     // 本轮自动批准标记随周期结束清除（下一次对话重新生效审批）
     approvalManager.clearAutoApprove(convId)
-    // 暂存消息落库（先 flush——拿到本轮上下文总量：最后一条 assistant 消息的 prompt_tokens）
-    const roundContextTokens = messageService.flushConversation(convId)
-    // 对话完成（usage 更新 conversation——当前轮次的缓存数据 + 运行统计 + 本轮上下文总量）
-    conversationService.updateStatus(convId, sessionId, CONV_COMPLETED, {
-      cacheReadTokens: response.cacheReadTokens ?? 0,
-      cacheWriteTokens: response.cacheWriteTokens ?? 0,
-      totalTokens: (response.promptTokens ?? 0) + (response.completionTokens ?? 0),
-      durationMs: cycleStats.durationMs,
-      iterationCount: cycleStats.iterationCount,
-      llmRequestCount: cycleStats.llmRequestCount,
-      roundContextTokens,
-      completedAt: new Date().toISOString(),
+    // 收尾三步（消息落库 + 对话状态 + 会话统计）事务原子——任一步失败整体回滚，
+    // 避免"消息落了但状态没更新"的部分写入不一致
+    withTransaction(() => {
+      // 暂存消息落库（先 flush——拿到本轮上下文总量：最后一条 assistant 消息的 prompt_tokens）
+      const roundContextTokens = messageService.flushConversation(convId)
+      // 对话完成（usage 更新 conversation——当前轮次的缓存数据 + 运行统计 + 本轮上下文总量）
+      conversationService.updateStatus(convId, sessionId, CONV_COMPLETED, {
+        cacheReadTokens: response.cacheReadTokens ?? 0,
+        cacheWriteTokens: response.cacheWriteTokens ?? 0,
+        totalTokens: (response.promptTokens ?? 0) + (response.completionTokens ?? 0),
+        durationMs: cycleStats.durationMs,
+        iterationCount: cycleStats.iterationCount,
+        llmRequestCount: cycleStats.llmRequestCount,
+        roundContextTokens,
+        completedAt: new Date().toISOString(),
+      })
+      // 会话 token 统计（本轮 AgentLoop 全部响应累计——不是最后一条）
+      if (this.tokenAccum.prompt > 0 || this.tokenAccum.completion > 0) {
+        sessionService.accumulateTokens(
+          sessionId,
+          profile,
+          this.tokenAccum.prompt,
+          this.tokenAccum.completion,
+          this.tokenAccum.cacheRead,
+          this.tokenAccum.cacheWrite,
+          cycleStats.durationMs,
+          cycleStats.iterationCount,
+          cycleStats.llmRequestCount,
+          roundContextTokens
+        )
+      }
     })
-    // 会话 token 统计（本轮 AgentLoop 全部响应累计——不是最后一条）
-    if (this.tokenAccum.prompt > 0 || this.tokenAccum.completion > 0) {
-      sessionService.accumulateTokens(
-        sessionId,
-        profile,
-        this.tokenAccum.prompt,
-        this.tokenAccum.completion,
-        this.tokenAccum.cacheRead,
-        this.tokenAccum.cacheWrite,
-        cycleStats.durationMs,
-        cycleStats.iterationCount,
-        cycleStats.llmRequestCount,
-        roundContextTokens
-      )
-    }
     // 标题生成（异步，失败不影响主流程）
     void this.generateTitleAsync(convCtx)
     // 周期完成事件 + 统计数据（一边发事件一边落库）

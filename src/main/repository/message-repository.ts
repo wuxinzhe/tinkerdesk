@@ -5,7 +5,7 @@
  * 消息 CRUD、条件查询、分页、会话历史加载。
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
-import { getDatabase } from './database'
+import { getDatabase, withTransaction } from './database'
 import { nowDb } from '../utils/time'
 import type { MessageEntity, MessageQuery, SessionMessageQuery } from './types'
 import { STATUS_PENDING, STATUS_TIMED_OUT } from '../core/constants'
@@ -75,44 +75,46 @@ export class MessageRepository {
     return Number(result.lastInsertRowid)
   }
 
-  /** 批量插入消息 */
+  /** 批量插入消息（事务原子——中途失败整体回滚，避免部分写入） */
   saveAll(entities: MessageEntity[]): number {
-    const db = getDatabase()
-    const stmt = db.prepare(
-      `INSERT INTO messages (session_id, conversation_id, profile, role,
-          content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
-          interaction_status, message_type, deleted, created_at, updated_at,
-          prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    let count = 0
-    for (const e of entities) {
-      // 显式写时间：统一走 nowDb 格式（不依赖 SQLite 隐式 DEFAULT），createdAt 缺省兜底
-      const now = e.createdAt ?? nowDb()
-      stmt.run(
-        e.sessionId,
-        e.conversationId,
-        e.profile,
-        e.role,
-        e.content,
-        e.reasoningContent ?? '',
-        e.toolCall,
-        e.toolCallId ?? '',
-        e.toolName ?? '',
-        e.finishReason ?? 'complete',
-        e.interactionStatus ?? '',
-        e.messageType ?? '',
-        e.deleted ? 1 : 0,
-        now,
-        now,
-        e.promptTokens ?? 0,
-        e.completionTokens ?? 0,
-        e.cacheReadTokens ?? 0,
-        e.cacheWriteTokens ?? 0
+    return withTransaction(() => {
+      const db = getDatabase()
+      const stmt = db.prepare(
+        `INSERT INTO messages (session_id, conversation_id, profile, role,
+            content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
+            interaction_status, message_type, deleted, created_at, updated_at,
+            prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      count++
-    }
-    return count
+      let count = 0
+      for (const e of entities) {
+        // 显式写时间：统一走 nowDb 格式（不依赖 SQLite 隐式 DEFAULT），createdAt 缺省兜底
+        const now = e.createdAt ?? nowDb()
+        stmt.run(
+          e.sessionId,
+          e.conversationId,
+          e.profile,
+          e.role,
+          e.content,
+          e.reasoningContent ?? '',
+          e.toolCall,
+          e.toolCallId ?? '',
+          e.toolName ?? '',
+          e.finishReason ?? 'complete',
+          e.interactionStatus ?? '',
+          e.messageType ?? '',
+          e.deleted ? 1 : 0,
+          now,
+          now,
+          e.promptTokens ?? 0,
+          e.completionTokens ?? 0,
+          e.cacheReadTokens ?? 0,
+          e.cacheWriteTokens ?? 0
+        )
+        count++
+      }
+      return count
+    })
   }
 
   /** 查询已完成对话的历史消息（用于 LLM 上下文恢复） */

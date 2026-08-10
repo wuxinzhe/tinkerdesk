@@ -573,3 +573,30 @@ export function closeDatabase(): void {
     db = null;
   }
 }
+
+/**
+ * 事务执行：fn 内所有 DB 操作原子提交——中途失败整体回滚。
+ * 多步/批量写入（消息批量插入、压缩摘要替换、对话完成收尾等）必须走事务，
+ * 否则中途失败会留下"部分写入"的不一致数据。
+ *
+ * 支持嵌套（SAVEPOINT）：内层 withTransaction 在已有事务内开启 savepoint——
+ * 内层失败只回滚内层，外层失败整体回滚。node:sqlite 同步 API + 本地单用户，
+ * 模块级深度计数安全。
+ */
+let txDepth = 0
+export function withTransaction<T>(fn: () => T): T {
+  const database = getDatabase()
+  txDepth++
+  const depth = txDepth
+  database.exec(depth === 1 ? 'BEGIN' : `SAVEPOINT tx_${depth}`)
+  try {
+    const result = fn()
+    database.exec(depth === 1 ? 'COMMIT' : `RELEASE tx_${depth}`)
+    return result
+  } catch (err) {
+    database.exec(depth === 1 ? 'ROLLBACK' : `ROLLBACK TO tx_${depth}; RELEASE tx_${depth}`)
+    throw err
+  } finally {
+    txDepth--
+  }
+}
