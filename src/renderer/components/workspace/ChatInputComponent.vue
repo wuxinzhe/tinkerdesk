@@ -236,7 +236,7 @@ function eventKeyNormalized(e: KeyboardEvent): string {
   return ''
 }
 
-/** 快捷键监听（按住开始 / 松开结束） */
+/** 快捷键监听（按一下开始 / 再按一下结束——toggle，与全局快捷键交互一致） */
 function onGlobalKeyDown(e: KeyboardEvent): void {
   // 快捷键仅在录音模式（武装/录音中）生效——输入框模式一律不响应，避免误触
   if (!sttAvailable.value || voiceMode.value === false) return
@@ -245,14 +245,17 @@ function onGlobalKeyDown(e: KeyboardEvent): void {
     shortcutHeld = true
     e.preventDefault()
     void startRecording()
+  } else if (parseShortcut(shortcutRecord.value)(e) && shortcutHeld && recording.value) {
+    // 再按一下 → 结束录音并发送
+    shortcutHeld = false
+    e.preventDefault()
+    void stopRecording()
   }
 }
 function onGlobalKeyUp(e: KeyboardEvent): void {
-  if (!shortcutHeld) return
-  // 组合键任意一个松开即结束
+  // toggle 交互：松开只清 held 标记（不触发停止——避免按住误停）
   if (parseShortcut(shortcutRecord.value)(e) || e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta' || e.key === '`' || e.key === 'Backquote') {
     shortcutHeld = false
-    if (recording.value) void stopRecording()
   }
 }
 
