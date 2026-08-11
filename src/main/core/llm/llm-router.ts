@@ -8,6 +8,8 @@ import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
 import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, ERROR_RATE_LIMITED, errorResponse, isSuccess } from './llm-response'
 import type { CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
+import { usageRecorder } from './usage-recorder'
+import { randomUUID } from 'crypto'
 
 /** 同一模型本地重试上限（限流/网络错误——瞬时故障重试一次大概率成功） */
 const MAX_LOCAL_ATTEMPTS = 2
@@ -52,6 +54,25 @@ export class LlmRouter {
     const { scene, messages, tools, modelConfigs } = options
     const op = this.operationManager.getOperation(scene)
     const configs = modelConfigs
+    // usage 统计：请求级唯一 id（幂等键）+ 开始时刻（耗时）
+    const requestId = randomUUID()
+    const startedAt = Date.now()
+    const recordUsage = (modelName: string, status: 'success' | 'failed', response?: LlmResponse): void => {
+      usageRecorder.record({
+        requestId,
+        profile: options.profile,
+        conversationId: options.conversationId,
+        sessionId: options.sessionId,
+        modelName,
+        scene,
+        status,
+        promptTokens: response?.promptTokens,
+        completionTokens: response?.completionTokens,
+        cacheReadTokens: response?.cacheReadTokens,
+        cacheWriteTokens: response?.cacheWriteTokens,
+        latencyMs: Date.now() - startedAt,
+      })
+    }
     if (!configs || configs.length === 0) {
       console.warn(`场景 ${scene} 未配置模型`)
       return errorResponse(ERROR_ALL_MODELS_FAILED, `场景 ${scene} 未配置模型`)
@@ -93,8 +114,10 @@ export class LlmRouter {
         const decision = op.handle(response, opCtx, messages, tools)
         switch (decision.verdict) {
           case 'SUCCESS':
+            recordUsage(config.modelName, 'success', response)
             return response
           case 'FATAL':
+            recordUsage(config.modelName, 'success', response)
             return response
           case 'RETRYABLE': {
             // 限流（429）：瞬时组织级限额——等待退避后重试同一模型（不立即回退）
@@ -112,6 +135,8 @@ export class LlmRouter {
     }
 
     console.error('所有模型配置均已试过，全部失败')
+    // 全部失败也记一条（usage 全 0 + status=failed——可用率/失败率统计）
+    recordUsage(configs[configs.length - 1]?.modelName ?? 'unknown', 'failed')
     return errorResponse(ERROR_ALL_MODELS_FAILED, '所有可用的模型配置均已试过，全部失败。')
   }
 }

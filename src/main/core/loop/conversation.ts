@@ -102,6 +102,10 @@ export class Conversation {
       tools,
       modelConfigs: allConfigs.get(SCENE_CHAT) ?? [],
       reasoningDepth: session?.reasoningDepth || undefined,
+      // usage 统计上下文
+      profile: this.profile,
+      sessionId: this.sessionId,
+      conversationId: this.convId,
     }
 
     // ── 长任务提示（执行超过 60s 后每 60s 发一次 tip，cycle 结束自停） ──
@@ -446,6 +450,9 @@ export class Conversation {
         messages: history,
         tools: [],
         modelConfigs: allConfigs.get(SCENE_TITLE) ?? [],
+        profile,
+        sessionId,
+        conversationId: convId,
       }
       const resp = await llmRouter.execute(routerCtx)
       const title = (resp.text || '').trim().slice(0, 50)

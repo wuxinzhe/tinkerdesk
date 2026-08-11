@@ -198,6 +198,10 @@ export interface LlmRouterOptions {
   modelConfigs: ModelConfig[]
   /** 推理深度（'' = 未设置/默认——各 client 映射 reasoning_effort 或 thinkingBudget） */
   reasoningDepth?: string
+  /** usage 统计上下文（可选——llm_usage_log 落库用；调用方能传就传） */
+  profile?: string
+  conversationId?: string
+  sessionId?: string
 }
 
 /** 模型调用函数（非流式或流式实现，由 LlmRouter 内部使用） */

@@ -179,6 +179,23 @@ function seedDefaultSkills(database: DatabaseSync): void {
 
 /** 建表（幂等，IF NOT EXISTS） */
 function createTables(database: DatabaseSync): void {
+  database.exec(`CREATE TABLE IF NOT EXISTS llm_usage_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    request_id TEXT UNIQUE,
+    profile TEXT NOT NULL DEFAULT 'default',
+    conversation_id TEXT,
+    session_id TEXT,
+    model_name TEXT NOT NULL,
+    scene TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'success',
+    prompt_tokens INTEGER NOT NULL DEFAULT 0,
+    completion_tokens INTEGER NOT NULL DEFAULT 0,
+    total_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+    latency_ms INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`)
   database.exec(`
     CREATE TABLE IF NOT EXISTS custom_models (
       id             TEXT PRIMARY KEY,

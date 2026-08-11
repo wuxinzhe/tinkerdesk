@@ -27,6 +27,7 @@ import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 import { registerMediaProtocol } from './service/media-service'
+import { usageRecorder } from './core/llm/usage-recorder'
 import { protocol } from 'electron'
 
 // app-media:// 自定义协议特权声明（必须在 app ready 前）：
@@ -133,6 +134,8 @@ app.whenReady().then(() => {
 
   // ── Agent 会话（本地 TinkerAgent）：组装依赖 + 注册 IPC ──
   const desk = bootstrap([], [])
+  // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
+  usageRecorder.init()
   new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
   new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService).register()
   new MessageController(desk.messageService).register()
@@ -199,6 +202,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    // usage 统计先清空（需要 DB）——再关库
+    usageRecorder.shutdown()
     closeDatabase()
     app.quit()
   }
