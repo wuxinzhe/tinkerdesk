@@ -1,7 +1,7 @@
 <template>
   <div class="preview-card" @click="$emit('open', card.conversationId)">
     <div class="preview-card__header">
-      <span class="preview-card__time">{{ formatTime(card.createdAt) }}</span>
+      <span class="preview-card__time">{{ formatTime(card.timestamp) }}</span>
       <span class="preview-card__count">⚙️ {{ card.messageCount }} 条消息</span>
     </div>
 

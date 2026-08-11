@@ -27,7 +27,9 @@ export interface Message {
   messageType?: string
   content: string
   reasoningContent?: string
-  /** 创建时间（epoch ms——后端消息为 createdAt 字符串/本地合成 number；对齐后端 created_at） */
+  /** 时间戳（epoch ms） */
+  timestamp: number
+  /** 创建时间（后端 created_at——MessageBubble 时间戳显示用；本地消息无此字段） */
   createdAt?: string | number
   /** 工具调用信息 — 服务端返回 JSON string，客户端 parse 为 ToolCall */
   toolCall?: ToolCall | string | Record<string, { name: string; arguments?: unknown }>
