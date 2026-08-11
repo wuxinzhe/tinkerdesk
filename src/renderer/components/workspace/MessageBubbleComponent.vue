@@ -120,21 +120,8 @@
         :interaction-status="message.interactionStatus"
       />
 
-      <!-- ── 发送状态（仅 user_message——body 内气泡下方） ── -->
-      <div v-if="isUserNormal" class="message-status">
-        <template v-if="message.status === 'sending'">
-          <span class="status-dot status-dot--sending" />
-          发送中...
-        </template>
-        <template v-else-if="message.status === 'failed'">
-          <span class="status-dot status-dot--failed" />
-          发送失败
-        </template>
-      </div>
-      </div>
-
       <!-- ── 时间戳（SVG 按钮 + 时间）──
-           统一 hover 显示（触屏点击）；行级——气泡旁（assistant 行最右 / user 气泡左） -->
+           统一 hover 显示（触屏点击）；位置在所有卡片之后 -->
       <div class="message-timestamp" :class="{ visible: showTimestamp }">
         <button
           v-if="canSpeak"
@@ -172,6 +159,7 @@
         </template>
       </div>
     </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -386,7 +374,6 @@ const bubbleStyleClass = computed(() =>
   min-width: 0;
   padding: 2px 0;
   scroll-margin-top: 5px;
-  position: relative;
 }
 
 /* 窄 L3 容器（如平板 + 侧栏展开）时气泡拉宽 */
@@ -600,23 +587,13 @@ const bubbleStyleClass = computed(() =>
   font-size: 11px;
   color: var(--tk-text-tertiary);
   line-height: 1;
-  padding: 0 4px;
+  padding: 0 4px 0 12px;
   display: flex;
   align-items: center;
   gap: 6px;
-  /* 行级绝对定位：assistant 行右端 / user 行左端（气泡对侧——不随 body 宽度错位） */
-  position: absolute;
-  right: 8px;
-  bottom: 2px;
   opacity: 0;
   transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
-}
-
-/* user 行（row-reverse 气泡贴右）——时间戳在行左端（气泡对侧） */
-.message-row--user .message-timestamp {
-  right: auto;
-  left: 8px;
 }
 
 .message-timestamp.visible {
