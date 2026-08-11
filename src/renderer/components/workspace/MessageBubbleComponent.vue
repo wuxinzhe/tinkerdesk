@@ -119,6 +119,18 @@
         :submitted-content="message.content"
         :interaction-status="message.interactionStatus"
       />
+
+      <!-- ── 发送状态（仅 user_message——body 内气泡下方） ── -->
+      <div v-if="isUserNormal" class="message-status">
+        <template v-if="message.status === 'sending'">
+          <span class="status-dot status-dot--sending" />
+          发送中...
+        </template>
+        <template v-else-if="message.status === 'failed'">
+          <span class="status-dot status-dot--failed" />
+          发送失败
+        </template>
+      </div>
       </div>
 
       <!-- ── 时间戳（SVG 按钮 + 时间）──
@@ -160,7 +172,6 @@
         </template>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
