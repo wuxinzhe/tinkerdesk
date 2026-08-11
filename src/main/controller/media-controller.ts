@@ -14,21 +14,30 @@ import { importMediaFile } from '../service/media-service'
 /** 媒体控制器 */
 export class MediaController {
   register(): void {
-    handleTrusted('media:pick-and-import', async () => this.pickAndImport())
+    handleTrusted('media:pick-and-import', async (_event, payload) => this.pickAndImport(payload))
   }
 
   /** 弹文件选择框 → 复制到 media 目录 → 返回相对路径（media/xxx.ext） */
-  private async pickAndImport(): Promise<ApiResponse<string>> {
+  private async pickAndImport(payload: { kind?: 'image' | 'audio' | 'video' }): Promise<ApiResponse<string>> {
+    const kind = payload?.kind
+    const filters: Electron.FileFilter[] =
+      kind === 'image'
+        ? [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }]
+        : kind === 'audio'
+          ? [{ name: '音频', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] }]
+          : kind === 'video'
+            ? [{ name: '视频', extensions: ['mp4', 'webm', 'mkv', 'mov'] }]
+            : [
+                { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] },
+                { name: '音频', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] },
+                { name: '视频', extensions: ['mp4', 'webm', 'mkv', 'mov'] },
+                { name: '所有文件', extensions: ['*'] },
+              ]
     try {
       const result = await dialog.showOpenDialog({
         title: '选择要发送的多媒体文件',
         properties: ['openFile'],
-        filters: [
-          { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] },
-          { name: '音频', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] },
-          { name: '视频', extensions: ['mp4', 'webm', 'mkv', 'mov'] },
-          { name: '所有文件', extensions: ['*'] },
-        ],
+        filters,
       })
       if (result.canceled || result.filePaths.length === 0) {
         return fail('已取消')

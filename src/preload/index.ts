@@ -363,9 +363,9 @@ const api = {
       inv('tool-config:toggle', { toolName, disabled, profile }).then(unwrap),
   },
 
-  // ── 媒体附件（MediaController——pick-and-import 返回相对路径 media/xxx.ext）──
+  // ── 媒体附件（MediaController——pick-and-import 返回相对路径 media/xxx.ext；kind 限定文件类型）──
   media: {
-    pickAndImport: () => inv('media:pick-and-import').then(unwrap),
+    pickAndImport: (kind?: 'image' | 'audio' | 'video') => inv('media:pick-and-import', { kind }).then(unwrap),
   },
 
   // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──

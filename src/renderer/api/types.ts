@@ -971,7 +971,7 @@ export interface WindowApi {
   }
 
   media: {
-    pickAndImport: () => Promise<string>
+    pickAndImport: (kind?: 'image' | 'audio' | 'video') => Promise<string>
   },
 
   webProvider: {
