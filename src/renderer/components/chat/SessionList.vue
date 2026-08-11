@@ -30,7 +30,6 @@
           :active="s.id === activeSessionId"
           :pending="s.id === pendingSessionId"
           :stage="stageBySession[s.id] ?? 'idle'"
-          :completed="completedBySession[s.id] ?? false"
           @select="onSelect"
         />
       </TransitionGroup>
@@ -72,9 +71,9 @@ const props = defineProps<{
 }>()
 
 const chatStore = useChatStore()
-/** 会话阶段（chat-store sessionStage 推导——approval/clarify/working/idle——响应式） */
-const stageBySession = computed<Record<string, 'approval' | 'clarify' | 'working' | 'idle'>>(() => {
-  const map: Record<string, 'approval' | 'clarify' | 'working' | 'idle'> = {}
+/** 会话阶段（chat-store sessionStage 推导——approval/clarify/working/tool/completed/idle——响应式） */
+const stageBySession = computed<Record<string, 'working' | 'tool' | 'approval' | 'clarify' | 'completed' | 'idle'>>(() => {
+  const map: Record<string, 'working' | 'tool' | 'approval' | 'clarify' | 'completed' | 'idle'> = {}
   for (const s of sessions.value) {
     map[s.id] = chatStore.sessionStage(s.id)
   }
@@ -193,32 +192,21 @@ watch(() => props.profile, () => {
   loadSessions()
 })
 
-/* ── 完成提醒标记（非 active 会话 complete 后显示 ✓；切到该会话清除） ── */
-const completedBySession = ref<Record<string, boolean>>({})
-
-function handleConversationComplete(e: Event): void {
-  const { sessionId } = (e as CustomEvent).detail ?? {}
-  if (!sessionId) return
-  // active 会话完成：用户在看——不需要提醒；非 active：标记提醒查看结果
-  if (sessionId !== props.activeSessionId) {
-    completedBySession.value[sessionId] = true
-  }
-}
-
-// 切换到某会话 → 清除它的完成提醒（用户已在看）
+/* ── 完成提醒（localStorage 阶段——切到该会话清除 completed） ── */
+// 切到某会话 → 清除它的完成提醒（用户已在看——completed → idle）
 watch(() => props.activeSessionId, (sid) => {
-  if (sid) delete completedBySession.value[sid]
+  if (sid && chatStore.sessionStage(sid) === 'completed') {
+    chatStore.setSessionStage(sid, 'idle')
+  }
 })
 
 onMounted(() => {
   loadSessions()
   window.addEventListener('session-title-updated', handleSessionTitleUpdated)
-  window.addEventListener('conversation-complete', handleConversationComplete)
 })
 
 onUnmounted(() => {
   window.removeEventListener('session-title-updated', handleSessionTitleUpdated)
-  window.removeEventListener('conversation-complete', handleConversationComplete)
 })
 
 defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePendingSession })

@@ -118,6 +118,7 @@ export const useChatStore = defineStore('chat', () => {
             break
           }
           case 'approval':
+            setSessionStage(sessionId, 'approval')
             addApprovalMessage({
               sessionId,
               conversationId: (data?.conversationId as string) ?? '',
@@ -129,6 +130,7 @@ export const useChatStore = defineStore('chat', () => {
             } as ApprovalRequestPayload)
             break
           case 'clarify': {
+            setSessionStage(sessionId, 'clarify')
             const question = (data?.arguments as Record<string, unknown> | undefined)?.['question'] as string | undefined
             const choices = (data?.arguments as Record<string, unknown> | undefined)?.['choices'] as string[] | undefined
             addClarifyMessage({ toolCallId: data?.toolCallId as string, sessionId, question: question ?? '', choices: choices ?? null })
@@ -375,6 +377,7 @@ export const useChatStore = defineStore('chat', () => {
         if (notifyData?.notifyOnComplete) {
           playMessageNotification()
         }
+        setSessionStage(sessionId, 'completed')
         isProcessingBySession.value[sessionId] = false
         window.dispatchEvent(new CustomEvent('conversation-complete', {
           detail: { sessionId, convId: (payload as ActionSignalPayload).convId ?? '', data: (payload as ActionSignalPayload).data ?? null }
@@ -395,6 +398,11 @@ export const useChatStore = defineStore('chat', () => {
         }))
         break
       }
+      case 'tool_start': {
+        // 工具调用开始 → 阶段 tool（齿轮旋转——区别于 LLM 思考的 spinner）
+        setSessionStage(sessionId, 'tool')
+        break
+      }
       case 'tool_done': {
         const donePayload = payload as { data?: { toolCallId?: string; toolName?: string } }
         const doneData = donePayload.data ?? {}
@@ -406,6 +414,8 @@ export const useChatStore = defineStore('chat', () => {
           else tcArray.push({ toolCallId: doneId, toolName: doneData.toolName ?? '', status: 'done' })
           toolCallsBySession.value[sessionId] = tcArray
         }
+        // 工具完成 → 回 working（LLM 继续生成）
+        setSessionStage(sessionId, 'working')
         break
       }
     }
@@ -415,6 +425,8 @@ export const useChatStore = defineStore('chat', () => {
 
   function sendMessage(sessionId: string, content: string, profile?: string): void {
     if (!content.trim()) return
+    // 发起消息 → 阶段 working（localStorage 持久化）
+    setSessionStage(sessionId, 'working')
     const api = agentApi ?? initAgentApi()
     if (!api) return
 
@@ -672,18 +684,47 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 会话阶段推导（session-item 图标状态源）：
-   * approval=等审批（❗）/ clarify=等回答（？）/ working=工作中（spinner）/ idle
-   * 优先级：审批挂起 > clarify 挂起 > 处理中/工具 pending > idle
+   * 会话阶段推导（localStorage 持久化——前端自维护——刷新后恢复）：
+   * working=工作中（spinner）/ approval=等审批（❗）/ clarify=等回答（？）/ completed=已完成（✓）/ idle
+   * 更新源（全在前端）：sendMessage→working；approval/clarify 事件→对应阶段；complete→completed；切会话→idle
    */
-  function sessionStage(sessionId: string): 'approval' | 'clarify' | 'working' | 'idle' {
-    const msgs = messagesBySession.value[sessionId] ?? []
-    if (msgs.some((m) => m.role === 'approval' && m.interactionStatus === 'pending')) return 'approval'
-    if (msgs.some((m) => m.messageType === 'clarify_request' && !m.content)) return 'clarify'
-    if (isProcessingBySession.value[sessionId]) return 'working'
-    const tools = toolCallsBySession.value[sessionId] ?? []
-    if (tools.some((t) => t.status === 'pending')) return 'working'
-    return 'idle'
+  type SessionStage = 'working' | 'tool' | 'approval' | 'clarify' | 'completed' | 'idle'
+  const STAGE_KEY = (sessionId: string): string => `session_state_${sessionId}`
+  const VALID_STAGES: SessionStage[] = ['working', 'tool', 'approval', 'clarify', 'completed', 'idle']
+
+  function loadSessionStates(): Record<string, SessionStage> {
+    const map: Record<string, SessionStage> = {}
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('session_state_')) {
+          const sid = key.slice('session_state_'.length)
+          const v = localStorage.getItem(key)
+          if (v && (VALID_STAGES as string[]).includes(v)) {
+            map[sid] = v as SessionStage
+          }
+        }
+      }
+    } catch {
+      // localStorage 不可用（隐私模式等）——纯内存态
+    }
+    return map
+  }
+
+  const sessionStates = ref<Record<string, SessionStage>>(loadSessionStates())
+
+  function setSessionStage(sessionId: string, stage: SessionStage): void {
+    sessionStates.value[sessionId] = stage
+    try {
+      if (stage === 'idle') localStorage.removeItem(STAGE_KEY(sessionId))
+      else localStorage.setItem(STAGE_KEY(sessionId), stage)
+    } catch {
+      // 忽略——内存态仍有效
+    }
+  }
+
+  function sessionStage(sessionId: string): SessionStage {
+    return sessionStates.value[sessionId] ?? 'idle'
   }
 
   return {
@@ -701,6 +742,7 @@ export const useChatStore = defineStore('chat', () => {
     getMessages,
     getStreamingReasoning,
     sessionStage,
+    setSessionStage,
 
     // streaming chunks
     getConvPendingBuffer,
