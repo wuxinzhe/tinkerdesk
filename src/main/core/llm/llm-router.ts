@@ -6,8 +6,20 @@
  */
 import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
-import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, errorResponse, isSuccess } from './llm-response'
+import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, ERROR_RATE_LIMITED, errorResponse, isSuccess } from './llm-response'
 import type { CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
+
+/** 同一模型本地重试上限（限流/网络错误——瞬时故障重试一次大概率成功） */
+const MAX_LOCAL_ATTEMPTS = 2
+/** 网络错误快退避（毫秒——第 1 次失败后等待 2s，第 2 次 4s） */
+const NETWORK_RETRY_WAIT_MS = 2_000
+/** 限流等待（毫秒——429 是瞬时组织级限额——等 15s 重试同一模型） */
+const RATE_LIMIT_WAIT_MS = 15_000
+
+/** 等待（毫秒） */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 /** LLM 路由器 */
 export class LlmRouter {
@@ -52,33 +64,50 @@ export class LlmRouter {
       return errorResponse(ERROR_INVALID_REQUEST, 'input 为空')
     }
 
-    // Phase 2 + Phase 3: 模型调用 + 回退循环
+    // Phase 2 + Phase 3: 模型调用 + 回退循环（限流/网络错误本地重试——瞬时故障不立即判死）
     for (let i = 0; i < configs.length; i++) {
       const config = configs[i]
-      console.log(`model=${config.modelName} attempt=${i + 1}/${configs.length}`)
+      let localAttempt = 0
+      while (localAttempt < MAX_LOCAL_ATTEMPTS) {
+        localAttempt++
+        console.log(`model=${config.modelName} attempt=${i + 1}/${configs.length}`)
 
-      let response: LlmResponse
-      try {
-        response = await callFn(config, input)
-      } catch (e) {
-        console.warn(`模型 ${config.modelName} 调用异常（${(e as Error).message}），回退到下一个`)
-        continue
-      }
+        let response: LlmResponse
+        try {
+          response = await callFn(config, input)
+        } catch (e) {
+          // 调用异常（网络错误等——瞬时）→ 本地快退避重试
+          console.warn(`模型 ${config.modelName} 调用异常（${(e as Error).message}），本地重试 ${localAttempt}/${MAX_LOCAL_ATTEMPTS}`)
+          if (localAttempt < MAX_LOCAL_ATTEMPTS) {
+            await sleep(NETWORK_RETRY_WAIT_MS * localAttempt)
+            continue
+          }
+          break
+        }
 
-      if (isSuccess(response)) {
-        console.log(`action=LLM_RESPONSE model=${config.modelName} tokens=${response.promptTokens ?? 0}`)
-      }
+        if (isSuccess(response)) {
+          console.log(`action=LLM_RESPONSE model=${config.modelName} tokens=${response.promptTokens ?? 0}`)
+        }
 
-      // Phase 3: Operation 判决
-      const decision = op.handle(response, opCtx, messages, tools)
-      switch (decision.verdict) {
-        case 'SUCCESS':
-          return response
-        case 'FATAL':
-          return response
-        case 'RETRYABLE':
-          console.warn(`模型 ${config.modelName} 返回 RETRYABLE（类型=${response.resType}${response.errorMessage ? `，原因=${response.errorMessage}` : ''}），回退到下一个`)
-        // continue
+        // Phase 3: Operation 判决
+        const decision = op.handle(response, opCtx, messages, tools)
+        switch (decision.verdict) {
+          case 'SUCCESS':
+            return response
+          case 'FATAL':
+            return response
+          case 'RETRYABLE': {
+            // 限流（429）：瞬时组织级限额——等待退避后重试同一模型（不立即回退）
+            if (response.resType === ERROR_RATE_LIMITED && localAttempt < MAX_LOCAL_ATTEMPTS) {
+              console.warn(`模型 ${config.modelName} 被限流（429），等待 ${RATE_LIMIT_WAIT_MS}ms 重试同一模型（${localAttempt}/${MAX_LOCAL_ATTEMPTS}）`)
+              await sleep(RATE_LIMIT_WAIT_MS)
+              continue
+            }
+            console.warn(`模型 ${config.modelName} 返回 RETRYABLE（类型=${response.resType}${response.errorMessage ? `，原因=${response.errorMessage}` : ''}），回退到下一个`)
+            break
+          }
+        }
+        break // 非限流/重试耗尽 → 回退下一个模型
       }
     }
 
