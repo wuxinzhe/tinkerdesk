@@ -144,7 +144,7 @@
             <line x1="8" y1="17" x2="13" y2="17" />
           </svg>
         </button>
-        <span class="message-timestamp__time">{{ formatTime(message.timestamp) }}</span>
+        <span class="message-timestamp__time">{{ formatTime(message.createdAt) }}</span>
       </div>
 
       <!-- ── 发送状态（仅 user_message） ── -->
@@ -272,9 +272,11 @@ onBeforeUnmount(() => {
   speakingAudio.value?.pause()
 })
 
-function formatTime(ts: number): string {
+function formatTime(ts: number | string | undefined): string {
   if (!ts) return ''
-  const date = new Date(ts)
+  // 后端 createdAt 是 'YYYY-MM-DD HH:MM:SS' 字符串——转 Date（空格 → T 兼容）；本地合成是 number
+  const date = typeof ts === 'string' ? new Date(ts.replace(' ', 'T')) : new Date(ts)
+  if (Number.isNaN(date.getTime())) return ''
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
   const yesterday = new Date(now)
@@ -282,7 +284,7 @@ function formatTime(ts: number): string {
   const isYesterday = date.toDateString() === yesterday.toDateString()
 
   const pad = (n: number) => String(n).padStart(2, '0')
-  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 
   if (isToday) return time
   if (isYesterday) return `昨天 ${time}`

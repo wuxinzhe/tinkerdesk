@@ -110,7 +110,7 @@ const props = withDefaults(defineProps<{
 function msgKey(msg: Message, idx: number): string {
   // id 0（未落库的实时消息）不能当 key——多条 id 0 会冲突导致 TransitionGroup 渲染异常
   if (msg.id != null && msg.id !== '' && msg.id !== 0 && String(msg.id) !== '0') return String(msg.id)
-  return `${msg.sessionId ?? ''}_${msg.timestamp ?? idx}_${msg.messageType ?? ''}_${idx}`
+  return `${msg.sessionId ?? ''}_${msg.createdAt ?? idx}_${msg.messageType ?? ''}_${idx}`
 }
 
 const emit = defineEmits<{
