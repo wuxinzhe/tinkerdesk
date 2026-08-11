@@ -386,6 +386,7 @@ const bubbleStyleClass = computed(() =>
   min-width: 0;
   padding: 2px 0;
   scroll-margin-top: 5px;
+  position: relative;
 }
 
 /* 窄 L3 容器（如平板 + 侧栏展开）时气泡拉宽 */
@@ -603,16 +604,19 @@ const bubbleStyleClass = computed(() =>
   display: flex;
   align-items: center;
   gap: 6px;
-  align-self: flex-end;
-  flex-shrink: 0;
+  /* 行级绝对定位：assistant 行右端 / user 行左端（气泡对侧——不随 body 宽度错位） */
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
   opacity: 0;
   transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
 }
 
-/* assistant 行：时间戳推到行最右（气泡在左） */
-.message-row--assistant .message-timestamp {
-  margin-left: auto;
+/* user 行（row-reverse 气泡贴右）——时间戳在行左端（气泡对侧） */
+.message-row--user .message-timestamp {
+  right: auto;
+  left: 8px;
 }
 
 .message-timestamp.visible {
