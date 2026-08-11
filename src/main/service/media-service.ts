@@ -109,7 +109,7 @@ export function registerMediaProtocol(): void {
     if (!isInsideMediaRoot(absPath) || !existsSync(absPath)) {
       return new Response('not found', { status: 404 })
     }
-    return net.fetch('file://' + absPath.replace(/\\/g, '/'))
+    return net.fetch('file:///' + absPath.replace(/\\/g, '/'))
   })
 }
 
