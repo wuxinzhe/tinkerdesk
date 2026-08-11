@@ -27,6 +27,14 @@ import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 import { registerMediaProtocol } from './service/media-service'
+import { protocol } from 'electron'
+
+// app-media:// 自定义协议特权声明（必须在 app ready 前）：
+// stream: true —— audio/video 媒体管线必需（否则自定义协议音频 Format error）
+// standard + secure —— URL 解析为标准 scheme + 视为安全上下文
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app-media', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } },
+])
 
 let mainWindow: BrowserWindow | null = null
 
