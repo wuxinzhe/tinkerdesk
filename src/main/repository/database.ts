@@ -553,7 +553,7 @@ function seedProviders(database: DatabaseSync): void {
     ['replicate', 'Replicate', 'https://api.replicate.com/v1', 'openai', 'Replicate 模型托管平台', 38],
     ['novita', 'Novita AI', 'https://api.novita.ai/v3/openai', 'openai', 'Novita AI 模型 API', 39],
     ['perfxcloud', 'PerfXCloud', 'https://api.perfxcloud.ai/v1', 'openai', 'PerfXCloud 模型推理', 40],
-    ['opencode', 'OpenCode Go', 'https://api.opencode.ai/v1', 'openai', 'OpenCode Go 订阅聚合（OpenAI 兼容）', 42],
+    ['opencode', 'OpenCode Go', 'https://opencode.ai/zen/go/v1', 'openai', 'OpenCode Go 订阅聚合（OpenAI 兼容——/zen/go/v1）', 42],
     ['sambanova', 'SambaNova', 'https://api.sambanova.ai/v1', 'openai', 'SambaNova 高性能推理', 41],
     ['ollama', 'Ollama', 'http://localhost:11434/v1', 'openai', 'Ollama 本地模型', 50],
   ];
