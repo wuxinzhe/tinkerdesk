@@ -148,6 +148,8 @@ import type { TinkerAgentOptions } from './core/loop/types'
 import { TOOL_TYPE_DESKTOP } from './core/tool/types'
 import { DelegateTool } from './tools/delegate-tool'
 import { ComputerUseTool, TOOL_NAME as COMPUTER_USE_TOOL_NAME } from './tools/computer-use/computer-use-tool'
+import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './tools/desktop/vision-tool'
+import { VisionProvider } from './service/vision-provider'
 
 /** 组装结果 */
 export interface TinkerDesk {
@@ -283,6 +285,9 @@ export function bootstrap(
   const webProvider = new WebProvider(pluginManager)
   const audioToolProvider = new AudioToolProvider(pluginManager)
   const computerUseProvider = new ComputerUseProvider(pluginManager)
+  // 模型配置解析服务（custom_models + providers → ModelConfig[]）——vision provider 依赖（场景模型解析）
+  const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
+  const visionProvider = new VisionProvider(llmRouter, modelConfigService)
 
   const desktopTools: AgentToolRegistration[] = [
     { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new TerminalTool(renderer) },
@@ -300,6 +305,7 @@ export function bootstrap(
     { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰', toolType: TOOL_TYPE_DESKTOP }, tool: new ScheduleTimerTool(renderer) },
     { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬', toolType: TOOL_TYPE_DESKTOP }, tool: new FileMutationVerifierTool(renderer) },
     { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️', toolType: TOOL_TYPE_DESKTOP }, tool: new ComputerUseTool(renderer, computerUseProvider) },
+    { meta: { name: VISION_RECOGNIZE_TOOL_NAME, emoji: '👁️', toolType: TOOL_TYPE_DESKTOP }, tool: new VisionRecognizeTool(renderer, visionProvider) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
   const pluginTools: AgentToolRegistration[] = [
@@ -323,7 +329,7 @@ export function bootstrap(
   void mcpCenter.restoreFromDb()
 
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
-  const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
+  // （已提前到 pluginManager 区——vision provider 依赖场景模型解析）
 
   // ── 安全门检服务（TinkerAgent 工具门检用，需在 TinkerAgent 之前组装） ──
   const sandboxWhitelistService = new SandboxWhitelistService(new UserUrlWhitelistRepository(), new UserPathWhitelistRepository())
