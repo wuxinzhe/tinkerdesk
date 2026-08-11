@@ -12,6 +12,10 @@
     <div class="session-item__icon">
       <!-- 处理中：图标位显示圆环 spinner（Claude 风格——低调清晰） -->
       <span v-if="processing" class="session-item__spinner" />
+      <!-- 完成提醒：非 active 会话 complete 后——图标显示 ✓（切到该会话清除） -->
+      <svg v-else-if="completed && !active" class="session-item__done-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
       <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
       </svg>
@@ -21,12 +25,6 @@
         <div class="session-item__title">
           {{ session.title || '新对话' }}
         </div>
-        <!-- 完成提醒（非 active 会话 complete 后——提醒查看结果；切到该会话即清除） -->
-        <span v-if="completed && !active" class="session-item__done" title="对话已完成，可查看结果">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
-        </span>
       </div>
       <div class="session-item__meta">
         <span class="session-item__time">{{ formatTime }}</span>
@@ -203,18 +201,10 @@ function onClick() {
   to { transform: rotate(360deg); }
 }
 
-/* 完成提醒标记（非 active——低调 ✓ 徽标） */
-.session-item__done {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+/* 完成提醒标记（非 active——图标位白色 ✓） */
+.session-item__done-icon {
   color: #fff;
-  background: var(--tk-accent);
-  opacity: 0.9;
+  flex-shrink: 0;
 }
 
 /* ── Tool call todo list ── */
