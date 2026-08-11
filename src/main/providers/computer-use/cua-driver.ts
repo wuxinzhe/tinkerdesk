@@ -21,6 +21,7 @@ export const CUA_DRIVER_MANIFEST = {
   apiVersion: 1,
   entry: '',
   builtin: true,
+  description: '后台桌面自动化驱动（cua-driver——截图/鼠标/键盘/窗口控制）。本机安装位置：AppData\\Local\\Programs\\Cua\\cua-driver。',
   capabilities: ['computer_use'],
   systemInterfaces: [{ id: 'tool.computer_use', version: 1 }],
 }
