@@ -25,6 +25,9 @@ import type { ToolContext } from '../../core/loop/types'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 
+/** 工具名（desktop 组——与 terminal 等客户端工具一致） */
+export const TOOL_NAME = 'desktop_tinker_computer_use'
+
 /** cua-driver typed browser 工具名 → 白名单字段（对齐 hermes _dispatch） */
 const BROWSER_ALLOWED_FIELDS: Record<string, string[]> = {
   browser_navigate: ['url'],

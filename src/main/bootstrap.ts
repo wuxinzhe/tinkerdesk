@@ -144,7 +144,7 @@ import {
 
 import type { TinkerAgentOptions } from './core/loop/types'
 import { DelegateTool } from './tools/delegate-tool'
-import { ComputerUseTool } from './tools/computer-use/computer-use-tool'
+import { ComputerUseTool, TOOL_NAME as COMPUTER_USE_TOOL_NAME } from './tools/computer-use/computer-use-tool'
 
 /** 组装结果 */
 export interface TinkerDesk {
@@ -269,11 +269,8 @@ export function bootstrap(
       sessionService,
     })),
   })
-  // 桌面控制工具（cua-driver——后台桌面自动化；check() 在 cua-driver 未安装时自动不入池）
-  builtinTools.push({
-    meta: { name: 'builtin_tinker_computer_use', emoji: '🖥️' },
-    tool: new ComputerUseTool(renderer),
-  })
+  // 桌面控制工具（cua-driver——后台桌面自动化；check() 在 cua-driver 未安装时自动不入池）→ desktop 组（与 terminal 一致）
+  // 注册在 desktopTools（见下方）——工具名 desktop_tinker_computer_use
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
   // ── 插件管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
   const pluginManager = new PluginManager()
@@ -297,6 +294,7 @@ export function bootstrap(
     { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤' }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
     { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
     { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
+    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️' }, tool: new ComputerUseTool(renderer) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
   const pluginTools: AgentToolRegistration[] = [
