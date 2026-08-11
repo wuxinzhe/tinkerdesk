@@ -88,7 +88,7 @@
                 :title="'发送图片'"
                 @click="pickAndSendMedia('image')"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
                   <path d="M21 15l-5-5L5 21" />
@@ -101,7 +101,7 @@
                 :title="'发送音频'"
                 @click="pickAndSendMedia('audio')"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
                   <circle cx="18" cy="16" r="3" />
@@ -114,7 +114,7 @@
                 :title="'发送视频'"
                 @click="pickAndSendMedia('video')"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="5" width="13" height="14" rx="2" />
                   <polygon points="16,10 21,7 21,17 16,14" />
                 </svg>
@@ -126,7 +126,7 @@
                 :title="'历史预览'"
                 @click="$emit('history-preview')"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="7" height="9" rx="1.5" />
                   <rect x="14" y="3" width="7" height="5" rx="1.5" />
                   <rect x="14" y="12" width="7" height="9" rx="1.5" />
@@ -141,7 +141,7 @@
                 :title="'回复提醒'"
                 @click="notifyOpen = !notifyOpen"
               >
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 01-3.46 0" />
                 </svg>
@@ -1003,29 +1003,30 @@ defineExpose({ focus })
 }
 .chat-input__panel-icons {
   display: flex;
-  flex-wrap: wrap;      /* 宽度不足时换行排布 */
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
   width: 100%;
-  padding: 12px;
+  padding: 10px 12px;
 }
 
+/* emil：轻量图标按钮——无边框卡（之前 72px 大磁贴太突兀）——hover 浅色圆角背景 */
 .chat-input__panel-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 72px;          /* 正方形（不平铺）——图标按钮 */
-  height: 72px;
-  border: 1px solid var(--tk-border);
-  border-radius: 16px;
-  background: var(--tk-bg-secondary);
-  color: var(--tk-text-primary);
+  gap: 3px;
+  width: 56px;
+  height: 50px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tk-text-secondary);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   white-space: nowrap;
-  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .chat-input__panel-icon:active {
@@ -1033,15 +1034,14 @@ defineExpose({ focus })
 }
 @media (hover: hover) and (pointer: fine) {
   .chat-input__panel-icon:hover {
-    border-color: var(--tk-accent);
-    background: var(--tk-bg-primary);
+    background: color-mix(in srgb, var(--tk-text-secondary) 10%, transparent);
+    color: var(--tk-text-primary);
   }
 }
 
 /* 面板图标展开态（回复提醒——配置行已展开） */
 .chat-input__panel-icon--active {
-  border-color: var(--tk-accent);
-  background: var(--tk-bg-primary);
+  background: color-mix(in srgb, var(--tk-accent) 12%, transparent);
   color: var(--tk-accent);
 }
 
