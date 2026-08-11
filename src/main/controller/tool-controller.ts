@@ -32,15 +32,20 @@ export class ToolController {
   /** 查询工具清单（含禁用状态 + 工具类型，按 profile 限定） */
   private listToolConfigs(payload: ToolListQueryDTO): ApiResponse<ToolItemVO[]> {
     const profile = payload?.profile ?? 'default'
+    const toolType = payload?.toolType
     const disabled = this.toolManager.getDisabledTools(profile)
+    const errors = this.toolManager.getToolErrors()
     const schemas = this.toolManager.getAllSchemas()
-    const tools: ToolItemVO[] = schemas.map((s) => ({
-      name: s.name,
-      description: s.description ?? '',
-      disabled: disabled.includes(s.name),
-      toolType: s.toolType,
-      supportsProvider: s.supportsProvider,
-    }))
+    const tools: ToolItemVO[] = schemas
+      .filter((s) => !toolType || s.toolType === toolType)
+      .map((s) => ({
+        name: s.name,
+        description: s.description ?? '',
+        disabled: disabled.includes(s.name),
+        toolType: s.toolType,
+        supportsProvider: s.supportsProvider,
+        error: errors.get(s.name) ?? undefined,
+      }))
     return ok(tools)
   }
 

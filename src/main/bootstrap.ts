@@ -145,6 +145,7 @@ import {
 } from './tools/plugin-tools'
 
 import type { TinkerAgentOptions } from './core/loop/types'
+import { TOOL_TYPE_DESKTOP } from './core/tool/types'
 import { DelegateTool } from './tools/delegate-tool'
 import { ComputerUseTool, TOOL_NAME as COMPUTER_USE_TOOL_NAME } from './tools/computer-use/computer-use-tool'
 
@@ -284,21 +285,21 @@ export function bootstrap(
   const computerUseProvider = new ComputerUseProvider(pluginManager)
 
   const desktopTools: AgentToolRegistration[] = [
-    { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻' }, tool: new TerminalTool(renderer) },
-    { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️' }, tool: new ProcessTool(renderer) },
-    { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋' }, tool: new ReadTerminalTool(renderer) },
-    { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌' }, tool: new CloseTerminalTool(renderer) },
-    { meta: { name: READ_FILE_TOOL_NAME, emoji: '📄' }, tool: new ReadFileTool(renderer) },
-    { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝' }, tool: new WriteFileTool(renderer) },
-    { meta: { name: PATCH_TOOL_NAME, emoji: '✂️' }, tool: new PatchTool(renderer) },
-    { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍' }, tool: new SearchFilesTool(renderer) },
-    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐' }, tool: new WebSearchTool(renderer, webProvider) },
-    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰' }, tool: new WebExtractTool(renderer, webProvider) },
-    { meta: { name: TEXT_TO_SPEECH_TOOL_NAME, emoji: '🔊' }, tool: new TextToSpeechTool(renderer, audioToolProvider) },
-    { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤' }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
-    { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
-    { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
-    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️' }, tool: new ComputerUseTool(renderer, computerUseProvider) },
+    { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new TerminalTool(renderer) },
+    { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️', toolType: TOOL_TYPE_DESKTOP }, tool: new ProcessTool(renderer) },
+    { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋', toolType: TOOL_TYPE_DESKTOP }, tool: new ReadTerminalTool(renderer) },
+    { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌', toolType: TOOL_TYPE_DESKTOP }, tool: new CloseTerminalTool(renderer) },
+    { meta: { name: READ_FILE_TOOL_NAME, emoji: '📄', toolType: TOOL_TYPE_DESKTOP }, tool: new ReadFileTool(renderer) },
+    { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝', toolType: TOOL_TYPE_DESKTOP }, tool: new WriteFileTool(renderer) },
+    { meta: { name: PATCH_TOOL_NAME, emoji: '✂️', toolType: TOOL_TYPE_DESKTOP }, tool: new PatchTool(renderer) },
+    { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍', toolType: TOOL_TYPE_DESKTOP }, tool: new SearchFilesTool(renderer) },
+    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐', toolType: TOOL_TYPE_DESKTOP }, tool: new WebSearchTool(renderer, webProvider) },
+    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰', toolType: TOOL_TYPE_DESKTOP }, tool: new WebExtractTool(renderer, webProvider) },
+    { meta: { name: TEXT_TO_SPEECH_TOOL_NAME, emoji: '🔊', toolType: TOOL_TYPE_DESKTOP }, tool: new TextToSpeechTool(renderer, audioToolProvider) },
+    { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤', toolType: TOOL_TYPE_DESKTOP }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
+    { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰', toolType: TOOL_TYPE_DESKTOP }, tool: new ScheduleTimerTool(renderer) },
+    { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬', toolType: TOOL_TYPE_DESKTOP }, tool: new FileMutationVerifierTool(renderer) },
+    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️', toolType: TOOL_TYPE_DESKTOP }, tool: new ComputerUseTool(renderer, computerUseProvider) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
   const pluginTools: AgentToolRegistration[] = [

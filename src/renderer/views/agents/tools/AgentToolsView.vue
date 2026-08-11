@@ -16,13 +16,21 @@
       </svg>
       <p>暂无可用工具</p>
     </div>
-    <div v-else class="tools-list">
-      <template v-for="group in groupedTools" :key="group.toolType">
-        <div class="tool-group-header">
-          <span class="tool-group-header__label">{{ group.label }}</span>
-          <span class="tool-group-header__count">{{ group.tools.length }} 个</span>
-        </div>
-        <div v-for="tool in group.tools" :key="tool.name" class="tool-row">
+    <div v-else>
+      <!-- Tab 页签：按工具类型分类 -->
+      <div class="tools-tabs">
+        <button
+          v-for="tab in toolTabs"
+          :key="tab.type"
+          class="tools-tab"
+          :class="{ 'tools-tab--active': activeToolType === tab.type }"
+          @click="switchTab(tab.type)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+      <div class="tools-list">
+        <div v-for="tool in toolsList" :key="tool.name" class="tool-row" :class="{ 'tool-row--unavailable': !!tool.error }">
           <div class="tool-row__info">
             <div class="tool-row__header">
               <span class="tool-row__tag" :class="'tag-' + (tool.toolType || 'unknown')">
@@ -32,32 +40,22 @@
                 {{ parseDisplayName(tool.name) }}
               </div>
               <button
-                v-if="tool.supportsProvider"
-                class="tool-row__provider-btn"
-                title="Provider 设置"
-                @click="openProviderSettings(tool)"
+                class="tool-row__settings-btn"
+                title="工具设置"
+                @click="openToolSettings(tool)"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
                 </svg>
               </button>
-              <label class="tool-row__checkbox" :class="{ checked: !tool.disabled }">
-                <input
-                  type="checkbox"
-                  :checked="!tool.disabled"
-                  :disabled="toolsToggling.has(tool.name)"
-                  @change="toggleTool(tool)"
-                />
-                <span class="tool-row__checkbox-visual"></span>
-              </label>
             </div>
             <div class="tool-row__desc">
               {{ tool.description || '暂无描述' }}
             </div>
           </div>
         </div>
-      </template>
+      </div>
     </div>
   </L3PageLayout>
 </template>
@@ -78,39 +76,31 @@ const detailProfile = computed(() => route.params.profile as string)
 /* ── Tools state ── */
 const toolsList = ref<ToolItem[]>([])
 const toolsLoading = ref(false)
-const toolsToggling = ref(new Set<string>())
 
-const toolTypeOrder = ['server', 'desktop', 'shared', 'web', 'mcp-ext', 'web-ext', 'iPhone', 'Android']
+/* ── Tab 页签（按工具类型分类查询） ── */
+const toolTabs = [
+  { type: 'builtin', label: '内建工具' },
+  { type: 'desktop', label: '桌面工具' },
+  { type: 'mcp', label: 'MCP 工具' },
+]
+const activeToolType = ref('builtin')
+
 const toolTypeLabels: Record<string, string> = {
-  server: '服务端内建', desktop: '桌面端', shared: '双端通用', web: '浏览器端',
-  'mcp-ext': 'MCP 外部工具', 'web-ext': '浏览器扩展',
-  iPhone: 'iPhone 端', Android: 'Android 端'
+  builtin: '桌面端内建', desktop: '桌面工具', client: '客户端工具', mcp: 'MCP 工具',
 }
 
-const groupedTools = computed(() => {
-  const groups = new Map<string, ToolItem[]>()
-  for (const tool of toolsList.value) {
-    const tt = tool.toolType || 'server'
-    if (!groups.has(tt)) groups.set(tt, [])
-    groups.get(tt)!.push(tool)
-  }
-  const result: Array<{ toolType: string; label: string; tools: ToolItem[] }> = []
-  for (const tt of toolTypeOrder) {
-    const tools = groups.get(tt)
-    if (tools) result.push({ toolType: tt, label: toolTypeLabels[tt] || tt, tools })
-  }
-  for (const [tt, tools] of groups) {
-    if (!toolTypeOrder.includes(tt)) result.push({ toolType: tt, label: toolTypeLabels[tt] || tt, tools })
-  }
-  return result
-})
+function switchTab(type: string): void {
+  if (activeToolType.value === type) return
+  activeToolType.value = type
+  void loadTools()
+}
 
 async function loadTools() {
   const profile = detailProfile.value
   if (!profile) return
   toolsLoading.value = true
   try {
-    const res = await toolsApi.list(profile)
+    const res = await toolsApi.list(profile, activeToolType.value)
     toolsList.value = res ?? []
   } catch {
     toolsList.value = []
@@ -119,23 +109,9 @@ async function loadTools() {
   }
 }
 
-/** 打开工具的 provider 设置 L3 页（仅 supportsProvider 的工具显示按钮） */
-function openProviderSettings(tool: ToolItem) {
+/** 打开工具设置 L3 页（每工具可进——含 Provider 配置/描述/错误/黑名单开关） */
+function openToolSettings(tool: ToolItem) {
   router.push(`/workspace/agents/${detailProfile.value}/tools/${encodeURIComponent(tool.name)}/provider`)
-}
-
-async function toggleTool(tool: ToolItem) {
-  if (!detailProfile.value || toolsToggling.value.has(tool.name)) return
-  toolsToggling.value = new Set(toolsToggling.value).add(tool.name)
-  try {
-    const newDisabled = !tool.disabled
-    await toolsApi.toggle(tool.name, newDisabled, detailProfile.value)
-    tool.disabled = newDisabled
-  } catch { /* silent */ } finally {
-    const next = new Set(toolsToggling.value)
-    next.delete(tool.name)
-    toolsToggling.value = next
-  }
 }
 
 watch(() => route.params.profile, () => loadTools())
@@ -220,10 +196,11 @@ onMounted(() => loadTools())
 .tool-row__desc {
   font-size: 12px;
   color: var(--tk-text-secondary);
-  max-height: 7.8em;
-  overflow: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .tool-row__desc::-webkit-scrollbar {
   display: none;
@@ -282,6 +259,61 @@ onMounted(() => loadTools())
   transition: color 0.15s, background 0.15s;
 }
 .tool-row__provider-btn:hover {
+  color: var(--tk-accent);
+  background: rgba(10, 132, 255, 0.08);
+}
+
+/* ── Tab 页签（内建/桌面/MCP 分类） ── */
+.tools-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 0 12px;
+}
+.tools-tab {
+  padding: 6px 16px;
+  border: 1px solid var(--tk-border);
+  border-radius: 999px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms, background 150ms;
+}
+.tools-tab:hover {
+  border-color: var(--tk-accent);
+  color: var(--tk-text-primary);
+}
+.tools-tab--active {
+  border-color: var(--tk-accent);
+  background: rgba(10, 132, 255, 0.1);
+  color: var(--tk-accent);
+}
+
+/* 不可用工具：整行灰色 */
+.tool-row--unavailable .tool-row__info {
+  opacity: 0.45;
+}
+.tool-row--unavailable .tool-row__name {
+  text-decoration: line-through;
+}
+
+/* 设置按钮（每工具可进——替代黑名单开关） */
+.tool-row__settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text-tertiary);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.tool-row__settings-btn:hover {
   color: var(--tk-accent);
   background: rgba(10, 132, 255, 0.08);
 }

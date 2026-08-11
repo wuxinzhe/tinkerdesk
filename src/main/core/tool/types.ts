@@ -34,8 +34,15 @@ export interface IAgentTool {
   getSchema(): ToolSchema
   /** 执行工具调用，返回字符串结果（将直接发送给 LLM）。入参 = loop 的 ToolContext。 */
   execute(ctx: ToolContext): Promise<ToolResult>
-  /** 可用性检测（启动时调用；不可用工具不入池）。默认实现返回 true。 */
-  check?(): Promise<boolean> | boolean
+  /** 可用性检测（启动时调用；不可用工具不入池）。默认实现返回 true。可返回 { ok, reason } 提供不可用原因。 */
+  check?(): Promise<boolean> | boolean | ToolCheckResult
+}
+
+/** 工具可用性检测结果（check 可返回——reason 给管理页 tps-tool-error 展示） */
+export interface ToolCheckResult {
+  ok: boolean
+  /** 不可用原因（ok=false 时展示给用户） */
+  reason?: string
 }
 
 // ── 工具类型常量 ─────
@@ -44,11 +51,13 @@ export interface IAgentTool {
 export const TOOL_TYPE_BUILTIN = 'builtin'
 /** 客户端工具：对外的普通工具（与内建走相同执行器 tool.execute） */
 export const TOOL_TYPE_CLIENT = 'client'
+/** 桌面工具：客户端本地工具（terminal/file/web/computer_use 等——desktop 组） */
+export const TOOL_TYPE_DESKTOP = 'desktop'
 /** MCP 工具：由 MCP 统一执行器（mcpManager）执行 */
 export const TOOL_TYPE_MCP = 'mcp'
 
-/** 工具类型：builtin/client 走自身执行器；mcp 走 MCP 统一执行器 */
-export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_CLIENT | typeof TOOL_TYPE_MCP
+/** 工具类型：builtin/desktop/client 走自身执行器；mcp 走 MCP 统一执行器 */
+export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_DESKTOP | typeof TOOL_TYPE_CLIENT | typeof TOOL_TYPE_MCP
 
 // ── 工具注册元信息（对应 Java @AgentTool 注解） ────────────────────
 

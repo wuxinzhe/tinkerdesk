@@ -16,16 +16,36 @@
         <div class="tps-tool-name">
           {{ toolLabel }}
         </div>
+        <!-- 完整描述（列表页 2 行截断——详情在此） -->
         <div class="tps-tool-desc">
-          选择该工具的 provider——内置为工具自带实现（默认），插件可接入自己的服务。
+          {{ toolDescription }}
+        </div>
+        <!-- 不可用原因（check 失败——工具设置页展示） -->
+        <div v-if="toolError" class="tps-tool-error">
+          {{ toolError }}
         </div>
       </div>
 
-      <!-- Provider 列表 -->
+      <!-- 黑名单开关（工具设置页——列表页的开关移入） -->
       <div class="tps-section">
-        <div class="tps-section-title">
-          Provider
-        </div>
+        <label class="tps-fallback-row">
+          <div class="tps-fallback-info">
+            <div class="tps-fallback-name">启用该工具</div>
+            <div class="tps-fallback-desc">关闭后 Agent 不可调用此工具（黑名单）</div>
+          </div>
+          <span class="tps-switch">
+            <input type="checkbox" :checked="!toolDisabled" :disabled="toolToggling" @change="toggleToolEnabled" />
+            <span class="tps-switch-track"></span>
+          </span>
+        </label>
+      </div>
+
+      <!-- Provider 配置（仅 supportsProvider 工具显示） -->
+      <template v-if="supportsProvider">
+        <div class="tps-section">
+          <div class="tps-section-title">
+            Provider
+          </div>
         <div class="tps-provider-list">
           <!-- 内置 -->
           <label v-if="builtin" class="tps-provider-row" :class="{ active: activeId === builtin.id }">
@@ -84,6 +104,7 @@
           </span>
         </label>
       </div>
+      </template>
 
       <div v-if="saving" class="tps-saving">
         保存中…
@@ -98,26 +119,31 @@ import { useRoute } from 'vue-router'
 import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { webProviderApi, type WebProviderInfo } from '@/renderer/api/web-provider-api'
 import { audioToolProviderApi, type AudioToolProviderInfo } from '@/renderer/api/audio-tool-provider-api'
+import { toolsApi } from '@/renderer/api/tools-api'
+import type { ToolItem } from '@/renderer/api/types'
+import { parseDisplayName } from '@/renderer/utils/tool-name'
 
 const route = useRoute()
 
 const toolName = computed(() => (route.params.toolName as string) ?? '')
+const profile = computed(() => (route.params.profile as string) ?? 'default')
 
-/** 接口类型：web.search / web.extract / tool.tts / tool.stt */
+/** 工具信息（从工具清单全量加载——按名称匹配） */
+const toolInfo = ref<ToolItem | null>(null)
+const toolLabel = computed(() => toolInfo.value ? parseDisplayName(toolInfo.value.name) : toolName.value)
+const toolDescription = computed(() => toolInfo.value?.description || '暂无描述')
+const toolError = computed(() => toolInfo.value?.error ?? '')
+const toolDisabled = computed(() => toolInfo.value?.disabled ?? false)
+const supportsProvider = computed(() => toolInfo.value?.supportsProvider ?? false)
+const toolToggling = ref(false)
+
+/** 接口类型：web.search / web.extract / tool.tts / tool.stt（仅 supportsProvider 工具需要） */
 const iface = computed(() => {
   const n = toolName.value
   if (n.includes('extract')) return 'web.extract'
   if (n.includes('search')) return 'web.search'
   if (n === 'stt') return 'tool.stt'
   return 'tool.tts'
-})
-
-const toolLabel = computed(() => {
-  const map: Record<string, string> = {
-    'web.search': '网页搜索', 'web.extract': '网页抓取',
-    'tool.tts': '文本转语音', 'tool.stt': '语音转文本',
-  }
-  return map[iface.value] ?? toolName.value
 })
 
 const isToolIface = computed(() => iface.value.startsWith('tool.'))
@@ -134,25 +160,50 @@ const fallback = ref(true)
 
 async function load() {
   loading.value = true
-  if (isToolIface.value) {
-    const data = await audioToolProviderApi.list(iface.value as 'tool.tts' | 'tool.stt')
-    if (data) {
-      providers.value = data.providers
-      // 内置插件（pluginId 以 builtin- 开头）在 providers 里——无独立 builtin 选项
-      builtin.value = null
-      activeId.value = data.activeProviderId
-      fallback.value = data.fallback
-    }
-  } else {
-    const data = await webProviderApi.list(iface.value as 'web.search' | 'web.extract')
-    if (data) {
-      providers.value = data.providers
-      builtin.value = { id: 'builtin', name: '内置（默认）' }
-      activeId.value = data.activePluginId ?? 'builtin'
-      fallback.value = data.fallback
+  // 1. 工具信息（全量清单——按名称匹配——含 desc/error/disabled/supportsProvider）
+  try {
+    const all = await toolsApi.list(profile.value)
+    toolInfo.value = all.find((t) => t.name === toolName.value) ?? null
+  } catch {
+    toolInfo.value = null
+  }
+  // 2. Provider 配置（仅 supportsProvider 工具）
+  if (supportsProvider.value) {
+    if (isToolIface.value) {
+      const data = await audioToolProviderApi.list(iface.value as 'tool.tts' | 'tool.stt')
+      if (data) {
+        providers.value = data.providers
+        // 内置插件（pluginId 以 builtin- 开头）在 providers 里——无独立 builtin 选项
+        builtin.value = null
+        activeId.value = data.activeProviderId
+        fallback.value = data.fallback
+      }
+    } else {
+      const data = await webProviderApi.list(iface.value as 'web.search' | 'web.extract')
+      if (data) {
+        providers.value = data.providers
+        builtin.value = { id: 'builtin', name: '内置（默认）' }
+        activeId.value = data.activePluginId ?? 'builtin'
+        fallback.value = data.fallback
+      }
     }
   }
   loading.value = false
+}
+
+/** 黑名单开关（启用/停用工具） */
+async function toggleToolEnabled(): Promise<void> {
+  if (toolToggling.value || !toolInfo.value) return
+  toolToggling.value = true
+  try {
+    const next = !toolDisabled.value
+    await toolsApi.toggle(toolInfo.value.name, next, profile.value)
+    toolInfo.value.disabled = next
+  } catch {
+    // 保存失败静默（开关回弹由 :checked 绑定自动处理）
+  } finally {
+    toolToggling.value = false
+  }
 }
 
 async function selectProvider(id: string) {

@@ -7,8 +7,8 @@ import type { ApiResponse } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class ToolsApi {
-  async list(profile: string): Promise<ToolItem[]> {
-    const data = await window.api.tools.list(profile)
+  async list(profile: string, toolType?: string): Promise<ToolItem[]> {
+    const data = await window.api.tools.list({ profile, toolType })
     return (data as ToolItem[]) ?? []
   }
 

@@ -16,8 +16,6 @@ import type {
   SkillOpRequestDTO,
   StreamToken,
   TogglePromptModuleRequestDTO,
-  ToggleToolRequestDTO,
-  ToolListQueryDTO,
   UpdatePromptModuleRequestDTO,
   UpdateSessionRequestDTO,
   UrlWhitelistRequestDTO,
@@ -360,9 +358,9 @@ const api = {
 
   // ── 工具配置（ToolController）──
   tools: {
-    list: (profile?: string) => inv('tool-config:list', { profile } satisfies ToolListQueryDTO).then(unwrap),
+    list: (payload?: { profile?: string; toolType?: string }) => inv('tool-config:list', payload ?? {}).then(unwrap),
     toggle: (toolName: string, disabled: boolean, profile?: string) =>
-      inv('tool-config:toggle', { toolName, disabled, profile } satisfies ToggleToolRequestDTO).then(unwrap),
+      inv('tool-config:toggle', { toolName, disabled, profile }).then(unwrap),
   },
 
   // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──

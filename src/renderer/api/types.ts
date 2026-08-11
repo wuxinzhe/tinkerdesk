@@ -390,6 +390,8 @@ export interface ToolItem {
   toolType: string
   /** 是否支持 provider 模式（显示设置按钮 + L3 provider 设置入口） */
   supportsProvider?: boolean
+  /** 工具不可用原因（check 失败——管理页 tps-tool-error 展示） */
+  error?: string
 }
 
 // ── Web 工具 provider（web-provider:list/set） ──
@@ -962,7 +964,7 @@ export interface WindowApi {
   }
 
   tools: {
-    list: (profile?: string) => Promise<ToolItem[]>
+    list: (payload?: { profile?: string; toolType?: string }) => Promise<ToolItem[]>
     toggle: (toolName: string, disabled: boolean, profile?: string) => Promise<ToolItem>
   }
 

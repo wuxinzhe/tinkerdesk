@@ -23,8 +23,10 @@ export class ToolManager {
   /** 工具池：toolName → IAgentTool（仅可用工具，内建/客户端/MCP 同构注册） */
   private readonly tools = new Map<string, IAgentTool>()
 
-  /** 工具类型：toolName → toolType（builtin / mcp / client） */
+  /** 工具类型：toolName → toolType（builtin / desktop / client / mcp） */
   private readonly toolTypes = new Map<string, ToolType>()
+  /** 不可用工具（check 失败——列表展示灰色 + 管理页错误原因）：toolName → { schema, reason } */
+  private readonly unavailableTools = new Map<string, { schema: ToolSchema; reason: string }>()
 
   /** 禁用工具集合：profile → Set<toolName> */
   private readonly disabledTools = new Map<string, Set<string>>()
@@ -43,10 +45,19 @@ export class ToolManager {
       if (this.tools.has(toolName)) {
         throw new Error(`Duplicate tool name: ${toolName}`)
       }
-      // check 可用性：未实现 check 视为可用
-      const available = reg.tool.check ? reg.tool.check() : true
+      // check 可用性：未实现 check 视为可用——失败记录原因（列表展示灰色 + 管理页错误信息）
+      const checkResult = reg.tool.check ? reg.tool.check() : true
+      const available = typeof checkResult === 'object' && 'ok' in checkResult ? checkResult.ok : (checkResult as boolean)
       if (!available) {
-        console.warn(`[ToolManager] 工具不可用，跳过注册: ${toolName}`)
+        const reason = typeof checkResult === 'object' && 'ok' in checkResult && checkResult.reason
+          ? checkResult.reason
+          : '工具不可用（未通过可用性检测）'
+        console.warn(`[ToolManager] 工具不可用，跳过注册: ${toolName}（${reason}）`)
+        // 保留展示信息（管理页列表显示灰色 + 错误原因）
+        const schema = reg.tool.getSchema()
+        if (reg.meta.emoji) schema.setEmoji(reg.meta.emoji)
+        schema.toolType = reg.meta.toolType ?? TOOL_TYPE_BUILTIN
+        this.unavailableTools.set(toolName, { schema, reason })
         continue
       }
       this.tools.set(toolName, reg.tool)
@@ -89,13 +100,25 @@ export class ToolManager {
   // 工具查询
   // ════════════════════════════════════════════════════════════
 
-  /** 获取全部工具 Schema（含禁用，用于管理界面） */
+  /** 获取全部工具 Schema（含禁用 + 不可用——用于管理界面） */
   getAllSchemas(): ToolSchema[] {
     const result: ToolSchema[] = []
     for (const tool of this.tools.values()) {
       result.push(tool.getSchema())
     }
+    for (const { schema } of this.unavailableTools.values()) {
+      result.push(schema)
+    }
     return result
+  }
+
+  /** 工具不可用原因：toolName → reason（管理页 tps-tool-error 展示） */
+  getToolErrors(): Map<string, string> {
+    const map = new Map<string, string>()
+    for (const [name, { reason }] of this.unavailableTools) {
+      map.set(name, reason)
+    }
+    return map
   }
 
   /** 获取可用工具 Schema（排除禁用） */

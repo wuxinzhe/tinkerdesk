@@ -211,11 +211,15 @@ export interface ToolItemVO {
   toolType: string
   /** 是否支持 provider 模式（工具管理页显示设置按钮 + L3 provider 设置入口） */
   supportsProvider?: boolean
+  /** 工具不可用原因（check 失败——管理页 tps-tool-error 展示） */
+  error?: string
 }
 
 /** 工具清单查询 DTO */
 export interface ToolListQueryDTO {
   profile?: string
+  /** 按工具类型过滤（builtin / desktop / client / mcp——不传返回全部） */
+  toolType?: string
 }
 
 /** 工具禁用切换请求 DTO */
