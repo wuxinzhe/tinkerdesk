@@ -10,7 +10,9 @@
     @click="onClick"
   >
     <div class="session-item__icon">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- 处理中：图标位显示圆环 spinner（Claude 风格——低调清晰） -->
+      <span v-if="processing" class="session-item__spinner" />
+      <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
       </svg>
     </div>
@@ -187,29 +189,18 @@ function onClick() {
   color: var(--tk-accent);
 }
 
-/* 执行中：底部流光线（原 AgentCard 分割线流光迁来——per-session 语义） */
-.session-item--processing::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--tk-accent) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: session-shimmer 2s ease-in-out infinite;
-  pointer-events: none;
+/* 处理中：图标位圆环 spinner（Claude 风格——替换气泡图标） */
+.session-item__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: session-spin 0.8s linear infinite;
 }
 
-@keyframes session-shimmer {
-  0%   { background-position-x: 0%; }
-  50%  { background-position-x: 100%; }
-  100% { background-position-x: 0%; }
+@keyframes session-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* 完成提醒标记（非 active——低调 ✓ 徽标） */
