@@ -86,7 +86,7 @@
           </label>
 
           <div v-if="providers.length === 0" class="tps-provider-empty">
-            {{ builtin ? '暂无插件 provider——安装支持该工具的插件后可在此选择。' : '暂无可用 provider——安装支持该工具的插件（如 speech-sherpa）后可在此选择。' }}
+            {{ isSimpleBuiltin ? '内置实现——无需插件（见上方内置卡片说明）' : (builtin ? '暂无插件 provider——安装支持该工具的插件后可在此选择。' : '暂无可用 provider——安装支持该工具的插件（如 speech-sherpa）后可在此选择。') }}
           </div>
         </div>
       </div>
@@ -137,9 +137,11 @@ const toolDisabled = computed(() => toolInfo.value?.disabled ?? false)
 const supportsProvider = computed(() => toolInfo.value?.supportsProvider ?? false)
 const toolToggling = ref(false)
 
-/** 接口类型：web.search / web.extract / tool.tts / tool.stt（仅 supportsProvider 工具需要） */
+/** 接口类型：web.search / web.extract / tool.tts / tool.stt / tool.vision / tool.computer_use */
 const iface = computed(() => {
   const n = toolName.value
+  if (n.includes('vision_recognize')) return 'tool.vision'
+  if (n.includes('computer_use')) return 'tool.computer_use'
   if (n.includes('extract')) return 'web.extract'
   if (n.includes('search')) return 'web.search'
   if (n === 'stt') return 'tool.stt'
@@ -147,7 +149,9 @@ const iface = computed(() => {
 })
 
 const isToolIface = computed(() => iface.value.startsWith('tool.'))
-const allowFallbackToggle = computed(() => iface.value !== 'tool.stt')
+/** 纯内置实现（无插件接入——vision/computer_use——显示内置卡片即可） */
+const isSimpleBuiltin = computed(() => iface.value === 'tool.vision' || iface.value === 'tool.computer_use')
+const allowFallbackToggle = computed(() => iface.value !== 'tool.stt' && !isSimpleBuiltin.value)
 
 interface BuiltinOption { id: string; name: string; description?: string }
 
@@ -169,7 +173,19 @@ async function load() {
   }
   // 2. Provider 配置（仅 supportsProvider 工具）
   if (supportsProvider.value) {
-    if (isToolIface.value) {
+    if (isSimpleBuiltin.value) {
+      // 纯内置实现（vision/computer_use——无插件接入——显示内置卡片）
+      builtin.value = {
+        id: 'builtin',
+        name: '内置（默认）',
+        description: iface.value === 'tool.vision'
+          ? '本地多模态模型（场景配置——image_recognition）'
+          : 'CUA Driver（本机安装——后台桌面自动化）',
+      }
+      providers.value = []
+      activeId.value = 'builtin'
+      fallback.value = true
+    } else if (isToolIface.value) {
       const data = await audioToolProviderApi.list(iface.value as 'tool.tts' | 'tool.stt')
       if (data) {
         providers.value = data.providers
