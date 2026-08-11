@@ -23,7 +23,7 @@ export class CuaDriverUnavailableError extends Error {
 }
 
 /** 解析 cua-driver 可执行文件：PATH → 用户本地安装位置（Windows 官方安装目录） */
-function resolveCuaDriverCmd(): string | null {
+export function resolveCuaDriverCmd(): string | null {
   // 1. PATH
   const pathCmd = process.env.PATH?.split(';').map((p) => `${p}\\cua-driver.exe`).find((p) => existsSync(p))
   if (pathCmd) return pathCmd

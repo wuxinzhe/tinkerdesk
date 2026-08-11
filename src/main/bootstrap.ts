@@ -66,6 +66,8 @@ import { AgentConfigService } from './service/agent-config-service'
 import { WebProvider } from './service/web-provider'
 import { AudioToolProvider } from './service/audio-tool-provider'
 import { EDGE_TTS_MANIFEST, edgeTtsPlugin } from './providers/tts/edge'
+import { CUA_DRIVER_MANIFEST, cuaDriverPlugin } from './providers/computer-use/cua-driver'
+import { ComputerUseProvider } from './service/computer-use-provider'
 import { UserDisabledToolService } from './service/user-disabled-tool-service'
 import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
 import { AgentModeService } from './service/agent-mode-service'
@@ -276,8 +278,10 @@ export function bootstrap(
   const pluginManager = new PluginManager()
   // 内置插件（代码注册——出现在插件列表、可配置，不可卸载）
   pluginManager.registerBuiltinPlugin({ manifest: EDGE_TTS_MANIFEST, plugin: edgeTtsPlugin })
+  pluginManager.registerBuiltinPlugin({ manifest: CUA_DRIVER_MANIFEST, plugin: cuaDriverPlugin })
   const webProvider = new WebProvider(pluginManager)
   const audioToolProvider = new AudioToolProvider(pluginManager)
+  const computerUseProvider = new ComputerUseProvider(pluginManager)
 
   const desktopTools: AgentToolRegistration[] = [
     { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻' }, tool: new TerminalTool(renderer) },
@@ -294,7 +298,7 @@ export function bootstrap(
     { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤' }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
     { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
     { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
-    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️' }, tool: new ComputerUseTool(renderer) },
+    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️' }, tool: new ComputerUseTool(renderer, computerUseProvider) },
   ]
   // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
   const pluginTools: AgentToolRegistration[] = [

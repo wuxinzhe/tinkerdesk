@@ -14,6 +14,7 @@
  * （ToolAuthService.check → ApprovalManager.requestApproval）处理。
  */
 import { CuaDriverClient, CuaDriverUnavailableError } from './cua-driver-client'
+import type { ComputerUseProvider } from '../../service/computer-use-provider'
 import type { McpCallResult } from '../../core/tool/types'
 import {
   COMPUTER_USE_ACTIONS, COMPUTER_USE_BLOCKED_KEY_COMBOS,
@@ -51,35 +52,23 @@ const ACTION_TO_BROWSER_TOOL: Record<string, string> = {
 
 /** computer_use 工具 */
 export class ComputerUseTool extends BaseTool {
-  private readonly clients = new Map<string, CuaDriverClient>()
-
-  constructor(renderer: PromptRenderer) {
+  constructor(renderer: PromptRenderer, private readonly computerUseProvider?: ComputerUseProvider) {
     super(renderer, 'computer_use')
   }
 
-  /** 可用性：cua-driver 未安装 → 不入工具池 */
+  /** 可用性：provider 是否配置（插件声明 tool.computer_use 接口）——cua-driver 未安装不拦（执行时报错提示） */
   check(): boolean | Promise<boolean> {
-    return CuaDriverClient.isAvailable()
+    return !!this.computerUseProvider && this.computerUseProvider.hasConfiguredProvider()
   }
 
-  /** 按会话获取/创建 cua-driver 客户端（会话级隔离——对齐 hermes per-session backend） */
+  /** 按会话获取 cua-driver 客户端（会话级隔离——由 provider 管理） */
   private getClient(sessionId: string): CuaDriverClient {
-    let client = this.clients.get(sessionId)
-    if (!client) {
-      client = new CuaDriverClient()
-      this.clients.set(sessionId, client)
-    }
-    return client
+    return this.computerUseProvider!.getClient(sessionId)
   }
 
   /** 会话结束时释放（由 TinkerAgent dispose 链调用） */
   dispose(sessionId: string): void {
-    const client = this.clients.get(sessionId)
-    if (client) {
-      void client.endSession()
-      client.stop()
-      this.clients.delete(sessionId)
-    }
+    this.computerUseProvider?.dispose(sessionId)
   }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
