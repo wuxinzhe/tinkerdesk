@@ -41,6 +41,7 @@ export class SessionService {
       archived: false,
       yolo: false,
       reasoningDepth: 'medium',
+      notifyOnComplete: false,
     }
     this.sessionRepo.save(entity)
     return entity
@@ -70,6 +71,11 @@ export class SessionService {
     session.reasoningDepth = reasoningDepth
     this.sessionRepo.save(session)
     return true
+  }
+
+  /** 更新回复提醒（per-session——对话完成时播放提醒音效） */
+  updateNotifyOnComplete(sessionId: string, enabled: boolean, profile: string): boolean {
+    return this.sessionRepo.updateNotifyOnComplete(sessionId, profile, enabled)
   }
 
   /** 按 ID 查找会话（profile 限定） */

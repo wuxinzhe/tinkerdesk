@@ -12,7 +12,7 @@ import type { SessionEntity, SessionSummaryDTO } from './types'
 
 /** 会话摘要 DTO（对应 SessionSummaryDTO） */
 
-const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests, current_context_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo, reasoning_depth'
+const COLS = 'id, profile, source, system_prompt, parent_session_id, title, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, total_duration_ms, total_iterations, total_llm_requests, current_context_tokens, estimated_cost_usd, message_count, tool_call_count, rewind_count, started_at, archived, yolo, reasoning_depth, notify_on_complete'
 
 function toEntity(row: Record<string, unknown>): SessionEntity {
   return {
@@ -38,6 +38,7 @@ function toEntity(row: Record<string, unknown>): SessionEntity {
     archived: (row.archived as number) === 1,
     yolo: (row.yolo as number) === 1,
     reasoningDepth: (row.reasoning_depth as string) ?? 'medium',
+    notifyOnComplete: (row.notify_on_complete as number) === 1,
   }
 }
 
@@ -224,5 +225,14 @@ export class SessionRepository {
       | { yolo: number }
       | undefined
     return (row?.yolo ?? 0) === 1
+  }
+
+  /** 更新回复提醒开关（per-session——对话完成时播放提醒音效） */
+  updateNotifyOnComplete(sessionId: string, profile: string, enabled: boolean): boolean {
+    const db = getDatabase()
+    const result = db
+      .prepare('UPDATE sessions SET notify_on_complete = ? WHERE id = ? AND profile = ?')
+      .run(enabled ? 1 : 0, sessionId, profile)
+    return Number(result.changes) > 0
   }
 }

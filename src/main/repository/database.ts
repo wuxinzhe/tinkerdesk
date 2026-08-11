@@ -35,7 +35,12 @@ export function initDatabase(): DatabaseSync {
 /** 结构对齐（开发阶段）：sessions 缺 reasoning_depth 列（推理深度 per-session）直接重建——不迁移数据 */
 function ensureSessionSchema(database: DatabaseSync): void {
   const cols = new Set(database.prepare('PRAGMA table_info(sessions)').all().map((c) => String((c as { name: unknown }).name)))
-  if (cols.has('reasoning_depth')) return
+  // 已有库（reasoning_depth 已存在）→ 补 notify_on_complete 列（ALTER 不重建——保护会话数据）
+  if (cols.has('reasoning_depth') && !cols.has('notify_on_complete')) {
+    database.exec(`ALTER TABLE sessions ADD COLUMN notify_on_complete INTEGER NOT NULL DEFAULT 0`)
+    return
+  }
+  if (cols.has('reasoning_depth') && cols.has('notify_on_complete')) return
   database.exec('DROP TABLE sessions')
   database.exec(`
     CREATE TABLE IF NOT EXISTS sessions (
@@ -60,7 +65,8 @@ function ensureSessionSchema(database: DatabaseSync): void {
       started_at         TEXT NOT NULL DEFAULT (datetime('now')),
       archived           INTEGER NOT NULL DEFAULT 0,
       yolo               INTEGER NOT NULL DEFAULT 0,
-      reasoning_depth    TEXT NOT NULL DEFAULT 'medium'
+      reasoning_depth    TEXT NOT NULL DEFAULT 'medium',
+      notify_on_complete INTEGER NOT NULL DEFAULT 0
     )
   `)
 }

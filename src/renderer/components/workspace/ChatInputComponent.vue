@@ -96,7 +96,35 @@
                 </svg>
                 <span>历史预览</span>
               </button>
+              <!-- 回复提醒：点击展开下方配置（Switch——per-session） -->
+              <button
+                class="chat-input__panel-icon"
+                :class="{ 'chat-input__panel-icon--active': notifyOpen }"
+                :title="'回复提醒'"
+                @click="notifyOpen = !notifyOpen"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 01-3.46 0" />
+                </svg>
+                <span>回复提醒</span>
+              </button>
             </div>
+            <!-- 回复提醒配置（展开行：Switch 开关） -->
+            <Transition name="panel-slide">
+              <div v-if="notifyOpen" class="chat-input__panel-config">
+                <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
+                <label class="chat-input__switch">
+                  <input
+                    type="checkbox"
+                    :checked="notifyEnabled"
+                    :disabled="!sessionId"
+                    @change="toggleNotifyComplete"
+                  />
+                  <span class="chat-input__switch-slider" />
+                </label>
+              </div>
+            </Transition>
           </div>
         </div>
       </Transition>
@@ -117,6 +145,7 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
 import { showErrorToast } from '@/renderer/utils/notification-utils'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { getCachedRecordShortcut, setCachedRecordShortcut } from '@/renderer/utils/shortcut-cache'
 import ChatSettingsDrawer from './ChatSettingsDrawer.vue'
 
@@ -146,6 +175,32 @@ const emit = defineEmits<{
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const panelOpen = ref(false)
+const sessionStore = useSessionStore()
+
+// ── 回复提醒（per-session notify_on_complete——对话完成时播放提醒音效） ──
+const notifyOpen = ref(false)
+const notifyEnabled = ref(false)
+
+/** 切换回复提醒开关（保存 per-session 配置） */
+function toggleNotifyComplete(): void {
+  if (!props.sessionId) return
+  const next = !notifyEnabled.value
+  notifyEnabled.value = next
+  window.api.sessions.setNotifyComplete(props.profile, props.sessionId, next).catch(() => {
+    notifyEnabled.value = !next // 保存失败回滚
+  })
+}
+
+/** session 变化 → 读回复提醒配置（session 对象带 notifyOnComplete——list/create 返回） */
+watch(
+  () => props.sessionId,
+  (sid) => {
+    notifyOpen.value = false
+    const s = sessionStore.currentSession
+    notifyEnabled.value = s?.id === sid ? Boolean(s.notifyOnComplete) : false
+  },
+  { immediate: true },
+)
 
 // ── 语音输入（应用固有录音；STT 由语音 provider 支持） ──
 // 状态机：idle（输入框）→ 点击按钮武装 voiceMode → 按住音波框/快捷键录音 → 松开 STT 发送 → idle
@@ -931,6 +986,73 @@ defineExpose({ focus })
     border-color: var(--tk-accent);
     background: var(--tk-bg-primary);
   }
+}
+
+/* 面板图标展开态（回复提醒——配置行已展开） */
+.chat-input__panel-icon--active {
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
+  color: var(--tk-accent);
+}
+
+/* 回复提醒配置行（展开——Switch 开关） */
+.chat-input__panel-config {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 12px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--tk-border);
+  border-radius: 12px;
+  background: var(--tk-bg-secondary);
+}
+.chat-input__panel-config-label {
+  font-size: 13px;
+  color: var(--tk-text-primary);
+}
+
+/* Switch（CSS 绘制：轨道 + 滑块——ChatSettingsDrawer 同款语义） */
+.chat-input__switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.chat-input__switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.chat-input__switch-slider {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--tk-border, rgba(127, 127, 127, 0.4));
+  transition: background 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+}
+.chat-input__switch-slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chat-input__switch input:checked + .chat-input__switch-slider {
+  background: var(--tk-accent, #3b82f6);
+}
+.chat-input__switch input:checked + .chat-input__switch-slider::before {
+  transform: translateX(18px);
+}
+.chat-input__switch input:disabled + .chat-input__switch-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── 面板滑动动画（Transition 包 grid——enter/leave 切 grid-template-rows） ── */

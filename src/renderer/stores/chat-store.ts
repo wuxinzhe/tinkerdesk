@@ -369,13 +369,18 @@ export const useChatStore = defineStore('chat', () => {
     const subType = payload.type ?? ''
 
     switch (subType) {
-      case 'complete':
-        playMessageNotification()
+      case 'complete': {
+        // 回复提醒（per-session notify_on_complete——事件 data 带开关；开才播）
+        const notifyData = (payload as ActionSignalPayload).data as { notifyOnComplete?: boolean } | null | undefined
+        if (notifyData?.notifyOnComplete) {
+          playMessageNotification()
+        }
         isProcessingBySession.value[sessionId] = false
         window.dispatchEvent(new CustomEvent('conversation-complete', {
           detail: { sessionId, convId: (payload as ActionSignalPayload).convId ?? '', data: (payload as ActionSignalPayload).data ?? null }
         }))
         break
+      }
       case 'stats': {
         // 每轮统计数据（数据面板——命中率/模型/上下文使用）
         window.dispatchEvent(new CustomEvent('agent-stats-update', {

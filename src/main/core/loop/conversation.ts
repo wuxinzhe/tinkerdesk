@@ -397,6 +397,14 @@ export class Conversation {
         const prompt = response.promptTokens ?? 0
         const cacheRead = response.cacheReadTokens ?? 0
         const contextLimit = mainCfg?.contextLimit ?? 0
+        // 回复提醒开关（per-session——complete 音效由前端按此判断）
+        let notifyOnComplete = false
+        try {
+          const session = this.deps.sessionService.findById(sessionId, profile)
+          notifyOnComplete = session?.notifyOnComplete ?? false
+        } catch {
+          // 会话查询失败——默认不提醒
+        }
         return {
           model: mainCfg?.modelName ?? '',
           promptTokens: prompt,
@@ -406,6 +414,7 @@ export class Conversation {
           hitRate: prompt > 0 ? Math.min(cacheRead / prompt, 1) : 0,
           contextLimit,
           contextUsedPercent: contextLimit > 0 ? Math.min(prompt / contextLimit, 1) : 0,
+          notifyOnComplete,
         }
       } catch (e) {
         console.warn(`[stats] 统计数据计算失败: ${(e as Error).message}`)

@@ -179,6 +179,8 @@ export interface SessionEntity {
   yolo: boolean
   /** 推理深度（per-session——'' 或 low/medium/high；创建时默认 'medium'） */
   reasoningDepth: string
+  /** 回复提醒（per-session——对话完成时播放提醒音效；创建时默认关闭） */
+  notifyOnComplete: boolean
 }
 
 /** 会话摘要 DTO（browseRich 返回） */

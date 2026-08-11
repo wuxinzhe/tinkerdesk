@@ -568,34 +568,6 @@ onUnmounted(() => {
   }
 }
 
-/* ── Thinking 态：分割线蓝色流光 ── */
-.agent-card--thinking .agent-card__footer {
-  border-top-color: transparent;
-}
-
-.agent-card--thinking .agent-card__footer::before {
-  content: '';
-  position: absolute;
-  top: -1px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(
-    90deg,
-    var(--tk-border) 0%,
-    var(--tk-accent) 50%,
-    var(--tk-border) 100%
-  );
-  background-size: 200% 100%;
-  animation: agent-footer-glow 2s ease-in-out infinite;
-}
-
-@keyframes agent-footer-glow {
-  0%   { background-position-x: 0%; }
-  50%  { background-position-x: 100%; }
-  100% { background-position-x: 0%; }
-}
-
 .agent-card__model-name {
   font-size: 11px;
   color: var(--tk-accent);

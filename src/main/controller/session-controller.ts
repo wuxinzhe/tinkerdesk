@@ -33,6 +33,8 @@ export function toSessionListItemVO(e: SessionEntity): SessionListItemVO {
     profile: e.profile || 'default',
     status: 'idle',
     yolo: e.yolo,
+    reasoningDepth: e.reasoningDepth,
+    notifyOnComplete: e.notifyOnComplete,
   }
 }
 
@@ -52,6 +54,7 @@ export class SessionController {
     handleTrusted('session:update', (_event, payload) => this.renameSession(payload))
     handleTrusted('session:set-reasoning-depth', (_event, payload) => this.setReasoningDepth(payload))
     handleTrusted('session:get-reasoning-depth', (_event, payload) => this.getReasoningDepth(payload))
+    handleTrusted('session:set-notify-complete', (_event, payload) => this.setNotifyComplete(payload))
     handleTrusted('session:getYolo', (_event, payload) => this.getYolo(payload))
     handleTrusted('session:toggleYolo', (_event, payload) => this.toggleYolo(payload))
     handleTrusted('session:stats', (_event, payload) => this.getStats(payload))
@@ -106,6 +109,16 @@ export class SessionController {
       return fail('会话不存在')
     }
     return ok(session.reasoningDepth ?? 'medium')
+  }
+
+  /** 设置回复提醒（per-session——对话完成时播放提醒音效） */
+  private setNotifyComplete(payload: { profile: string; sessionId: string; enabled: boolean }): ApiResponse<boolean> {
+    const session = this.sessionService.findById(payload.sessionId, payload.profile)
+    if (!session) {
+      return fail('会话不存在')
+    }
+    const updated = this.sessionService.updateNotifyOnComplete(payload.sessionId, Boolean(payload.enabled), payload.profile)
+    return ok(updated)
   }
 
   /** 查询会话 YOLO 状态（profile 限定） */

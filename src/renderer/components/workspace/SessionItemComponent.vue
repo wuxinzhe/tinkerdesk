@@ -4,6 +4,7 @@
     :class="{
       'session-item--active': active,
       'session-item--pending': pending,
+      'session-item--processing': processing,
       'session-item--expanded': expanded && hasToolCalls
     }"
     @click="onClick"
@@ -18,7 +19,12 @@
         <div class="session-item__title">
           {{ session.title || '新对话' }}
         </div>
-        <div v-if="processing" class="session-item__indicator" />
+        <!-- 完成提醒（非 active 会话 complete 后——提醒查看结果；切到该会话即清除） -->
+        <span v-if="completed && !active" class="session-item__done" title="对话已完成，可查看结果">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        </span>
       </div>
       <div class="session-item__meta">
         <span class="session-item__time">{{ formatTime }}</span>
@@ -52,6 +58,8 @@ const props = defineProps<{
   active: boolean
   pending?: boolean
   processing?: boolean
+  /** 完成提醒（非 active 会话 complete 后显示——提醒查看结果） */
+  completed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -179,18 +187,43 @@ function onClick() {
   color: var(--tk-accent);
 }
 
-.session-item__indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--tk-accent);
-  flex-shrink: 0;
-  animation: session-pulse 1.4s ease-in-out infinite;
+/* 执行中：底部流光线（原 AgentCard 分割线流光迁来——per-session 语义） */
+.session-item--processing::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--tk-accent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: session-shimmer 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes session-pulse {
-  0%, 100% { opacity: 0.4; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.1); }
+@keyframes session-shimmer {
+  0%   { background-position-x: 0%; }
+  50%  { background-position-x: 100%; }
+  100% { background-position-x: 0%; }
+}
+
+/* 完成提醒标记（非 active——低调 ✓ 徽标） */
+.session-item__done {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--tk-accent);
+  opacity: 0.9;
 }
 
 /* ── Tool call todo list ── */

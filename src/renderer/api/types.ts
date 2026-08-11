@@ -81,6 +81,8 @@ export interface Session {
   status: 'idle'
   /** 推理深度（per-session——'' 或 low/medium/high；默认 medium） */
   reasoningDepth?: string
+  /** 回复提醒（per-session——对话完成时播放提醒音效；默认关闭） */
+  notifyOnComplete?: boolean
 }
 
 // ── Agent（原 defines/models/agent.ts） ──
@@ -825,6 +827,7 @@ export interface WindowApi {
     toggleYolo: (profile: string, sessionId: string) => Promise<boolean>
     setReasoningDepth: (profile: string, sessionId: string, reasoningDepth: string) => Promise<boolean>
     getReasoningDepth: (profile: string, sessionId: string) => Promise<string>
+    setNotifyComplete: (profile: string, sessionId: string, enabled: boolean) => Promise<boolean>
     /** 会话统计（数据面板：平均命中率 + memory 占用） */
     stats: (profile: string, sessionId: string) => Promise<{
       hitRate: number; promptTokens: number; totalTokens: number; rounds: number

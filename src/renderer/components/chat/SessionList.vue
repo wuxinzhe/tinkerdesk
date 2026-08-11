@@ -30,6 +30,7 @@
           :active="s.id === activeSessionId"
           :pending="s.id === pendingSessionId"
           :processing="isProcessingBySession[s.id] ?? false"
+          :completed="completedBySession[s.id] ?? false"
           @select="onSelect"
         />
       </TransitionGroup>
@@ -185,13 +186,32 @@ watch(() => props.profile, () => {
   loadSessions()
 })
 
+/* ── 完成提醒标记（非 active 会话 complete 后显示 ✓；切到该会话清除） ── */
+const completedBySession = ref<Record<string, boolean>>({})
+
+function handleConversationComplete(e: Event): void {
+  const { sessionId } = (e as CustomEvent).detail ?? {}
+  if (!sessionId) return
+  // active 会话完成：用户在看——不需要提醒；非 active：标记提醒查看结果
+  if (sessionId !== props.activeSessionId) {
+    completedBySession.value[sessionId] = true
+  }
+}
+
+// 切换到某会话 → 清除它的完成提醒（用户已在看）
+watch(() => props.activeSessionId, (sid) => {
+  if (sid) delete completedBySession.value[sid]
+})
+
 onMounted(() => {
   loadSessions()
   window.addEventListener('session-title-updated', handleSessionTitleUpdated)
+  window.addEventListener('conversation-complete', handleConversationComplete)
 })
 
 onUnmounted(() => {
   window.removeEventListener('session-title-updated', handleSessionTitleUpdated)
+  window.removeEventListener('conversation-complete', handleConversationComplete)
 })
 
 defineExpose({ pendingSessionId, loadSessions, resolvePendingSession, removePendingSession })
