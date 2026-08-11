@@ -4,14 +4,30 @@
     :class="{
       'session-item--active': active,
       'session-item--pending': pending,
-      'session-item--processing': processing,
       'session-item--expanded': expanded && hasToolCalls
     }"
     @click="onClick"
   >
     <div class="session-item__icon">
-      <!-- 处理中：图标位显示圆环 spinner（Claude 风格——低调清晰） -->
-      <span v-if="processing" class="session-item__spinner" />
+      <!-- 阶段图标（优先级：等审批 > 等回答 > 工作中 > 完成 > 空闲） -->
+      <!-- 等审批：黄色感叹号（等待用户操作——区别于工作中） -->
+      <span v-if="stage === 'approval'" class="session-item__stage session-item__stage--wait" title="等待审批">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="7" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </span>
+      <!-- 等回答（clarify）：问号 -->
+      <span v-else-if="stage === 'clarify'" class="session-item__stage session-item__stage--wait" title="等待你的回答">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </span>
+      <!-- 工作中：圆环 spinner（Claude 风格） -->
+      <span v-else-if="stage === 'working'" class="session-item__spinner" />
       <!-- 完成提醒：非 active 会话 complete 后——图标显示 ✓（切到该会话清除） -->
       <svg v-else-if="completed && !active" class="session-item__done-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
         <path d="M20 6L9 17l-5-5" />
@@ -57,7 +73,8 @@ const props = defineProps<{
   session: Session
   active: boolean
   pending?: boolean
-  processing?: boolean
+  /** 会话阶段（chat-store sessionStage：approval=等审批 / clarify=等回答 / working=工作中 / idle） */
+  stage?: 'approval' | 'clarify' | 'working' | 'idle'
   /** 完成提醒（非 active 会话 complete 后显示——提醒查看结果） */
   completed?: boolean
 }>()
@@ -185,6 +202,17 @@ function onClick() {
 
 .session-item--active .session-item__title {
   color: var(--tk-accent);
+}
+
+/* 阶段图标（等审批/等回答——等待用户操作：黄色系静止图标，区别于工作中 spinner） */
+.session-item__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.session-item__stage--wait {
+  color: #ffd166; /* 黄色——等待用户操作（审批/回答） */
 }
 
 /* 处理中：图标位圆环 spinner（Claude 风格——替换气泡图标） */

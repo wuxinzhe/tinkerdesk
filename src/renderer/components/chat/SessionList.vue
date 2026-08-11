@@ -29,7 +29,7 @@
           :session="s"
           :active="s.id === activeSessionId"
           :pending="s.id === pendingSessionId"
-          :processing="isProcessingBySession[s.id] ?? false"
+          :stage="stageBySession[s.id] ?? 'idle'"
           :completed="completedBySession[s.id] ?? false"
           @select="onSelect"
         />
@@ -72,7 +72,14 @@ const props = defineProps<{
 }>()
 
 const chatStore = useChatStore()
-const isProcessingBySession = computed(() => chatStore.isProcessingBySession)
+/** 会话阶段（chat-store sessionStage 推导——approval/clarify/working/idle——响应式） */
+const stageBySession = computed<Record<string, 'approval' | 'clarify' | 'working' | 'idle'>>(() => {
+  const map: Record<string, 'approval' | 'clarify' | 'working' | 'idle'> = {}
+  for (const s of sessions.value) {
+    map[s.id] = chatStore.sessionStage(s.id)
+  }
+  return map
+})
 
 const emit = defineEmits<{
   select: [sessionId: string]

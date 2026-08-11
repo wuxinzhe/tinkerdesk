@@ -671,6 +671,21 @@ export const useChatStore = defineStore('chat', () => {
     delete streamingContentByConversation.value[key]
   }
 
+  /**
+   * 会话阶段推导（session-item 图标状态源）：
+   * approval=等审批（❗）/ clarify=等回答（？）/ working=工作中（spinner）/ idle
+   * 优先级：审批挂起 > clarify 挂起 > 处理中/工具 pending > idle
+   */
+  function sessionStage(sessionId: string): 'approval' | 'clarify' | 'working' | 'idle' {
+    const msgs = messagesBySession.value[sessionId] ?? []
+    if (msgs.some((m) => m.role === 'approval' && m.interactionStatus === 'pending')) return 'approval'
+    if (msgs.some((m) => m.messageType === 'clarify_request' && !m.content)) return 'clarify'
+    if (isProcessingBySession.value[sessionId]) return 'working'
+    const tools = toolCallsBySession.value[sessionId] ?? []
+    if (tools.some((t) => t.status === 'pending')) return 'working'
+    return 'idle'
+  }
+
   return {
     // 状态
     messagesBySession,
@@ -685,6 +700,7 @@ export const useChatStore = defineStore('chat', () => {
     // 按 session 获取
     getMessages,
     getStreamingReasoning,
+    sessionStage,
 
     // streaming chunks
     getConvPendingBuffer,
