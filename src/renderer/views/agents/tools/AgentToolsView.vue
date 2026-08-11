@@ -80,13 +80,13 @@ const toolsLoading = ref(false)
 /* ── Tab 页签（按工具类型分类查询） ── */
 const toolTabs = [
   { type: 'builtin', label: '内建工具' },
-  { type: 'desktop', label: '桌面工具' },
+  { type: 'desktop', label: '插件工具' },
   { type: 'mcp', label: 'MCP 工具' },
 ]
 const activeToolType = ref('builtin')
 
 const toolTypeLabels: Record<string, string> = {
-  builtin: '桌面端内建', desktop: '桌面工具', client: '客户端工具', mcp: 'MCP 工具',
+  builtin: '桌面端内建', desktop: '插件工具', client: '客户端工具', mcp: 'MCP 工具',
 }
 
 function switchTab(type: string): void {
