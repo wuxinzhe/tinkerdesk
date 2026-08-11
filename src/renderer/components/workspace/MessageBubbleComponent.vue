@@ -346,10 +346,13 @@ const bubbleStyleClass = computed(() =>
   margin-bottom: 2px;
 }
 .bubble-media__img {
-  max-width: 260px;
+  /* 展示时：max-height 限制高度——宽度按比例自适应（不写死 max-width） */
+  max-width: 100%;
   max-height: 260px;
-  border-radius: 8px;
+  width: auto;
+  height: auto;
   object-fit: contain;
+  border-radius: 8px;
   display: block;
 }
 .bubble-media__audio,
