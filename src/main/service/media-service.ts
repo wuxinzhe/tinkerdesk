@@ -100,12 +100,15 @@ export function registerMediaProtocol(): void {
   const { protocol, net } = require('electron') as typeof import('electron')
   protocol.handle('app-media', (request) => {
     const url = new URL(request.url)
+    // app-media://media/xxx.png → host=media, pathname=/xxx.png（media 在 host——合并为相对路径）
+    const host = url.host
     const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, '')
+    const relPath = host ? `${host}/${pathname}` : pathname
     // 只允许 media/ 前缀（相对路径形式）
-    if (!pathname.startsWith('media/')) {
+    if (!relPath.startsWith('media/')) {
       return new Response('forbidden', { status: 403 })
     }
-    const absPath = resolve(getMediaRoot(), pathname.slice('media/'.length))
+    const absPath = resolve(getMediaRoot(), relPath.slice('media/'.length))
     if (!isInsideMediaRoot(absPath) || !existsSync(absPath)) {
       return new Response('not found', { status: 404 })
     }
