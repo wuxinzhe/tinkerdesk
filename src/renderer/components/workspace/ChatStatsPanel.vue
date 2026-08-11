@@ -177,10 +177,15 @@ function handleStatsUpdate(e: Event): void {
   void loadAvg()
 }
 
-/** conversation-complete 也带本轮统计——两个数据源同时消费 */
+/** conversation-complete 也带本轮统计——两个数据源同时消费；多会话并发只处理当前会话 */
 function handleConversationComplete(e: Event): void {
   const detail = (e as CustomEvent).detail
-  if (detail?.sessionId) currentSessionId.value = detail.sessionId
+  if (detail?.sessionId) {
+    const cur = currentSessionId.value || String(route.params.sessionId ?? '')
+    // 别的会话完成 → 不覆盖当前面板数据（避免多会话并发串数据）
+    if (cur && detail.sessionId !== cur) return
+    currentSessionId.value = detail.sessionId
+  }
   if (detail?.data) {
     stats.value = { ...stats.value, ...detail.data }
   }

@@ -17,6 +17,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   ActionMergedPayload,
+  ActionSignalPayload,
   AgentResponseTokenPayload,
   ApprovalRequestPayload,
   MessageVOData,
@@ -87,8 +88,8 @@ export const useChatStore = defineStore('chat', () => {
     return agentApi
   }
 
-  /** 路由消息分发：route = '{一级}:{二级}'——客户端自行解析 */
-  function handleRouteMessage(payload: { route?: string; sessionId?: string; data?: unknown }): void {
+  /** 路由消息分发：route = '{一级}:{二级}'——客户端自行解析（convId 可选——多会话并发区分对话） */
+  function handleRouteMessage(payload: { route?: string; sessionId?: string; convId?: string; data?: unknown }): void {
     const [route1, route2] = (payload.route ?? '').split(':')
     const sessionId = payload.sessionId ?? ''
     const data = payload.data as Record<string, unknown> | undefined
@@ -142,7 +143,7 @@ export const useChatStore = defineStore('chat', () => {
       case 'session':
       case 'action':
         // 会话数据（stats/complete/title/budget）+ 行为动作（tool_start/tool_done）→ 同一动作处理
-        handleActionEvent({ type: route2, data: payload.data, sessionId } as unknown as ActionMergedPayload)
+        handleActionEvent({ type: route2, data: payload.data, sessionId, convId: payload.convId } as unknown as ActionMergedPayload)
         break
       // tip/error 域由 preload 顶层分发（GlobalTipToast）——不在此处理
     }
@@ -372,7 +373,7 @@ export const useChatStore = defineStore('chat', () => {
         playMessageNotification()
         isProcessingBySession.value[sessionId] = false
         window.dispatchEvent(new CustomEvent('conversation-complete', {
-          detail: { sessionId, data: (payload as ActionMergedPayload).data ?? null }
+          detail: { sessionId, convId: (payload as ActionSignalPayload).convId ?? '', data: (payload as ActionSignalPayload).data ?? null }
         }))
         break
       case 'stats': {

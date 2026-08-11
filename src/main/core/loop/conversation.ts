@@ -412,8 +412,8 @@ export class Conversation {
         return null
       }
     })()
-    // 对话完成事件（带本轮统计——前端数据面板可直接消费）
-    convCtx.sender.sendSession(convCtx.sessionId, EVT_SESSION_COMPLETE, statsData)
+    // 对话完成事件（带本轮统计 + convId——前端数据面板可直接消费；多会话并发按 convId 区分）
+    convCtx.sender.sendSession(convCtx.sessionId, EVT_SESSION_COMPLETE, statsData, convCtx.conversationId)
     // 统计数据事件（独立通道——面板实时更新）
     if (statsData) {
       try {

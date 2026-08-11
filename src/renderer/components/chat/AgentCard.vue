@@ -211,7 +211,10 @@ watch(currentReasoning, (v) => {
   }
 })
 
-function handleConversationComplete() {
+function handleConversationComplete(e: Event) {
+  // 多会话并发：别的会话完成不隐藏当前会话的思考气泡
+  const { sessionId } = (e as CustomEvent).detail ?? {}
+  if (sessionId && sessionId !== sessionStore.sessionId) return
   // 只有收到 conversation-complete 才隐藏思考气泡
   thoughtActive.value = false
   currentThought.value = ''

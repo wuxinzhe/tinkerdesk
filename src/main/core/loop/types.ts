@@ -123,8 +123,8 @@ export interface IEventSender {
   sendMessage(sessionId: string, type: string, data: unknown): void
   /** action 域（行为动作：tool_start/tool_done） */
   sendAction(sessionId: string, type: AgentActionType | (string & {}), data: unknown): void
-  /** session 域（会话数据/状态：stats/complete/title/budget） */
-  sendSession(sessionId: string, type: string, data: unknown): void
+  /** session 域（会话数据/状态：stats/complete/title/budget）——convId 可选（多会话并发时区分对话） */
+  sendSession(sessionId: string, type: string, data: unknown, convId?: string): void
   /** tip 域（提示信号：queued/working） */
   sendTips(sessionId: string, type: string, message: string): void
   /** error 域（报错） */

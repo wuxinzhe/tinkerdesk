@@ -31,9 +31,9 @@ export class ElectronEventSender implements IEventSender {
     private readonly sessionId: string
   ) {}
 
-  /** 统一出口：route 单字段两级 + data */
-  private send(sessionId: string, route: string, data: unknown): void {
-    webContents.fromId(this.senderId)?.send(IPC_MESSAGE, { route, sessionId, data })
+  /** 统一出口：route 单字段两级 + data（convId 可选——事件携带对话标识） */
+  private send(sessionId: string, route: string, data: unknown, convId?: string): void {
+    webContents.fromId(this.senderId)?.send(IPC_MESSAGE, { route, sessionId, convId, data })
   }
 
   /** chat 域（对话内容流） */
@@ -46,9 +46,9 @@ export class ElectronEventSender implements IEventSender {
     this.send(sessionId, `${ROUTE_ACTION}:${type}`, data)
   }
 
-  /** session 域（会话数据/状态） */
-  sendSession(sessionId: string, type: string, data: unknown): void {
-    this.send(sessionId, `${ROUTE_SESSION}:${type}`, data)
+  /** session 域（会话数据/状态）——convId 可选（多会话并发时区分对话） */
+  sendSession(sessionId: string, type: string, data: unknown, convId?: string): void {
+    this.send(sessionId, `${ROUTE_SESSION}:${type}`, data, convId)
   }
 
   /** tip 域（提示信号） */

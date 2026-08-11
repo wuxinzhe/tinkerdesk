@@ -162,11 +162,12 @@ export interface SessionTitleUpdatedPayload {
   }
 }
 
-/** action 通道 — conversation_complete / 无 data 事件 */
+/** action 通道 — conversation_complete / 无 data 事件（convId 可选——多会话并发区分对话） */
 export interface ActionSignalPayload {
   sessionId: string
   type: string
   data?: unknown
+  convId?: string
 }
 
 /** error 通道 */
