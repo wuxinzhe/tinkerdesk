@@ -133,7 +133,6 @@
             <polygon points="7,4 20,12 7,20" fill="currentColor" stroke="none" />
           </svg>
         </button>
-        <span class="message-timestamp__time">{{ formatTime(message.timestamp) }}</span>
         <button
           v-if="message.conversationId" class="ts-btn" title="查看对话详情"
           @click.stop="openConversationDetail(message.sessionId, message.conversationId)"
@@ -145,6 +144,7 @@
             <line x1="8" y1="17" x2="13" y2="17" />
           </svg>
         </button>
+        <span class="message-timestamp__time">{{ formatTime(message.timestamp) }}</span>
       </div>
 
       <!-- ── 发送状态（仅 user_message） ── -->
