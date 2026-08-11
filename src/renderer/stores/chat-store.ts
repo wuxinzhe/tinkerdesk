@@ -190,6 +190,8 @@ export const useChatStore = defineStore('chat', () => {
 
     // 3. 工具调用参数 → 按 index 分路 push（isFinish 时逐工具 join 一次 JSON.parse）
     if (isValidTokenValue(data.toolCallArgs)) {
+      // 工具调用意图出现（即使混合 content——也算工具调用）→ 阶段 tool（齿轮旋转）
+      setSessionStage(sessionId, 'tool')
       const idx = data.toolCallIndex ?? 0
       const byIndex = toolCallArgsBufferByConversation.value[compositeKey] ?? {}
       const arr = byIndex[idx] ?? []
@@ -201,6 +203,8 @@ export const useChatStore = defineStore('chat', () => {
     }
     // 3.5 工具名缓存（首次出现——按 index 分路，多工具各自保留）
     if (isValidTokenValue(data.toolCallName)) {
+      // 工具调用意图出现（toolCallName 先于 args——同样算工具调用）
+      setSessionStage(sessionId, 'tool')
       const idx = data.toolCallIndex ?? 0
       const byIndex = toolCallNameByConversation.value[compositeKey] ?? {}
       if (!byIndex[idx]) {
