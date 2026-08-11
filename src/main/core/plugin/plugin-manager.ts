@@ -134,7 +134,8 @@ export class PluginManager {
       throw new Error(`${manifest.id} 未实现 check() 自检接口（插件契约 v1 强制）`)
     }
     for (const def of matchSystemInterfaces(manifest.systemInterfaces)) {
-      if (!this.ipcHandlers.has(`plugin:${manifest.id}:${def.requiredChannel}`)) {
+      // 空契约频道 = 无 IPC 契约（工具直连 provider）——跳过频道校验
+      if (def.requiredChannel && !this.ipcHandlers.has(`plugin:${manifest.id}:${def.requiredChannel}`)) {
         throw new Error(`${manifest.id} 声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`)
       }
     }

@@ -15,7 +15,7 @@ export interface SystemInterfaceDef {
   name: string
   /** 描述 */
   description?: string
-  /** 契约：实现该接口必须注册的插件频道（PluginManager 注册时校验） */
+  /** 契约：实现该接口必须注册的插件频道（PluginManager 注册时校验）——空串 = 无契约频道（工具直连 provider） */
   requiredChannel: string
   /** 契约：实现该接口必须注册的可选频道（如 models:status 模型管理） */
   optionalChannels?: string[]
@@ -64,6 +64,13 @@ export const SYSTEM_INTERFACES: SystemInterfaceDef[] = [
     description: 'Agent 工具的 STT：音频文件路径 → 文本（与系统输入 voice.stt 分开）',
     requiredChannel: 'stt:transcribe_file',
     optionalChannels: ['models:status', 'models:download'],
+  },
+  {
+    id: 'tool.computer_use',
+    name: '桌面控制（Agent 工具）',
+    description: 'Agent 工具的 computer_use：后台桌面自动化（cua-driver——截图/鼠标/键盘/窗口）',
+    // 无契约频道——执行由工具经 provider 直连（不经过插件 IPC）
+    requiredChannel: '',
   },
 ]
 
