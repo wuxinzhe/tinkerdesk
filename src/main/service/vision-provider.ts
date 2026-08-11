@@ -11,6 +11,7 @@ import type { ModelConfigService } from './model-config-service'
 import type { ApiContentPart, ApiMessage } from '../core/llm/types'
 import { SCENE_VISION } from '../core/llm/types'
 import { isSuccess } from '../core/llm/llm-response'
+import { mediaFileToDataUrl, resolveMediaPath } from './media-service'
 
 /** 图像识别异常 */
 export class VisionException extends Error {
@@ -34,10 +35,18 @@ export class VisionProvider {
    * @param prompt 提问/指令
    */
   async recognize(profile: string, images: string[], prompt: string): Promise<string> {
-    const content: ApiContentPart[] = [
-      ...images.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
-      { type: 'text' as const, text: prompt },
-    ]
+    const content: ApiContentPart[] = []
+    for (const raw of images) {
+      const url = raw.trim()
+      // http/https/data: 直传；本地路径（media/xxx.png、app-media://）→ 读文件转 base64
+      if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+        content.push({ type: 'image_url', image_url: { url } })
+      } else {
+        const dataUrl = mediaFileToDataUrl(resolveMediaPath(url))
+        content.push({ type: 'image_url', image_url: { url: dataUrl } })
+      }
+    }
+    content.push({ type: 'text', text: prompt })
     const messages: ApiMessage[] = [{ role: 'user', content }]
     const response = await this.llmRouter.execute({
       scene: SCENE_VISION,

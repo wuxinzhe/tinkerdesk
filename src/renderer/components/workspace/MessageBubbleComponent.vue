@@ -68,9 +68,32 @@
           <ToolCallCard :message="message" :is-streaming="isStreaming" :pending-buffer="pendingBuffer" />
         </template>
 
-        <!-- user_message / 兜底 → 纯文本 -->
+        <!-- user_message / 兜底 → 文本 + 媒体附件（[Image attached at: media/xxx] → 真实文件渲染） -->
         <template v-else>
-          {{ message.content }}
+          <div v-if="mediaAttachments.length" class="bubble-media">
+            <img
+              v-for="att in mediaAttachments.filter((a) => a.type === 'Image')"
+              :key="att.relPath"
+              class="bubble-media__img"
+              :src="mediaUrl(att.relPath)"
+              alt="图片"
+            />
+            <audio
+              v-for="att in mediaAttachments.filter((a) => a.type === 'Audio')"
+              :key="att.relPath"
+              class="bubble-media__audio"
+              :src="mediaUrl(att.relPath)"
+              controls
+            />
+            <video
+              v-for="att in mediaAttachments.filter((a) => a.type === 'Video')"
+              :key="att.relPath"
+              class="bubble-media__video"
+              :src="mediaUrl(att.relPath)"
+              controls
+            />
+          </div>
+          <template v-if="textWithoutMedia">{{ textWithoutMedia }}</template>
         </template>
       </div>
 
@@ -150,8 +173,32 @@ import ToolCallCard from './ToolCallCard.vue'
 import HybridCard from './HybridCard.vue'
 import { inferMessageTypeFromRole } from '@/renderer/utils/message-utils'
 import { markdownToPlainText } from '@/renderer/utils/markdown-to-text'
-
 const router = useRouter()
+
+/* ── 媒体附件解析（[Image/Audio/Video attached at: media/xxx] → 真实文件渲染） ── */
+interface MediaAttachment { type: 'Image' | 'Audio' | 'Video' | 'File'; relPath: string }
+const MEDIA_ATTACH_RE = /\[(Image|Audio|Video|File) attached at: ([^\]]+)\]/g
+
+const mediaAttachments = computed<MediaAttachment[]>(() => {
+  const content = props.message.content ?? ''
+  const result: MediaAttachment[] = []
+  const re = new RegExp(MEDIA_ATTACH_RE.source, 'g')
+  let m: RegExpExecArray | null
+  while ((m = re.exec(content))) {
+    result.push({ type: m[1] as MediaAttachment['type'], relPath: m[2].trim() })
+  }
+  return result
+})
+
+/** 去掉媒体标记后的剩余文本 */
+const textWithoutMedia = computed(() =>
+  (props.message.content ?? '').replace(MEDIA_ATTACH_RE, '').trim()
+)
+
+/** 相对路径 → app-media:// 协议 URL（main 只读 media 目录） */
+function mediaUrl(relPath: string): string {
+  return `app-media://${relPath.replace(/\\/g, '/')}`
+}
 
 function openConversationDetail(sessionId: string | undefined, conversationId: string | undefined) {
   if (!sessionId || !conversationId) return
@@ -290,6 +337,30 @@ const bubbleStyleClass = computed(() =>
 </script>
 
 <style scoped>
+/* ── 媒体附件（图片/音频/视频——app-media:// 真实文件渲染） ── */
+
+.bubble-media {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.bubble-media__img {
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: 8px;
+  object-fit: contain;
+  display: block;
+}
+.bubble-media__audio,
+.bubble-media__video {
+  max-width: 260px;
+  border-radius: 8px;
+}
+.bubble-media__video {
+  max-height: 220px;
+}
+
 /* ── Row ── */
 
 .message-row {

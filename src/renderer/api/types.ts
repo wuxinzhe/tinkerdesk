@@ -968,6 +968,10 @@ export interface WindowApi {
     toggle: (toolName: string, disabled: boolean, profile?: string) => Promise<ToolItem>
   }
 
+  media: {
+    pickAndImport: () => Promise<string>
+  },
+
   webProvider: {
     list: (iface: 'web.search' | 'web.extract') => Promise<WebProviderListVO>
     set: (payload: { iface: 'web.search' | 'web.extract'; pluginId?: string | null; fallback?: boolean }) => Promise<WebProviderListVO>

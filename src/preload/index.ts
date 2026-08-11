@@ -363,6 +363,11 @@ const api = {
       inv('tool-config:toggle', { toolName, disabled, profile }).then(unwrap),
   },
 
+  // ── 媒体附件（MediaController——pick-and-import 返回相对路径 media/xxx.ext）──
+  media: {
+    pickAndImport: () => inv('media:pick-and-import').then(unwrap),
+  },
+
   // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──
   webProvider: {
     list: (iface: 'web.search' | 'web.extract') => inv('web-provider:list', { iface }).then(unwrap),

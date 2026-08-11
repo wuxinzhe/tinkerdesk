@@ -11,6 +11,7 @@ import { BaseTool } from '../base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
+import { resolveMediaPath } from '../../service/media-service'
 import type { AudioToolProvider } from '../../service/audio-tool-provider'
 
 /** 工具名 */
@@ -31,11 +32,13 @@ export class SpeechToTextTool extends BaseTool {
     if (!filePath) {
       return ToolResult.sync(JSON.stringify({ success: false, error: 'file_path 不能为空' }))
     }
-    if (!existsSync(filePath)) {
+    // 相对路径（media/xxx.wav）→ 绝对（media 目录）；绝对路径原样
+    const absPath = resolveMediaPath(filePath)
+    if (!existsSync(absPath)) {
       return ToolResult.sync(JSON.stringify({ success: false, error: `音频文件不存在: ${filePath}` }))
     }
     try {
-      const text = await this.audioToolProvider!.transcribe(filePath)
+      const text = await this.audioToolProvider!.transcribe(absPath)
       return ToolResult.sync(JSON.stringify({ success: true, text }))
     } catch (e) {
       return ToolResult.sync(JSON.stringify({ success: false, error: (e as Error).message }))

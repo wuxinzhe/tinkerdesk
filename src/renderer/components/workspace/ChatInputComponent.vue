@@ -82,6 +82,19 @@
         <div v-if="panelOpen" class="chat-input__panel">
           <div class="chat-input__panel-inner">
             <div class="chat-input__panel-icons">
+              <!-- 多媒体附件：选图/音频/视频 → 拷贝 media 目录 → 文本提示（[Image attached at: media/xxx]） -->
+              <button
+                class="chat-input__panel-icon"
+                :title="'发送图片/音频/视频'"
+                @click="pickAndSendMedia"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                </svg>
+                <span>图片/音视频</span>
+              </button>
               <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
               <button
                 class="chat-input__panel-icon"
@@ -653,6 +666,22 @@ function handleSend() {
   emit('send', text)
   emit('update:modelValue', '')
   nextTick(() => autoResize(textareaRef.value))
+}
+
+/** 多媒体附件：文件选择 → 拷贝 media 目录 → 文本提示（Hermes 风格 [Image attached at: media/xxx]） */
+async function pickAndSendMedia(): Promise<void> {
+  try {
+    const rel = await window.api.media.pickAndImport()
+    if (!rel) return
+    const ext = rel.split('.').pop()?.toLowerCase() ?? ''
+    let label = 'File'
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)) label = 'Image'
+    else if (['wav', 'mp3', 'ogg', 'm4a', 'flac'].includes(ext)) label = 'Audio'
+    else if (['mp4', 'webm', 'mkv', 'mov'].includes(ext)) label = 'Video'
+    emit('send', `[${label} attached at: ${rel}]`)
+  } catch {
+    // 取消/失败静默（dialog 取消返回 fail——不打扰）
+  }
 }
 
 function autoResize(el: HTMLTextAreaElement | null) {

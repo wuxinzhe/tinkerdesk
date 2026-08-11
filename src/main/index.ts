@@ -7,6 +7,7 @@ import { bootstrap } from './bootstrap'
 import { AgentController } from './controller/agent-controller'
 import { AgentModeController } from './controller/agent-mode-controller'
 import { SessionController } from './controller/session-controller'
+import { MediaController } from './controller/media-controller'
 import { MessageController } from './controller/message-controller'
 import { AgentCrudController } from './controller/agent-manager-controller'
 import { AgentConfigController } from './controller/agent-config-controller'
@@ -25,6 +26,7 @@ import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
+import { registerMediaProtocol } from './service/media-service'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -113,6 +115,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // app-media:// 协议（聊天媒体附件渲染——只读 media 目录）
+  registerMediaProtocol()
+
   // 日志文件系统最先初始化（后续所有 console 输出落盘）
   initLogger()
   // 初始化本地数据库（SQLite，custom_models 等表）
@@ -123,6 +128,7 @@ app.whenReady().then(() => {
   new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
   new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService).register()
   new MessageController(desk.messageService).register()
+  new MediaController().register()
   new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
   new AgentConfigController(desk.agentConfigService).register()
   new ToolController(desk.toolManager).register()
