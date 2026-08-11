@@ -7,6 +7,18 @@
       title="工具配置"
       desc="启用/停用该 Agent 可用的工具"
     />
+    <!-- Tab 页签：按工具类型分类（始终显示——空分类也保留 Tab 切换） -->
+    <div class="tools-tabs">
+      <button
+        v-for="tab in toolTabs"
+        :key="tab.type"
+        class="tools-tab"
+        :class="{ 'tools-tab--active': activeToolType === tab.type }"
+        @click="switchTab(tab.type)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
     <div v-if="toolsLoading" class="tools-loading">
       加载中…
     </div>
@@ -17,18 +29,6 @@
       <p>暂无可用工具</p>
     </div>
     <div v-else>
-      <!-- Tab 页签：按工具类型分类 -->
-      <div class="tools-tabs">
-        <button
-          v-for="tab in toolTabs"
-          :key="tab.type"
-          class="tools-tab"
-          :class="{ 'tools-tab--active': activeToolType === tab.type }"
-          @click="switchTab(tab.type)"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
       <div class="tools-list">
         <div v-for="tool in toolsList" :key="tool.name" class="tool-row" :class="{ 'tool-row--unavailable': !!tool.error }">
           <div class="tool-row__info">
@@ -299,14 +299,14 @@ onMounted(() => loadTools())
   text-decoration: line-through;
 }
 
-/* 设置按钮（每工具可进——替代黑名单开关） */
+/* 设置按钮（每工具可进——替代黑名单开关；靠右对齐） */
 .tool-row__settings-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
-  margin-left: 6px;
+  margin-left: auto;
   border: none;
   border-radius: 6px;
   background: transparent;
