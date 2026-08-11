@@ -129,17 +129,17 @@ body {
   line-height: 1.55;
 }
 
-/* ── 细滚动条（macOS 风格：窄 + 悬停显示） ── */
+/* ── 细滚动条（macOS 风格：窄 + 悬停显示；宽度减半 + 滑块圆角） ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 3px;
+  height: 3px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 :hover::-webkit-scrollbar-thumb,
 *:hover::-webkit-scrollbar-thumb {
