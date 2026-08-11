@@ -114,8 +114,35 @@ export function registerMediaProtocol(): void {
       return new Response('not found', { status: 404 })
     }
     const mime = MIME_BY_EXT[extname(absPath).toLowerCase()] ?? 'application/octet-stream'
+    const fileSize = statSync(absPath).size
+    // media 元素播放依赖 Range 请求（时长/进度/seek）——不支持会导致时长渐进异常 + 控件卡死
+    const range = request.headers.get('Range')
+    if (range && /^bytes=/.test(range)) {
+      const match = /bytes=(\d*)-(\d*)/.exec(range)
+      const start = match && match[1] ? Math.max(0, parseInt(match[1], 10)) : 0
+      const end = match && match[2] ? Math.min(fileSize - 1, parseInt(match[2], 10)) : fileSize - 1
+      if (start <= end && start < fileSize) {
+        const chunk = readFileSync(absPath).subarray(start, end + 1)
+        return new Response(chunk, {
+          status: 206,
+          headers: {
+            'Content-Type': mime,
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': String(chunk.length),
+            'Cache-Control': 'no-cache',
+          },
+        })
+      }
+    }
     return new Response(readFileSync(absPath), {
-      headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
+      status: 200,
+      headers: {
+        'Content-Type': mime,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': String(fileSize),
+        'Cache-Control': 'no-cache',
+      },
     })
   })
 }
