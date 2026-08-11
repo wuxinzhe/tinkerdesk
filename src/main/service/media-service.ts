@@ -94,10 +94,11 @@ export function isInsideMediaRoot(absPath: string): boolean {
 /**
  * 注册 app-media:// 自定义协议（渲染聊天消息里的媒体附件）
  * - 只允许读取 media 目录内文件（防任意文件读取）
- * - 前端用 app-media://media/xxx.png 展示图片/音频/视频
+ * - 显式返回 Content-Type（net.fetch(file://) 的 MIME 推断不可靠——audio/video 元素
+ *   对 MIME 严格要求，MIME 缺失/错误 → MEDIA_ELEMENT_ERROR: Format error）
  */
 export function registerMediaProtocol(): void {
-  const { protocol, net } = require('electron') as typeof import('electron')
+  const { protocol } = require('electron') as typeof import('electron')
   protocol.handle('app-media', (request) => {
     const url = new URL(request.url)
     // app-media://media/xxx.png → host=media, pathname=/xxx.png（media 在 host——合并为相对路径）
@@ -112,8 +113,22 @@ export function registerMediaProtocol(): void {
     if (!isInsideMediaRoot(absPath) || !existsSync(absPath)) {
       return new Response('not found', { status: 404 })
     }
-    return net.fetch('file:///' + absPath.replace(/\\/g, '/'))
+    const mime = MIME_BY_EXT[extname(absPath).toLowerCase()] ?? 'application/octet-stream'
+    return new Response(readFileSync(absPath), {
+      headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
+    })
   })
+}
+
+/** 扩展名 → MIME（图片/音频/视频——显式返回供 audio/video 元素解码） */
+const MIME_BY_EXT: Record<string, string> = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4', '.flac': 'audio/flac',
+  '.mp4': 'video/mp4', '.webm': 'video/webm', '.mkv': 'video/x-matroska',
+  '.mov': 'video/quicktime',
 }
 
 /** 获取文件名（渲染提示用） */
