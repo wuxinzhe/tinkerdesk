@@ -179,7 +179,7 @@ async function load() {
         id: 'builtin',
         name: '内置（默认）',
         description: iface.value === 'tool.vision'
-          ? '本地多模态模型（场景配置——image_recognition）'
+          ? '内置多模态模型（模型场景配置——图像识别）'
           : 'CUA Driver（本机安装——后台桌面自动化）',
       }
       providers.value = []
