@@ -265,6 +265,9 @@ onBeforeUnmount(() => {
   right: 0;
   z-index: 30;
   width: 280px;
+  /* 收起态必须完全穿透：根 div 一直存在（280px 透明）——默认 pointer-events auto 会
+     拦截右侧消息区点击（音频控件被遮住按不到）——展开态由 wrap/toggle 自行接管 */
+  pointer-events: none;
 }
 
 /* 动画容器（transform 过渡——带动整个抽屉滑出；阴影/圆角/pointer-events 都在这里） */
@@ -318,6 +321,8 @@ onBeforeUnmount(() => {
   transform: translateY(-50%);
   width: 20px;
   height: 56px;
+  /* 根 div pointer-events: none——按钮需自行接管点击 */
+  pointer-events: auto;
   border-radius: 10px 0 0 10px;
   border: 1px solid var(--tk-border-light);
   border-right: none;
