@@ -714,6 +714,8 @@ export const useChatStore = defineStore('chat', () => {
   const sessionStates = ref<Record<string, SessionStage>>(loadSessionStates())
 
   function setSessionStage(sessionId: string, stage: SessionStage): void {
+    // 相同状态不重复设置（连续 tool_start 保持 tool——不触发图标切换动画）
+    if (sessionStates.value[sessionId] === stage) return
     sessionStates.value[sessionId] = stage
     try {
       if (stage === 'idle') localStorage.removeItem(STAGE_KEY(sessionId))
