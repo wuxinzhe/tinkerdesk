@@ -214,7 +214,7 @@ function onClick() {
 /* 阶段图标切换过渡（淡入淡出 + 微缩放——低调不抢注意力） */
 .icon-fade-enter-active,
 .icon-fade-leave-active {
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 100ms ease, transform 100ms ease;
 }
 .icon-fade-enter-from,
 .icon-fade-leave-to {
