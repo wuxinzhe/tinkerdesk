@@ -119,9 +119,10 @@
         :submitted-content="message.content"
         :interaction-status="message.interactionStatus"
       />
+      </div>
 
       <!-- ── 时间戳（SVG 按钮 + 时间）──
-           统一 hover 显示（触屏点击）；位置在所有卡片之后 -->
+           统一 hover 显示（触屏点击）；行级——气泡旁（assistant 行最右 / user 气泡左） -->
       <div class="message-timestamp" :class="{ visible: showTimestamp }">
         <button
           v-if="canSpeak"
@@ -587,13 +588,20 @@ const bubbleStyleClass = computed(() =>
   font-size: 11px;
   color: var(--tk-text-tertiary);
   line-height: 1;
-  padding: 0 4px 0 12px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   gap: 6px;
+  align-self: flex-end;
+  flex-shrink: 0;
   opacity: 0;
   transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
   pointer-events: none;
+}
+
+/* assistant 行：时间戳推到行最右（气泡在左） */
+.message-row--assistant .message-timestamp {
+  margin-left: auto;
 }
 
 .message-timestamp.visible {
