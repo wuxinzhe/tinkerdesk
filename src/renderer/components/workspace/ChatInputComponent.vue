@@ -896,8 +896,8 @@ defineExpose({ focus })
   box-sizing: border-box;
 }
 
-.chat-input__textarea::-webkit-scrollbar {
-  display: none;
+.chat-input__textarea {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 
 .chat-input__textarea::placeholder {

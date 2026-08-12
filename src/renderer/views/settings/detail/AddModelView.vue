@@ -73,5 +73,7 @@ function goBack() {
   overflow-y: auto;
   scrollbar-width: none;
 }
-.page-layout::-webkit-scrollbar { display: none; }
+.page-layout {
+  /* 滚动条全局统一 */
+}
 </style>

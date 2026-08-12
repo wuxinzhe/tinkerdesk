@@ -307,8 +307,8 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
     overflow-y: auto;
     scrollbar-width: none;
   }
-  .markdown-body :deep(.table-cards__body::-webkit-scrollbar) {
-    display: none;
+  .markdown-body :deep(.table-cards__body) {
+    /* 滚动条全局统一 */
   }
   .markdown-body :deep(.table-cards__toggle) {
     position: absolute;

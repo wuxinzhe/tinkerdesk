@@ -274,12 +274,10 @@ defineExpose({
   flex-direction: column;
   min-height: 0;
   overscroll-behavior: contain;
-  /* 滚动条隐藏（聊天框——简洁） */
-  scrollbar-width: none;
 }
 
-.message-list::-webkit-scrollbar {
-  display: none;
+.message-list {
+  /* 滚动条样式由全局 variables.css 统一（3px 圆角——hover 显示） */
 }
 
 /* 超长回复顶部对齐时，气泡距视口顶部 16px（配合 scrollIntoView block:start） */

@@ -132,8 +132,8 @@ onMounted(async () => {
   scrollbar-width: none;
 }
 
-.cms-page::-webkit-scrollbar {
-  display: none;
+.cms-page {
+  /* 滚动条全局统一 */
 }
 
 /* ── Action buttons ── */

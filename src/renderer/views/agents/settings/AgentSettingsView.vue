@@ -568,8 +568,8 @@ onBeforeUnmount(() => {
   min-height: 0;
   scrollbar-width: none;
 }
-.agent-settings__form::-webkit-scrollbar {
-  display: none;
+.agent-settings__form {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 
 .agent-settings__error {

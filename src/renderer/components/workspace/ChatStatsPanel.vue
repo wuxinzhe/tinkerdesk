@@ -309,8 +309,8 @@ onBeforeUnmount(() => {
   scrollbar-width: none;
 }
 
-.stats__drawer::-webkit-scrollbar {
-  display: none;
+.stats__drawer {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 
 /* 切换按钮（独立于动画容器——right 切换定位：关=贴右缘 / 开=贴抽屉左缘） */

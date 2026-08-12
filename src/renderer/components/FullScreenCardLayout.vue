@@ -115,8 +115,8 @@
   -ms-overflow-style: none;
 }
 
-.layout-card__form::-webkit-scrollbar {
-  display: none;
+.layout-card__form {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 
 .layout-card__footer {

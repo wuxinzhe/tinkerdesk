@@ -203,8 +203,8 @@ onMounted(() => loadTools())
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.tool-row__desc::-webkit-scrollbar {
-  display: none;
+.tool-row__desc {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 .tool-row__checkbox {
   display: flex;

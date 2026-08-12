@@ -108,5 +108,7 @@ onMounted(loadServer)
   overflow-y: auto;
   scrollbar-width: none;
 }
-.mcp-page::-webkit-scrollbar { display: none; }
+.mcp-page {
+  /* 滚动条全局统一 */
+}
 </style>

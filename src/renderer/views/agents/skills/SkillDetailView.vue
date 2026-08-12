@@ -966,9 +966,7 @@ async function handleDelete() {
   -ms-overflow-style: none;
 }
 
-.skill-detail::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+.skill-detail {
+  /* 滚动条全局统一（variables.css 3px 圆角） */
 }
 </style>
