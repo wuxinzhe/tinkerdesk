@@ -97,6 +97,8 @@ export class AudioToolProvider {
   /** 文本合成语音 → 文件路径（激活 provider：内置 Edge 插件或插件 tts:speak_file） */
   async speak(text: string, outputPath: string): Promise<string> {
     const active = this.getActiveTts()
+    // 调用音频生成前打日志——Agent 生成的合成原文（未经任何加工——排查文案被改/截断/转写问题用）
+    console.info(`[audio-tool] tts 合成原文: ${text}`)
     try {
       const result = await this.pluginManager.invokePlugin<{ filePath?: string }>(
         active,
