@@ -89,6 +89,8 @@ export class VoiceProviderService {
   async speak(text: string): Promise<string> {
     const { ttsProvider } = this.getConfig()
     if (!ttsProvider) throw new Error('未配置 TTS provider，请到 系统设置 → 语音设置 选择')
+    // 朗读请求入参（provider + 原文——调用插件前打——排查文案/参数问题）
+    console.info(`[voice] 朗读请求: provider=${ttsProvider} text=${text}`)
     const result = await this.pluginManager.invokePlugin<{ audio?: string }>(
       ttsProvider,
       'tts:speak',
