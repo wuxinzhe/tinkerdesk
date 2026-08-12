@@ -373,7 +373,6 @@ onMounted(() => syncFromRoute())
 <style scoped>
 /* 680 窄列靠左（与其他 L3 页统一——L3PageLayout 提供 padding 20/24） */
 .agent-edit {
-  max-width: 680px;
   width: 100%;
 }
 

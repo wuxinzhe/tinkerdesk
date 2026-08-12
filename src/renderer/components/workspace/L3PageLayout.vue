@@ -1,6 +1,10 @@
 <template>
   <div class="l3-page-layout" :data-mounted="mounted">
-    <slot />
+    <!-- 内容包装：宽度统一由布局组件管理（680 靠左）——
+         滚动容器（l3-page-layout）全宽——滚动条在窗口最右 -->
+    <div class="l3-page-layout__body">
+      <slot />
+    </div>
   </div>
 </template>
 
@@ -30,6 +34,12 @@ onMounted(() => {
   transform: translateY(4px);
   transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 内容窄列（680 靠左）——滚动条跟随全宽滚动容器（窗口最右） */
+.l3-page-layout__body {
+  max-width: 680px;
+  width: 100%;
 }
 
 .l3-page-layout[data-mounted='true'] {

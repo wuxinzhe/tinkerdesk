@@ -238,7 +238,6 @@ watch(() => route.params.profile, () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-width: 680px;
   width: 100%;
 }
 

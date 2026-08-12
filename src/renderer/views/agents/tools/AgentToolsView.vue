@@ -122,7 +122,6 @@ onMounted(() => loadTools())
 <style scoped>
 /* 窄列布局（与系统设置 L3 对齐：680px 宽，靠左） */
 .tools-manage {
-  max-width: 680px;
   width: 100%;
 }
 .tools-loading,

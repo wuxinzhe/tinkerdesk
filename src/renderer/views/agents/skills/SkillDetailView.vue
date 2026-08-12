@@ -960,7 +960,6 @@ async function handleDelete() {
 /* ── 滚动条隐藏（技能详情页——内容较长时滚动条不显示） ── */
 
 .skill-detail {
-  max-width: 680px;
   width: 100%;
   -ms-overflow-style: none;
 }

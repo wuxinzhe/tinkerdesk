@@ -238,7 +238,6 @@ function goBack() {
 <style scoped>
 /* 注意：padding 由 L3PageLayout 统一提供（20px 24px）——此处不定义 */
 .skill-import {
-  max-width: 680px;
   width: 100%;
 }
 .si {

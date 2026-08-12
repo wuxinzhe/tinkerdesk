@@ -232,7 +232,6 @@ onMounted(() => {
 <style scoped>
 /* 窄列布局（与系统设置 L3 对齐：680px 宽，靠左） */
 .skill-manage {
-  max-width: 680px;
   width: 100%;
 }
 .skill-manage__toolbar {

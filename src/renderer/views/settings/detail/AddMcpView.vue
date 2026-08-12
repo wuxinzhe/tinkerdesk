@@ -70,7 +70,6 @@ function goBack() {
 <style scoped>
 .mcp-page {
   /* padding 由 L3PageLayout 统一提供 */
-  max-width: 680px;
   width: 100%;
   overflow-y: auto;
 }

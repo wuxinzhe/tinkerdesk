@@ -235,7 +235,6 @@ async function installSkill(skill: SkillInfo) {
 
 <style scoped>
 .skills-market {
-  max-width: 680px;
   width: 100%;
   display: flex;
   flex-direction: column;

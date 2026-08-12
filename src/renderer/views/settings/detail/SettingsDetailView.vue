@@ -51,8 +51,12 @@ const section = computed(() => route.params.section as string || '')
 </script>
 
 <style scoped>
-/* 设置详情容器：窄列统一（与 Agent 域 L3 一致——680 宽） */
+/* 设置详情容器：L3 全宽滚动（滚动条在窗口最右）——
+   宽度限制下沉到 body 内容（680 靠左——滚动条不跟窄列走） */
 .settings-detail {
+  /* 无 max-width——L3PageLayout 恢复全宽 flex:1 滚动 */
+}
+.settings-detail__body {
   max-width: 680px;
   width: 100%;
 }

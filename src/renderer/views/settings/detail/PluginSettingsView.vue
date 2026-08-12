@@ -13,12 +13,22 @@ import { pluginsApi } from '@/renderer/api/plugins-api'
 import { confirm } from '@/renderer/api/confirm'
 import type { PluginInfo } from '@/renderer/api/types'
 
-/** system interface 显示名映射（未知接口兜底显示原始 id） */
+/** system interface 显示名：前缀区分系统/工具——
+ *  voice.*（语音输入/朗读）= 系统级 → 「系统：」；tool.* = 工具级 → 「工具：」 */
 const INTERFACE_LABELS: Record<string, string> = {
-  'voice.stt': '语音输入（STT）',
-  'voice.tts': '朗读（TTS）',
-  'tool.stt': '工具语音转写（STT）',
-  'tool.tts': '工具语音合成（TTS）',
+  'voice.stt': '系统：语音输入（STT）',
+  'voice.tts': '系统：朗读（TTS）',
+  'tool.stt': '工具：语音转写（STT）',
+  'tool.tts': '工具：语音合成（TTS）',
+  'tool.computer_use': '工具：电脑控制',
+}
+
+/** 接口显示名（已知映射优先——未知接口按前缀兜底：voice.→系统： / tool.→工具：） */
+function interfaceLabel(id: string): string {
+  if (INTERFACE_LABELS[id]) return INTERFACE_LABELS[id]
+  if (id.startsWith('voice.')) return `系统：${id.slice('voice.'.length)}`
+  if (id.startsWith('tool.')) return `工具：${id.slice('tool.'.length)}`
+  return id
 }
 
 interface InterfaceGroup {
@@ -64,7 +74,7 @@ const groups = computed<InterfaceGroup[]>(() => {
   )
   const result: InterfaceGroup[] = ordered.map(([id, list]) => ({
     id,
-    label: INTERFACE_LABELS[id] ?? id,
+    label: interfaceLabel(id),
     plugins: list,
   }))
   if (others.length > 0) {
