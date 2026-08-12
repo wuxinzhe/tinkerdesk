@@ -73,6 +73,39 @@ const groups = computed<InterfaceGroup[]>(() => {
   return result
 })
 
+/** 折叠状态（localStorage 记忆——默认全折叠；用户手动展开过的组下次保持） */
+const EXPANDED_KEY = 'plugin-settings-expanded-groups'
+const expandedGroups = ref<Set<string>>(new Set())
+
+/** 点击组头展开/收起（状态持久化） */
+function toggleGroup(id: string): void {
+  const next = new Set(expandedGroups.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expandedGroups.value = next
+  try {
+    localStorage.setItem(EXPANDED_KEY, JSON.stringify([...next]))
+  } catch { /* ignore */ }
+}
+
+/** 恢复折叠状态（无保存记录 → 默认全折叠） */
+function restoreExpanded(): void {
+  try {
+    const saved = localStorage.getItem(EXPANDED_KEY)
+    if (saved) {
+      expandedGroups.value = new Set(JSON.parse(saved) as string[])
+    }
+  } catch { /* ignore */ }
+}
+
+onMounted(() => {
+  restoreExpanded()
+  void loadPlugins()
+  requestAnimationFrame(() => {
+    mounted.value = true
+  })
+})
+
 /** 启用/停用（注册/注销）：启用前自检由 toggle 拦截，失败跳配置页引导 */
 async function togglePlugin(p: PluginInfo): Promise<void> {
   const enabled = !p.status.enabled
@@ -140,13 +173,6 @@ async function askUninstall(p: PluginInfo): Promise<void> {
     // 错误提示由 inv 拦截统一派发
   }
 }
-
-onMounted(() => {
-  void loadPlugins()
-  requestAnimationFrame(() => {
-    mounted.value = true
-  })
-})
 </script>
 
 <template>
@@ -215,11 +241,31 @@ onMounted(() => {
     <!-- 插件列表（按 system interface 分组） -->
     <div v-else class="plugin-settings-page__list">
       <section v-for="g in groups" :key="g.id" class="plugin-group">
-        <div class="plugin-group__head">
+        <div
+          class="plugin-group__head"
+          role="button"
+          tabindex="0"
+          @click="toggleGroup(g.id)"
+          @keydown.enter.prevent="toggleGroup(g.id)"
+        >
+          <svg
+            class="plugin-group__arrow"
+            :class="{ 'plugin-group__arrow--open': expandedGroups.has(g.id) }"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="9 6 15 12 9 18" />
+          </svg>
           <span class="plugin-group__label">{{ g.label }}</span>
           <span class="plugin-group__count">{{ g.plugins.length }}</span>
         </div>
-        <div class="plugin-group__plugins">
+        <div v-show="expandedGroups.has(g.id)" class="plugin-group__plugins">
           <div v-for="(p, i) in g.plugins" :key="p.manifest.id" class="plugin-card" :style="{ transitionDelay: `${i * 40}ms` }">
         <div class="plugin-card__header">
           <div class="plugin-card__info">
@@ -470,7 +516,24 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 2px;
+  padding: 4px 2px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.plugin-group__head:hover {
+  background: var(--tk-surface-2, rgba(120, 120, 128, 0.08));
+}
+
+.plugin-group__arrow {
+  color: var(--tk-text-tertiary, #aeaeb2);
+  transition: transform 0.15s ease;
+}
+
+.plugin-group__arrow--open {
+  transform: rotate(90deg);
 }
 
 .plugin-group__label {
