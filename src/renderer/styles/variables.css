@@ -139,7 +139,7 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: transparent;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 :hover::-webkit-scrollbar-thumb,
 *:hover::-webkit-scrollbar-thumb {
