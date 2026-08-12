@@ -10,6 +10,7 @@ import { useRoute } from 'vue-router'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import { pluginsApi, onPluginEvent } from '@/renderer/api/plugins-api'
 import PluginConfigForm from '@/renderer/components/settings/PluginConfigForm.vue'
+import { showInfoToast } from '@/renderer/utils/notification-utils'
 import type { ConfigSchema, PluginCheckItem, PluginInfo } from '@/renderer/api/types'
 
 const route = useRoute()
@@ -91,6 +92,7 @@ async function saveConfig(patch: Record<string, unknown>): Promise<void> {
   await pluginsApi.saveConfig(pluginId.value, patch)
   config.value = await pluginsApi.getConfig(pluginId.value)
   await rerunCheck()
+  showInfoToast('配置已保存')
 }
 
 /** 启用/停用（启用前自检拦截由 toggle 处理） */
