@@ -44,13 +44,20 @@ export function resolveShell(shell?: string): TerminalShell {
   return available[0] ?? (process.platform === 'win32' ? 'cmd' : 'bash')
 }
 
-/** 构建 spawn 参数（cmd 先 chcp 65001 切 UTF-8——统一 utf8 解码防中文乱码） */
+/** 构建 spawn 参数（cmd 内建输出 GBK——解码器按 shell 分支：cmd→gbk / bash→utf8） */
 export function buildShellSpawn(shell: TerminalShell, cmd: string): { command: string; args: string[] } {
   if (shell === 'cmd') {
-    return { command: 'cmd.exe', args: ['/d', '/s', '/c', `chcp 65001 >nul & ${cmd}`] }
+    return { command: 'cmd.exe', args: ['/d', '/s', '/c', cmd] }
   }
   if (shell === 'powershell') {
     return { command: 'powershell.exe', args: ['-NoProfile', '-Command', cmd] }
   }
   return { command: 'bash', args: ['-lc', cmd] }
+}
+
+/** 输出解码器（按 shell 分支：cmd 内建/系统命令 GBK（中文系统）——bash 天然 UTF-8） */
+export function createShellDecoder(shell: TerminalShell): TextDecoder | null {
+  // cmd 在中文 Windows 输出 GBK（代码页 936）——GBK 解码；bash/其他 UTF-8
+  if (shell === 'cmd') return new TextDecoder('gbk')
+  return null
 }

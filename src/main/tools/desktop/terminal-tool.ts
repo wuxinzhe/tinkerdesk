@@ -13,7 +13,7 @@ import { BaseTool } from '../base-tool'
 import { processRegistry } from '../common/process-registry'
 import { ToolResult } from '../../core/tool/tool-result'
 import { ToolSchema } from '../../core/tool/tool-schema'
-import { detectAvailableShells, resolveShell, buildShellSpawn, SHELL_HINTS } from '../common/shell-env'
+import { detectAvailableShells, resolveShell, buildShellSpawn, createShellDecoder, SHELL_HINTS } from '../common/shell-env'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
 import type { TerminalParams } from './types'
@@ -127,8 +127,11 @@ export class TerminalTool extends BaseTool {
     const timeoutMs = timeoutSec * 1000
     const cwd = workdir ?? process.cwd()
     return new Promise((resolve) => {
-      // shell 方言：cmd（chcp 65001 切 UTF-8）/ bash——统一 utf8 解码
-      const { command, args } = buildShellSpawn(resolveShell(shell), cmd)
+      // shell 方言：cmd（GBK 解码）/ bash（UTF-8）——按分支选择解码器
+      const resolvedShell = resolveShell(shell)
+      const { command, args } = buildShellSpawn(resolvedShell, cmd)
+      const stdoutDecoder = createShellDecoder(resolvedShell)
+      const stderrDecoder = createShellDecoder(resolvedShell)
       const child = spawn(command, args, {
         cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -138,6 +141,10 @@ export class TerminalTool extends BaseTool {
       let stdout = ''
       let stderr = ''
       let settled = false
+      const flushDecoders = (): void => {
+        if (stdoutDecoder) stdout += stdoutDecoder.decode()
+        if (stderrDecoder) stderr += stderrDecoder.decode()
+      }
       const finish = (data: Record<string, unknown>) => {
         if (settled) return
         settled = true
@@ -147,17 +154,19 @@ export class TerminalTool extends BaseTool {
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
         setTimeout(() => { try { child.kill('SIGKILL') } catch { /* ignore */ } }, KILL_GRACE_MS)
+        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: -1, error: `Command timed out after ${timeoutSec}s` })
       }, timeoutMs)
 
       child.stdout?.on('data', (data: Buffer) => {
-        stdout += data.toString()
+        stdout += stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString()
       })
       child.stderr?.on('data', (data: Buffer) => {
-        stderr += data.toString()
+        stderr += stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString()
       })
 
       child.on('close', (code) => {
+        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: code ?? -1, error: null })
       })
 

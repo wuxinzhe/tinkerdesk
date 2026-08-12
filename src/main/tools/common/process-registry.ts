@@ -8,7 +8,7 @@
  */
 import { spawn } from 'child_process'
 import type { ProcessSession, SpawnOptions } from '../desktop/types'
-import { buildShellSpawn, resolveShell } from './shell-env'
+import { buildShellSpawn, createShellDecoder, resolveShell } from './shell-env'
 
 // ── 常量 ──
 
@@ -26,8 +26,11 @@ class ProcessRegistry {
     const id = `proc_${Date.now()}_${++this.idCounter}`
     const cwd = opts.cwd ?? process.cwd()
 
-    // shell 方言（terminal 工具传入）：cmd（chcp 65001 切 UTF-8）/ bash——统一 utf8 解码
-    const { command, args } = buildShellSpawn(opts.shell ? resolveShell(opts.shell) : resolveShell(), opts.command)
+    // shell 方言（terminal 工具传入）：cmd（GBK 解码）/ bash（UTF-8）
+    const resolvedShell = opts.shell ? resolveShell(opts.shell) : resolveShell()
+    const { command, args } = buildShellSpawn(resolvedShell, opts.command)
+    const stdoutDecoder = createShellDecoder(resolvedShell)
+    const stderrDecoder = createShellDecoder(resolvedShell)
     const child = spawn(command, args, {
       cwd,
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -44,14 +47,16 @@ class ProcessRegistry {
     }
 
     child.stdout?.on('data', (data: Buffer) => {
-      session.stdout = this.appendBuffered(session.stdout, data.toString())
+      session.stdout = this.appendBuffered(session.stdout, stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString())
     })
 
     child.stderr?.on('data', (data: Buffer) => {
-      session.stderr = this.appendBuffered(session.stderr, data.toString())
+      session.stderr = this.appendBuffered(session.stderr, stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString())
     })
 
     child.on('close', (code) => {
+      if (stdoutDecoder) session.stdout = this.appendBuffered(session.stdout, stdoutDecoder.decode())
+      if (stderrDecoder) session.stderr = this.appendBuffered(session.stderr, stderrDecoder.decode())
       session.done = true
       session.exitCode = code
       session.endTime = Date.now()
