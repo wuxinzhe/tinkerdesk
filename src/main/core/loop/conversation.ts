@@ -27,6 +27,7 @@ import {
 } from '../constants'
 import { ERROR_CONTEXT_OVERFLOW, RES_EMPTY, RES_REASONING, RES_TEXT, RES_TOOL_CALLS, RES_TRUNCATED } from '../llm/llm-response'
 import type { ApiMessage, LlmChunk, LlmResponse, LlmRouterOptions, ModelConfig } from '../llm/types'
+import { repairMessageSequence } from '../llm/message-utils'
 import { SCENE_CHAT, SCENE_SUMMARY, SCENE_TITLE } from '../llm/types'
 import type { ToolSchema } from '../tool/tool-schema'
 import type { ConversationContext, SessionContext } from './context'
@@ -82,6 +83,9 @@ export class Conversation {
 
     // ── 上下文加载（摘要 + 历史 + 暂存）→ 转 ApiMessage ──
     const history = messageService.loadContextMessages(this.sessionId, this.convId, this.profile)
+    // 防御性修复：合并相邻 assistant（tool_calls 后紧跟 assistant = 严格 provider 400——
+    // 移植 Hermes repair_message_sequence）/ 丢弃游离 tool / 合并 user / 修正 system
+    repairMessageSequence(history)
 
     // ── 提示词构建（system 消息） ──
     const systemPrompt = promptModuleBuilder.buildSystemPrompt(this.convCtx)
@@ -444,6 +448,8 @@ export class Conversation {
     const { messageService, llmRouter, sessionService } = this.deps
     try {
       const history = messageService.loadContextMessages(sessionId, convId, profile)
+      // 标题生成同样走防御性修复（历史可能含游离 tool/相邻 assistant）
+      repairMessageSequence(history)
       const allConfigs = this.resolveAllConfigs(profile)
       const routerCtx: LlmRouterOptions = {
         scene: SCENE_TITLE,
