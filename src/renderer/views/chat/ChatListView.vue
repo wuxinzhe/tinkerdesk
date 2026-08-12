@@ -39,7 +39,7 @@ const sessionListRef = ref<InstanceType<typeof SessionList> | null>(null)
 
 /* ── Agent 信息 ── */
 const profile = computed(() => sessionStore.profile)
-watch(profile, (p) => { agentStore.loadCurrentAgent(p || '') }, { immediate: true })
+watch(profile, (p) => { agentStore.loadCurrentAgent(p || '', true) }, { immediate: true })
 const agent = computed(() => agentStore.currentAgent)
 
 /* ── Thinking 状态（共享） ── */

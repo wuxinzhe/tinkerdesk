@@ -169,9 +169,11 @@ import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import type { AgentInfo, ModeOptionVO } from '@/renderer/api/types'
 import { agentsApi } from '@/renderer/api/agents-api'
+import { useAgentStore } from '@/renderer/stores/agent-store'
 
 const route = useRoute()
 const router = useRouter()
+const agentStore = useAgentStore()
 
 const isCreate = computed(() => route.path.includes('/agents/create'))
 const detailProfile = computed(() => route.params.profile as string | undefined)
@@ -275,6 +277,9 @@ async function saveEdit() {
       agentModeVersion: form.value.agentModeVersion || undefined
     })
     if (updated) editingAgent.value = updated
+    // 编辑后失效 agent 缓存（避免聊天页卡片显示旧数据）——store + 组件内缓存同步
+    agentStore.invalidateCache(editingAgent.value.profile)
+    agentCache.set(editingAgent.value.profile, updated)
     backToList()
   } catch (e) {
     editError.value = (e as Error).message ?? '保存失败'

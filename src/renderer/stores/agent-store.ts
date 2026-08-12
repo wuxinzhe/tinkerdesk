@@ -14,12 +14,13 @@ export const useAgentStore = defineStore('agent', () => {
   const currentAgent = ref<AgentInfo | null>(null)
   const agentCache = new Map<string, AgentInfo>()
 
-  async function loadCurrentAgent(profile: string) {
+  async function loadCurrentAgent(profile: string, force = false) {
     if (!profile) {
       currentAgent.value = null
       return
     }
-    if (agentCache.has(profile)) {
+    // 缓存命中（非 force）直接用——编辑/创建后或切换 profile 时 force 重拉（防脏缓存）
+    if (!force && agentCache.has(profile)) {
       currentAgent.value = agentCache.get(profile)!
       return
     }
@@ -34,7 +35,13 @@ export const useAgentStore = defineStore('agent', () => {
     }
   }
 
+  /** 编辑/创建后失效缓存（下次 load 重新拉——避免脏数据） */
+  function invalidateCache(profile?: string): void {
+    if (profile) agentCache.delete(profile)
+    else agentCache.clear()
+  }
+
   return {
-    currentAgent, loadCurrentAgent
+    currentAgent, loadCurrentAgent, invalidateCache
   }
 })
