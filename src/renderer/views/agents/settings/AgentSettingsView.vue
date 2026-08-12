@@ -1,5 +1,5 @@
 <template>
-  <div class="agent-settings">
+  <L3PageLayout class="agent-settings">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;3&quot;/><path d=&quot;M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.51.26A1.65 1.65 0 0113 21a2 2 0 01-4 0 1.65 1.65 0 00-1.43-1.01 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z&quot;/></svg>"
@@ -339,13 +339,14 @@
         {{ error }}
       </p>
     </form>
-  </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
+import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import { agentConfigApi } from '@/renderer/api/agent-config-api'
 import type { AgentConfigData } from '@/renderer/api/types'
 
@@ -465,14 +466,10 @@ onBeforeUnmount(() => {
    ═══════════════════════════════════════════════ */
 
 .agent-settings {
-  padding: 20px 24px;
-  max-width: 680px;
-  width: 100%;
-  height: 100%;
+  /* 布局（padding/宽度/滚动）由 L3PageLayout 统一提供——全宽滚动 + 内容 680 */
   display: flex;
   flex-direction: column;
   background: transparent;
-  overflow-y: auto;
 }
 
 .agent-settings__header {

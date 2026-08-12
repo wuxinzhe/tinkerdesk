@@ -326,6 +326,8 @@ watch(() => route.params.profile, () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* add 与 list 间距 16px（root gap 12 + margin 4）——用户指定 */
+  margin-top: 4px;
 }
 
 .memory-item {

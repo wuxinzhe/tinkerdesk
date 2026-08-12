@@ -1,5 +1,5 @@
 <template>
-  <div class="workshop-detail">
+  <L3PageLayout class="workshop-detail">
     <div class="workshop-detail__body">
       <div class="workshop-placeholder">
         <div class="workshop-placeholder__inner">
@@ -14,18 +14,18 @@
         </div>
       </div>
     </div>
-  </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
+import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 </script>
 
 <style scoped>
 .workshop-detail {
   display: flex;
-  flex-direction: center;
-  height: 100%;
-  min-height: 0;
+  flex-direction: column;
+  /* 布局（padding/宽度/滚动）由 L3PageLayout 统一提供 */
 }
 .workshop-detail__body {
   flex: 1;

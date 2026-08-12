@@ -1,5 +1,5 @@
 <template>
-  <div class="prompt-modules">
+  <L3PageLayout class="prompt-modules">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z&quot;/><polyline points=&quot;14 2 14 8 20 8&quot;/><line x1=&quot;8&quot; y1=&quot;13&quot; x2=&quot;16&quot; y2=&quot;13&quot;/><line x1=&quot;8&quot; y1=&quot;17&quot; x2=&quot;13&quot; y2=&quot;17&quot;/></svg>"
@@ -68,13 +68,14 @@
         </div>
       </div>
     </div>
-  </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
+import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import { promptModulesApi } from '@/renderer/api/prompt-modules-api'
 import type { PromptModuleData } from '@/renderer/api/types'
 
@@ -144,12 +145,9 @@ async function confirmDelete(mod: PromptModuleData) {
 
 <style scoped>
 .prompt-modules {
-  height: 100%;
+  /* 布局（padding/宽度/滚动）由 L3PageLayout 统一提供——全宽滚动 + 内容 680 */
   display: flex;
   flex-direction: column;
-  padding: 20px 24px;
-  max-width: 680px;
-  width: 100%;
 }
 
 .prompt-modules__header {
