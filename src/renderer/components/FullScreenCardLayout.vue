@@ -111,7 +111,6 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: none;
   -ms-overflow-style: none;
 }
 

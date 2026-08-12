@@ -892,7 +892,6 @@ defineExpose({ focus })
   min-height: 36px;
   max-height: 144px;
   overflow-y: auto;
-  scrollbar-width: none;
   box-sizing: border-box;
 }
 

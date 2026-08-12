@@ -566,7 +566,6 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  scrollbar-width: none;
 }
 .agent-settings__form {
   /* 滚动条全局统一（variables.css 3px 圆角） */

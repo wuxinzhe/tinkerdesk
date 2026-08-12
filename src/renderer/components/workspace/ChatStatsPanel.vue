@@ -306,7 +306,6 @@ onBeforeUnmount(() => {
   border-radius: 12px 0 0 12px;
   padding: 16px 14px;
   overflow-y: auto;
-  scrollbar-width: none;
 }
 
 .stats__drawer {

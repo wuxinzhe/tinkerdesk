@@ -73,7 +73,6 @@ function goBack() {
   max-width: 680px;
   width: 100%;
   overflow-y: auto;
-  scrollbar-width: none;
 }
 .mcp-page {
   /* 滚动条全局统一 */

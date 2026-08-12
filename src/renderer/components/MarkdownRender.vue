@@ -305,7 +305,6 @@ html[data-theme='dark'] .markdown-body :deep(.hljs-strong) { font-weight: 700; }
   .markdown-body :deep(.table-cards__body) {
     max-height: calc(2.5 * (32px + 2.5em));
     overflow-y: auto;
-    scrollbar-width: none;
   }
   .markdown-body :deep(.table-cards__body) {
     /* 滚动条全局统一 */

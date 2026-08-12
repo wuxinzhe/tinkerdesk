@@ -145,15 +145,6 @@ body {
   background: var(--tk-scrollbar-thumb-hover, #aeaeb2);
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-*:hover {
-  scrollbar-color: var(--tk-scrollbar-thumb, #c7c7cc) transparent;
-}
-
 /* ── Utility classes ── */
 .sr-only {
   position: absolute;

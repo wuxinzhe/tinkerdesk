@@ -962,7 +962,6 @@ async function handleDelete() {
 .skill-detail {
   max-width: 680px;
   width: 100%;
-  scrollbar-width: none;
   -ms-overflow-style: none;
 }
 

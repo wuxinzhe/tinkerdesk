@@ -129,7 +129,6 @@ onMounted(async () => {
   max-width: 680px;
   width: 100%;
   overflow-y: auto;
-  scrollbar-width: none;
 }
 
 .cms-page {

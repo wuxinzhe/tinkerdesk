@@ -71,7 +71,6 @@ function goBack() {
   max-width: 680px;
   width: 100%;
   overflow-y: auto;
-  scrollbar-width: none;
 }
 .page-layout {
   /* 滚动条全局统一 */
