@@ -731,11 +731,11 @@ export class PluginManager {
     return (await record.api.getConfigSchema?.()) ?? null
   }
 
-  /** 读取配置（secret 字段脱敏回显） */
-  getConfig(id: string): Record<string, unknown> {
+  /** 读取配置（secret 字段脱敏回显——Worker 插件 schema 经代理异步获取） */
+  async getConfig(id: string): Promise<Record<string, unknown>> {
     const record = this.registry.get(id)
     const config = record?.ctx?.getConfig<Record<string, unknown>>() ?? {}
-    const schema = record?.api?.getConfigSchema?.()
+    const schema = (await record?.api?.getConfigSchema?.()) ?? null
     if (!schema) return config
     // secret 类型不返回明文
     const redacted: Record<string, unknown> = {}
@@ -746,11 +746,11 @@ export class PluginManager {
     return redacted
   }
 
-  /** 保存配置（secret 留空不覆盖） */
-  saveConfig(id: string, patch: Record<string, unknown>): void {
+  /** 保存配置（secret 留空不覆盖——Worker 插件 schema 经代理异步获取） */
+  async saveConfig(id: string, patch: Record<string, unknown>): Promise<void> {
     const record = this.registry.get(id)
     if (!record?.ctx) throw new Error(`插件不存在: ${id}`)
-    const schema = record.api?.getConfigSchema?.()
+    const schema = (await record.api?.getConfigSchema?.()) ?? null
     const current = record.ctx.getConfig<Record<string, unknown>>()
     const next: Record<string, unknown> = { ...current }
     for (const [key, value] of Object.entries(patch)) {

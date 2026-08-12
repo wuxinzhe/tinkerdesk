@@ -199,21 +199,21 @@ export class PluginController {
     }
   }
 
-  /** 读取配置（secret 脱敏） */
-  private getPluginConfig(payload: { id: string }): ApiResult<Record<string, unknown>> {
+  /** 读取配置（secret 脱敏——Worker 插件异步获取） */
+  private async getPluginConfig(payload: { id: string }): Promise<ApiResult<Record<string, unknown>>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(this.pluginManager.getConfig(payload.id))
+      return ok(await this.pluginManager.getConfig(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
   }
 
   /** 保存配置 */
-  private savePluginConfig(payload: { id: string; patch: Record<string, unknown> }): ApiResult<boolean> {
+  private async savePluginConfig(payload: { id: string; patch: Record<string, unknown> }): Promise<ApiResult<boolean>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      this.pluginManager.saveConfig(payload.id, payload.patch ?? {})
+      await this.pluginManager.saveConfig(payload.id, payload.patch ?? {})
       return ok(true)
     } catch (e) {
       return fail((e as Error).message)
