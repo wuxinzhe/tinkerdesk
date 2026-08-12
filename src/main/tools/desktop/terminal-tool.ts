@@ -64,7 +64,7 @@ export class TerminalTool extends BaseTool {
       ' Foreground (default): blocks until done, returns full output. Background (background=true): spawns a persistent process, returns session_id immediately; manage it with process/read_terminal/close_terminal. Use process(action=list) to see all background sessions.'
     const baseParams = (this.schema.parameters ?? {}) as Record<string, unknown>
     const baseProps = (baseParams.properties ?? {}) as Record<string, unknown>
-    return new ToolSchema(this.schema.name, description, {
+    const schema = new ToolSchema(this.schema.name, description, {
       ...baseParams,
       properties: {
         shell: {
@@ -76,6 +76,10 @@ export class TerminalTool extends BaseTool {
         ...baseProps,
       },
     })
+    // 继承静态分类/emoji（terminal 是 desktop 插件工具——处理 tinkerdesk 外部文件）
+    schema.toolType = this.schema.toolType
+    schema.emoji = this.schema.emoji
+    return schema
   }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
