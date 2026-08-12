@@ -278,44 +278,35 @@ export class SkillController {
       }
     }
     const profile = payload?.profile ?? 'default'
-    const created = this.privateSkillService.createSkill(profile, {
-      name,
-      displayName: payload.displayName ?? name,
-      description: payload.description ?? '',
-      category: payload.category ?? '',
-      version: payload.version ?? '',
-      author: payload.author ?? '',
-      license: payload.license ?? '',
-      platforms: payload.platforms ?? '',
-      tags: payload.tags ?? '',
-      dependencies: payload.dependencies ?? '',
-      requiresToolsets: payload.requiresToolsets ?? '',
-      requiresTools: payload.requiresTools ?? '',
-      fallbackForToolsets: payload.fallbackForToolsets ?? '',
-      fallbackForTools: payload.fallbackForTools ?? '',
-      triggers: payload.triggers ?? '',
-      triggerConditions: payload.triggerConditions ?? '',
-      config: payload.config ?? '[]',
-      commands: payload.commands ?? '',
-      envVars: payload.envVars ?? '',
-      body,
-    })
+    const created = this.privateSkillService.installSkill(
+      profile,
+      {
+        name,
+        displayName: payload.displayName ?? name,
+        description: payload.description ?? '',
+        category: payload.category ?? '',
+        version: payload.version ?? '',
+        author: payload.author ?? '',
+        license: payload.license ?? '',
+        platforms: payload.platforms ?? '',
+        tags: payload.tags ?? '',
+        dependencies: payload.dependencies ?? '',
+        requiresToolsets: payload.requiresToolsets ?? '',
+        requiresTools: payload.requiresTools ?? '',
+        fallbackForToolsets: payload.fallbackForToolsets ?? '',
+        fallbackForTools: payload.fallbackForTools ?? '',
+        triggers: payload.triggers ?? '',
+        triggerConditions: payload.triggerConditions ?? '',
+        config: payload.config ?? '[]',
+        commands: payload.commands ?? '',
+        envVars: payload.envVars ?? '',
+        body,
+      },
+      files,
+      payload.related ?? []
+    )
     if (!created) {
       return fail(`技能已存在: ${name}（同名技能不能重复安装，可改 name 或先删除旧技能）`)
-    }
-    // 附件入库（references/scripts/templates 等——fileType 区分；顺序保留）
-    files.forEach((f, idx) => {
-      if (!f.fileType || !f.content) return
-      this.privateSkillService.saveSkillFile(created.id, f.fileType, f.content, '', f.sortOrder ?? idx, f.name ?? '')
-    })
-    // 关联技能写入（frontmatter related: [name...]——按 name 匹配已存在技能；忽略不存在的；不自关联）
-    if (payload.related && payload.related.length > 0) {
-      for (const relatedName of payload.related) {
-        const target = this.privateSkillService.findByName(profile, relatedName.trim())
-        if (target && target.id !== created.id) {
-          this.privateSkillService.addRelated(created.id, target.id, 'related')
-        }
-      }
     }
     return ok(toSkillInfoVO(created, true))
   }
@@ -336,7 +327,7 @@ export class SkillController {
     if (payload?.body && payload.body.length > 50 * 1024) {
       return fail(`技能正文过长（${payload.body.length} 字符，上限 ${50 * 1024}）`)
     }
-    const updated = this.privateSkillService.updateSkill(profile, id, {
+    const updated = this.privateSkillService.updateSkillWithRelated(profile, id, {
       displayName: payload.displayName,
       description: payload.description,
       category: payload.category,
@@ -357,18 +348,8 @@ export class SkillController {
       commands: payload.commands,
       envs: payload.envs,
       body: payload.body,
-    })
+    }, payload.related)
     if (!updated) return fail('技能不存在或更新失败')
-    // 关联技能全量替换（清旧写新——按 name 匹配已存在技能）
-    this.privateSkillService.clearRelated(id)
-    if (payload.related && payload.related.length > 0) {
-      for (const relatedName of payload.related) {
-        const target = this.privateSkillService.findByName(profile, relatedName.trim())
-        if (target && target.id !== id) {
-          this.privateSkillService.addRelated(id, target.id, 'related')
-        }
-      }
-    }
     return ok(toSkillInfoVO(updated))
   }
 

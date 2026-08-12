@@ -7,6 +7,7 @@
 import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
 import { PrivateSkillRelatedRepository } from '../repository/private-skill-related-repository'
 import { PrivateSkillRepository } from '../repository/private-skill-repository'
+import { withTransaction } from '../repository/database'
 import type { FilteredSkillDTO, PrivateSkillEntity, SkillFileEntity, SkillRelatedEntity } from '../repository/types'
 
 /** 私有技能服务 */
@@ -68,15 +69,17 @@ export class PrivateSkillService {
     return this.skillRepo.softDelete(profile, id) > 0
   }
 
-  /** 硬删除技能（物理删行 + 级联删除关联文件与关联关系） */
+  /** 硬删除技能（物理删行 + 级联删除关联文件与关联关系——事务：中途失败整体回滚） */
   hardDelete(profile: string, id: string): boolean {
-    if (this.skillRepo.hardDelete(profile, id) > 0) {
-      this.fileRepo.deleteBySkillId(id)
-      this.relatedRepo.deleteBySkillId(id)
-      this.relatedRepo.deleteByRelatedSkillId(id)
-      return true
-    }
-    return false
+    return withTransaction(() => {
+      if (this.skillRepo.hardDelete(profile, id) > 0) {
+        this.fileRepo.deleteBySkillId(id)
+        this.relatedRepo.deleteBySkillId(id)
+        this.relatedRepo.deleteByRelatedSkillId(id)
+        return true
+      }
+      return false
+    })
   }
 
   /** 恢复技能 */
@@ -244,6 +247,30 @@ export class PrivateSkillService {
     return this.skillRepo.findByName(profile, input.name) ?? saved
   }
 
+  /** 安装技能（事务：技能行 + 附件文件 + 关联技能——中途失败整体回滚——controller/导入用） */
+  installSkill(
+    profile: string,
+    input: Parameters<PrivateSkillService['createSkill']>[1],
+    files: Array<{ fileType: string; content: string; sortOrder?: number; name?: string }>,
+    related: string[] = []
+  ): PrivateSkillEntity | null {
+    return withTransaction(() => {
+      const created = this.createSkill(profile, input)
+      if (!created) return null
+      files.forEach((f, idx) => {
+        if (!f.fileType || !f.content) return
+        this.saveSkillFile(created.id, f.fileType, f.content, '', f.sortOrder ?? idx, f.name ?? '')
+      })
+      for (const relatedName of related) {
+        const target = this.skillRepo.findByName(profile, relatedName.trim())
+        if (target && target.id !== created.id) {
+          this.addRelated(created.id, target.id, 'related')
+        }
+      }
+      return created
+    })
+  }
+
   /** 更新技能 body（patch/edit 用） */
   updateSkillBody(profile: string, id: string, body: string): boolean {
     const existing = this.skillRepo.findById(profile, id)
@@ -306,6 +333,29 @@ export class PrivateSkillService {
     }
     this.skillRepo.save(next)
     return this.skillRepo.findById(profile, id)
+  }
+
+  /** 编辑技能 + 关联全量替换（事务：字段更新 + 清旧写新关联——中途失败整体回滚） */
+  updateSkillWithRelated(
+    profile: string,
+    id: string,
+    input: Parameters<PrivateSkillService['updateSkill']>[2],
+    related: string[] | undefined
+  ): PrivateSkillEntity | null {
+    return withTransaction(() => {
+      const updated = this.updateSkill(profile, id, input)
+      if (!updated) return null
+      this.clearRelated(id)
+      if (related && related.length > 0) {
+        for (const relatedName of related) {
+          const target = this.skillRepo.findByName(profile, relatedName.trim())
+          if (target && target.id !== id) {
+            this.addRelated(id, target.id, 'related')
+          }
+        }
+      }
+      return updated
+    })
   }
 }
 
