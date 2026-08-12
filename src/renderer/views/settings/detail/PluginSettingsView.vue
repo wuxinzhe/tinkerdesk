@@ -400,7 +400,9 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   background: rgba(0, 122, 255, 0.06);
   border: 1px solid var(--tk-accent);
   cursor: pointer;
-  transition: background 0.2s ease-in-out;
+  /* emil：指定属性 + 强 ease-out（禁 ease-in-out——迟缓感） */
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .plugin-settings-page__install--main {
@@ -413,8 +415,10 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   padding: 7px 8px;
 }
 
-.plugin-settings-page__install:hover {
-  background: rgba(0, 122, 255, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .plugin-settings-page__install:hover {
+    background: rgba(0, 122, 255, 0.12);
+  }
 }
 
 /* 安装方式下拉菜单 */
@@ -489,6 +493,18 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   color: var(--tk-text-tertiary);
 }
 
+/* emil：空态图标——52px 柔和圆角容器（SaEmpty 同款） */
+.plugin-settings-page__empty-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--tk-surface-2, rgba(120, 120, 128, 0.1));
+  color: var(--tk-text-tertiary);
+}
+
 .plugin-settings-page__empty-text {
   font-size: 13px;
   font-weight: 600;
@@ -502,7 +518,7 @@ async function askUninstall(p: PluginInfo): Promise<void> {
 .plugin-settings-page__list {
   display: flex;
   flex-direction: column;
-  gap: var(--tk-space-5, 20px);
+  gap: var(--tk-space-6, 24px);
 }
 
 /* 接口分组：组头 + 组内插件 */
@@ -516,20 +532,28 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 2px;
+  padding: 6px 4px;
   cursor: pointer;
   user-select: none;
-  border-radius: 6px;
-  transition: background-color 0.15s ease;
+  border-radius: 8px;
+  /* emil：可点元素按压反馈（行级——比按钮轻微） */
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.plugin-group__head:hover {
-  background: var(--tk-surface-2, rgba(120, 120, 128, 0.08));
+.plugin-group__head:active {
+  transform: scale(0.99);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .plugin-group__head:hover {
+    background: var(--tk-surface-2, rgba(120, 120, 128, 0.08));
+  }
 }
 
 .plugin-group__arrow {
   color: var(--tk-text-tertiary, #aeaeb2);
-  transition: transform 0.15s ease;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .plugin-group__arrow--open {
@@ -537,10 +561,11 @@ async function askUninstall(p: PluginInfo): Promise<void> {
 }
 
 .plugin-group__label {
-  font-size: 13px;
+  /* emil：分组标题 15px/600 深色（现代——非 iOS 大写小标签） */
+  font-size: 15px;
   font-weight: 600;
-  color: var(--tk-text-secondary, #8e8e93);
-  letter-spacing: 0.2px;
+  color: var(--tk-text-primary);
+  letter-spacing: 0.1px;
 }
 
 .plugin-group__count {
@@ -560,12 +585,11 @@ async function askUninstall(p: PluginInfo): Promise<void> {
 .plugin-card {
   padding: var(--tk-space-4, 16px);
   background: var(--tk-bg-primary);
-  /* emil：大圆角 + 分层阴影 */
+  /* emil：大圆角 + 分层阴影——卡片「浮起」而非「框住」 */
   border: 1px solid var(--tk-border-card);
   border-radius: var(--tk-radius-xl);
   box-shadow: var(--tk-shadow-card);
-  transition: box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
-  /* emil：进入 stagger（transitionDelay 由模板按 index 注入） */
+  /* emil：进入 stagger + hover 阴影——一条 transition（指定属性 + 强 ease-out） */
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 240ms cubic-bezier(0.23, 1, 0.32, 1),
@@ -736,12 +760,40 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   background: rgba(255, 59, 48, 0.06);
 }
 
-.plugin-card__btn--danger:hover {
-  background: rgba(255, 59, 48, 0.12);
+@media (hover: hover) and (pointer: fine) {
+  .plugin-card__btn--danger:hover {
+    background: rgba(255, 59, 48, 0.12);
+  }
+
+  .plugin-card__btn--config:hover:not(:disabled) {
+    background: rgba(0, 122, 255, 0.12);
+  }
 }
 
+/* ── 手机（≤767px）：触屏目标 + 紧凑间距 ── */
+@media (max-width: 767px) {
+  .plugin-group__head {
+    padding: 8px 2px;
+  }
 
-.plugin-card__btn--config:hover:not(:disabled) {
-  background: rgba(0, 122, 255, 0.12);
+  .plugin-group__label {
+    font-size: 14px;
+  }
+
+  .plugin-card {
+    padding: 14px;
+  }
+
+  .plugin-card__btn {
+    padding: 8px 14px;
+  }
+
+  .plugin-settings-page__install {
+    padding: 9px 14px;
+  }
+
+  .plugin-settings-page__install--arrow {
+    padding: 9px 8px;
+  }
 }
 </style>
