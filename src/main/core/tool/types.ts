@@ -32,6 +32,9 @@ export type {ToolCall}
 export interface IAgentTool {
   /** 获取工具的 Schema 定义（用于向 LLM 描述工具） */
   getSchema(): ToolSchema
+  /** 可选：运行时动态生成 Schema（环境感知——如 terminal 按平台枚举 shell）。
+   *   ToolManager 优先调用本方法；未实现则兜底 getSchema() 静态定义。 */
+  getToolSchema?(): ToolSchema
   /** 执行工具调用，返回字符串结果（将直接发送给 LLM）。入参 = loop 的 ToolContext。 */
   execute(ctx: ToolContext): Promise<ToolResult>
   /** 可用性检测（启动时调用；不可用工具不入池）。默认实现返回 true。可返回 { ok, reason } 提供不可用原因。 */

@@ -6,9 +6,9 @@
  * 提供输出缓冲、状态查询、强制终止等能力。
  * 进程注册表为全局单例，由 process / read_terminal / close_terminal 工具共享。
  */
-import { spawn, type ChildProcess } from 'child_process'
+import { spawn } from 'child_process'
 import type { ProcessSession, SpawnOptions } from '../desktop/types'
-import { getShellExec } from '../../utils/shell-utils'
+import { buildShellSpawn, resolveShell } from './shell-env'
 
 // ── 常量 ──
 
@@ -26,22 +26,13 @@ class ProcessRegistry {
     const id = `proc_${Date.now()}_${++this.idCounter}`
     const cwd = opts.cwd ?? process.cwd()
 
-    let child: ChildProcess
-    if (process.platform === 'win32') {
-      child = spawn(opts.command, {
-        cwd,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: opts.timeout,
-        shell: 'cmd.exe',
-      })
-    } else {
-      const { command, prefix } = getShellExec()
-      child = spawn(command, [...prefix, opts.command], {
-        cwd,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: opts.timeout,
-      })
-    }
+    // shell 方言（terminal 工具传入）：cmd（chcp 65001 切 UTF-8）/ bash——统一 utf8 解码
+    const { command, args } = buildShellSpawn(opts.shell ? resolveShell(opts.shell) : resolveShell(), opts.command)
+    const child = spawn(command, args, {
+      cwd,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: opts.timeout,
+    })
 
     const session: ProcessSession = {
       id, command: opts.command, cwd,
@@ -52,22 +43,15 @@ class ProcessRegistry {
       process: child
     }
 
-    // Windows cmd 输出 GBK——流式解码避免中文乱码
-    const stdoutDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
-    const stderrDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
-
     child.stdout?.on('data', (data: Buffer) => {
-      session.stdout = this.appendBuffered(session.stdout, stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString())
+      session.stdout = this.appendBuffered(session.stdout, data.toString())
     })
 
     child.stderr?.on('data', (data: Buffer) => {
-      session.stderr = this.appendBuffered(session.stderr, stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString())
+      session.stderr = this.appendBuffered(session.stderr, data.toString())
     })
 
     child.on('close', (code) => {
-      // flush 解码器余量（多字节字符末尾）
-      if (stdoutDecoder) session.stdout = this.appendBuffered(session.stdout, stdoutDecoder.decode())
-      if (stderrDecoder) session.stderr = this.appendBuffered(session.stderr, stderrDecoder.decode())
       session.done = true
       session.exitCode = code
       session.endTime = Date.now()

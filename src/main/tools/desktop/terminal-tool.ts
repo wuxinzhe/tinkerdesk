@@ -8,11 +8,12 @@
  * - background 返回 session_id，用 process/read_terminal/close_terminal 管理
  * - 返回 JSON 字符串 {output, session_id, pid, exit_code, error, status, hint}
  */
-import { spawn, type ChildProcess } from 'child_process'
+import { spawn } from 'child_process'
 import { BaseTool } from '../base-tool'
 import { processRegistry } from '../common/process-registry'
-import { getShellExec } from '../../utils/shell-utils'
 import { ToolResult } from '../../core/tool/tool-result'
+import { ToolSchema } from '../../core/tool/tool-schema'
+import { detectAvailableShells, resolveShell, buildShellSpawn, SHELL_HINTS } from '../common/shell-env'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolContext } from '../../core/loop/types'
 import type { TerminalParams } from './types'
@@ -47,18 +48,33 @@ export class TerminalTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  /** 可用性检测：shell 是否可用 */
-  check(): Promise<boolean> {
-    return new Promise((resolve) => {
-      let child: ChildProcess
-      if (process.platform === 'win32') {
-        child = spawn('echo ok', { timeout: 3000, shell: 'cmd.exe' })
-      } else {
-        const { command, prefix } = getShellExec()
-        child = spawn(command, [...prefix, 'echo ok'], { timeout: 3000 })
-      }
-      child.on('error', () => resolve(false))
-      child.on('close', (code) => resolve(code === 0))
+  /** 可用性检测：至少一个 shell 可用（cmd Windows 恒有——恒可用） */
+  check(): boolean {
+    return detectAvailableShells().length > 0
+  }
+
+  /** 动态 Schema：按当前机器可用 shell 枚举参数（LLM 看到真实可选项 + 语法提示） */
+  getToolSchema(): ToolSchema {
+    const shells = detectAvailableShells()
+    const shellEnum = ['auto', ...shells]
+    const hint = shells.map((s) => SHELL_HINTS[s]).join(' ')
+    const description =
+      `Execute a command in the terminal. Available shells on this machine: ${shells.join(', ')}. ` +
+      hint +
+      ' Foreground (default): blocks until done, returns full output. Background (background=true): spawns a persistent process, returns session_id immediately; manage it with process/read_terminal/close_terminal. Use process(action=list) to see all background sessions.'
+    const baseParams = (this.schema.parameters ?? {}) as Record<string, unknown>
+    const baseProps = (baseParams.properties ?? {}) as Record<string, unknown>
+    return new ToolSchema(this.schema.name, description, {
+      ...baseParams,
+      properties: {
+        shell: {
+          type: 'string',
+          enum: shellEnum,
+          description: `Shell to run the command with (default: auto——自动选可用 shell：${shells.join(' / ')}). Choose explicitly when the command needs a specific shell syntax.`,
+          default: 'auto',
+        },
+        ...baseProps,
+      },
     })
   }
 
@@ -101,43 +117,27 @@ export class TerminalTool extends BaseTool {
     }
 
     if (params.background) {
-      return this.executeBackground(cmd, timeoutSec, params.workdir, params.notify_on_complete, params.watch_patterns)
+      return this.executeBackground(cmd, timeoutSec, params.workdir, params.notify_on_complete, params.watch_patterns, params.shell)
     }
-    return this.executeForeground(cmd, timeoutSec, params.workdir)
+    return this.executeForeground(cmd, timeoutSec, params.workdir, params.shell)
   }
 
   /** 前景模式：等待执行完毕，返回 {output, exit_code, error} */
-  private executeForeground(cmd: string, timeoutSec: number, workdir?: string): Promise<ToolResult> {
+  private executeForeground(cmd: string, timeoutSec: number, workdir?: string, shell?: string): Promise<ToolResult> {
     const timeoutMs = timeoutSec * 1000
     const cwd = workdir ?? process.cwd()
     return new Promise((resolve) => {
-      let child: ChildProcess
-      if (process.platform === 'win32') {
-        child = spawn(cmd, {
-          cwd,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: timeoutMs,
-          shell: 'cmd.exe'
-        })
-      } else {
-        const { command, prefix } = getShellExec()
-        child = spawn(command, [...prefix, cmd], {
-          cwd,
-          stdio: ['pipe', 'pipe', 'pipe'],
-          timeout: timeoutMs
-        })
-      }
+      // shell 方言：cmd（chcp 65001 切 UTF-8）/ bash——统一 utf8 解码
+      const { command, args } = buildShellSpawn(resolveShell(shell), cmd)
+      const child = spawn(command, args, {
+        cwd,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: timeoutMs,
+      })
 
       let stdout = ''
       let stderr = ''
       let settled = false
-      // Windows cmd 输出 GBK——用 TextDecoder gbk 流式解码（避免中文乱码）
-      const stdoutDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
-      const stderrDecoder = process.platform === 'win32' ? new TextDecoder('gbk') : null
-      const flushDecoders = (): void => {
-        if (stdoutDecoder) stdout += stdoutDecoder.decode()
-        if (stderrDecoder) stderr += stderrDecoder.decode()
-      }
       const finish = (data: Record<string, unknown>) => {
         if (settled) return
         settled = true
@@ -147,19 +147,17 @@ export class TerminalTool extends BaseTool {
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
         setTimeout(() => { try { child.kill('SIGKILL') } catch { /* ignore */ } }, KILL_GRACE_MS)
-        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: -1, error: `Command timed out after ${timeoutSec}s` })
       }, timeoutMs)
 
       child.stdout?.on('data', (data: Buffer) => {
-        stdout += stdoutDecoder ? stdoutDecoder.decode(data, { stream: true }) : data.toString()
+        stdout += data.toString()
       })
       child.stderr?.on('data', (data: Buffer) => {
-        stderr += stderrDecoder ? stderrDecoder.decode(data, { stream: true }) : data.toString()
+        stderr += data.toString()
       })
 
       child.on('close', (code) => {
-        flushDecoders()
         finish({ output: stdout + (stderr ? '\n' + stderr : ''), exit_code: code ?? -1, error: null })
       })
 
@@ -170,8 +168,8 @@ export class TerminalTool extends BaseTool {
   }
 
   /** 后台模式：注册到进程注册表并立即返回 session_id + nudge hint */
-  private executeBackground(cmd: string, timeoutSec: number, workdir?: string, notifyOnComplete?: boolean, watchPatterns?: string[]): ToolResult {
-    const sessionId = processRegistry.spawn({ command: cmd, timeout: timeoutSec * 1000, cwd: workdir })
+  private executeBackground(cmd: string, timeoutSec: number, workdir?: string, notifyOnComplete?: boolean, watchPatterns?: string[], shell?: string): ToolResult {
+    const sessionId = processRegistry.spawn({ command: cmd, timeout: timeoutSec * 1000, cwd: workdir, shell })
     const session = processRegistry.get(sessionId)!
 
     const resultData: Record<string, unknown> = {

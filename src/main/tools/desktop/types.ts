@@ -78,6 +78,8 @@ export interface SpawnOptions {
   command: string
   cwd?: string
   timeout?: number
+  /** Shell 方言（terminal 工具传入——cmd chcp 65001 / bash——统一 utf8） */
+  shell?: string
 }
 
 // ── read-file ──
@@ -146,6 +148,8 @@ export interface TerminalParams {
   notify_on_complete?: boolean
   /** 后台输出监视模式（与 notify_on_complete 互斥） */
   watch_patterns?: string[]
+  /** Shell 方言（'auto' 默认——探测可用 shell；显式 cmd/bash/powershell） */
+  shell?: string
 }
 
 // ── web-extract ──

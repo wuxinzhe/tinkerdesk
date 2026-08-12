@@ -34,6 +34,11 @@ export class ToolManager {
   /** 工具 emoji 元信息：toolName → emoji */
   private readonly toolEmojis = new Map<string, string>()
 
+  /** 统一 schema 出口：优先动态 getToolSchema()（环境感知）——兜底静态 getSchema() */
+  private getEffectiveSchema(tool: IAgentTool): ToolSchema {
+    return tool.getToolSchema?.() ?? tool.getSchema()
+  }
+
   /**
    * 构造：接收所有工具注册项（内建 + MCP + 客户端），逐个 check 可用性后按名称编入内存。
    * 重复名称抛错；不可用工具跳过（不入池）。
@@ -54,7 +59,7 @@ export class ToolManager {
           : '工具不可用（未通过可用性检测）'
         console.warn(`[ToolManager] 工具不可用，跳过注册: ${toolName}（${reason}）`)
         // 保留展示信息（管理页列表显示灰色 + 错误原因）
-        const schema = reg.tool.getSchema()
+        const schema = this.getEffectiveSchema(reg.tool)
         if (reg.meta.emoji) schema.setEmoji(reg.meta.emoji)
         schema.toolType = reg.meta.toolType ?? TOOL_TYPE_BUILTIN
         this.unavailableTools.set(toolName, { schema, reason })
@@ -66,7 +71,7 @@ export class ToolManager {
       this.toolTypes.set(toolName, reg.meta.toolType ?? TOOL_TYPE_BUILTIN)
 
       // 工具类自身可覆写 emoji（通过 schema.setEmoji）
-      const schema = reg.tool.getSchema()
+      const schema = this.getEffectiveSchema(reg.tool)
       if (reg.meta.emoji) {
         schema.setEmoji(reg.meta.emoji)
       }
@@ -90,7 +95,7 @@ export class ToolManager {
     this.tools.set(toolName, reg.tool)
     this.toolEmojis.set(toolName, reg.meta.emoji ?? '⚡')
     this.toolTypes.set(toolName, reg.meta.toolType ?? TOOL_TYPE_BUILTIN)
-    const schema = reg.tool.getSchema()
+    const schema = this.getEffectiveSchema(reg.tool)
     if (reg.meta.emoji) {
       schema.setEmoji(reg.meta.emoji)
     }
@@ -104,7 +109,7 @@ export class ToolManager {
   getAllSchemas(): ToolSchema[] {
     const result: ToolSchema[] = []
     for (const tool of this.tools.values()) {
-      result.push(tool.getSchema())
+      result.push(this.getEffectiveSchema(tool))
     }
     for (const { schema } of this.unavailableTools.values()) {
       result.push(schema)
@@ -127,7 +132,7 @@ export class ToolManager {
     const result: ToolSchema[] = []
 
     for (const [internalName, tool] of this.tools) {
-      const schema = tool.getSchema()
+      const schema = this.getEffectiveSchema(tool)
       if (!disabled.has(internalName) && !disabled.has(schema.name)) {
         result.push(schema)
       }
@@ -151,7 +156,7 @@ export class ToolManager {
   /** 根据工具名获取完整 ToolSchema（未找到返回 null） */
   getToolSchema(toolName: string): ToolSchema | null {
     const tool = this.tools.get(toolName)
-    return tool ? tool.getSchema() : null
+    return tool ? this.getEffectiveSchema(tool) : null
   }
 
   /** 获取工具类型（builtin / mcp / client） */
@@ -175,7 +180,7 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_CLIENT) continue
       if (disabled.has(name)) continue
-      result.push(tool.getSchema())
+      result.push(this.getEffectiveSchema(tool))
     }
     return result
   }
@@ -187,7 +192,7 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_BUILTIN) continue
       if (disabled.has(name)) continue
-      result.push(tool.getSchema())
+      result.push(this.getEffectiveSchema(tool))
     }
     return result
   }
