@@ -129,10 +129,10 @@ body {
   line-height: 1.55;
 }
 
-/* ── 细滚动条（3px 宽 + 8px 圆角——常显圆角滑块） ── */
+/* ── 细滚动条（6px 宽 + 8px 圆角——常显圆角滑块） ── */
 ::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
