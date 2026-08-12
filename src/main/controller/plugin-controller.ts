@@ -189,11 +189,11 @@ export class PluginController {
     }
   }
 
-  /** 配置 Schema */
-  private getPluginSchema(payload: { id: string }): ApiResult<unknown> {
+  /** 配置 Schema（Worker 插件经代理异步获取——必须 await——否则返回 Promise 无法 IPC 序列化） */
+  private async getPluginSchema(payload: { id: string }): Promise<ApiResult<unknown>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(this.pluginManager.getSchema(payload.id))
+      return ok(await this.pluginManager.getSchema(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }

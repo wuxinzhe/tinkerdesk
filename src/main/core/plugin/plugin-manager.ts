@@ -724,10 +724,11 @@ export class PluginManager {
     return this.registry.get(id) ?? null
   }
 
-  /** 配置 Schema（动态） */
-  getSchema(id: string): unknown {
+  /** 配置 Schema（动态——Worker 插件经代理异步获取） */
+  async getSchema(id: string): Promise<unknown> {
     const record = this.registry.get(id)
-    return record?.api?.getConfigSchema?.() ?? null
+    if (!record?.api) return null
+    return (await record.api.getConfigSchema?.()) ?? null
   }
 
   /** 读取配置（secret 字段脱敏回显） */
