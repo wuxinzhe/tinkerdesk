@@ -97,6 +97,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useSessionStore } from '@/renderer/stores/session-store'
 
 interface StatsData {
   model?: string
@@ -142,6 +143,7 @@ function toggleOpen() {
 }
 const avgLoaded = ref(false)
 const route = useRoute()
+const sessionStore = useSessionStore()
 const currentSessionId = ref<string>('')
 
 const hasData = computed(() => Object.keys(stats.value).length > 0)
@@ -197,7 +199,8 @@ async function loadAvg(): Promise<void> {
   const sessionId = currentSessionId.value || String(route.params.sessionId ?? '')
   if (!sessionId) return
   try {
-    const profile = String(route.params.profile ?? 'default')
+    // 铁律：profile 必传当前 agent（sessionStore——localStorage）——禁路由参数兜底 default
+    const profile = sessionStore.profile
     const res = await window.api.sessions.dashboard(profile, sessionId)
     if (res) {
       avg.value = {

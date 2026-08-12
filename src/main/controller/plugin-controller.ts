@@ -189,31 +189,31 @@ export class PluginController {
     }
   }
 
-  /** 配置 Schema（Worker 插件经代理异步获取——必须 await——否则返回 Promise 无法 IPC 序列化） */
-  private async getPluginSchema(payload: { id: string }): Promise<ApiResult<unknown>> {
+  /** 配置 Schema */
+  private getPluginSchema(payload: { id: string }): ApiResult<unknown> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.pluginManager.getSchema(payload.id))
+      return ok(this.pluginManager.getSchema(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
   }
 
-  /** 读取配置（secret 脱敏——Worker 插件异步获取） */
-  private async getPluginConfig(payload: { id: string }): Promise<ApiResult<Record<string, unknown>>> {
+  /** 读取配置（secret 脱敏） */
+  private getPluginConfig(payload: { id: string }): ApiResult<Record<string, unknown>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.pluginManager.getConfig(payload.id))
+      return ok(this.pluginManager.getConfig(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
   }
 
   /** 保存配置 */
-  private async savePluginConfig(payload: { id: string; patch: Record<string, unknown> }): Promise<ApiResult<boolean>> {
+  private savePluginConfig(payload: { id: string; patch: Record<string, unknown> }): ApiResult<boolean> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      await this.pluginManager.saveConfig(payload.id, payload.patch ?? {})
+      this.pluginManager.saveConfig(payload.id, payload.patch ?? {})
       return ok(true)
     } catch (e) {
       return fail((e as Error).message)

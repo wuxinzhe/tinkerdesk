@@ -11,12 +11,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        external: [],
-        // 插件宿主 Worker 需独立入口打包（new Worker 运行时引用——非入口链）
-        input: {
-          index: resolve(__dirname, 'src/main/index.ts'),
-          'plugin-host-worker': resolve(__dirname, 'src/main/core/plugin/plugin-host-worker.ts'),
-        },
+        external: []
       }
     }
   },
