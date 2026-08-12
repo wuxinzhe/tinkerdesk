@@ -273,7 +273,7 @@ const api = {
     listScenes: (profile: string) => inv('model:list-scenes', { profile }).then(unwrap),
     bindScene: (profile: string, input: BindSceneModelRequestDTO) => inv('model:bind-scene', { profile, ...input }).then(unwrap),
     updateScene: (profile: string, input: UpdateSceneModelRequestDTO) => inv('model:update-scene', { profile, ...input }).then(unwrap),
-    unbindScene: (profile: string, sceneId: string, priority: number) => inv('model:unbind-scene', { profile, sceneId, priority }).then(unwrap),
+    unbindScene: (profile: string, sceneId: string, modelId: string) => inv('model:unbind-scene', { profile, sceneId, modelId }).then(unwrap),
     reorderScenes: (profile: string, input: ReorderSceneBindingsRequestDTO) => inv('model:reorder-scenes', { profile, ...input }).then(unwrap),
   },
 
