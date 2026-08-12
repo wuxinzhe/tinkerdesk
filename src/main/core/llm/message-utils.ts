@@ -54,6 +54,17 @@ function buildAssistant(content: ApiMessage['content'], toolCall?: string, reaso
   return m
 }
 
+/** toolCall JSON 字符串 → 对象（解析失败返回空对象） */
+function toolCallMap(toolCall: unknown): Record<string, unknown> {
+  if (typeof toolCall !== 'string' || toolCall === '') return {}
+  try {
+    const parsed = JSON.parse(toolCall) as Record<string, unknown>
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
 /** 合并相邻 assistant / 丢弃游离 tool / 合并相邻 user / 修正非首位 system（原地修改） */
 export function repairMessageSequence(messages: ApiMessage[]): void {
   if (!messages || messages.length === 0) return
@@ -129,4 +140,72 @@ export function repairMessageSequence(messages: ApiMessage[]): void {
   // 原地替换
   messages.length = 0
   messages.push(...result)
+}
+
+/**
+ * 发送前防御性修复（对齐 Hermes sanitize_api_messages——每个 LLM 调用前无条件跑）：
+ * - 丢弃无配对的 tool 结果（tool_call_id 无前置 assistant 配对）
+ * - 【关键】注入 stub tool 结果：assistant 的 tool_calls 缺对应 tool 消息时——
+ *   在 assistant 后补占位 tool（严格 provider 400 "must be followed by tool messages" 根治）
+ * - tool 消息按 id 去重（同 id 重复 → 保留第一个）
+ * 不改 DB/持久化——只处理发送前的内存副本。
+ */
+export function sanitizeApiMessages(messages: ApiMessage[]): ApiMessage[] {
+  if (!messages || messages.length === 0) return messages
+
+  // 收集 assistant tool_calls ids + tool 结果 ids
+  const surviving = new Set<string>()
+  const results = new Set<string>()
+  const callNameById = new Map<string, string>()
+  for (const m of messages) {
+    if (m.role === 'assistant') {
+      for (const [id, call] of Object.entries(toolCallMap(m.toolCall))) {
+        surviving.add(id)
+        const name = (call as { name?: string } | null)?.name
+        if (name) callNameById.set(id, name)
+      }
+    } else if (m.role === 'tool' && m.toolCallId) {
+      results.add(m.toolCallId)
+    }
+  }
+
+  // 1. 丢弃无配对 tool 结果
+  const orphaned = new Set([...results].filter((id) => !surviving.has(id)))
+  let out = orphaned.size > 0
+    ? messages.filter((m) => !(m.role === 'tool' && m.toolCallId && orphaned.has(m.toolCallId)))
+    : messages
+
+  // 2. 注入 stub：assistant 的 tool_calls 缺对应 tool 结果 → 紧随其后补占位
+  const missing = [...surviving].filter((id) => !results.has(id))
+  if (missing.length > 0) {
+    const patched: ApiMessage[] = []
+    for (const m of out) {
+      patched.push(m)
+      if (m.role === 'assistant') {
+        for (const id of Object.keys(toolCallMap(m.toolCall))) {
+          if (missing.includes(id)) {
+            patched.push({
+              role: 'tool',
+              content: '[Result unavailable — see context summary above]',
+              toolCallId: id,
+              ...(callNameById.get(id) ? { name: callNameById.get(id) } : {}),
+            })
+          }
+        }
+      }
+    }
+    out = patched
+  }
+
+  // 3. tool 消息按 id 去重（严格 provider 拒绝重复 tool_call_id）
+  const seenResultIds = new Set<string>()
+  const deduped: ApiMessage[] = []
+  for (const m of out) {
+    if (m.role === 'tool' && m.toolCallId) {
+      if (seenResultIds.has(m.toolCallId)) continue
+      seenResultIds.add(m.toolCallId)
+    }
+    deduped.push(m)
+  }
+  return deduped
 }

@@ -6,6 +6,7 @@
  */
 import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
+import { sanitizeApiMessages } from './message-utils'
 import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, ERROR_RATE_LIMITED, errorResponse, isSuccess } from './llm-response'
 import type { CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
 import { usageRecorder } from './usage-recorder'
@@ -80,7 +81,9 @@ export class LlmRouter {
 
     // Phase 1: 构建输入（options 作为 OperationContext 传给 Operation）
     const opCtx = options as unknown as OperationContext
-    const input = op.buildInput(opCtx, messages, tools)
+    // 发送前防御性修复（Hermes sanitize_api_messages——注入缺失 tool 结果 stub——
+    // 严格 provider 400 "tool_calls must be followed by tool messages" 根治）
+    const input = sanitizeApiMessages(op.buildInput(opCtx, messages, tools))
     if (!input || input.length === 0) {
       return errorResponse(ERROR_INVALID_REQUEST, 'input 为空')
     }
@@ -95,6 +98,14 @@ export class LlmRouter {
 
         let response: LlmResponse
         try {
+          // ── DEBUG：发送前 dump 上下文尾部（定位 tool_calls 配对 400） ──
+          if (process.env.TK_DEBUG_CTX === '1') {
+            const tail = input.slice(-6).map((m) => {
+              const tc = typeof m.toolCall === 'string' && m.toolCall ? JSON.parse(m.toolCall) : (m.toolCall ?? null)
+              return `${m.role}${m.toolCallId ? `[tool=${m.toolCallId.slice(0, 18)}]` : ''}${tc ? `[calls=${Object.keys(tc).join(',')}]` : ''}`
+            })
+            console.log(`[ctx-debug] model=${config.modelName} 尾部消息: ${tail.join(' → ')}`)
+          }
           response = await callFn(config, input)
         } catch (e) {
           // 调用异常（网络错误等——瞬时）→ 本地快退避重试
