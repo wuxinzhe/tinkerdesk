@@ -6,12 +6,26 @@
  * 都在独立 Lv3 配置页（/workspace/settings/plugins/:pluginId）完成。
  * 启用前自检失败 → 跳转配置页引导修复。
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { SaPageHero } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 import { confirm } from '@/renderer/api/confirm'
 import type { PluginInfo } from '@/renderer/api/types'
+
+/** system interface 显示名映射（未知接口兜底显示原始 id） */
+const INTERFACE_LABELS: Record<string, string> = {
+  'voice.stt': '语音输入（STT）',
+  'voice.tts': '朗读（TTS）',
+  'tool.stt': '工具语音转写（STT）',
+  'tool.tts': '工具语音合成（TTS）',
+}
+
+interface InterfaceGroup {
+  id: string
+  label: string
+  plugins: PluginInfo[]
+}
 
 const router = useRouter()
 const loading = ref(false)
@@ -27,6 +41,37 @@ async function loadPlugins(): Promise<void> {
     loading.value = false
   }
 }
+
+/** 按 system interface 分组：声明同一接口的插件归一组；无接口声明的进「其他插件」 */
+const groups = computed<InterfaceGroup[]>(() => {
+  const byInterface = new Map<string, PluginInfo[]>()
+  const others: PluginInfo[] = []
+  for (const p of plugins.value) {
+    const ifs = p.manifest.systemInterfaces ?? []
+    if (ifs.length === 0) {
+      others.push(p)
+      continue
+    }
+    for (const iface of ifs) {
+      const list = byInterface.get(iface.id) ?? []
+      list.push(p)
+      byInterface.set(iface.id, list)
+    }
+  }
+  const rank = (id: string): number => (id.startsWith('voice.') ? 0 : id.startsWith('tool.') ? 1 : 2)
+  const ordered = [...byInterface.entries()].sort(
+    (a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0])
+  )
+  const result: InterfaceGroup[] = ordered.map(([id, list]) => ({
+    id,
+    label: INTERFACE_LABELS[id] ?? id,
+    plugins: list,
+  }))
+  if (others.length > 0) {
+    result.push({ id: '__other__', label: '其他插件', plugins: others })
+  }
+  return result
+})
 
 /** 启用/停用（注册/注销）：启用前自检由 toggle 拦截，失败跳配置页引导 */
 async function togglePlugin(p: PluginInfo): Promise<void> {
@@ -167,9 +212,15 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 插件列表 -->
+    <!-- 插件列表（按 system interface 分组） -->
     <div v-else class="plugin-settings-page__list">
-      <div v-for="(p, i) in plugins" :key="p.manifest.id" class="plugin-card" :style="{ transitionDelay: `${i * 40}ms` }">
+      <section v-for="g in groups" :key="g.id" class="plugin-group">
+        <div class="plugin-group__head">
+          <span class="plugin-group__label">{{ g.label }}</span>
+          <span class="plugin-group__count">{{ g.plugins.length }}</span>
+        </div>
+        <div class="plugin-group__plugins">
+          <div v-for="(p, i) in g.plugins" :key="p.manifest.id" class="plugin-card" :style="{ transitionDelay: `${i * 40}ms` }">
         <div class="plugin-card__header">
           <div class="plugin-card__info">
             <div class="plugin-card__name">
@@ -245,7 +296,9 @@ onMounted(() => {
             卸载
           </button>
         </div>
-      </div>
+        </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -403,7 +456,42 @@ onMounted(() => {
 .plugin-settings-page__list {
   display: flex;
   flex-direction: column;
-  gap: var(--tk-space-3, 12px);
+  gap: var(--tk-space-5, 20px);
+}
+
+/* 接口分组：组头 + 组内插件 */
+.plugin-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tk-space-3, 10px);
+}
+
+.plugin-group__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.plugin-group__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-secondary, #8e8e93);
+  letter-spacing: 0.2px;
+}
+
+.plugin-group__count {
+  font-size: 11px;
+  color: var(--tk-text-tertiary, #aeaeb2);
+  background: var(--tk-surface-2, rgba(120, 120, 128, 0.12));
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.plugin-group__plugins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tk-space-3, 10px);
 }
 
 .plugin-card {
