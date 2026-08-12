@@ -15,22 +15,33 @@
  */
 import type { ApiMessage } from './types'
 
-/** toolCall JSON 字符串 → { id: ... } 键集合（解析失败返回空） */
+/** toolCall JSON 字符串 → { id: ... } 键集合（解析失败返回空——兼容数组格式 [{id,...}]） */
 function toolCallKeys(toolCall: unknown): string[] {
-  if (typeof toolCall !== 'string' || toolCall === '') return []
+  return Object.keys(toolCallMap(toolCall))
+}
+
+/** toolCall JSON 字符串 → { id: {name, arguments} } 映射（兼容两种存储格式：数组 [{id,name,arguments}] / dict {id:{...}}） */
+function toolCallMap(toolCall: unknown): Record<string, unknown> {
+  if (typeof toolCall !== 'string' || toolCall === '') return {}
   try {
-    const parsed = JSON.parse(toolCall) as Record<string, unknown>
-    return parsed && typeof parsed === 'object' ? Object.keys(parsed) : []
+    const parsed = JSON.parse(toolCall) as unknown
+    if (Array.isArray(parsed)) {
+      const map: Record<string, unknown> = {}
+      for (const tc of parsed) {
+        const id = (tc as { id?: string } | null)?.id
+        if (id) map[id] = tc
+      }
+      return map
+    }
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {}
   } catch {
-    return []
+    return {}
   }
 }
 
-/** 合并两个 toolCall JSON（union——后者的 id 覆盖前者同名） */
+/** 合并两个 toolCall JSON（union——后者的 id 覆盖前者同名）——输出 dict 格式（client 兼容） */
 function mergeToolCalls(prev: unknown, curr: unknown): string | undefined {
-  const a = typeof prev === 'string' && prev !== '' ? (JSON.parse(prev) as Record<string, unknown>) : {}
-  const b = typeof curr === 'string' && curr !== '' ? (JSON.parse(curr) as Record<string, unknown>) : {}
-  const merged: Record<string, unknown> = { ...(a ?? {}), ...(b ?? {}) }
+  const merged: Record<string, unknown> = { ...toolCallMap(prev), ...toolCallMap(curr) }
   return Object.keys(merged).length > 0 ? JSON.stringify(merged) : undefined
 }
 
@@ -52,17 +63,6 @@ function buildAssistant(content: ApiMessage['content'], toolCall?: string, reaso
   if (reasoningContent) m.reasoningContent = reasoningContent
   if (name) m.name = name
   return m
-}
-
-/** toolCall JSON 字符串 → 对象（解析失败返回空对象） */
-function toolCallMap(toolCall: unknown): Record<string, unknown> {
-  if (typeof toolCall !== 'string' || toolCall === '') return {}
-  try {
-    const parsed = JSON.parse(toolCall) as Record<string, unknown>
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
 }
 
 /** 合并相邻 assistant / 丢弃游离 tool / 合并相邻 user / 修正非首位 system（原地修改） */
