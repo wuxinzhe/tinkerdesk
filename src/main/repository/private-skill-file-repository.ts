@@ -22,13 +22,18 @@ export class PrivateSkillFileRepository {
     return rows.map(toEntity)
   }
 
-  /** 保存文件（返回新 id） */
+  /** 保存文件（UPSERT——按 (skill_id, file_type, sort_order) 冲突更新——
+   * 对齐 Hermes write_file 覆盖语义：重复写同一文件不报 UNIQUE 冲突） */
   save(entity: SkillFileEntity): number {
     const db = getDatabase()
     const result = db
       .prepare(
         `INSERT INTO private_skill_files (skill_id, file_type, name, content, language, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?)
+         ON CONFLICT (skill_id, file_type, sort_order) DO UPDATE SET
+           name = excluded.name,
+           content = excluded.content,
+           language = excluded.language`
       )
       .run(entity.skillId, entity.fileType, entity.name ?? '', entity.content, entity.language ?? '', entity.sortOrder ?? 0)
     return Number(result.lastInsertRowid)
