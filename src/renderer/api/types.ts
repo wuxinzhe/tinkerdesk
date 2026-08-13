@@ -180,8 +180,14 @@ export interface AgentConfigData {
   sameToolFailureHaltAfter: number
   noProgressBlockAfter: number
   /** 消息沟通方式（queue 排队 / redirect 重定向 / interrupt 打断）——忙碌时新消息处置 */
-  messageBusyMode: 'queue' | 'redirect' | 'interrupt'
+  messageBusyMode: BusyModeValue
 }
+
+/** 忙碌模式常量（与 main core/loop/types 一致——单一来源） */
+export const BUSY_MODE_QUEUE = 'queue'
+export const BUSY_MODE_REDIRECT = 'redirect'
+export const BUSY_MODE_INTERRUPT = 'interrupt'
+export type BusyModeValue = typeof BUSY_MODE_QUEUE | typeof BUSY_MODE_REDIRECT | typeof BUSY_MODE_INTERRUPT
 
 // ── 模型（原 defines/models/model.ts） ──
 

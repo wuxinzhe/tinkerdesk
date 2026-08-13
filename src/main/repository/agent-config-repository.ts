@@ -7,6 +7,7 @@
  */
 import { getDatabase } from './database'
 import type { AgentConfigEntity } from './types'
+import { BUSY_MODE_QUEUE } from '../core/loop/types'
 
 /** Agent 配置实体（对应 AgentConfigEntity，NULL = 使用全局默认值） */
 
@@ -31,7 +32,7 @@ function toEntity(row: Record<string, unknown>): AgentConfigEntity {
     exactFailureBlockAfter: row.exact_failure_block_after as number,
     sameToolFailureHaltAfter: row.same_tool_failure_halt_after as number,
     noProgressBlockAfter: row.no_progress_block_after as number,
-    messageBusyMode: (row.message_busy_mode as string) ?? 'queue',
+    messageBusyMode: (row.message_busy_mode as string) ?? BUSY_MODE_QUEUE,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }

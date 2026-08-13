@@ -120,24 +120,24 @@
                 <button
                   type="button"
                   class="settings-segmented__btn"
-                  :class="{ active: config.messageBusyMode === 'queue' }"
-                  @click="config.messageBusyMode = 'queue'"
+                  :class="{ active: config.messageBusyMode === BUSY_MODE_QUEUE }"
+                  @click="config.messageBusyMode = BUSY_MODE_QUEUE"
                 >
                   排队
                 </button>
                 <button
                   type="button"
                   class="settings-segmented__btn"
-                  :class="{ active: config.messageBusyMode === 'redirect' }"
-                  @click="config.messageBusyMode = 'redirect'"
+                  :class="{ active: config.messageBusyMode === BUSY_MODE_REDIRECT }"
+                  @click="config.messageBusyMode = BUSY_MODE_REDIRECT"
                 >
                   重定向
                 </button>
                 <button
                   type="button"
                   class="settings-segmented__btn"
-                  :class="{ active: config.messageBusyMode === 'interrupt' }"
-                  @click="config.messageBusyMode = 'interrupt'"
+                  :class="{ active: config.messageBusyMode === BUSY_MODE_INTERRUPT }"
+                  @click="config.messageBusyMode = BUSY_MODE_INTERRUPT"
                 >
                   打断
                 </button>
@@ -397,6 +397,7 @@ import { useRoute } from 'vue-router'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import { agentConfigApi } from '@/renderer/api/agent-config-api'
+import { BUSY_MODE_QUEUE, BUSY_MODE_REDIRECT, BUSY_MODE_INTERRUPT } from '@/renderer/api/types'
 import type { AgentConfigData } from '@/renderer/api/types'
 
 const route = useRoute()
@@ -499,7 +500,7 @@ async function loadConfig() {
     config.thresholdPercent = Math.round((data.thresholdPercent ?? 0) * 100)
     config.tailRatio = Math.round((data.tailRatio ?? 0) * 100)
     // 老数据兜底（message_busy_mode 列新增前创建的配置行）
-    if (!config.messageBusyMode) config.messageBusyMode = 'queue'
+    if (!config.messageBusyMode) config.messageBusyMode = BUSY_MODE_QUEUE
   } catch {
     // 使用默认值
   } finally {

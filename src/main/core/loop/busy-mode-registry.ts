@@ -1,8 +1,8 @@
 /**
  * busy-mode-registry.ts — 忙碌时消息处置策略注册表（queue/redirect/interrupt 单例）
  */
-import type { BusyMode } from '../loop/types'
-import type { BusyModeStrategy } from './busy-mode'
+import { BUSY_MODE_QUEUE, BUSY_MODE_REDIRECT, BUSY_MODE_INTERRUPT } from './types'
+import type { BusyMode, BusyModeStrategy } from './types'
 import { QueueStrategy } from './strategies/queue-strategy'
 import { RedirectStrategy } from './strategies/redirect-strategy'
 import { InterruptStrategy } from './strategies/interrupt-strategy'
@@ -15,11 +15,11 @@ const interruptStrategy = new InterruptStrategy()
 export const BusyModeRegistry = {
   get(mode: BusyMode | string | undefined): BusyModeStrategy {
     switch (mode) {
-      case 'redirect':
+      case BUSY_MODE_REDIRECT:
         return redirectStrategy
-      case 'interrupt':
+      case BUSY_MODE_INTERRUPT:
         return interruptStrategy
-      case 'queue':
+      case BUSY_MODE_QUEUE:
       default:
         return queueStrategy
     }

@@ -4,10 +4,11 @@
  * 新消息 → 挂起修正 + abort（只断 LLM 流——工具执行中不 abort——等安全边界）。
  * loop 被中断 → 取修正 → 注入（applyActiveTurnRedirect）→ 重建 abort → 继续循环重试。
  */
-import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../busy-mode'
+import { BUSY_MODE_REDIRECT } from '../types'
+import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'
 
 export class RedirectStrategy implements BusyModeStrategy {
-  readonly mode = 'redirect' as const
+  readonly mode = BUSY_MODE_REDIRECT
 
   onNewMessage(runtime: BusyStrategyHost, text: string): void {
     runtime.requestRedirect(text)

@@ -12,7 +12,7 @@
 import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { BusyModeRegistry } from './busy-mode-registry'
-import type { BusyModeStrategy, BusyLoopHost } from './busy-mode'
+import type { BusyModeStrategy, BusyLoopHost } from './types'
 import {
   EVT_ACTION_TOOL_DONE,
   EVT_ACTION_TOOL_START,

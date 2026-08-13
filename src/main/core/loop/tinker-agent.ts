@@ -40,6 +40,7 @@ import { Conversation } from './conversation'
 import { SessionRuntime } from './session-runtime'
 import { ToolCallExecutor } from './tool-call-executor'
 import type { TinkerAgentOptions, TinkerAgentResult } from './types'
+import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
 import { RES_INTERRUPTED } from './types'
 
 /** 线程模型 TinkerAgent */
@@ -108,7 +109,7 @@ export class TinkerAgent {
     // ── 2. 会话处理中 → 按忙碌模式处置（排队 / 重定向 / 打断） ──
     if (this.runtime.queue.isProcessing(sessionId)) {
       const mode = ctx.agentConfig?.messageBusyMode
-      if (mode === 'redirect') {
+      if (mode === BUSY_MODE_REDIRECT) {
         this.runtime.requestRedirect(userMessage)
         ctx.sendTips(EVT_TIP_QUEUED, '已重定向当前对话——正在用你的修正调整…')
         return {
@@ -117,7 +118,7 @@ export class TinkerAgent {
           conversationId: '',
         }
       }
-      if (mode === 'interrupt') {
+      if (mode === BUSY_MODE_INTERRUPT) {
         this.runtime.requestInterrupt(userMessage)
         ctx.sendTips(EVT_TIP_QUEUED, '已打断当前对话——即将处理你的新消息…')
         return {

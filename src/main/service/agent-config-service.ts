@@ -10,6 +10,7 @@
 import {AgentConfigRepository} from '../repository/agent-config-repository'
 import type {AgentConfigEntity} from '../repository/types'
 import type {AgentConfig} from '../core/loop/types'
+import {BUSY_MODE_QUEUE} from '../core/loop/types'
 import type {AgentModeRegistry} from '../core/mode/agent-mode-registry'
 import type {AgentService} from './agent-service'
 
@@ -92,7 +93,7 @@ export class AgentConfigService {
       exactFailureBlockAfter: numberOr(partial.exactFailureBlockAfter, existing?.exactFailureBlockAfter ?? defaults?.exactFailureBlockAfter ?? 0),
       sameToolFailureHaltAfter: numberOr(partial.sameToolFailureHaltAfter, existing?.sameToolFailureHaltAfter ?? defaults?.sameToolFailureHaltAfter ?? 0),
       noProgressBlockAfter: numberOr(partial.noProgressBlockAfter, existing?.noProgressBlockAfter ?? defaults?.noProgressBlockAfter ?? 0),
-      messageBusyMode: strOr(partial.messageBusyMode, existing?.messageBusyMode ?? defaults?.messageBusyMode ?? 'queue') ?? 'queue',
+      messageBusyMode: strOr(partial.messageBusyMode, existing?.messageBusyMode ?? defaults?.messageBusyMode ?? BUSY_MODE_QUEUE) ?? BUSY_MODE_QUEUE,
     }
     this.configRepo.save(merged)
   }
@@ -121,7 +122,7 @@ export class AgentConfigService {
       exactFailureBlockAfter: numberOr(config.exactFailureBlockAfter, existing.exactFailureBlockAfter),
       sameToolFailureHaltAfter: numberOr(config.sameToolFailureHaltAfter, existing.sameToolFailureHaltAfter),
       noProgressBlockAfter: numberOr(config.noProgressBlockAfter, existing.noProgressBlockAfter),
-      messageBusyMode: strOr(config.messageBusyMode, existing.messageBusyMode) ?? 'queue',
+      messageBusyMode: strOr(config.messageBusyMode, existing.messageBusyMode) ?? BUSY_MODE_QUEUE,
     }
     this.configRepo.save(merged)
   }

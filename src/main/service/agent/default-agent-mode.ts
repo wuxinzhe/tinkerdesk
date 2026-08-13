@@ -7,6 +7,7 @@
  * - getDefaultConfig：agent_configs 无行时的配置兜底
  */
 import type { AgentConfig } from '../../core/loop/types'
+import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 
@@ -70,7 +71,7 @@ export class DefaultAgentMode implements IAgentMode {
       exactFailureBlockAfter: 5,
       sameToolFailureHaltAfter: 8,
       noProgressBlockAfter: 5,
-      messageBusyMode: 'queue',
+      messageBusyMode: BUSY_MODE_QUEUE,
       agentSoulPrompt: this.soulPromptTemp
     }
   }

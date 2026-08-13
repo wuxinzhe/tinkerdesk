@@ -4,10 +4,11 @@
  * 新消息 → 入队（现有 MessageQueueStore）——当前回合正常跑完——再消费。
  * loop 不主动 abort——退出即结束——无衔接。
  */
-import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../busy-mode'
+import { BUSY_MODE_QUEUE } from '../types'
+import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'
 
 export class QueueStrategy implements BusyModeStrategy {
-  readonly mode = 'queue' as const
+  readonly mode = BUSY_MODE_QUEUE
 
   onNewMessage(runtime: BusyStrategyHost, text: string): void {
     // 排队由 tinker-agent 的消息入口处理（enqueueMessage）——策略无需额外动作

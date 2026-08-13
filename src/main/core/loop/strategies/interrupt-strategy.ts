@@ -5,10 +5,11 @@
  * 在安全边界退出）——run 退出后带回新消息 → tinker-agent 立即起新回合。
  * 退出前 flush 内存消息到 DB（否则新回合读历史时对话消息丢失）。
  */
-import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../busy-mode'
+import { BUSY_MODE_INTERRUPT } from '../types'
+import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'
 
 export class InterruptStrategy implements BusyModeStrategy {
-  readonly mode = 'interrupt' as const
+  readonly mode = BUSY_MODE_INTERRUPT
   private nextTurn: string | null = null
 
   onNewMessage(runtime: BusyStrategyHost, text: string): void {
