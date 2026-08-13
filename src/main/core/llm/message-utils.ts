@@ -1,17 +1,27 @@
 /**
- * message-utils.ts — ApiMessage 序列防御性修复（移植自 showing-agent ApiMessageUtils.repairMessageSequence
- * ——对齐 Hermes Agent repair_message_sequence）
+ * message-utils.ts — LLM 上下文完整性保障（单一职责：组装后防御性修复）
  *
- * 场景：上下文组装后（历史 + 暂存）的防御性清洗——
+ * 两条防线（对齐 Hermes repair_message_sequence + sanitize_api_messages——
+ * 均为模块级函数——无状态纯函数——不建类）：
+ *
+ * ① repairMessageSequence —— 上下文加载后（历史形态修复）——调用点：
+ *    conversation.run / generateTitle（loadContextMessages 后）
+ * ② sanitizeApiMessages —— 每次 LLM 调用发送前（stub/配对/去重兜底）——
+ *    调用点：llm-router（buildInput 后——chat/标题/压缩所有场景共用）
+ *
  * 严格 role 校验的 provider（DeepSeek/Kimi/opencode）会拒绝：
  *   - assistant(tool_calls) 紧跟另一个 assistant 而没有 tool 结果 → HTTP 400
  *     "An assistant message with 'tool_calls' must be followed by tool messages…"
  *   - 游离 tool 消息（tool_call_id 无前置 assistant 配对）
  *   - 相邻 user 消息
  *   - 非首位 system 消息
+ *   - 孤 tool_call（无 tool_result）→ sanitize 注入 stub（配对完整不 400）
  *
  * 刻意不回退 "assistant(tool_calls)+tool 对在 user 之前"（上一轮正常完成、用户中途
  * 插入新指令的合法模式）——Pass 1 只在 tool 无配对时丢弃游离 tool——不剥离合法对。
+ *
+ * 类型准入过滤（MSG_TYPE_LLM_CONTEXT_SET）不在此文件——贴近数据层，
+ * 留在 message-service（方案 B——职责分离：加载时准入 vs 组装后防御）。
  */
 import type { ApiMessage } from './types'
 
