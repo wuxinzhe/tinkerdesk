@@ -619,10 +619,9 @@ export class Conversation implements BusyLoopHost {
       .join('\n')
     // 注入为 user 消息（尾部是 assistant → 单条 user——角色交替合法）
     this.messages.push({ role: ROLE_USER, content: checkpoint })
-    // 存储字段分离（对齐 Hermes）：content 干净（显示）——apiContent 完整检查点（LLM 上下文）
-    const display = `用户修正：${pending}`
+    // 存储字段分离（对齐 Hermes）：content 干净（显示原本信息——用户原话）——apiContent 完整检查点（LLM 上下文）
     this.deps.messageService.saveTempMessage(
-      MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, display, undefined, checkpoint)
+      MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, pending, undefined, checkpoint)
     )
     this.streamTextAccum = ''
     console.log(`action=REDIRECT-APPLIED sessionId=${this.sessionId} convId=${this.convId}`)
