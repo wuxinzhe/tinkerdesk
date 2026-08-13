@@ -12,6 +12,7 @@
 import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { BusyModeRegistry } from './busy-mode-registry'
+import { BUSY_MODE_INTERRUPT } from './types'
 import type { BusyModeStrategy, BusyLoopHost } from './types'
 import {
   EVT_ACTION_TOOL_DONE,
@@ -208,7 +209,12 @@ export class Conversation implements BusyLoopHost {
       // 中断触发（redirect 已在 catch 分支继续——到这里是 interrupt/queue 退出）
       await this.strategy.onRunExit?.(this)
       this.deps.runtime.clearBusyState()
-      this.ctx.sendTips(EVT_TIP_QUEUED, '对话已中断')
+      // 提示按策略区分：queue（手动停止/排队场景）→「对话已中断」；
+      // interrupt 模式 → 不发（chat 入口已发「已打断——即将处理你的新消息」——
+      // 避免复用手动停止链路造成重复/语义冲突）
+      if (this.strategy.mode !== BUSY_MODE_INTERRUPT) {
+        this.ctx.sendTips(EVT_TIP_QUEUED, '对话已中断')
+      }
       return this.finishCycle(this.convCtx, {
         resType: RES_INTERRUPTED,
         text: '',
