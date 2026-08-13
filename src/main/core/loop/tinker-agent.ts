@@ -103,10 +103,8 @@ export class TinkerAgent {
   async chat(ctx: SessionContext, userMessage: string): Promise<TinkerAgentResult> {
     const sessionId = this.sessionId
 
-    // ── 1. 消息入队 ──
-    this.runtime.queue.enqueueMessage(sessionId, userMessage, this.profile)
-
-    // ── 2. 会话处理中 → 按忙碌模式处置（排队 / 重定向 / 打断） ──
+    // ── 1. 会话处理中 → 按忙碌模式处置（redirect/interrupt 只挂 pending——
+    //    不入队——避免 pending 处理后队列重复处理同一消息） ──
     if (this.runtime.queue.isProcessing(sessionId)) {
       const mode = ctx.agentConfig?.messageBusyMode
       if (mode === BUSY_MODE_REDIRECT) {
@@ -128,6 +126,7 @@ export class TinkerAgent {
         }
       }
       // 默认 queue：排队等待（处理循环结束时会自动取下一批）
+      this.runtime.queue.enqueueMessage(sessionId, userMessage, this.profile)
       ctx.sendTips(EVT_TIP_QUEUED, '消息已入队，等待处理…')
       return {
         response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '消息已入队' } as LlmResponse,
@@ -136,7 +135,8 @@ export class TinkerAgent {
       }
     }
 
-    // ── 3. 空闲 → 启动处理循环（串行取队列消息，一轮轮处理） ──
+    // ── 2. 空闲 → 入队 + 启动处理循环（串行取队列消息，一轮轮处理） ──
+    this.runtime.queue.enqueueMessage(sessionId, userMessage, this.profile)
     return this.processLoop(ctx)
   }
 
