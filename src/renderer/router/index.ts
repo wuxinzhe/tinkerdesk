@@ -273,7 +273,7 @@ const router = createRouter({
             level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
             level3: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
           },
-          meta: { level3Placeholder: true },
+          // 真实详情页（非占位）——不加 level3Placeholder：移动端 hasLevel3 才能渲染 L3 详情
         },
         {
           path: 'settings/plugins/:pluginId',
@@ -282,7 +282,7 @@ const router = createRouter({
             level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
             level3: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
           },
-          meta: { level3Placeholder: true },
+          // 真实详情页（非占位）——不加 level3Placeholder
         },
 
         // ── 工坊 ──
