@@ -105,7 +105,7 @@
         </h3>
         <div class="settings-group__card">
           <div class="settings-field">
-            <div class="settings-field__row">
+            <div class="settings-field__row settings-field__row--segmented">
               <div class="settings-field__label">
                 <label>忙碌时新消息的处置方式</label>
                 <span class="settings-tip" @click.stop="toggleTip('messageBusyMode')" @mouseenter="hoverTip('messageBusyMode')" @mouseleave="deferHideTip">?</span>
@@ -116,32 +116,32 @@
                   <p class="settings-tip__rec">切换在下一轮对话生效（当前回合不受影响）。</p>
                 </div>
               </div>
-            </div>
-            <div class="settings-segmented">
-              <button
-                type="button"
-                class="settings-segmented__btn"
-                :class="{ active: config.messageBusyMode === 'queue' }"
-                @click="config.messageBusyMode = 'queue'"
-              >
-                排队
-              </button>
-              <button
-                type="button"
-                class="settings-segmented__btn"
-                :class="{ active: config.messageBusyMode === 'redirect' }"
-                @click="config.messageBusyMode = 'redirect'"
-              >
-                重定向
-              </button>
-              <button
-                type="button"
-                class="settings-segmented__btn"
-                :class="{ active: config.messageBusyMode === 'interrupt' }"
-                @click="config.messageBusyMode = 'interrupt'"
-              >
-                打断
-              </button>
+              <div class="settings-segmented">
+                <button
+                  type="button"
+                  class="settings-segmented__btn"
+                  :class="{ active: config.messageBusyMode === 'queue' }"
+                  @click="config.messageBusyMode = 'queue'"
+                >
+                  排队
+                </button>
+                <button
+                  type="button"
+                  class="settings-segmented__btn"
+                  :class="{ active: config.messageBusyMode === 'redirect' }"
+                  @click="config.messageBusyMode = 'redirect'"
+                >
+                  重定向
+                </button>
+                <button
+                  type="button"
+                  class="settings-segmented__btn"
+                  :class="{ active: config.messageBusyMode === 'interrupt' }"
+                  @click="config.messageBusyMode = 'interrupt'"
+                >
+                  打断
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -843,11 +843,19 @@ onBeforeUnmount(() => {
   }
 }
 
-/* emil：手机触屏——均分撑满 + 触屏目标 */
+/* emil：手机触屏——segmented 行换行（标题上一行——控件下一行）+ 两侧边距不顶边 */
 @media (max-width: 767px) {
+  .settings-field__row--segmented {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
   .settings-segmented {
     display: flex;
-    width: 100%;
+    width: calc(100% - 24px);
+    margin: 0 12px;
   }
 
   .settings-segmented__btn {
