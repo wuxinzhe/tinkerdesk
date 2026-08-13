@@ -16,28 +16,13 @@
       </div>
     </div>
 
-    <!-- 保存按钮 teleport 到 L3 工具栏右侧 -->
-    <!-- v-if="mounted" 防止目标 div #l3-toolbar-actions 在首次渲染时尚未挂载 -->
-    <Teleport v-if="mounted" to="#l3-toolbar-actions">
-      <button class="agent-settings__save-btn" :class="{ saving }" :disabled="saving" :title="saving ? '保存中…' : '保存'" @click="saveSettings">
-        <div class="agent-settings__save-icon-wrap">
-          <svg v-if="saving" class="agent-settings__save-ring" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4da6ff" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="47" stroke-dashoffset="0" transform="rotate(-90 12 12)" />
-          </svg>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-        </div>
-      </button>
-    </Teleport>
+    <!-- 保存机制：字段级自动保存（除提示词）——提示词区有独立保存按钮 -->
 
     <div v-if="loading" class="agent-settings__loading">
       加载中...
     </div>
 
-    <form v-else class="agent-settings__form" @submit.prevent="saveSettings">
+    <form v-else class="agent-settings__form" @submit.prevent>
       <!-- ── 灵魂提示词 ── -->
       <div class="settings-group">
         <h3 class="settings-group__title">
@@ -55,6 +40,16 @@
               </div>
             </div>
             <textarea v-model="config.agentSoulPrompt" rows="4" placeholder="留空使用 Agent 默认灵魂提示词" class="settings-field__textarea"></textarea>
+            <div class="agent-settings__prompt-actions">
+              <button
+                type="button"
+                class="agent-settings__prompt-save"
+                :disabled="savingPrompt"
+                @click="savePrompt"
+              >
+                {{ savingPrompt ? '保存中…' : '保存提示词' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -399,6 +394,7 @@ import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import { agentConfigApi } from '@/renderer/api/agent-config-api'
 import { BUSY_MODE_QUEUE, BUSY_MODE_REDIRECT, BUSY_MODE_INTERRUPT } from '@/renderer/api/types'
 import type { AgentConfigData } from '@/renderer/api/types'
+import { showInfoToast } from '@/renderer/utils/notification-utils'
 
 const route = useRoute()
 const profile = computed(() => (route.params.profile as string) || 'default')
@@ -406,9 +402,63 @@ const profile = computed(() => (route.params.profile as string) || 'default')
 const mounted = ref(false)
 const loading = ref(true)
 const saving = ref(false)
+const savingPrompt = ref(false)
 const error = ref('')
 
 const config = reactive({} as AgentConfigData)
+
+/** 字段级自动保存快照（排除 agentSoulPrompt——提示词手动保存）——上次已提交的字段值 */
+const savedSnapshot = ref('')
+
+/** 序列化配置（排除提示词——快照对比基准） */
+function snapshot(): string {
+  const { agentSoulPrompt: _p, ...rest } = config
+  return JSON.stringify(rest)
+}
+
+/** 变更字段（排除提示词——只提交本次改动的字段；threshold/tail 转小数） */
+function diffChanged(): Record<string, unknown> {
+  const prev = JSON.parse(savedSnapshot.value || '{}') as Record<string, unknown>
+  const changed: Record<string, unknown> = {}
+  for (const [key, oldV] of Object.entries(prev)) {
+    const newV = config[key as keyof AgentConfigData]
+    if (oldV !== newV) {
+      changed[key] = key === 'thresholdPercent' || key === 'tailRatio' ? (newV as number) / 100 : newV
+    }
+  }
+  return changed
+}
+
+/** 字段级自动保存：除提示词外任何配置项变更即保存该字段（静默——不打扰） */
+watch(
+  config,
+  async () => {
+    if (loading.value || !savedSnapshot.value) return
+    const changed = diffChanged()
+    if (Object.keys(changed).length === 0) return
+    try {
+      await agentConfigApi.update(profile.value, changed)
+      savedSnapshot.value = snapshot()
+    } catch (e) {
+      error.value = (e as Error).message ?? '保存失败'
+    }
+  },
+  { deep: true }
+)
+
+/** 提示词手动保存（只提交 agentSoulPrompt） */
+async function savePrompt() {
+  savingPrompt.value = true
+  error.value = ''
+  try {
+    await agentConfigApi.update(profile.value, { agentSoulPrompt: config.agentSoulPrompt ?? null })
+    showInfoToast('提示词已保存')
+  } catch (e) {
+    error.value = (e as Error).message ?? '保存失败'
+  } finally {
+    savingPrompt.value = false
+  }
+}
 
 const tipField = ref<string | null>(null)
 let tipTimer: ReturnType<typeof setTimeout> | null = null
@@ -438,24 +488,6 @@ function closeTipOnOutside(e: MouseEvent) {
   }
 }
 
-async function saveSettings() {
-  saving.value = true
-  error.value = ''
-  try {
-    // 前端展示百分比 (50/20)，提交时转小数 (0.50/0.20)
-    const payload = {
-      ...config,
-      thresholdPercent: (config.thresholdPercent ?? 0) / 100,
-      tailRatio: (config.tailRatio ?? 0) / 100,
-    }
-    await agentConfigApi.update(profile.value, payload)
-  } catch (e) {
-    error.value = (e as Error).message ?? '保存失败'
-  } finally {
-    saving.value = false
-  }
-}
-
 async function resetDefaults() {
   saving.value = true
   error.value = ''
@@ -465,6 +497,8 @@ async function resetDefaults() {
     Object.assign(config, data)
     config.thresholdPercent = Math.round((data.thresholdPercent ?? 0) * 100)
     config.tailRatio = Math.round((data.tailRatio ?? 0) * 100)
+    // 重置后快照同步（避免 watch diff 把刚重置的值当变更再保存一次）
+    savedSnapshot.value = snapshot()
   } catch (e) {
     error.value = (e as Error).message ?? '重置失败'
   } finally {
@@ -501,6 +535,8 @@ async function loadConfig() {
     config.tailRatio = Math.round((data.tailRatio ?? 0) * 100)
     // 老数据兜底（message_busy_mode 列新增前创建的配置行）
     if (!config.messageBusyMode) config.messageBusyMode = BUSY_MODE_QUEUE
+    // 快照基准（本次加载的已提交值——之后字段变更 diff 只提交变更项）
+    savedSnapshot.value = snapshot()
   } catch {
     // 使用默认值
   } finally {
@@ -564,42 +600,36 @@ onBeforeUnmount(() => {
     color: var(--tk-accent);
   }
 }
-.agent-settings__save-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 6px;
-  background: var(--tk-accent);
-  color: #fff;
-  font-size: 13px;
+/* 提示词手动保存按钮（低调——accent 文字 + hairline） */
+.agent-settings__prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.agent-settings__prompt-save {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-accent);
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-accent);
+  border-radius: 8px;
   cursor: pointer;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.agent-settings__save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+
+.agent-settings__prompt-save:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
-.agent-settings__save-icon-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-}
-.agent-settings__save-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  margin: -12px 0 0 -12px;
-  animation: agent-settings-ring-spin 0.5s linear infinite;
-}
-@keyframes agent-settings-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+
+@media (hover: hover) and (pointer: fine) {
+  .agent-settings__prompt-save:hover:not(:disabled) {
+    background: rgba(0, 122, 255, 0.08);
+  }
 }
 
 .agent-settings__loading {

@@ -10,7 +10,8 @@ export class AgentConfigApi {
     return (await window.api.agentConfig.get(profile)) as AgentConfigData
   }
 
-  async update(profile: string, config: AgentConfigData): Promise<void> {
+  /** 字段合并更新（后端 update 本来就是 partial 合并——传部分字段即可） */
+  async update(profile: string, config: Partial<AgentConfigData>): Promise<void> {
     await window.api.agentConfig.update({ profile, config: config as unknown as Record<string, unknown> })
   }
 
