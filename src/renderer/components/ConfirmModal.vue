@@ -118,7 +118,7 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
 }
 
 .sa-modal__icon.is-danger {
-  color: var(--tk-danger);
+  color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.1);
 }
 
