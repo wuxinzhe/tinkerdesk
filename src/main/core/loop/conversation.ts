@@ -12,7 +12,7 @@
 import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { BusyModeRegistry } from './busy-mode-registry'
-import { BUSY_MODE_INTERRUPT } from './types'
+import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
 import type { BusyModeStrategy, BusyLoopHost } from './types'
 import {
   EVT_ACTION_TOOL_DONE,
@@ -140,7 +140,13 @@ export class Conversation implements BusyLoopHost {
       // ── while-loop：LLM 调用 ↔ 工具执行 ──
       this.guardrail = new ToolLoopGuardrail(this.convCtx.agentConfig)
 
-      while (!this.abort.signal.aborted) {
+      while (true) {
+        // abort 检查（统一处理 redirect 竞态窗口）：
+        // - LLM 流进行中被 abort → SDK 抛 AbortError → catch 分支调用
+        // - LLM 流已结束 + abort 生效（竞态）→ 循环顶检查调用
+        // redirect 模式：pending 修正存在 → 注入 + 重建 abort → 继续循环（不退出）
+        if (!(await this.handleLoopAbort())) break
+
         this.iteration++
         if (this.maxIter > 0 && this.iteration > this.maxIter) {
           return this.handleMaxIteration()
@@ -156,7 +162,7 @@ export class Conversation implements BusyLoopHost {
         } catch (e) {
           // 中断（重定向/打断/手动停止）——AbortError 走策略处置
           if ((e as Error).name === 'AbortError') {
-            if (await this.strategy.onLoopInterrupted(this)) {
+            if (await this.handleLoopAbort()) {
               continue // redirect：注入修正后继续循环
             }
             break // interrupt/queue：退出循环
@@ -570,6 +576,25 @@ export class Conversation implements BusyLoopHost {
   }
 
   // ═══════════ BusyLoopHost 实现（redirect/interrupt 策略宿主） ═══════════
+
+  /**
+   * abort 统一处置（循环顶 + catch 共用——消除竞态窗口）：
+   * - 未 abort → true（继续循环）
+   * - redirect 模式 + pending 修正 → 注入 + 重建 abort → true（继续）
+   * - 否则（interrupt/queue/手动停止/无 pending）→ false（退出）
+   */
+  private async handleLoopAbort(): Promise<boolean> {
+    if (!this.abort.signal.aborted) return true
+    if (this.strategy.mode === BUSY_MODE_REDIRECT) {
+      const pending = this.deps.runtime.takePendingRedirect()
+      if (pending) {
+        await this.applyActiveTurnRedirect(pending)
+        this.resetAbort()
+        return true
+      }
+    }
+    return false
+  }
 
   /** 取走挂起的重定向修正（strategy 调用——转发 runtime） */
   takePendingRedirect(): string | null {
