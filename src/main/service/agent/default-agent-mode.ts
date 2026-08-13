@@ -70,6 +70,7 @@ export class DefaultAgentMode implements IAgentMode {
       exactFailureBlockAfter: 5,
       sameToolFailureHaltAfter: 8,
       noProgressBlockAfter: 5,
+      messageBusyMode: 'queue',
       agentSoulPrompt: this.soulPromptTemp
     }
   }

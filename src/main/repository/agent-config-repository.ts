@@ -10,7 +10,7 @@ import type { AgentConfigEntity } from './types'
 
 /** Agent 配置实体（对应 AgentConfigEntity，NULL = 使用全局默认值） */
 
-const COLS = 'profile, max_iterations, tool_execution_timeout, max_conversations, memory_max_chars, user_max_chars, threshold_percent, tail_ratio, agent_soul_prompt, warnings_enabled, hard_stop_enabled, exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after, exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after, created_at, updated_at'
+const COLS = 'profile, max_iterations, tool_execution_timeout, max_conversations, memory_max_chars, user_max_chars, threshold_percent, tail_ratio, agent_soul_prompt, warnings_enabled, hard_stop_enabled, exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after, exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after, message_busy_mode, created_at, updated_at'
 
 function toEntity(row: Record<string, unknown>): AgentConfigEntity {
   return {
@@ -31,6 +31,7 @@ function toEntity(row: Record<string, unknown>): AgentConfigEntity {
     exactFailureBlockAfter: row.exact_failure_block_after as number,
     sameToolFailureHaltAfter: row.same_tool_failure_halt_after as number,
     noProgressBlockAfter: row.no_progress_block_after as number,
+    messageBusyMode: (row.message_busy_mode as string) ?? 'queue',
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }
@@ -59,27 +60,29 @@ export class AgentConfigRepository {
           agent_soul_prompt,
           warnings_enabled, hard_stop_enabled,
           exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after,
-          exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after
-       ) VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-       )
-       ON CONFLICT (profile) DO UPDATE SET
-          max_iterations = excluded.max_iterations,
-          tool_execution_timeout = excluded.tool_execution_timeout,
-          max_conversations = excluded.max_conversations,
-          memory_max_chars = excluded.memory_max_chars,
-          user_max_chars = excluded.user_max_chars,
-          threshold_percent = excluded.threshold_percent,
-          tail_ratio = excluded.tail_ratio,
-          agent_soul_prompt = excluded.agent_soul_prompt,
-          warnings_enabled = excluded.warnings_enabled,
-          hard_stop_enabled = excluded.hard_stop_enabled,
-          exact_failure_warn_after = excluded.exact_failure_warn_after,
-          same_tool_failure_warn_after = excluded.same_tool_failure_warn_after,
-          no_progress_warn_after = excluded.no_progress_warn_after,
-          exact_failure_block_after = excluded.exact_failure_block_after,
-          same_tool_failure_halt_after = excluded.same_tool_failure_halt_after,
-          no_progress_block_after = excluded.no_progress_block_after`
+          exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after,
+          message_busy_mode
+      ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      )
+      ON CONFLICT (profile) DO UPDATE SET
+         max_iterations = excluded.max_iterations,
+         tool_execution_timeout = excluded.tool_execution_timeout,
+         max_conversations = excluded.max_conversations,
+         memory_max_chars = excluded.memory_max_chars,
+         user_max_chars = excluded.user_max_chars,
+         threshold_percent = excluded.threshold_percent,
+         tail_ratio = excluded.tail_ratio,
+         agent_soul_prompt = excluded.agent_soul_prompt,
+         warnings_enabled = excluded.warnings_enabled,
+         hard_stop_enabled = excluded.hard_stop_enabled,
+         exact_failure_warn_after = excluded.exact_failure_warn_after,
+         same_tool_failure_warn_after = excluded.same_tool_failure_warn_after,
+         no_progress_warn_after = excluded.no_progress_warn_after,
+         exact_failure_block_after = excluded.exact_failure_block_after,
+         same_tool_failure_halt_after = excluded.same_tool_failure_halt_after,
+         no_progress_block_after = excluded.no_progress_block_after,
+         message_busy_mode = excluded.message_busy_mode`
     ).run(
       entity.profile,
       entity.maxIterations,
@@ -97,7 +100,8 @@ export class AgentConfigRepository {
       entity.noProgressWarnAfter,
       entity.exactFailureBlockAfter,
       entity.sameToolFailureHaltAfter,
-      entity.noProgressBlockAfter
+      entity.noProgressBlockAfter,
+      entity.messageBusyMode
     )
   }
 }

@@ -92,6 +92,7 @@ export class AgentConfigService {
       exactFailureBlockAfter: numberOr(partial.exactFailureBlockAfter, existing?.exactFailureBlockAfter ?? defaults?.exactFailureBlockAfter ?? 0),
       sameToolFailureHaltAfter: numberOr(partial.sameToolFailureHaltAfter, existing?.sameToolFailureHaltAfter ?? defaults?.sameToolFailureHaltAfter ?? 0),
       noProgressBlockAfter: numberOr(partial.noProgressBlockAfter, existing?.noProgressBlockAfter ?? defaults?.noProgressBlockAfter ?? 0),
+      messageBusyMode: strOr(partial.messageBusyMode, existing?.messageBusyMode ?? defaults?.messageBusyMode ?? 'queue') ?? 'queue',
     }
     this.configRepo.save(merged)
   }
@@ -120,6 +121,7 @@ export class AgentConfigService {
       exactFailureBlockAfter: numberOr(config.exactFailureBlockAfter, existing.exactFailureBlockAfter),
       sameToolFailureHaltAfter: numberOr(config.sameToolFailureHaltAfter, existing.sameToolFailureHaltAfter),
       noProgressBlockAfter: numberOr(config.noProgressBlockAfter, existing.noProgressBlockAfter),
+      messageBusyMode: strOr(config.messageBusyMode, existing.messageBusyMode) ?? 'queue',
     }
     this.configRepo.save(merged)
   }
@@ -154,6 +156,7 @@ export class AgentConfigService {
       exactFailureBlockAfter: defaults.exactFailureBlockAfter,
       sameToolFailureHaltAfter: defaults.sameToolFailureHaltAfter,
       noProgressBlockAfter: defaults.noProgressBlockAfter,
+      messageBusyMode: defaults.messageBusyMode,
     })
     return defaults
   }
@@ -178,6 +181,7 @@ function toConfig(e: AgentConfigEntity): AgentConfig {
     exactFailureBlockAfter: e.exactFailureBlockAfter,
     sameToolFailureHaltAfter: e.sameToolFailureHaltAfter,
     noProgressBlockAfter: e.noProgressBlockAfter,
+    messageBusyMode: e.messageBusyMode as AgentConfig['messageBusyMode'],
   }
 }
 

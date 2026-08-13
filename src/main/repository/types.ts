@@ -147,6 +147,8 @@ export interface AgentConfigEntity {
   exactFailureBlockAfter: number
   sameToolFailureHaltAfter: number
   noProgressBlockAfter: number
+  /** 消息沟通方式（queue 排队 / redirect 重定向 / interrupt 打断） */
+  messageBusyMode: string
   createdAt?: string
   updatedAt?: string
 }

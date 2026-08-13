@@ -338,6 +338,7 @@ function createTables(database: DatabaseSync): void {
       exact_failure_block_after  INTEGER NOT NULL DEFAULT 5,
       same_tool_failure_halt_after INTEGER NOT NULL DEFAULT 8,
       no_progress_block_after    INTEGER NOT NULL DEFAULT 5,
+      message_busy_mode          TEXT NOT NULL DEFAULT 'queue',
       created_at                 TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at                 TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (profile),

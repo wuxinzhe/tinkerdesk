@@ -33,6 +33,7 @@ function toConfigEntity(profile: string, c: AgentConfig): AgentConfigEntity {
     exactFailureBlockAfter: c.exactFailureBlockAfter,
     sameToolFailureHaltAfter: c.sameToolFailureHaltAfter,
     noProgressBlockAfter: c.noProgressBlockAfter,
+    messageBusyMode: c.messageBusyMode,
   }
 }
 

@@ -91,7 +91,12 @@ export interface AgentConfig {
   noProgressBlockAfter: number
   /** Agent 灵魂提示词（模板字符串） */
   agentSoulPrompt: string | null
+  /** 消息沟通方式（queue 排队 / redirect 重定向 / interrupt 打断）——忙碌时新消息的处置策略 */
+  messageBusyMode: BusyMode
 }
+
+/** 忙碌时消息处置模式 */
+export type BusyMode = 'queue' | 'redirect' | 'interrupt'
 
 /** 客户端环境信息 */
 export interface ClientEnv {
