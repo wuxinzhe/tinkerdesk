@@ -9,10 +9,12 @@
  *   conversation.ts ← ConversationConstants（CONV_*）
  *   role.ts         ← MessageConstants（消息角色）+ RoleConstants（账号角色）
  *   tool.ts         ← ToolConstants（TOOL_TYPE_*）
+ *   tools.ts        ← ToolNameConstants（TOOL_SKILL_MANAGE/TOOL_MEMORY）+ CACHE_AFFECTING_TOOLS
  *   client.ts       ← ClientConstants（OS_* / TYPE_*）
  * 场景标识 SCENE_* 在 core/llm/types。
  */
 export * from './ipc'
+export * from './tools'
 export * from './route'
 export * from './llm'
 export * from './message'

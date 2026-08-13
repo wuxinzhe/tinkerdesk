@@ -7,6 +7,7 @@
 import type {ConversationContext} from '../types'
 import {HandlebarsPresetModule} from './preset-module'
 import type {PromptRenderer} from '../renderer'
+import {TOOL_MEMORY} from '../../constants'
 
 /** 记忆快照模块 */
 export class MemorySnapshotModule extends HandlebarsPresetModule {
@@ -20,7 +21,7 @@ export class MemorySnapshotModule extends HandlebarsPresetModule {
   }
 
   override shouldLoad(ctx: ConversationContext): boolean {
-    return ctx.toolNames?.includes('builtin_tinker_memory') ?? false
+    return ctx.toolNames?.includes(TOOL_MEMORY) ?? false
   }
 
   override loadPrompt(ctx: ConversationContext): string | null {

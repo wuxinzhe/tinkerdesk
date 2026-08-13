@@ -9,9 +9,10 @@ import type { PrivateSkillService } from '../service/private-skill-service'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../core/tool/tool-result'
 import type { ToolContext } from '../core/loop/types'
+import { TOOL_SKILLS_LIST } from '../core/constants'
 
 /** 工具名 */
-export const TOOL_NAME = 'builtin_tinker_skills_list'
+export const TOOL_NAME = TOOL_SKILLS_LIST
 
 /** 技能列表工具 */
 export class SkillsListTool extends BaseTool {

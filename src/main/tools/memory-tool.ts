@@ -8,12 +8,13 @@
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { MemoryOperation } from '../service/memory-store'
 import { MemoryStore } from '../service/memory-store'
+import { TOOL_MEMORY } from '../core/constants'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../core/tool/tool-result'
 import type { ToolContext } from '../core/loop/types'
 
 /** 工具名 */
-export const TOOL_NAME = 'builtin_tinker_memory'
+export const TOOL_NAME = TOOL_MEMORY
 
 /** 单轮最多 consolidation 失败次数 */
 const MAX_CONSOLIDATION_FAILURES = 3

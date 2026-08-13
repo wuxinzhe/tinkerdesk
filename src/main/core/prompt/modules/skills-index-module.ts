@@ -9,6 +9,7 @@ import type {ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'
 import {HandlebarsPresetModule} from './preset-module'
 import type {FilteredSkillDTO} from '../../../repository/types'
+import {TOOL_SKILL_MANAGE, TOOL_SKILL_VIEW, TOOL_SKILLS_LIST} from '../../constants'
 
 /** 技能索引模块 */
 export class SkillsIndexModule extends HandlebarsPresetModule {
@@ -24,9 +25,9 @@ export class SkillsIndexModule extends HandlebarsPresetModule {
   override shouldLoad(ctx: ConversationContext): boolean {
     const names = ctx.toolNames ?? []
     return (
-      names.includes('builtin_tinker_skills_list') ||
-      names.includes('builtin_tinker_skill_view') ||
-      names.includes('builtin_tinker_skill_manage')
+      names.includes(TOOL_SKILLS_LIST) ||
+      names.includes(TOOL_SKILL_VIEW) ||
+      names.includes(TOOL_SKILL_MANAGE)
     )
   }
 

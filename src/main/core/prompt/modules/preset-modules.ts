@@ -11,6 +11,7 @@
 import type {ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'
 import {HandlebarsPresetModule} from './preset-module'
+import {TOOL_MEMORY} from '../../constants'
 
 /** 工具强制使用（无条件加载） */
 export class ToolEnforcementModule extends HandlebarsPresetModule {
@@ -65,7 +66,7 @@ export class MemoryGuidanceModule extends HandlebarsPresetModule {
     super(renderer)
   }
   override shouldLoad(ctx: ConversationContext): boolean {
-    return ctx.toolNames?.includes('builtin_tinker_memory') ?? false
+    return ctx.toolNames?.includes(TOOL_MEMORY) ?? false
   }
 }
 

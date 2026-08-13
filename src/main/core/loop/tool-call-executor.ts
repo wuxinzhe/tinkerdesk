@@ -15,13 +15,8 @@ import type { ToolCall } from '../llm/types'
 import type { ConversationContext } from './context'
 import { buildToolCtx } from './context'
 import type { ToolCallExecutorDeps } from './types'
+import { CACHE_AFFECTING_TOOLS } from '../constants'
 
-
-/** 会改变 prompt 缓存内容的工具（skill_manage/memory → skills-index/memory-snapshot/user-profile） */
-const CACHE_AFFECTING_TOOLS = new Set([
-  'builtin_tinker_skill_manage',
-  'builtin_tinker_memory',
-])
 
 /** 工具执行器 */
 export class ToolCallExecutor {

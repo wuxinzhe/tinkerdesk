@@ -8,11 +8,12 @@ import type { PromptRenderer } from '../core/prompt/renderer'
 import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
 import type { PrivateSkillService } from '../service/private-skill-service'
 import { BaseTool } from './base-tool'
+import { TOOL_SKILL_MANAGE } from '../core/constants'
 import { ToolResult } from '../core/tool/tool-result'
 import type { ToolContext } from '../core/loop/types'
 
 /** 工具名 */
-export const TOOL_NAME = 'builtin_tinker_skill_manage'
+export const TOOL_NAME = TOOL_SKILL_MANAGE
 
 /** 技能内容最大字符数（对齐 MAX_SKILL_CHARS） */
 const MAX_SKILL_CHARS = 100000
