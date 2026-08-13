@@ -305,8 +305,11 @@ let vadAnalyser: AnalyserNode | null = null
 let vadProcessor: ScriptProcessorNode | null = null
 let vadPcmChunks: Float32Array[] = []       // 当前说话段 PCM 分片
 let vadSilenceTimer: ReturnType<typeof setTimeout> | null = null
+let vadSpeechStartAt = 0                    // speaking 开始时刻（噪声尖峰过滤）
 const VAD_SPEECH_THRESHOLD = 0.015          // 说话判定音量阈值（RMS——经验值）
 const VAD_SILENCE_MS = 800                  // 说完判定（静音持续 0.8s）
+const VAD_MIN_SPEECH_MS = 300               // 最小说话时长（短于它=噪声尖峰——丢弃）
+const VAD_MIN_UTTERANCE_SEC = 0.5           // 最小转写音频长度（短于它=噪声/过短——静默丢弃）
 
 // ── 输入方式（点击麦克风展开抽屉 3 选 1——选中的排最左——选中即应用） ──
 type InputMode = 'text' | 'pushToTalk' | 'vad'
@@ -495,6 +498,7 @@ function vadTick(): void {
   if (vadState.value === 'listening') {
     if (rms > VAD_SPEECH_THRESHOLD) {
       vadState.value = 'speaking'
+      vadSpeechStartAt = performance.now()
       vadPcmChunks = []
       // 说话打断（对齐 Hermes barge-in：onSpeech → interrupt——纯 abort 不挂 pending）
       if (props.sessionId) {
@@ -505,6 +509,13 @@ function vadTick(): void {
   } else {
     // speaking——静音计时（持续 0.8s 判定说完）
     if (rms <= VAD_SPEECH_THRESHOLD) {
+      // 说话时长 < 300ms = 噪声尖峰——直接丢弃回 listening（不 STT 不报错）
+      if (performance.now() - vadSpeechStartAt < VAD_MIN_SPEECH_MS) {
+        vadPcmChunks = []
+        vadState.value = 'listening'
+        if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
+        return
+      }
       vadSilenceTimer = vadSilenceTimer ?? setTimeout(() => void onVadUtteranceEnd(), VAD_SILENCE_MS)
     } else {
       if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
@@ -519,6 +530,12 @@ async function onVadUtteranceEnd(): Promise<void> {
   const chunks = vadPcmChunks
   vadPcmChunks = []
   vadState.value = 'listening'
+  // 音频过短（<0.5s）= 噪声/环境音——静默丢弃（不 STT 不报错）
+  const samples = concatPcmTo16k(chunks)
+  if (samples.length / 16000 < VAD_MIN_UTTERANCE_SEC) {
+    nextTick(() => drawWaveIdle())
+    return
+  }
   await transcribeAndSend(chunks)
   nextTick(() => drawWaveIdle())
 }
