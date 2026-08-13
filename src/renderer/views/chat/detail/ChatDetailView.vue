@@ -33,9 +33,10 @@
       @history-preview="goHistoryPreview"
     />
 
-    <!-- 打断对话按钮 + 预览/气泡切换按钮（横向并排，teleport 到 L3 顶栏右侧） -->
+    <!-- 打断对话按钮（只在 queue 模式显示——redirect/interrupt 自动处理无需手动打断）+ 预览/气泡切换按钮 -->
     <ToolbarActions>
       <button
+        v-if="busyMode === BUSY_MODE_QUEUE"
         class="toolbar-btn stop-btn"
         :class="{ 'stop-btn--active': isStreamingActive }"
         :disabled="!isStreamingActive"
@@ -82,6 +83,8 @@ import { useSessionStore } from '@/renderer/stores/session-store'
 import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useMobile } from '@/renderer/composables/use-mobile'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
+import { agentConfigApi } from '@/renderer/api/agent-config-api'
+import { BUSY_MODE_QUEUE } from '@/renderer/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -120,6 +123,21 @@ const agent = computed(() => agentStore.currentAgent)
 /* ── Thinking 状态（共享） ── */
 useSetupThinking()
 const { isThinking } = useThinkingState()
+
+/** 当前会话忙碌模式（打断按钮只在 queue 模式显示——redirect/interrupt 自动处理新消息——无需手动打断） */
+const busyMode = ref(BUSY_MODE_QUEUE)
+watch(
+  () => [profile.value, sessionId.value],
+  async () => {
+    try {
+      const cfg = await agentConfigApi.get(profile.value)
+      busyMode.value = cfg.messageBusyMode ?? BUSY_MODE_QUEUE
+    } catch {
+      busyMode.value = BUSY_MODE_QUEUE
+    }
+  },
+  { immediate: true },
+)
 
 /** 当前会话是否有流式/处理中消息（打断按钮可用状态） */
 const isStreamingActive = computed(() => {
