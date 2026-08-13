@@ -50,7 +50,7 @@
       </button>
     </ToolbarActions>
 
-    <!-- 移动端 Toolbar 中 agent 头像切换按钮 -->
+    <!-- 移动端 Toolbar 中 agent 头像切换按钮（状态图标与 session item 一致——翻转切换） -->
     <ToolbarActions v-if="isMobile">
       <button
         v-if="agent"
@@ -58,13 +58,43 @@
         :title="showAgentCard ? '收起 Agent 信息' : '查看 Agent 信息'"
         @click="showAgentCard = !showAgentCard"
       >
-        <img
-          v-if="agent.avatar"
-          :src="agent.avatar"
-          alt=""
-          class="agent-toggle-btn__avatar"
-        />
-        <span v-else class="agent-toggle-btn__text">Ai</span>
+        <Transition name="icon-flip" mode="out-in">
+          <!-- 等审批：黄色感叹号 -->
+          <span v-if="aiStage === 'approval'" key="approval" class="agent-toggle-btn__stage agent-toggle-btn__stage--wait" title="等待审批">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="7" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </span>
+          <!-- 等回答（clarify）：问号 -->
+          <span v-else-if="aiStage === 'clarify'" key="clarify" class="agent-toggle-btn__stage agent-toggle-btn__stage--wait" title="等待你的回答">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </span>
+          <!-- 工作中：圆环 spinner -->
+          <span v-else-if="aiStage === 'working'" key="working" class="agent-toggle-btn__spinner" />
+          <!-- 工具调用：齿轮旋转 -->
+          <span v-else-if="aiStage === 'tool'" key="tool" class="agent-toggle-btn__gear" title="工具执行中">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          </span>
+          <!-- 空闲：agent 头像 / Ai 文字 -->
+          <span v-else key="idle">
+            <img
+              v-if="agent.avatar"
+              :src="agent.avatar"
+              alt=""
+              class="agent-toggle-btn__avatar"
+            />
+            <span v-else class="agent-toggle-btn__text">Ai</span>
+          </span>
+        </Transition>
       </button>
     </ToolbarActions>
   </div>
@@ -144,6 +174,9 @@ const isStreamingActive = computed(() => {
   if (isThinking.value) return true
   return !!chatStore.getMessages(sessionId.value).find(m => m.isStreaming)
 })
+
+/** AI 按钮状态（与 session item 图标一致——approval/clarify/working/tool——空闲显示头像） */
+const aiStage = computed(() => chatStore.sessionStage(sessionId.value))
 
 /** 打断对话：发送 stop 并清理本地流式状态 */
 function onInterrupt() {
@@ -294,6 +327,54 @@ onUnmounted(() => {
 .agent-slide-leave-from {
   max-height: 200px;
   opacity: 1;
+}
+
+/* AI 按钮状态图标（与 session item 一致） */
+.agent-toggle-btn__stage {
+  display: inline-flex;
+  color: #f5a623;
+}
+
+.agent-toggle-btn__spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(0, 122, 255, 0.25);
+  border-top-color: var(--tk-accent);
+  border-radius: 50%;
+  animation: agent-toggle-spin 0.8s linear infinite;
+}
+
+.agent-toggle-btn__gear {
+  display: inline-flex;
+  color: var(--tk-accent);
+  animation: agent-toggle-spin 2.4s linear infinite;
+}
+
+@keyframes agent-toggle-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 状态图标切换（垂直翻转——与 session item 一致） */
+.icon-flip-enter-active,
+.icon-flip-leave-active {
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.icon-flip-enter-from {
+  transform: rotateX(90deg);
+}
+
+.icon-flip-leave-to {
+  transform: rotateX(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-flip-enter-active,
+  .icon-flip-leave-active {
+    transition: none;
+  }
 }
 
 /* ── Toolbar 切换按钮（基于 toolbar-btn 边框浮起式——WorkspaceToolbar 提供基础） ── */

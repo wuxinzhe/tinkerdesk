@@ -9,8 +9,8 @@
     @click="onClick"
   >
     <div class="session-item__icon">
-      <!-- 阶段图标（优先级：等审批 > 等回答 > 工具 > 工作中 > 完成 > 空闲）——切换淡入淡出（低调不抢注意力） -->
-      <Transition name="icon-fade" mode="out-in">
+      <!-- 阶段图标（优先级：等审批 > 等回答 > 工具 > 工作中 > 完成 > 空闲）——切换垂直翻转（像翻牌——低调不抢注意力） -->
+      <Transition name="icon-flip" mode="out-in">
         <!-- 等审批：黄色感叹号（等待用户操作——区别于工作中） -->
         <span v-if="stage === 'approval'" key="approval" class="session-item__stage session-item__stage--wait" title="等待审批">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -211,15 +211,25 @@ function onClick() {
   color: var(--tk-accent);
 }
 
-/* 阶段图标切换过渡（淡入淡出 + 微缩放——低调不抢注意力） */
-.icon-fade-enter-active,
-.icon-fade-leave-active {
-  transition: opacity 100ms ease, transform 100ms ease;
+/* 阶段图标切换过渡（垂直翻转——像翻牌——低调不抢注意力） */
+.icon-flip-enter-active,
+.icon-flip-leave-active {
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.icon-fade-enter-from,
-.icon-fade-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
+
+.icon-flip-enter-from {
+  transform: rotateX(90deg);
+}
+
+.icon-flip-leave-to {
+  transform: rotateX(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-flip-enter-active,
+  .icon-flip-leave-active {
+    transition: none;
+  }
 }
 
 /* 阶段图标（等审批/等回答——等待用户操作：黄色系静止图标，区别于工作中 spinner） */
