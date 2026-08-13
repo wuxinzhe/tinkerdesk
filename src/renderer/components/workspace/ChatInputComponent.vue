@@ -37,9 +37,9 @@
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
           <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3z" />
-            <path d="M19 10v1a7 7 0 01-14 0v-1" />
-            <line x1="12" y1="18" x2="12" y2="21" />
+            <!-- 耳朵（监听语义——区别于麦克风的"说"） -->
+            <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
+            <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
           </svg>
         </button>
 
