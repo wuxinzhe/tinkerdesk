@@ -47,7 +47,7 @@
                 :disabled="savingPrompt"
                 @click="savePrompt"
               >
-                {{ savingPrompt ? '保存中…' : '保存提示词' }}
+                {{ savingPrompt ? '保存中…' : '保存' }}
               </button>
             </div>
           </div>
@@ -604,7 +604,7 @@ onBeforeUnmount(() => {
 .agent-settings__prompt-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .agent-settings__prompt-save {
