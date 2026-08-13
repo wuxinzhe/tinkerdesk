@@ -830,6 +830,7 @@ export interface WindowApi {
     autoApprove: (conversationId: string) => Promise<{ok: boolean}>
     revoke: (sessionId: string, messageId: string) => Promise<void>
     interrupt: (sessionId: string) => Promise<void>
+    interruptNoPending: (sessionId: string) => Promise<void>
     clearAll: (sessionId: string) => Promise<void>
     onApprovalRequest: (cb: (payload: AgentApprovalEvent) => void) => () => void
   }

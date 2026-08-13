@@ -386,7 +386,7 @@ async function startRecording(): Promise<void> {
     // 语音打断（P0-A）：按住说话开始 → 先断当前回复（纯 abort——不挂 pending——
     // 说完的完整文本由发送逻辑走空闲入队）——无进行中对话时 abort 无害
     if (props.sessionId) {
-      window.api.agent.interruptNoPending(props.profile, props.sessionId).catch(() => {})
+      window.api.agent.interruptNoPending(props.sessionId).catch(() => {})
     }
     pcmChunks = []
     // 实时音波 + PCM 采集共用同一 AudioContext
