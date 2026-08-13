@@ -98,6 +98,55 @@
         </div>
       </div>
 
+      <!-- ── 消息沟通方式 ── -->
+      <div class="settings-group">
+        <h3 class="settings-group__title">
+          消息沟通方式
+        </h3>
+        <div class="settings-group__card">
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>忙碌时新消息的处置方式</label>
+                <span class="settings-tip" @click.stop="toggleTip('messageBusyMode')" @mouseenter="hoverTip('messageBusyMode')" @mouseleave="deferHideTip">?</span>
+                <div v-if="tipField === 'messageBusyMode'" class="settings-tip__bubble" @click.stop="tipField = null" @mouseenter="cancelHideTip" @mouseleave="deferHideTip">
+                  <p>排队：新消息等当前回合跑完再处理（默认）。</p>
+                  <p>重定向：中断当前生成，把修正注入同一回合，模型调整后继续。</p>
+                  <p>打断：中断当前回合，立即起新回合处理新消息。</p>
+                  <p class="settings-tip__rec">切换在下一轮对话生效（当前回合不受影响）。</p>
+                </div>
+              </div>
+            </div>
+            <div class="settings-segmented">
+              <button
+                type="button"
+                class="settings-segmented__btn"
+                :class="{ active: config.messageBusyMode === 'queue' }"
+                @click="config.messageBusyMode = 'queue'"
+              >
+                排队
+              </button>
+              <button
+                type="button"
+                class="settings-segmented__btn"
+                :class="{ active: config.messageBusyMode === 'redirect' }"
+                @click="config.messageBusyMode = 'redirect'"
+              >
+                重定向
+              </button>
+              <button
+                type="button"
+                class="settings-segmented__btn"
+                :class="{ active: config.messageBusyMode === 'interrupt' }"
+                @click="config.messageBusyMode = 'interrupt'"
+              >
+                打断
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 上下文管理 ── -->
       <div class="settings-group">
         <h3 class="settings-group__title">
@@ -449,6 +498,8 @@ async function loadConfig() {
     Object.assign(config, data)
     config.thresholdPercent = Math.round((data.thresholdPercent ?? 0) * 100)
     config.tailRatio = Math.round((data.tailRatio ?? 0) * 100)
+    // 老数据兜底（message_busy_mode 列新增前创建的配置行）
+    if (!config.messageBusyMode) config.messageBusyMode = 'queue'
   } catch {
     // 使用默认值
   } finally {
@@ -752,6 +803,41 @@ onBeforeUnmount(() => {
 }
 
 /* ── iOS 风格 Switch ── */
+
+/* 消息沟通方式：三选一 segmented（低调——白底 + hairline + accent 选中） */
+.settings-segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--tk-surface-2, rgba(120, 120, 128, 0.08));
+  border-radius: 9px;
+}
+
+.settings-segmented__btn {
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.settings-segmented__btn.active {
+  background: var(--tk-bg-primary);
+  color: var(--tk-accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .settings-segmented__btn:hover:not(.active) {
+    color: var(--tk-text-primary);
+  }
+}
 
 .settings-switch {
   position: relative;

@@ -179,6 +179,8 @@ export interface AgentConfigData {
   exactFailureBlockAfter: number
   sameToolFailureHaltAfter: number
   noProgressBlockAfter: number
+  /** 消息沟通方式（queue 排队 / redirect 重定向 / interrupt 打断）——忙碌时新消息处置 */
+  messageBusyMode: 'queue' | 'redirect' | 'interrupt'
 }
 
 // ── 模型（原 defines/models/model.ts） ──
