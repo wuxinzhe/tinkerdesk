@@ -201,10 +201,10 @@ const api = {
       inv('agent:autoApprove', { conversationId }).then(unwrap),
     revoke: (profile: string, sessionId: string, messageId: string) =>
       inv('agent:revoke', {profile, sessionId, messageId}).then(unwrap),
-    interrupt: (profile: string, sessionId: string) =>
-      inv('agent:interrupt', {profile, sessionId}).then(unwrap),
-    interruptNoPending: (profile: string, sessionId: string) =>
-      inv('agent:interruptNoPending', {profile, sessionId}).then(unwrap),
+    interrupt: (sessionId: string) =>
+      inv('agent:interrupt', { sessionId }).then(unwrap),
+    interruptNoPending: (sessionId: string) =>
+      inv('agent:interruptNoPending', { sessionId }).then(unwrap),
     clearAll: (profile: string, sessionId: string) =>
       inv('agent:clearAll', {profile, sessionId}).then(unwrap),
   },
