@@ -804,7 +804,7 @@ onBeforeUnmount(() => {
 
 /* ── iOS 风格 Switch ── */
 
-/* 消息沟通方式：三选一 segmented（低调——白底 + hairline + accent 选中） */
+/* 消息沟通方式：三选一 segmented（emil——低调容器 + 选中项浮起 + 完整过渡） */
 .settings-segmented {
   display: inline-flex;
   gap: 4px;
@@ -823,19 +823,44 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 7px;
   cursor: pointer;
+  /* emil：指定属性 + 强 ease-out——选中浮起（box-shadow）也过渡——按压反馈（transform） */
   transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .settings-segmented__btn.active {
   background: var(--tk-bg-primary);
   color: var(--tk-accent);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  /* emil 分层阴影——选中项「浮起」而非「压扁」 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .settings-segmented__btn:hover:not(.active) {
     color: var(--tk-text-primary);
+  }
+}
+
+/* emil：手机触屏——均分撑满 + 触屏目标 */
+@media (max-width: 767px) {
+  .settings-segmented {
+    display: flex;
+    width: 100%;
+  }
+
+  .settings-segmented__btn {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 13px;
+  }
+}
+
+/* emil：reduced-motion 兜底（保留颜色过渡——去位移） */
+@media (prefers-reduced-motion: reduce) {
+  .settings-segmented__btn {
+    transition: background-color 100ms ease, color 100ms ease;
   }
 }
 
