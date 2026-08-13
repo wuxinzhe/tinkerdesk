@@ -522,6 +522,7 @@ function vadTick(): void {
         vadState.value = 'listening'
         vadBargeFired = false
         if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
+        vadRaf = requestAnimationFrame(vadTick)
         return
       }
       vadSilenceTimer = vadSilenceTimer ?? setTimeout(() => void onVadUtteranceEnd(), VAD_SILENCE_MS)
