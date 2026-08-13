@@ -631,6 +631,8 @@ export interface AgentApi {
   revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}>
   /** 中断对话（stop） */
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
+  /** 语音打断（纯 abort——不挂 pending——按住说话时先断当前回复） */
+  interruptNoPending(profile: string, sessionId: string): Promise<{ok: boolean}>
   /** 清理会话状态 */
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
   /** 统一路由消息入口（route = '{一级}:{二级}'——客户端自行解析分发） */
@@ -647,6 +649,7 @@ export interface AgentIpcApi {
   autoApprove(conversationId: string): Promise<{ok: boolean}>
   revoke(profile: string, sessionId: string, messageId: string): Promise<{ok: boolean}>
   interrupt(profile: string, sessionId: string): Promise<{ok: boolean}>
+  interruptNoPending(profile: string, sessionId: string): Promise<{ok: boolean}>
   clearAll(profile: string, sessionId: string): Promise<{ok: boolean}>
   /** 统一路由消息入口（route = '{一级}:{二级}'——客户端自行解析分发） */
   onRouteMessage(cb: (payload: { route?: string; sessionId?: string; data?: unknown }) => void): () => void

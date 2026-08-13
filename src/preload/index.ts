@@ -203,6 +203,8 @@ const api = {
       inv('agent:revoke', {profile, sessionId, messageId}).then(unwrap),
     interrupt: (profile: string, sessionId: string) =>
       inv('agent:interrupt', {profile, sessionId}).then(unwrap),
+    interruptNoPending: (profile: string, sessionId: string) =>
+      inv('agent:interruptNoPending', {profile, sessionId}).then(unwrap),
     clearAll: (profile: string, sessionId: string) =>
       inv('agent:clearAll', {profile, sessionId}).then(unwrap),
   },

@@ -52,6 +52,10 @@ export class AgentLocal implements AgentApi {
     return this.api.interrupt(profile, sessionId)
   }
 
+  async interruptNoPending(profile: string, sessionId: string): Promise<{ok: boolean}> {
+    return this.api.interruptNoPending(profile, sessionId)
+  }
+
   /** 清理会话 */
   async clearAll(profile: string, sessionId: string): Promise<{ok: boolean}> {
     return this.api.clearAll(profile, sessionId)

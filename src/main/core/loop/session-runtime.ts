@@ -82,6 +82,20 @@ export class SessionRuntime {
     console.log(`action=INTERRUPT-NEW sessionId=${this.sessionId}`)
   }
 
+  /**
+   * 语音打断：纯 abort（不挂 pendingInterrupt——说完再发完整文本）
+   * 对齐语音方案 P0-A：按住说话 → 先断当前回复 → 说完 STT 完整文本 → 空闲入队
+   * 工具执行中不 abort（安全边界——等工具完成——说完的消息自然衔接）
+   */
+  interruptNoPending(): void {
+    if (this.executingTools) {
+      console.log(`action=VOICE-INTERRUPT-AFTER-TOOLS sessionId=${this.sessionId}`)
+      return
+    }
+    this.abortController?.abort()
+    console.log(`action=VOICE-INTERRUPT sessionId=${this.sessionId}`)
+  }
+
   /** 取走挂起的重定向修正（redirect 注入用——无则 null） */
   takePendingRedirect(): string | null {
     const p = this.pendingRedirect

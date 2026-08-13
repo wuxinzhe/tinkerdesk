@@ -277,6 +277,12 @@ export class TinkerAgent {
     return this.runtime.interrupt()
   }
 
+  /** 语音打断（纯 abort——不挂 pendingInterrupt——说完发完整文本） */
+  interruptNoPending(_sessionId: string): boolean {
+    this.runtime.interruptNoPending()
+    return true
+  }
+
   /** 清理会话状态（clearAll）：取消中断控制 + 清理挂起表 */
   clearAll(sessionId: string): void {
     this.runtime.clearAbort()

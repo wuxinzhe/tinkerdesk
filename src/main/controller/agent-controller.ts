@@ -58,6 +58,7 @@ export class AgentController {
     handleTrusted('agent:autoApprove', (_event, payload) => this.autoApprove(_event, payload))
     handleTrusted('agent:revoke', (_event, payload) => this.revokeChatMessage(_event, payload))
     handleTrusted('agent:interrupt', (_event, payload) => this.interruptSession(_event, payload))
+    handleTrusted('agent:interruptNoPending', (_event, payload) => this.interruptNoPendingSession(_event, payload))
     handleTrusted('agent:clearAll', (_event, payload) => this.clearSessionState(_event, payload))
   }
 
@@ -130,6 +131,12 @@ export class AgentController {
   /** 中断对话（onInterrupt / stop） */
   private interruptSession(_event: Electron.IpcMainInvokeEvent, payload: AgentInterruptRequestDTO): ApiResponse<null> {
     this.getAgent(payload.sessionId).interrupt(payload.sessionId)
+    return ok(null)
+  }
+
+  /** 语音打断（纯 abort——不挂 pendingInterrupt——按住说话时先断当前回复） */
+  private interruptNoPendingSession(_event: Electron.IpcMainInvokeEvent, payload: AgentInterruptRequestDTO): ApiResponse<null> {
+    this.getAgent(payload.sessionId).interruptNoPending(payload.sessionId)
     return ok(null)
   }
 
