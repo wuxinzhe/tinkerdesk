@@ -306,10 +306,12 @@ let vadProcessor: ScriptProcessorNode | null = null
 let vadPcmChunks: Float32Array[] = []       // 当前说话段 PCM 分片
 let vadSilenceTimer: ReturnType<typeof setTimeout> | null = null
 let vadSpeechStartAt = 0                    // speaking 开始时刻（噪声尖峰过滤）
+let vadBargeFired = false                   // 本轮说话是否已打断（500ms 确认后才打断——噪声不打断）
 const VAD_SPEECH_THRESHOLD = 0.015          // 说话判定音量阈值（RMS——经验值）
 const VAD_SILENCE_MS = 2000                 // 说完判定（静音持续 2s——留足思考停顿——完整说完再发）
 const VAD_MIN_SPEECH_MS = 300               // 最小说话时长（短于它=噪声尖峰——丢弃）
 const VAD_MIN_UTTERANCE_SEC = 0.5           // 最小转写音频长度（短于它=噪声/过短——静默丢弃）
+const VAD_BARGE_CONFIRM_MS = 500            // 打断确认时长（speaking 持续 500ms 才打断——环境噪声不误触发）
 
 // ── 输入方式（点击麦克风展开抽屉 3 选 1——选中的排最左——选中即应用） ──
 type InputMode = 'text' | 'pushToTalk' | 'vad'
@@ -499,20 +501,26 @@ function vadTick(): void {
     if (rms > VAD_SPEECH_THRESHOLD) {
       vadState.value = 'speaking'
       vadSpeechStartAt = performance.now()
+      vadBargeFired = false
       vadPcmChunks = []
-      // 说话打断（对齐 Hermes barge-in：onSpeech → interrupt——纯 abort 不挂 pending）
+      console.log('[voice] VAD 说话开始 → 录音（500ms 确认后才打断）')
+    }
+  } else {
+    // speaking——持续 500ms 确认是说话（不是噪声）→ 打断当前回复（对齐 Hermes barge-in）
+    if (!vadBargeFired && performance.now() - vadSpeechStartAt >= VAD_BARGE_CONFIRM_MS) {
+      vadBargeFired = true
       if (props.sessionId) {
         window.api.agent.interruptNoPending(props.sessionId).catch(() => {})
       }
-      console.log('[voice] VAD 说话开始 → 打断 + 录音')
+      console.log('[voice] VAD 确认说话 → 打断 + 录音')
     }
-  } else {
-    // speaking——静音计时（持续 0.8s 判定说完）
+    // 静音计时（持续 2s 判定说完）
     if (rms <= VAD_SPEECH_THRESHOLD) {
       // 说话时长 < 300ms = 噪声尖峰——直接丢弃回 listening（不 STT 不报错）
       if (performance.now() - vadSpeechStartAt < VAD_MIN_SPEECH_MS) {
         vadPcmChunks = []
         vadState.value = 'listening'
+        vadBargeFired = false
         if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
         return
       }
@@ -530,6 +538,7 @@ async function onVadUtteranceEnd(): Promise<void> {
   const chunks = vadPcmChunks
   vadPcmChunks = []
   vadState.value = 'listening'
+  vadBargeFired = false
   // 音频过短（<0.5s）= 噪声/环境音——静默丢弃（不 STT 不报错）
   const samples = concatPcmTo16k(chunks)
   if (samples.length / 16000 < VAD_MIN_UTTERANCE_SEC) {
