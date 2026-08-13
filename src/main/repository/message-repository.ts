@@ -28,6 +28,7 @@ function toEntity(row: Record<string, unknown>): MessageEntity {
     profile: row.profile as string,
     role: row.role as string,
     content: row.content as string,
+    apiContent: (row.api_content as string) ?? '',
     reasoningContent: row.reasoning_content as string,
     toolCall: row.tool_call as string | null,
     toolCallId: row.tool_call_id as string,
@@ -49,9 +50,9 @@ export class MessageRepository {
     const result = db
       .prepare(
         `INSERT INTO messages (session_id, conversation_id, profile, role,
-            content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
+            content, api_content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
             interaction_status, message_type, deleted, prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         entity.sessionId,
@@ -59,6 +60,7 @@ export class MessageRepository {
         entity.profile,
         entity.role,
         entity.content,
+        entity.apiContent ?? '',
         entity.reasoningContent ?? '',
         entity.toolCall,
         entity.toolCallId ?? '',
@@ -81,10 +83,10 @@ export class MessageRepository {
       const db = getDatabase()
       const stmt = db.prepare(
         `INSERT INTO messages (session_id, conversation_id, profile, role,
-            content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
+            content, api_content, reasoning_content, tool_call, tool_call_id, tool_name, finish_reason,
             interaction_status, message_type, deleted, created_at, updated_at,
             prompt_tokens, completion_tokens, cache_read_tokens, cache_write_tokens)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       let count = 0
       for (const e of entities) {
@@ -96,6 +98,7 @@ export class MessageRepository {
           e.profile,
           e.role,
           e.content,
+          e.apiContent ?? '',
           e.reasoningContent ?? '',
           e.toolCall,
           e.toolCallId ?? '',

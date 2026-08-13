@@ -284,6 +284,7 @@ function createTables(database: DatabaseSync): void {
       profile            TEXT NOT NULL DEFAULT '',
       role               TEXT NOT NULL,
       content            TEXT NOT NULL DEFAULT '',
+      api_content        TEXT NOT NULL DEFAULT '',
       reasoning_content  TEXT NOT NULL DEFAULT '',
       tool_call          TEXT,
       tool_call_id       TEXT NOT NULL DEFAULT '',

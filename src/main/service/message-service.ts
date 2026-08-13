@@ -33,13 +33,15 @@ export {
 
 /** 消息实体构建器（对应 MessageEntity.buildXxx 静态工厂） */
 export class MessageFactory {
-  static buildUserMessage(convId: string, sessionId: string, profile: string, content: string, createdAt?: string): MessageEntity {
+  static buildUserMessage(convId: string, sessionId: string, profile: string, content: string, createdAt?: string, apiContent?: string): MessageEntity {
     return {
       sessionId,
       conversationId: convId,
       profile,
       role: ROLE_USER,
       content,
+      // apiContent 缺省 = content（无分离需求的消息两者一致）
+      apiContent: apiContent ?? content,
       reasoningContent: '',
       toolCall: null,
       toolCallId: '',
@@ -408,7 +410,8 @@ export class MessageService {
 export function entityToApiMessage(m: MessageEntity): ApiMessage {
   const base: ApiMessage = {
     role: m.role as 'system' | 'user' | 'assistant' | 'tool',
-    content: m.content ?? '',
+    // apiContent 有值用完整内容（LLM 上下文）；否则 content（显示/API 一致）
+    content: m.apiContent || m.content,
   }
   if (m.reasoningContent) {
     base.reasoningContent = m.reasoningContent

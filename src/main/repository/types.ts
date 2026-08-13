@@ -241,6 +241,8 @@ export interface MessageEntity {
   profile: string
   role: string
   content: string
+  /** 发给 LLM 的完整内容（有值时 LLM 上下文用它——content 仅显示；无则两者一致） */
+  apiContent?: string
   reasoningContent: string
   toolCall: string | null
   toolCallId: string | null
