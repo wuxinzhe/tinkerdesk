@@ -20,6 +20,8 @@ export class SessionRuntime {
   private pendingRedirect: string | null = null
   /** 打断模式挂起的新消息（interrupt 模式） */
   private pendingInterrupt: string | null = null
+  /** 语音打断待处理标记（工具执行中挂——工具完成后强制 abort 回合——说完的消息转 pendingInterrupt） */
+  private pendingBarge = false
   /** 是否在工具执行中（决定 abort 时机） */
   private executingTools = false
 
@@ -85,15 +87,37 @@ export class SessionRuntime {
   /**
    * 语音打断：纯 abort（不挂 pendingInterrupt——说完再发完整文本）
    * 对齐语音方案 P0-A：按住说话 → 先断当前回复 → 说完 STT 完整文本 → 空闲入队
-   * 工具执行中不 abort（安全边界——等工具完成——说完的消息自然衔接）
+   * 工具执行中：挂 pendingBarge 标记——工具完成后强制 abort 回合
+   * （否则长工具序列 executingTools 一直 true——打断永远等不到——回合不退）
    */
   interruptNoPending(): void {
     if (this.executingTools) {
+      this.pendingBarge = true
       console.log(`action=VOICE-INTERRUPT-AFTER-TOOLS sessionId=${this.sessionId}`)
       return
     }
     this.abortController?.abort()
     console.log(`action=VOICE-INTERRUPT sessionId=${this.sessionId}`)
+  }
+
+  /** 取走待打断标记（工具完成后 conversation 检查——true 则 abort 回合） */
+  takePendingBarge(): boolean {
+    const p = this.pendingBarge
+    this.pendingBarge = false
+    return p
+  }
+
+  /**
+   * VAD 打断退出前：挂起的 redirect 修正转 pendingInterrupt（合并）
+   * 说完的话作为新回合处理——而非 redirect 注入重试（模型可能继续原命令）
+   */
+  bargeToInterrupt(): void {
+    if (this.pendingRedirect) {
+      this.pendingInterrupt = this.pendingInterrupt
+        ? `${this.pendingInterrupt}\n${this.pendingRedirect}`
+        : this.pendingRedirect
+      this.pendingRedirect = null
+    }
   }
 
   /** 取走挂起的重定向修正（redirect 注入用——无则 null） */

@@ -306,6 +306,13 @@ export class Conversation implements BusyLoopHost {
     if (this.deps.runtime.hasPendingInterrupt()) {
       this.abort.abort()
     }
+    // 语音打断（pendingBarge）→ 工具完成后强制 abort——挂起的 redirect 修正转
+    // pendingInterrupt（VAD 场景：说完的话作为新回合处理——而非 redirect 重试继续原命令）
+    if (this.deps.runtime.takePendingBarge()) {
+      console.log(`action=VOICE-BARGE-APPLIED sessionId=${this.sessionId}`)
+      this.deps.runtime.bargeToInterrupt()
+      this.abort.abort()
+    }
     // 继续 while 循环 → 下一轮 LLM 调用
     return null
   }
