@@ -307,7 +307,7 @@ let vadPcmChunks: Float32Array[] = []       // 当前说话段 PCM 分片
 let vadSilenceTimer: ReturnType<typeof setTimeout> | null = null
 let vadSpeechStartAt = 0                    // speaking 开始时刻（噪声尖峰过滤）
 const VAD_SPEECH_THRESHOLD = 0.015          // 说话判定音量阈值（RMS——经验值）
-const VAD_SILENCE_MS = 800                  // 说完判定（静音持续 0.8s）
+const VAD_SILENCE_MS = 2000                 // 说完判定（静音持续 2s——留足思考停顿——完整说完再发）
 const VAD_MIN_SPEECH_MS = 300               // 最小说话时长（短于它=噪声尖峰——丢弃）
 const VAD_MIN_UTTERANCE_SEC = 0.5           // 最小转写音频长度（短于它=噪声/过短——静默丢弃）
 
