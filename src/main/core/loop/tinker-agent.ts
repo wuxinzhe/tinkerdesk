@@ -105,8 +105,28 @@ export class TinkerAgent {
     // ── 1. 消息入队 ──
     this.runtime.queue.enqueueMessage(sessionId, userMessage, this.profile)
 
-    // ── 2. 会话处理中 → 排队等待（处理循环结束时会自动取下一批） ──
+    // ── 2. 会话处理中 → 按忙碌模式处置（排队 / 重定向 / 打断） ──
     if (this.runtime.queue.isProcessing(sessionId)) {
+      const mode = ctx.agentConfig?.messageBusyMode
+      if (mode === 'redirect') {
+        this.runtime.requestRedirect(userMessage)
+        ctx.sendTips(EVT_TIP_QUEUED, '已重定向当前对话——正在用你的修正调整…')
+        return {
+          response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '已重定向' } as LlmResponse,
+          sessionId,
+          conversationId: '',
+        }
+      }
+      if (mode === 'interrupt') {
+        this.runtime.requestInterrupt(userMessage)
+        ctx.sendTips(EVT_TIP_QUEUED, '已打断当前对话——即将处理你的新消息…')
+        return {
+          response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '已打断' } as LlmResponse,
+          sessionId,
+          conversationId: '',
+        }
+      }
+      // 默认 queue：排队等待（处理循环结束时会自动取下一批）
       ctx.sendTips(EVT_TIP_QUEUED, '消息已入队，等待处理…')
       return {
         response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '消息已入队' } as LlmResponse,
@@ -136,30 +156,38 @@ export class TinkerAgent {
           break
         }
 
-        // 队列空 → 退出
+        // 打断模式：中断的回合退出后——取走 pendingInterrupt 立即处理（不等队列）
+        const pendingInterrupt = this.runtime.takePendingInterrupt()
+
+        // 队列空且无打断消息 → 退出
         const allItems = this.runtime.queue.peekAll(sessionId)
-        if (allItems.length === 0) {
+        if (allItems.length === 0 && !pendingInterrupt) {
           break
         }
 
-        // 预算驱动取数
-        const budgetTokens = 4000
-        let takeCount = 0
-        let estimated = 0
-        for (const item of allItems) {
-          const tokens = Math.ceil(item.content.length / 1.5)
-          if (takeCount > 0 && estimated + tokens > budgetTokens) break
-          estimated += tokens
-          takeCount++
+        // 预算驱动取数（打断消息优先——本轮直接处理；否则走队列）
+        let combined: string
+        if (pendingInterrupt) {
+          combined = pendingInterrupt
+        } else {
+          const budgetTokens = 4000
+          let takeCount = 0
+          let estimated = 0
+          for (const item of allItems) {
+            const tokens = Math.ceil(item.content.length / 1.5)
+            if (takeCount > 0 && estimated + tokens > budgetTokens) break
+            estimated += tokens
+            takeCount++
+          }
+          if (takeCount === 0) takeCount = 1
+
+          const items = takeCount >= allItems.length
+            ? this.runtime.queue.dequeueAll(sessionId)
+            : this.runtime.queue.dequeueBatch(sessionId, takeCount)
+
+          // 合并多条消息（\n 连接）→ 一轮对话
+          combined = items.map((i) => i.content).join('\n')
         }
-        if (takeCount === 0) takeCount = 1
-
-        const items = takeCount >= allItems.length
-          ? this.runtime.queue.dequeueAll(sessionId)
-          : this.runtime.queue.dequeueBatch(sessionId, takeCount)
-
-        // 合并多条消息（\n 连接）→ 一轮对话
-        const combined = items.map((i) => i.content).join('\n')
         // 每轮 new Conversation（生命周期 = 一轮——run 返回后即弃）
         const conversation = new Conversation({
           llmRouter: this.llmRouter,
@@ -182,7 +210,7 @@ export class TinkerAgent {
             approvalManager: this.approvalManager,
           }),
         })
-        lastResult = await conversation.run(this.sessionId, this.profile, ctx, combined, items[0]?.createdAt)
+        lastResult = await conversation.run(this.sessionId, this.profile, ctx, combined, undefined)
       }
       return lastResult ?? {
         response: { resType: RES_INTERRUPTED, text: '', toolCalls: [], errorMessage: '无消息处理' } as LlmResponse,

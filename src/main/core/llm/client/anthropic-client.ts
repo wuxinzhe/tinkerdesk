@@ -128,6 +128,7 @@ export class AnthropicClient implements LlmClient {
         tools: request.tools.length > 0 ? this.toAnthropicTools(request.tools) : undefined,
         // 推理深度（预算派：枚举 → thinking budget_tokens）
         ...(request.reasoningDepth ? { thinking: { type: 'enabled' as const, budget_tokens: mapReasoningBudget(request.reasoningDepth) } } : {}),
+        ...(request.signal ? { signal: request.signal } : {}),
         stream: true,
       } as Anthropic.MessageCreateParamsStreaming)
 

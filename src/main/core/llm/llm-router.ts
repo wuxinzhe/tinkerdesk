@@ -38,7 +38,7 @@ export class LlmRouter {
   async chat(options: LlmRouterOptions, onToken: ChunkCallback): Promise<LlmResponse> {
     return this.caller(options, async (config, input) => {
       const client = this.clientManager.getClient(config)
-      return client.callStreaming({ config, messages: input, tools: options.tools, reasoningDepth: options.reasoningDepth }, onToken)
+      return client.callStreaming({ config, messages: input, tools: options.tools, reasoningDepth: options.reasoningDepth, signal: options.signal }, onToken)
     })
   }
 

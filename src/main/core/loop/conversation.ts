@@ -11,6 +11,8 @@
  */
 import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
+import { BusyModeRegistry } from './busy-mode-registry'
+import type { BusyModeStrategy, BusyLoopHost } from './busy-mode'
 import {
   EVT_ACTION_TOOL_DONE,
   EVT_ACTION_TOOL_START,
@@ -24,6 +26,7 @@ import {
   ROLE_ASSISTANT,
   ROLE_SYSTEM,
   ROLE_TOOL,
+  ROLE_USER,
 } from '../constants'
 import { ERROR_CONTEXT_OVERFLOW, RES_EMPTY, RES_REASONING, RES_TEXT, RES_TOOL_CALLS, RES_TRUNCATED } from '../llm/llm-response'
 import type { ApiMessage, LlmChunk, LlmResponse, LlmRouterOptions, ModelConfig } from '../llm/types'
@@ -37,12 +40,16 @@ import { CONV_COMPLETED, RES_INTERRUPTED } from './types'
 import { withTransaction } from '../../repository/database'
 
 /** 对话轮次对象 */
-export class Conversation {
+export class Conversation implements BusyLoopHost {
   constructor(private readonly deps: ConversationDeps) { }
 
   // ═══════ 轮状态（实例字段——生命周期 = 本轮） ═══════
   private ctx!: SessionContext
   private abort!: AbortController
+  /** 忙碌时消息处置策略（构建时读 agentConfig.messageBusyMode——回合内固定） */
+  private strategy!: BusyModeStrategy
+  /** 当前 LLM 流已产生的可见文本（redirect 截取检查点用——不含 reasoning） */
+  private streamTextAccum = ''
   private convCtx!: ConversationContext
   private messages: ApiMessage[] = []
   private routerOpt!: LlmRouterOptions
@@ -77,6 +84,9 @@ export class Conversation {
     const toolNames = toolManager.getAvailableToolNames(this.profile)
     const allConfigs = this.resolveAllConfigs(this.profile)
     this.convCtx = buildConvCtx(ctx, this.convId, toolNames, allConfigs)
+    // 忙碌模式策略（构建时读一次——回合内固定——中途修改配置下一轮生效）
+    this.strategy = BusyModeRegistry.get(this.convCtx.agentConfig?.messageBusyMode)
+    this.streamTextAccum = ''
 
     // ── 用户消息入暂存 ──
     messageService.saveTempMessage(MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, userMessage, userCreatedAt))
@@ -106,6 +116,8 @@ export class Conversation {
       tools,
       modelConfigs: allConfigs.get(SCENE_CHAT) ?? [],
       reasoningDepth: session?.reasoningDepth || undefined,
+      // 中断信号（重定向/打断——abort 即断流）
+      signal: this.abort.signal,
       // usage 统计上下文
       profile: this.profile,
       sessionId: this.sessionId,
@@ -133,7 +145,23 @@ export class Conversation {
           return this.handleMaxIteration()
         }
 
-        const response = await this.deps.llmRouter.chat(this.routerOpt, (chunk: LlmChunk) => this.convCtx.sender.sendToken(this.sessionId, chunk))
+        let response: LlmResponse
+        try {
+          response = await this.deps.llmRouter.chat(this.routerOpt, (chunk: LlmChunk) => {
+            // 累计当前流可见文本（redirect 截取检查点用——不含 reasoning）
+            if (chunk.text) this.streamTextAccum += chunk.text
+            this.convCtx.sender.sendToken(this.sessionId, chunk)
+          })
+        } catch (e) {
+          // 中断（重定向/打断/手动停止）——AbortError 走策略处置
+          if ((e as Error).name === 'AbortError') {
+            if (await this.strategy.onLoopInterrupted(this)) {
+              continue // redirect：注入修正后继续循环
+            }
+            break // interrupt/queue：退出循环
+          }
+          throw e
+        }
         this.llmRequestCount++
 
         // ── 每轮 usage 累计（prompt/completion/cache——会话统计数据源） ──
@@ -177,7 +205,9 @@ export class Conversation {
         }
       }
 
-      // 中断触发
+      // 中断触发（redirect 已在 catch 分支继续——到这里是 interrupt/queue 退出）
+      await this.strategy.onRunExit?.(this)
+      this.deps.runtime.clearBusyState()
       this.ctx.sendTips(EVT_TIP_QUEUED, '对话已中断')
       return this.finishCycle(this.convCtx, {
         resType: RES_INTERRUPTED,
@@ -233,6 +263,8 @@ export class Conversation {
     )
     // 工具轮次开始：重置防护计数
     this.guardrail.resetForTurn()
+    // 工具执行中标记（redirect/interrupt 策略据此决定 abort 时机——不杀工具）
+    this.deps.runtime.setExecutingTools(true)
     // 回填 LLM 上下文：assistant tool_calls 消息（tool 结果消息的前置，缺失会导致 API 400）
     this.messages.push({
       role: ROLE_ASSISTANT,
@@ -254,6 +286,12 @@ export class Conversation {
         toolCallId: tc.id,
         name: tc.name,
       })
+    }
+    // 工具执行结束（redirect/interrupt 策略据此决定 abort 时机）
+    this.deps.runtime.setExecutingTools(false)
+    // 工具执行中收到打断请求 → 工具完成后 abort（下个迭代 while 条件退出）
+    if (this.deps.runtime.hasPendingInterrupt()) {
+      this.abort.abort()
     }
     // 继续 while 循环 → 下一轮 LLM 调用
     return null
@@ -523,5 +561,45 @@ export class Conversation {
     }
     console.error(`无可压缩内容，上下文溢出无法恢复 sessionId=${convCtx.sessionId}`)
     return false
+  }
+
+  // ═══════════ BusyLoopHost 实现（redirect/interrupt 策略宿主） ═══════════
+
+  /** 取走挂起的重定向修正（strategy 调用——转发 runtime） */
+  takePendingRedirect(): string | null {
+    return this.deps.runtime.takePendingRedirect()
+  }
+
+  /** 注入修正并重建 abort（redirect 继续循环前）——对齐 Hermes _apply_active_turn_redirect */
+  async applyActiveTurnRedirect(pending: string): Promise<void> {
+    const visible = this.streamTextAccum.trim()
+    // 检查点：截取可见文本（剥离 reasoning——原始思考绝不回放）
+    const checkpoint = [
+      '[This response was interrupted by a user correction.]',
+      visible ? `Visible response before the interruption: ${visible}` : '',
+      `User correction: ${pending}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+    // 注入为 user 消息（尾部是 assistant → 单条 user——角色交替合法）
+    this.messages.push({ role: ROLE_USER, content: checkpoint })
+    // 暂存（回合收尾 flush 落库）
+    this.deps.messageService.saveTempMessage(
+      MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, checkpoint)
+    )
+    this.streamTextAccum = ''
+    console.log(`action=REDIRECT-APPLIED sessionId=${this.sessionId} convId=${this.convId}`)
+  }
+
+  /** 重建 AbortController（redirect 继续循环前） */
+  resetAbort(): void {
+    this.abort = new AbortController()
+    this.deps.runtime.setAbort(this.abort)
+    this.routerOpt.signal = this.abort.signal
+  }
+
+  /** flush 暂存消息到 DB（interrupt 退出前——防对话消息丢失） */
+  async flushPendingMessagesToDb(): Promise<void> {
+    this.deps.messageService.flushConversation(this.convId)
   }
 }

@@ -126,6 +126,7 @@ export class GoogleClient implements LlmClient {
           // 推理深度（预算派：枚举 → thinkingBudget）
           ...(request.reasoningDepth ? { thinkingConfig: { thinkingBudget: mapReasoningBudget(request.reasoningDepth) } } : {}),
         },
+        ...(request.signal ? { signal: request.signal } : {}),
       })
 
       let text = ''

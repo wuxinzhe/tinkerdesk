@@ -158,6 +158,7 @@ export class OpenAIClient implements LlmClient {
         tools: request.tools.length > 0 ? this.toOpenAITools(request.tools) : undefined,
         // 推理深度（OpenAI 兼容派：low/medium/high 直传 reasoning_effort——SDK 类型未收录，cast 透传）
         ...(request.reasoningDepth ? { reasoning_effort: request.reasoningDepth } : {}),
+        ...(request.signal ? { signal: request.signal } : {}),
         stream: true,
       } as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming)
 

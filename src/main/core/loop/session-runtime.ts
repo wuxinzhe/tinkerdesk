@@ -16,6 +16,12 @@ export class SessionRuntime {
   readonly queue = new MessageQueueStore()
   /** 中断控制（对话进行中注册，结束/中断清除） */
   private abortController: AbortController | null = null
+  /** 重定向挂起的修正文本（redirect 模式） */
+  private pendingRedirect: string | null = null
+  /** 打断模式挂起的新消息（interrupt 模式） */
+  private pendingInterrupt: string | null = null
+  /** 是否在工具执行中（决定 abort 时机） */
+  private executingTools = false
 
   constructor(
     /** 会话 id */
@@ -50,6 +56,65 @@ export class SessionRuntime {
     this.abortController = null
     console.log(`action=INTERRUPT sessionId=${this.sessionId}`)
     return true
+  }
+
+  // ═══════════ 忙碌模式策略支持（redirect/interrupt） ═══════════
+
+  /** 重定向：挂起修正文本 + abort（LLM 流中断；工具执行中不 abort——等安全边界） */
+  requestRedirect(text: string): void {
+    this.pendingRedirect = this.pendingRedirect ? `${this.pendingRedirect}\n${text}` : text
+    // 工具执行中不 abort——工具完成后循环回顶注入（对齐 Hermes：不杀工具）
+    if (!this.executingTools) {
+      this.abortController?.abort()
+    }
+    console.log(`action=REDIRECT sessionId=${this.sessionId}`)
+  }
+
+  /** 打断：挂起新消息 + abort（LLM 流中立即；工具执行中标记——工具完成后 abort） */
+  requestInterrupt(text: string): void {
+    this.pendingInterrupt = text
+    if (this.executingTools) {
+      // 工具执行中——等工具完成（工具完成后 conversation 检查 pendingInterrupt 再 abort）
+      console.log(`action=INTERRUPT-AFTER-TOOLS sessionId=${this.sessionId}`)
+    } else {
+      this.abortController?.abort()
+    }
+    console.log(`action=INTERRUPT-NEW sessionId=${this.sessionId}`)
+  }
+
+  /** 取走挂起的重定向修正（redirect 注入用——无则 null） */
+  takePendingRedirect(): string | null {
+    const p = this.pendingRedirect
+    this.pendingRedirect = null
+    return p
+  }
+
+  /** 取走挂起的打断消息（interrupt 起新回合用——无则 null） */
+  takePendingInterrupt(): string | null {
+    const p = this.pendingInterrupt
+    this.pendingInterrupt = null
+    return p
+  }
+
+  /** 是否有挂起的打断消息 */
+  hasPendingInterrupt(): boolean {
+    return this.pendingInterrupt !== null
+  }
+
+  /** 标记工具执行状态（conversation 工具执行开始/结束调用） */
+  setExecutingTools(executing: boolean): void {
+    this.executingTools = executing
+  }
+
+  /** 当前是否在工具执行中 */
+  isExecutingTools(): boolean {
+    return this.executingTools
+  }
+
+  /** 清理忙碌模式挂起状态（回合结束/中断收尾——pendingInterrupt 保留给 processLoop 消费） */
+  clearBusyState(): void {
+    this.pendingRedirect = null
+    this.executingTools = false
   }
 
   /** 清空队列 + 处理锁（中断/清空用） */

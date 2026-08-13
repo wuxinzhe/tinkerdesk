@@ -50,6 +50,8 @@ export interface LlmRequest {
   tools: ToolSchema[]
   /** 推理深度（low/medium/high——OpenAI 兼容派直传 reasoning_effort；预算派映射 thinkingBudget） */
   reasoningDepth?: string
+  /** 中断信号（重定向/打断用——abort 即断流） */
+  signal?: AbortSignal
 }
 
 /** 消息角色（system/user/assistant/tool） */
@@ -198,6 +200,8 @@ export interface LlmRouterOptions {
   modelConfigs: ModelConfig[]
   /** 推理深度（'' = 未设置/默认——各 client 映射 reasoning_effort 或 thinkingBudget） */
   reasoningDepth?: string
+  /** 中断信号（重定向/打断用——abort 即断流） */
+  signal?: AbortSignal
   /** usage 统计上下文（可选——llm_usage_log 落库用；调用方能传就传） */
   profile?: string
   conversationId?: string
