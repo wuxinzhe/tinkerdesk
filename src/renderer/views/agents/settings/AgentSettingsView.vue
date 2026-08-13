@@ -860,8 +860,8 @@ onBeforeUnmount(() => {
 
   .settings-segmented__btn {
     flex: 1;
-    padding: 10px 0;
-    font-size: 13px;
+    padding: 6px 0;
+    font-size: 12px;
   }
 }
 
