@@ -160,8 +160,9 @@ export class Conversation implements BusyLoopHost {
             this.convCtx.sender.sendToken(this.sessionId, chunk)
           })
         } catch (e) {
-          // 中断（重定向/打断/手动停止）——AbortError 走策略处置
-          if ((e as Error).name === 'AbortError') {
+          // 中断（重定向/打断/手动停止）——AbortError 或 abort 信号已生效
+          // （SDK 可能抛非 AbortError 名，如 TypeError: fetch aborted）→ 统一走策略处置
+          if ((e as Error).name === 'AbortError' || this.abort.signal.aborted) {
             if (await this.handleLoopAbort()) {
               continue // redirect：注入修正后继续循环
             }
@@ -578,21 +579,25 @@ export class Conversation implements BusyLoopHost {
   // ═══════════ BusyLoopHost 实现（redirect/interrupt 策略宿主） ═══════════
 
   /**
-   * abort 统一处置（循环顶 + catch 共用——消除竞态窗口）：
+   * abort/pending 统一处置（循环顶 + catch 共用——消除竞态窗口）：
+   * - redirect 模式：pending 修正存在且不在工具执行中 → 注入 + 重建 abort → true（继续）
+   *   （未 abort 也检查——工具完成后/LLM 间隙的挂起修正不依赖 abort 触发）
    * - 未 abort → true（继续循环）
-   * - redirect 模式 + pending 修正 → 注入 + 重建 abort → true（继续）
-   * - 否则（interrupt/queue/手动停止/无 pending）→ false（退出）
+   * - abort 且无 pending（interrupt/queue/手动停止）→ false（退出）
    */
   private async handleLoopAbort(): Promise<boolean> {
-    if (!this.abort.signal.aborted) return true
     if (this.strategy.mode === BUSY_MODE_REDIRECT) {
-      const pending = this.deps.runtime.takePendingRedirect()
-      if (pending) {
-        await this.applyActiveTurnRedirect(pending)
-        this.resetAbort()
-        return true
+      // 工具执行中不注入（等安全边界——避免打断工具）；工具完成后/LLM 间隙注入
+      if (!this.deps.runtime.isExecutingTools()) {
+        const pending = this.deps.runtime.takePendingRedirect()
+        if (pending) {
+          await this.applyActiveTurnRedirect(pending)
+          this.resetAbort()
+          return true
+        }
       }
     }
+    if (!this.abort.signal.aborted) return true
     return false
   }
 
