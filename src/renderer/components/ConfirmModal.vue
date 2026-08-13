@@ -164,7 +164,7 @@ onUnmounted(() => window.removeEventListener('global-confirm', handleEvent))
 
 .sa-modal__btn--destructive {
   color: #ffffff;
-  background: var(--tk-danger);
+  background: var(--tk-destructive);
 }
 
 .sa-modal__btn--destructive:hover {

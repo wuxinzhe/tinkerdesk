@@ -765,8 +765,8 @@ async function askUninstall(p: PluginInfo): Promise<void> {
 
 /* 卸载（危险操作） */
 .plugin-card__btn--danger {
-  color: var(--tk-danger);
-  border-color: var(--tk-danger);
+  color: var(--tk-destructive);
+  border-color: var(--tk-destructive);
   background: rgba(255, 59, 48, 0.06);
 }
 
