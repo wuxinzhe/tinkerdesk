@@ -2,46 +2,69 @@
   <div class="chat-input-wrap">
     <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
       <div class="chat-input__row">
-        <!-- 语音输入（点击武装 → 按住音波框/快捷键录音 → 松开识别发送；录音是应用固有功能，STT 转发给语音 provider） -->
-        <button
-          v-if="sttAvailable"
-          class="chat-input__voice"
-          :class="{
-            'chat-input__voice--armed': voiceMode && !recording,
-            'chat-input__voice--recording': recording,
-            'chat-input__voice--countdown': countdown > 0
-          }"
-          :title="voiceMode ? (recording ? '松开结束并识别' : '点击取消录音') : '点击开始语音输入'"
-          @click="onVoiceButtonClick"
-        >
-          <svg v-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-            <path d="M19 10v2a7 7 0 01-14 0v-2" />
-            <line x1="12" y1="19" x2="12" y2="23" />
-            <line x1="8" y1="23" x2="16" y2="23" />
-          </svg>
-          <span v-else-if="recording && countdown > 0" class="chat-input__countdown">{{ countdown }}</span>
-          <span v-else class="chat-input__voice-dot"></span>
-        </button>
+        <!-- 输入方式选择（点击展开抽屉：按住说话 / VAD 监听 / 文字输入——选中排最左——选中即应用并关闭） -->
+        <div class="chat-input__mode-picker">
+          <button
+            v-if="sttAvailable"
+            class="chat-input__voice"
+            :class="{
+              'chat-input__voice--armed': voiceMode && !recording,
+              'chat-input__voice--recording': recording,
+              'chat-input__voice--countdown': countdown > 0
+            }"
+            :title="'输入方式：' + inputModeLabel"
+            @click="toggleDrawer"
+          >
+            <svg v-if="inputMode === 'vad' && !recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <!-- 耳朵（VAD 监听） -->
+              <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
+              <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
+            </svg>
+            <svg v-else-if="inputMode === 'text' && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <!-- 键盘（文字输入） -->
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h12" />
+            </svg>
+            <svg v-else-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <!-- 麦克风（按住说话） -->
+              <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+              <path d="M19 10v2a7 7 0 01-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+            <span v-else-if="recording && countdown > 0" class="chat-input__countdown">{{ countdown }}</span>
+            <span v-else class="chat-input__voice-dot"></span>
+          </button>
 
-        <!-- VAD 模式开关（方案 B：独立按钮——点击进入常驻监听——说话即打断并发送） -->
-        <button
-          v-if="sttAvailable"
-          class="chat-input__vad-toggle"
-          :class="{ 'chat-input__vad-toggle--active': vadActive }"
-          :title="vadActive ? '退出语音监听（VAD）' : '语音监听（VAD——说话即打断并自动发送）'"
-          @click="toggleVad"
-        >
-          <svg v-if="vadActive" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-          <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <!-- 耳朵（监听语义——区别于麦克风的"说"） -->
-            <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
-            <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
-          </svg>
-        </button>
+          <!-- 抽屉（3 选 1——选中的排最左——选中即应用并关闭） -->
+          <Transition name="mode-drawer">
+            <div v-if="drawerOpen" class="chat-input__mode-drawer">
+              <button
+                v-for="m in modeButtons"
+                :key="m.id"
+                class="chat-input__mode-item"
+                :class="{ 'chat-input__mode-item--active': m.id === inputMode }"
+                @click="switchMode(m.id)"
+              >
+                <svg v-if="m.id === 'pushToTalk'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                  <path d="M19 10v2a7 7 0 01-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+                <svg v-else-if="m.id === 'vad'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
+                  <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
+                </svg>
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                  <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h12" />
+                </svg>
+                <span>{{ m.label }}</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
 
         <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音——VAD 模式常驻监听） -->
         <Transition name="input-swap" mode="out-in">
@@ -284,6 +307,22 @@ let vadPcmChunks: Float32Array[] = []       // 当前说话段 PCM 分片
 let vadSilenceTimer: ReturnType<typeof setTimeout> | null = null
 const VAD_SPEECH_THRESHOLD = 0.015          // 说话判定音量阈值（RMS——经验值）
 const VAD_SILENCE_MS = 800                  // 说完判定（静音持续 0.8s）
+
+// ── 输入方式（点击麦克风展开抽屉 3 选 1——选中的排最左——选中即应用） ──
+type InputMode = 'text' | 'pushToTalk' | 'vad'
+const inputMode = ref<InputMode>('text')
+const drawerOpen = ref(false)
+const MODE_DEFS: Array<{ id: InputMode; label: string }> = [
+  { id: 'pushToTalk', label: '按住说话' },
+  { id: 'vad', label: 'VAD 监听' },
+  { id: 'text', label: '文字输入' },
+]
+/** 抽屉按钮顺序：选中的排最左 */
+const modeButtons = computed(() => {
+  const selected = MODE_DEFS.find((d) => d.id === inputMode.value) ?? MODE_DEFS[2]
+  return [selected, ...MODE_DEFS.filter((d) => d.id !== inputMode.value)]
+})
+const inputModeLabel = computed(() => modeButtons.value[0].label)
 const countdown = ref(0)          // 110s 后剩余秒数（0=未进入倒计时）
 const waveCanvasRef = ref<HTMLCanvasElement | null>(null)
 let pcmChunks: Float32Array[] = []            // 录音 PCM 分片（onaudioprocess 收集）
@@ -388,29 +427,32 @@ function onGlobalKeyUp(e: KeyboardEvent): void {
   }
 }
 
-/** 点击麦克风按钮：idle → 武装；武装 → 取消；录音中忽略 */
-function onVoiceButtonClick(): void {
+/** 点击输入方式按钮：开/关抽屉 */
+function toggleDrawer(): void {
   if (recording.value) return
-  // VAD 模式开启时不响应按住说话入口（互斥——避免同时占用麦克风）
-  if (vadActive.value) return
-  if (voiceMode.value) {
-    exitVoiceMode()
-  } else {
-    voiceMode.value = true
-    // 武装态：灰色时间轴预览（布局完成后绘制）
-    nextTick(() => drawWaveIdle())
-  }
+  drawerOpen.value = !drawerOpen.value
 }
 
-/** ── VAD 模式：常驻监听（说话开始 → 打断当前回复 + 收集 PCM；静音 0.8s → STT 发送 → 循环） ── */
-async function toggleVad(): Promise<void> {
-  if (vadActive.value) {
+/** 选中输入方式（应用 + 关闭抽屉——幂等：再点选中的只关闭） */
+function switchMode(mode: InputMode): void {
+  drawerOpen.value = false
+  if (mode === inputMode.value) return
+  if (mode === 'text') {
     stopVad()
-    return
+    exitVoiceMode()
+  } else if (mode === 'pushToTalk') {
+    stopVad()
+    voiceMode.value = true
+    nextTick(() => drawWaveIdle())
+  } else {
+    exitVoiceMode()
+    void startVad()
   }
-  // 按住说话模式开着 → 先退出（避免麦克风冲突）
-  if (voiceMode.value) exitVoiceMode()
-  if (recording.value) void stopRecording()
+  inputMode.value = mode
+}
+
+/** ── VAD 模式启动：常驻监听（说话开始 → 打断当前回复 + 收集 PCM；静音 0.8s → STT 发送 → 循环） ── */
+async function startVad(): Promise<void> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     vadActive.value = true
@@ -914,33 +956,78 @@ defineExpose({ focus })
 
 /* ── 语音输入按钮（按住说话） ── */
 
-/* VAD 模式开关（方案 B：独立按钮——低调——active 态 accent 描边） */
-.chat-input__vad-toggle {
-  width: 28px;
-  height: 28px;
-  padding: 0;
+/* 输入方式选择器（按钮 + 抽屉——绝对定位——右侧展开） */
+.chat-input__mode-picker {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--tk-secondary-text, rgba(60, 60, 67, 0.6));
-  cursor: pointer;
-  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
-    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.chat-input__vad-toggle--active {
+/* 抽屉（3 按钮横向——间距 8px——浮层卡片——低调） */
+.chat-input__mode-drawer {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  background: var(--tk-surface, #ffffff);
+  border: 1px solid rgba(60, 60, 67, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  z-index: 20;
+}
+
+.chat-input__mode-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-secondary-text, rgba(60, 60, 67, 0.6));
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.chat-input__mode-item--active {
   color: var(--tk-accent);
   background: rgba(0, 122, 255, 0.08);
-  border: 1px solid var(--tk-accent);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .chat-input__vad-toggle:hover:not(.chat-input__vad-toggle--active) {
+  .chat-input__mode-item:hover:not(.chat-input__mode-item--active) {
     background: rgba(120, 120, 128, 0.08);
+  }
+}
+
+/* 抽屉动效（右侧滑入 + 淡入——160ms——reduced-motion 只保留透明度） */
+.mode-drawer-enter-active,
+.mode-drawer-leave-active {
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.mode-drawer-enter-from,
+.mode-drawer-leave-to {
+  opacity: 0;
+  transform: translateY(-50%) translateX(-6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mode-drawer-enter-active,
+  .mode-drawer-leave-active {
+    transition: opacity 120ms ease;
+  }
+  .mode-drawer-enter-from,
+  .mode-drawer-leave-to {
+    transform: translateY(-50%);
   }
 }
 
