@@ -10,6 +10,9 @@
  */
 import { MessageQueueStore } from '../../service/message-queue-store'
 
+/** pendingBarge 有效期（10s——超时失效——clarify/审批等用户交互挂起不误触发） */
+const BARGE_TTL_MS = 10000
+
 /** 会话级运行时状态 */
 export class SessionRuntime {
   /** 用户消息队列（per-session 串行处理） */
@@ -22,6 +25,8 @@ export class SessionRuntime {
   private pendingInterrupt: string | null = null
   /** 语音打断待处理标记（工具执行中挂——工具完成后强制 abort 回合——说完的消息转 pendingInterrupt） */
   private pendingBarge = false
+  /** pendingBarge 挂载时间戳（10s 过期——clarify/审批等用户交互挂起不误触发） */
+  private pendingBargeAt = 0
   /** 是否在工具执行中（决定 abort 时机） */
   private executingTools = false
 
@@ -93,6 +98,7 @@ export class SessionRuntime {
   interruptNoPending(): void {
     if (this.executingTools) {
       this.pendingBarge = true
+      this.pendingBargeAt = Date.now()
       console.log(`action=VOICE-INTERRUPT-AFTER-TOOLS sessionId=${this.sessionId}`)
       return
     }
@@ -100,11 +106,16 @@ export class SessionRuntime {
     console.log(`action=VOICE-INTERRUPT sessionId=${this.sessionId}`)
   }
 
-  /** 取走待打断标记（工具完成后 conversation 检查——true 则 abort 回合） */
+  /** 取走待打断标记（工具完成后 conversation 检查——10s 过期失效——避免 clarify/审批等用户交互挂起误触发） */
   takePendingBarge(): boolean {
-    const p = this.pendingBarge
+    const hadBarge = this.pendingBarge
+    const valid = hadBarge && Date.now() - this.pendingBargeAt < BARGE_TTL_MS
     this.pendingBarge = false
-    return p
+    this.pendingBargeAt = 0
+    if (hadBarge && !valid) {
+      console.log(`action=VOICE-BARGE-EXPIRED sessionId=${this.sessionId}`)
+    }
+    return valid
   }
 
   /**
