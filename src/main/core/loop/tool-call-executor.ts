@@ -25,7 +25,7 @@ export class ToolCallExecutor {
   /** 执行单个工具调用（guardrail 门检 + 三层安全检查 + 审批 + 本地执行） */
   async execute(convCtx: ConversationContext, toolCall: ToolCall, guardrail: ToolLoopGuardrail): Promise<string> {
     const { toolAuthService, sandboxWhitelistService, toolManager, promptModuleBuilder } = this.deps
-    const toolCtx = buildToolCtx(convCtx, toolCall)
+    const toolCtx = buildToolCtx(convCtx, toolCall, this.deps.runtime.getAbort()?.signal)
     const args = (toolCall.arguments ?? {}) as Record<string, unknown>
 
     // ── 工具循环防护：执行前检查（block/halt 时不执行，返回合成结果） ──

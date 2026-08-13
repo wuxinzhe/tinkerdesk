@@ -280,6 +280,8 @@ export interface ConversationContext {
 export interface ToolContext extends ConversationContext {
   /** 待执行的工具调用 */
   toolCall: ToolCall
+  /** 父回合 abort 信号（delegate 等长工具中断传播用——父 abort 即通知子代理停） */
+  abortSignal?: AbortSignal
 }
 
 /** 对话轮次依赖（TinkerAgent 组装传入 Conversation） */
@@ -309,4 +311,6 @@ export interface ToolCallExecutorDeps {
   toolAuthService: ToolAuthService
   promptModuleBuilder: PromptModuleBuilder
   approvalManager: ApprovalManager
+  /** 会话运行时（delegate 中断传播——父 abort 信号注入工具上下文） */
+  runtime: SessionRuntime
 }

@@ -48,9 +48,10 @@ export function buildConvCtx(
 }
 
 /** 从 ConversationContext 创建工具执行上下文（继承字段 + 叠加 toolCall） */
-export function buildToolCtx(session: ConversationContext, toolCall: ToolCall): ToolContext {
+export function buildToolCtx(session: ConversationContext, toolCall: ToolCall, abortSignal?: AbortSignal): ToolContext {
   return {
     ...session,
     toolCall,
+    abortSignal,
   }
 }

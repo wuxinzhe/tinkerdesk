@@ -209,6 +209,7 @@ export class TinkerAgent {
             toolAuthService: this.toolAuthService,
             promptModuleBuilder: this.promptModuleBuilder,
             approvalManager: this.approvalManager,
+            runtime: this.runtime,
           }),
         })
         lastResult = await conversation.run(this.sessionId, this.profile, ctx, combined, undefined)
