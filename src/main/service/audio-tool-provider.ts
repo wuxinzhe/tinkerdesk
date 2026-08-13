@@ -9,8 +9,8 @@
  * tool.stt 无内置（需要插件——本地 sherpa 或云端）。
  * 激活配置独立文件 audio-tool-provider-config.json（与 voice-config.json 分开）。
  */
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join, dirname } from 'path'
 import { app } from 'electron'
 import { PluginManager } from '../core/plugin/plugin-manager'
 import type { PluginManifest } from '../core/plugin/types'
@@ -97,6 +97,12 @@ export class AudioToolProvider {
   /** 文本合成语音 → 文件路径（激活 provider：内置 Edge 插件或插件 tts:speak_file） */
   async speak(text: string, outputPath: string): Promise<string> {
     const active = this.getActiveTts()
+    // 输出目录自动创建（不存在时——避免插件 copyfile / Edge open ENOENT 冒泡成未捕获异常）
+    try {
+      mkdirSync(dirname(outputPath), { recursive: true })
+    } catch {
+      // 目录创建失败——让后续报错携带明确信息（不静默）
+    }
     try {
       const result = await this.pluginManager.invokePlugin<{ filePath?: string }>(
         active,
