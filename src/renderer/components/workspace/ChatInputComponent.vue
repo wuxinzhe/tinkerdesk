@@ -24,20 +24,47 @@
           <span v-else class="chat-input__voice-dot"></span>
         </button>
 
-        <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音） -->
+        <!-- VAD 模式开关（方案 B：独立按钮——点击进入常驻监听——说话即打断并发送） -->
+        <button
+          v-if="sttAvailable"
+          class="chat-input__vad-toggle"
+          :class="{ 'chat-input__vad-toggle--active': vadActive }"
+          :title="vadActive ? '退出语音监听（VAD）' : '语音监听（VAD——说话即打断并自动发送）'"
+          @click="toggleVad"
+        >
+          <svg v-if="vadActive" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a3 3 0 00-3 3v5a3 3 0 006 0V6a3 3 0 00-3-3z" />
+            <path d="M19 10v1a7 7 0 01-14 0v-1" />
+            <line x1="12" y1="18" x2="12" y2="21" />
+          </svg>
+        </button>
+
+        <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音——VAD 模式常驻监听） -->
         <Transition name="input-swap" mode="out-in">
           <div
-            v-if="voiceMode"
+            v-if="voiceMode || vadActive"
             key="wavebox"
             class="chat-input__wavebox"
-            :class="{ 'chat-input__wavebox--recording': recording }"
+            :class="{
+              'chat-input__wavebox--recording': recording,
+              'chat-input__wavebox--vad': vadActive
+            }"
             @pointerdown="onWaveboxDown"
             @pointerup="onWaveboxUp"
             @pointerleave="onWaveboxLeave"
           >
             <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
             <div v-if="!recording" class="chat-input__wave-hint">
-              按住开始录音（或按住 {{ shortcutLabel }}）
+              <template v-if="vadActive">
+                {{ vadState === 'speaking' ? '识别中…' : '监听中——说话自动识别发送' }}
+              </template>
+              <template v-else>
+                按住开始录音（或按住 {{ shortcutLabel }}）
+              </template>
             </div>
           </div>
 
@@ -245,6 +272,18 @@ watch(
 const sttAvailable = ref(false)
 const voiceMode = ref(false)      // true=输入框切换为音波框（武装/录音中）
 const recording = ref(false)
+// ── VAD 模式（常驻监听——说话即打断并自动发送；方案 B 独立开关） ──
+const vadActive = ref(false)      // true=VAD 常驻监听开
+const vadState = ref<'listening' | 'speaking'>('listening')
+let vadRaf = 0                    // 音量检测循环（rAF）
+let vadAudioContext: AudioContext | null = null
+let vadSourceNode: MediaStreamAudioSourceNode | null = null
+let vadAnalyser: AnalyserNode | null = null
+let vadProcessor: ScriptProcessorNode | null = null
+let vadPcmChunks: Float32Array[] = []       // 当前说话段 PCM 分片
+let vadSilenceTimer: ReturnType<typeof setTimeout> | null = null
+const VAD_SPEECH_THRESHOLD = 0.015          // 说话判定音量阈值（RMS——经验值）
+const VAD_SILENCE_MS = 800                  // 说完判定（静音持续 0.8s）
 const countdown = ref(0)          // 110s 后剩余秒数（0=未进入倒计时）
 const waveCanvasRef = ref<HTMLCanvasElement | null>(null)
 let pcmChunks: Float32Array[] = []            // 录音 PCM 分片（onaudioprocess 收集）
@@ -352,6 +391,8 @@ function onGlobalKeyUp(e: KeyboardEvent): void {
 /** 点击麦克风按钮：idle → 武装；武装 → 取消；录音中忽略 */
 function onVoiceButtonClick(): void {
   if (recording.value) return
+  // VAD 模式开启时不响应按住说话入口（互斥——避免同时占用麦克风）
+  if (vadActive.value) return
   if (voiceMode.value) {
     exitVoiceMode()
   } else {
@@ -361,9 +402,124 @@ function onVoiceButtonClick(): void {
   }
 }
 
+/** ── VAD 模式：常驻监听（说话开始 → 打断当前回复 + 收集 PCM；静音 0.8s → STT 发送 → 循环） ── */
+async function toggleVad(): Promise<void> {
+  if (vadActive.value) {
+    stopVad()
+    return
+  }
+  // 按住说话模式开着 → 先退出（避免麦克风冲突）
+  if (voiceMode.value) exitVoiceMode()
+  if (recording.value) void stopRecording()
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    vadActive.value = true
+    vadState.value = 'listening'
+    vadPcmChunks = []
+    vadAudioContext = new AudioContext({ sampleRate: 16000 })
+    vadSourceNode = vadAudioContext.createMediaStreamSource(stream)
+    vadAnalyser = vadAudioContext.createAnalyser()
+    vadAnalyser.fftSize = 1024
+    vadAnalyser.smoothingTimeConstant = 0.6
+    vadSourceNode.connect(vadAnalyser)
+    // ScriptProcessor 采集（speaking 期间收集 PCM）——必须 connect destination 才触发
+    vadProcessor = vadAudioContext.createScriptProcessor(4096, 1, 1)
+    vadProcessor.onaudioprocess = (e) => {
+      if (vadState.value === 'speaking') {
+        vadPcmChunks.push(new Float32Array(e.inputBuffer.getChannelData(0)))
+      }
+      e.outputBuffer.getChannelData(0).fill(0)
+    }
+    vadSourceNode.connect(vadProcessor)
+    vadProcessor.connect(vadAudioContext.destination)
+    // 波形显示：切到音波框（VAD 态）
+    voiceMode.value = false
+    nextTick(() => drawWaveIdle())
+    vadRaf = requestAnimationFrame(vadTick)
+  } catch (e) {
+    console.error('[voice] VAD 启动失败:', e)
+    window.dispatchEvent(
+      new CustomEvent('global-tip', {
+        detail: { type: 'error', code: 'voice:vad', message: (e as Error).message || '语音监听启动失败' },
+      }),
+    )
+  }
+}
+
+/** 音量检测循环（RMS 阈值状态机：listening ↔ speaking——静音 0.8s 切段发送） */
+function vadTick(): void {
+  if (!vadActive.value) return
+  const rms = computeRms(vadAnalyser)
+  if (vadState.value === 'listening') {
+    if (rms > VAD_SPEECH_THRESHOLD) {
+      vadState.value = 'speaking'
+      vadPcmChunks = []
+      // 说话打断（对齐 Hermes barge-in：onSpeech → interrupt——纯 abort 不挂 pending）
+      if (props.sessionId) {
+        window.api.agent.interruptNoPending(props.sessionId).catch(() => {})
+      }
+      console.log('[voice] VAD 说话开始 → 打断 + 录音')
+    }
+  } else {
+    // speaking——静音计时（持续 0.8s 判定说完）
+    if (rms <= VAD_SPEECH_THRESHOLD) {
+      vadSilenceTimer = vadSilenceTimer ?? setTimeout(() => void onVadUtteranceEnd(), VAD_SILENCE_MS)
+    } else {
+      if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
+    }
+  }
+  vadRaf = requestAnimationFrame(vadTick)
+}
+
+/** 说完一段（静音切段）→ STT 发送 → 回 listening 继续监听 */
+async function onVadUtteranceEnd(): Promise<void> {
+  if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
+  const chunks = vadPcmChunks
+  vadPcmChunks = []
+  vadState.value = 'listening'
+  await transcribeAndSend(chunks)
+  nextTick(() => drawWaveIdle())
+}
+
+/** RMS 音量（Float32 时域数据均方根） */
+function computeRms(node: AnalyserNode | null): number {
+  if (!node) return 0
+  const buf = new Float32Array(node.fftSize)
+  node.getFloatTimeDomainData(buf)
+  let sum = 0
+  for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]
+  return Math.sqrt(sum / buf.length)
+}
+
+/** 退出 VAD 模式（释放麦克风/处理器/rAF） */
+function stopVad(): void {
+  vadActive.value = false
+  vadState.value = 'listening'
+  cancelAnimationFrame(vadRaf)
+  vadRaf = 0
+  if (vadSilenceTimer) { clearTimeout(vadSilenceTimer); vadSilenceTimer = null }
+  try {
+    vadProcessor?.disconnect()
+    vadSourceNode?.disconnect()
+  } catch {
+    // 断开失败不影响
+  }
+  if (vadProcessor) vadProcessor.onaudioprocess = null
+  vadSourceNode?.mediaStream.getTracks().forEach((t) => t.stop())
+  vadProcessor = null
+  vadSourceNode = null
+  vadAnalyser = null
+  vadAudioContext?.close().catch(() => {})
+  vadAudioContext = null
+  vadPcmChunks = []
+  if (voiceMode.value === false) clearWaveCanvas()
+}
+
 /** 按住音波框 → 开始录音 */
 function onWaveboxDown(e: PointerEvent): void {
   if (e.button !== 0) return
+  // VAD 模式：不响应按住（常驻监听自动——避免冲突）
+  if (vadActive.value) return
   e.preventDefault()
   if (!recording.value) void startRecording()
 }
@@ -437,6 +593,12 @@ async function stopRecording(): Promise<void> {
   pcmChunks = []
   pcmProcessor = null
   pcmSourceNode = null
+  // 转写并发送（按住说话共用——发送后停留武装态由调用方控制）
+  await transcribeAndSend(chunks)
+}
+
+/** PCM 转写 + 发送（按住说话 / VAD 说完共用——提示统一） */
+async function transcribeAndSend(chunks: Float32Array[]): Promise<void> {
   try {
     const samples = concatPcmTo16k(chunks)
     if (samples.length === 0) {
@@ -451,7 +613,6 @@ async function stopRecording(): Promise<void> {
     console.log(`[voice] 录音 ${(samples.length / 16000).toFixed(1)}s → STT`)
     const { text } = await window.api.voice.sttTranscribe(samples)
     const trimmed = text.trim()
-    // 录制结束不退出录音模式：停留在音波框（武装态），用户手动点击按钮切回文字输入
     if (trimmed) {
       emit('send', trimmed)
     } else {
@@ -649,6 +810,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeyDown, true)
   window.removeEventListener('keyup', onGlobalKeyUp, true)
   window.removeEventListener('shortcut-record-changed', reloadShortcut)
+  stopVad()
   exitVoiceMode()
 })
 
@@ -751,6 +913,41 @@ defineExpose({ focus })
 }
 
 /* ── 语音输入按钮（按住说话） ── */
+
+/* VAD 模式开关（方案 B：独立按钮——低调——active 态 accent 描边） */
+.chat-input__vad-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tk-secondary-text, rgba(60, 60, 67, 0.6));
+  cursor: pointer;
+  transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.chat-input__vad-toggle--active {
+  color: var(--tk-accent);
+  background: rgba(0, 122, 255, 0.08);
+  border: 1px solid var(--tk-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chat-input__vad-toggle:hover:not(.chat-input__vad-toggle--active) {
+    background: rgba(120, 120, 128, 0.08);
+  }
+}
+
+/* VAD 模式音波框（常驻监听态——accent 描边） */
+.chat-input__wavebox--vad {
+  border-color: var(--tk-accent) !important;
+}
 
 .chat-input__voice {
   display: flex;
