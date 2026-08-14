@@ -12,7 +12,9 @@ import { BrowserWindow, app} from 'electron'
 
 // ── 常量 ──
 
-const UPDATE_FEED_URL = 'https://update.tinker-ai.com/releases/'
+/** 更新源：GitHub Releases（wuxinzhe/tinkerdesk——latest.yml + 安装包 + blockmap 附件） */
+const UPDATE_OWNER = 'wuxinzhe'
+const UPDATE_REPO = 'tinkerdesk'
 
 // ── 日志 ──
 
@@ -31,8 +33,10 @@ function send(channel: string, data?: unknown) {
 
 export function initUpdater(): void {
   autoUpdater.setFeedURL({
-    provider: 'generic',
-    url: UPDATE_FEED_URL
+    provider: 'github',
+    owner: UPDATE_OWNER,
+    repo: UPDATE_REPO,
+    private: false,
   })
 
   autoUpdater.autoDownload = true
