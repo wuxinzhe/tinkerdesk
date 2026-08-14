@@ -1,7 +1,7 @@
 /**
- * core/llm/operations/summary-operation.ts — 摘要（压缩）Operation
+ * core/llm/operations/summary-operation.ts — Summary (compaction) Operation
  *
- * SummaryOperation：
+ * SummaryOperation:
  * - scene = summary
  * - buildInput：原样返回（压缩摘要输入已由 CompactionService 组装）
  * - handle：文本即 SUCCESS

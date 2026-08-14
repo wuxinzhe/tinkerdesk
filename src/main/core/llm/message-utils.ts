@@ -1,15 +1,16 @@
 /**
- * message-utils.ts — LLM 上下文完整性保障（单一职责：组装后防御性修复）
+ * message-utils.ts — LLM context integrity guarantees (single duty:
+ * defensive repair after assembly)
  *
- * 两条防线（repair_message_sequence + sanitize_api_messages——
- * 均为模块级函数——无状态纯函数——不建类）：
+ * Two defense lines (repair_message_sequence + sanitize_api_messages —
+ * both module-level pure functions, no classes):
  *
- * ① repairMessageSequence —— 上下文加载后（历史形态修复）——调用点：
- *    conversation.run / generateTitle（loadContextMessages 后）
- * ② sanitizeApiMessages —— 每次 LLM 调用发送前（stub/配对/去重兜底）——
- *    调用点：llm-router（buildInput 后——chat/标题/压缩所有场景共用）
+ * ① repairMessageSequence — after context load (history-shape repair) — called from:
+ *    conversation.run / generateTitle (after loadContextMessages)
+ * ② sanitizeApiMessages — before every LLM call (stub/pairing/dedup fallback) —
+ *    called from: llm-router (after buildInput — shared by chat/title/compaction)
  *
- * 严格 role 校验的 provider（DeepSeek/Kimi/opencode）会拒绝：
+ * Providers with strict role validation (DeepSeek/Kimi/opencode) reject:
  *   - assistant(tool_calls) 紧跟另一个 assistant 而没有 tool 结果 → HTTP 400
  *     "An assistant message with 'tool_calls' must be followed by tool messages…"
  *   - 游离 tool 消息（tool_call_id 无前置 assistant 配对）

@@ -1,10 +1,10 @@
 import type { LlmOperation } from './types'
 
 /**
- * llm-operation-manager.ts — LLM Operation 管理器
+ * llm-operation-manager.ts — LLM operation manager
  *
- * LlmOperationManager：注入所有 LlmOperation 实现，
- * 按 scene 索引。支持运行时查询。
+ * LlmOperationManager: injects all LlmOperation implementations,
+ * indexed by scene. Supports runtime lookup.
  */
 
 export class LlmOperationManager {

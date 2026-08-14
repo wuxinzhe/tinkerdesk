@@ -1,15 +1,18 @@
 /**
- * usage-recorder.ts — LLM usage 统计记录器（异步落库——不影响主链路）
+ * usage-recorder.ts — LLM usage stats recorder (async persistence — never
+ * blocks the main path)
  *
- * 架构：文件 append 缓冲（usage-pending.log）= 队列
- *   - 请求完成 → append 一行 JSON（<1ms——主链路只做追加，不碰 DB）
- *   - 定时器（5s）或行数满（50）→ 批量 INSERT（单事务）→ 截断文件
- *   - before-quit → 同步 flush（正常关闭不留尾巴）
- *   - 启动 → 残留 log 兜底入库（上次崩溃的恢复）
+ * Architecture: file append buffer (usage-pending.log) as queue
+ *   - request done → append one JSON line (<1ms — main path only appends, no DB)
+ *   - timer (5s) or line count (50) → batch INSERT (single transaction) → truncate file
+ *   - before-quit → synchronous flush (no tail left on clean exit)
+ *   - startup → leftover log replayed into DB (crash recovery)
  *
- * 顺序保证：append 顺序 = 读取顺序（FIFO）——批量事务内顺序保持
- * 幂等：request_id UNIQUE + INSERT OR IGNORE——崩溃窗口（入库后截断前）重启兜底不会重复计数
- * 崩溃窗口：log 已落盘（页缓存）——最多丢最后几条（未 fsync 尾部——统计场景可接受）
+ * Ordering: append order = read order (FIFO) — preserved inside the batch transaction.
+ * Idempotency: request_id UNIQUE + INSERT OR IGNORE — crash-window replay on
+ * restart (rows inserted before truncation) never double-counts.
+ * Crash window: the log is on disk (page cache) — at most the last few lines
+ * (unsynced tail) are lost — acceptable for stats.
  */
 import { appendFileSync, existsSync, readFileSync, truncateSync } from 'fs'
 import { join } from 'path'

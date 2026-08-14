@@ -16,9 +16,9 @@ import {
 import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, ToolCall } from '../types'
 
 /**
- * openai-client.ts — OpenAI 兼容客户端
+ * openai-client.ts — OpenAI-compatible client
  *
- * OpenAiLlmClient：apiMode='openai'。
+ * OpenAIClient: apiMode='openai'.
  * SDK 异常统一捕获并转换为 LlmResponse error 格式。
  */
 export class OpenAIClient implements LlmClient {

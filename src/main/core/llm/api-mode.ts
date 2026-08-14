@@ -1,8 +1,9 @@
 /**
  * api-mode.ts — API 模式工具函数
  *
- * ApiMode：决定客户端使用哪套请求体格式和响应解析逻辑。
- * 类型定义集中在 types.ts，本文件只提供转换/路径工具。
+ * ApiMode: decides which request-body format and response-parsing logic
+ * a client uses. Type definitions live in types.ts; this file only
+ * provides conversion/path helpers.
  */
 import type { ApiMode } from './types'
 

@@ -1,10 +1,10 @@
 /**
  * types.ts — LLM 模块统一类型定义
  *
- * 集中存放 llm 包下所有类型（接口/枚举/回调）+ 场景常量，
- * 实现文件只从本文件 import。
- * core/llm 包的 ApiMessage / ApiMode / ModelConfig /
- * LlmResponse / LlmChunk / OperationDecision / ILlmClient / ILlmOperation。
+ * Central home for all llm-package types (interfaces/enums/callbacks) +
+ * scene constants; implementation files import only from this file.
+ * llm package types: ApiMessage / ApiMode / ModelConfig /
+ * LlmResponse / LlmChunk / OperationDecision / ILlmClient / ILlmOperation.
  */
 import type { ToolSchema } from '../tool/tool-schema'
 

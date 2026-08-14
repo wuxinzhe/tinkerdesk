@@ -1,8 +1,8 @@
 /**
- * llm-router.ts — LLM 路由：按场景分发到 Operation + 多模型回退
+ * llm-router.ts — LLM routing: dispatch by scene to an Operation + multi-model fallback
  *
- * - LlmRouterOptions 装载全部调用参数（scene/messages/tools/modelConfigs 数据）
- * - 模型回退：按 modelConfigs 顺序逐个尝试，Operation 判决决定是否回退
+ * - LlmRouterOptions carries all call params (scene/messages/tools/modelConfigs data)
+ * - Model fallback: tries modelConfigs in order; Operation verdict decides fallback
  */
 import type { LlmClientManager } from './llm-client-manager'
 import type { LlmOperationManager } from './llm-operation-manager'
