@@ -100,7 +100,7 @@ export class PluginController {
   /** 安装插件：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
   private async install(payload: { path: string }): Promise<ApiResult<PluginInfo>> {
     try {
-      const info = this.pluginManager.installFromPath(payload?.path ?? '')
+      const info = await this.pluginManager.installFromPath(payload?.path ?? '')
       return ok(info)
     } catch (e) {
       return fail((e as Error).message)

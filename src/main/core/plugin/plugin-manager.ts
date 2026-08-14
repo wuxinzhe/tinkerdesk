@@ -16,6 +16,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, rename
 import { join } from 'path'
 import { createHash } from 'crypto'
 import { execFileSync } from 'child_process'
+import { execFile } from 'child_process'
 import { Worker } from 'worker_threads'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
@@ -479,8 +480,55 @@ export class PluginManager {
     )
   }
 
+  /**
+   * 自动安装插件 npm 依赖（插件 package.json 的 dependencies——Node.js 生态）。
+   * 仅当：插件有 package.json 且声明了 dependencies 且未自带 node_modules。
+   * 执行：优先用打包的 npm-cli（Electron node 执行——用户无需装 Node.js）；
+   * 回退系统 npm。失败抛错（插件不加载——缺依赖跑不起来）。
+   */
+  private async installNpmDeps(pluginDir: string): Promise<void> {
+    const pkgFile = join(pluginDir, 'package.json')
+    if (!existsSync(pkgFile)) return
+    let pkg: { dependencies?: Record<string, string> } | null = null
+    try {
+      pkg = JSON.parse(readFileSync(pkgFile, 'utf-8')) as { dependencies?: Record<string, string> }
+    } catch {
+      return // package.json 损坏——不阻塞安装（依赖缺失由插件自身报错）
+    }
+    const deps = pkg?.dependencies
+    if (!deps || Object.keys(deps).length === 0) return
+    if (existsSync(join(pluginDir, 'node_modules'))) return // 自带依赖——跳过
+
+    console.log(`[plugin] 安装 npm 依赖 ${Object.keys(deps).join(', ')} → ${pluginDir}`)
+    const npmCli = this.resolveNpmCli()
+    const args = ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]
+    await new Promise<void>((resolve, reject) => {
+      // 用 Electron 的 node 执行 npm-cli（打包的 npm）——用户无需安装 Node.js
+      execFile(process.execPath, [npmCli, ...args], { timeout: 300_000 }, (err) => {
+        if (err) {
+          reject(new Error(`npm 依赖安装失败（${(err as Error).message}）——插件未加载`))
+          return
+        }
+        resolve()
+      })
+    })
+    console.log(`[plugin] npm 依赖安装完成 ${pluginDir}`)
+  }
+
+  /** 解析 npm-cli 路径：打包版（resources/npm）→ 项目 node_modules → 系统 npm */
+  private resolveNpmCli(): string {
+    // 生产：electron-builder extraResources 打包的 npm（asar 外——自包含）
+    const bundled = join(process.resourcesPath ?? '', 'npm', 'bin', 'npm-cli.js')
+    if (existsSync(bundled)) return bundled
+    // 开发：项目依赖里的 npm（npm install npm 已装）
+    const local = join(app.getAppPath(), 'node_modules', 'npm', 'bin', 'npm-cli.js')
+    if (existsSync(local)) return local
+    // 回退：系统 npm（npm 命令——Windows 下 npm.cmd）
+    return 'npm'
+  }
+
   /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
-  installPlugin(srcDir: string): PluginInfo {
+  async installPlugin(srcDir: string): Promise<PluginInfo> {
     // 源目录必须含 manifest.json
     const manifestFile = join(srcDir, 'manifest.json')
     if (!existsSync(manifestFile)) {
@@ -506,6 +554,8 @@ export class PluginManager {
       rmSync(destDir, { recursive: true, force: true })
     }
     cpSync(srcDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
+    // 依赖安装：插件 package.json 声明了 npm 依赖且未自带 node_modules → 自动 npm install
+    await this.installNpmDeps(destDir)
     // 加载（含契约校验）
     this.loadPlugin(destDir)
     const record = this.registry.get(manifest.id)
@@ -529,7 +579,7 @@ export class PluginManager {
    * 从路径安装插件（目录或 .zip）：自动检测 → 解压 → 定位 manifest → installPlugin。
    * 供 UI 安装与 Agent 工具（plugin_install）共用。
    */
-  installFromPath(src: string): PluginInfo {
+  installFromPath(src: string): Promise<PluginInfo> {
     if (!src || !existsSync(src)) {
       throw new Error('插件包路径不存在')
     }
