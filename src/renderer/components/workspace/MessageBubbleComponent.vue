@@ -274,8 +274,9 @@ onBeforeUnmount(() => {
 
 function formatTime(ts: number | string | undefined): string {
   if (!ts) return ''
-  // 后端 createdAt 是 'YYYY-MM-DD HH:MM:SS' 字符串——转 Date（空格 → T 兼容）；本地合成是 number
-  const date = typeof ts === 'string' ? new Date(ts.replace(' ', 'T')) : new Date(ts)
+  // 后端 createdAt 是 'YYYY-MM-DD HH:MM:SS' 字符串——【UTC 存储】——必须标记 Z 再转本地
+  // （无 Z 时 JS 按本地时区解析——UTC+8 会少 8 小时）；本地合成是 number（时间戳——直接 new Date 转本地）
+  const date = typeof ts === 'string' ? new Date(ts.replace(' ', 'T') + 'Z') : new Date(ts)
   if (Number.isNaN(date.getTime())) return ''
   const now = new Date()
   const isToday = date.toDateString() === now.toDateString()
