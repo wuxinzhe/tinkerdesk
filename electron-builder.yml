@@ -13,6 +13,15 @@ extraResources:
   - from: resources/npm
     to: npm
     filter: ["**/*"]
+  # 应用资源（工具 schema 模板 / 提示词模板 / 技能分类——getResourcesDir 读取）
+  - from: resources/tool-schemas
+    to: tool-schemas
+    filter: ["**/*"]
+  - from: resources/prompts
+    to: prompts
+    filter: ["**/*"]
+  - from: resources/skill-categories.json
+    to: skill-categories.json
 # 构建前生成 resources/npm 由 package.json 的 dist 脚本负责（beforePack 只接受函数——yml 不支持脚本路径）
 npmRebuild: false
 win:
