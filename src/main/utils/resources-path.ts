@@ -14,11 +14,13 @@ import {app} from 'electron'
 /** 资源根目录（src/main/resources 或打包后 resources） */
 export function getResourcesDir(): string {
   const candidates = [
-    // 1. 打包后：app 目录下 resources（electron-builder 复制）
-    join(app.getAppPath(), 'resources'),
+    // 1. 打包后：process.resourcesPath = 安装目录/resources（electron-builder extraResources 落点——
+    //    含 npm / tool-schemas / prompts——不要用 app.getAppPath()——它返回 resources 本身）
+    join(process.resourcesPath, '.'),
     // 2. dev：项目根 src/main/resources
     join(process.cwd(), 'src', 'main', 'resources'),
-    // 3. 兜底：out/main 上溯两级的 resources（= 项目根 resources）
+    // 3. 兜底：app 目录下 resources / out/main 上溯两级的 resources
+    join(app.getAppPath(), 'resources'),
     join(__dirname, '..', '..', 'resources'),
   ]
   for (const c of candidates) {

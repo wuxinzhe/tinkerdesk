@@ -85,6 +85,7 @@ function createWindow() {
     /* 最小宽度 768（断点下限——低于此手机布局不再出现；minHeight 720 保持） */
     minWidth: 768,
     minHeight:720,
+    icon: resolveResource('icon.png'),
     frame: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
