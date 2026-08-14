@@ -1,37 +1,40 @@
 # TinkerDesk 插件开发指南（协议 v1）
 
-> 本文档是插件开发者的唯一权威规范。协议实现位于本目录（`src/main/core/plugin/`）：
-> - `system-interfaces.ts` — 系统开放接口定义（应用能力清单，插件声明实现）
-> - `plugin-manager.ts` — 插件管理器（扫描/加载/自检/注册/启停/配置）
-> - `types.ts` — 协议类型（PluginManifest / PluginContext / PluginApi 等）
+> 本文档是插件开发者的唯一权威规范（整合自 PLUGIN_DEVELOPMENT.md 与 plugin-provider-architecture.md）。
+> 协议实现位于 `src/main/core/plugin/`：`system-interfaces.ts`（系统开放接口）、`plugin-manager.ts`（插件管理器）、`types.ts`（协议类型）。
 >
 > 参考实现：
-> - 示例插件 `plugins-examples/example-plugin/`（最小完整实现）
-> - 语音插件 `tinkerdesk-plugin-speech-sherpa`（STT + TTS + 模型管理）
+> - 语音插件 `tinkerdesk-plugin-speech-sherpa`（STT + TTS + 资源管理）
 > - 克隆插件 `tinkerdesk-plugin-speech-omni-voice`（外部进程调用 + 仿声配置）
+> - TTS 插件 `tinkerdesk-plugin-speech-index-tts`（IndexTTS-2.5 音色克隆）
 
 ---
 
 ## 1. 核心概念
 
-插件是**应用外独立分发的代码包**，不进应用安装包：
+插件是**应用外独立分发的代码包**（JS 代码 + manifest），不进应用安装包。插件跑在应用主进程的 Node 环境里（CommonJS require），只提供**能力**，不负责 UI 流程（录音、聊天、设置页等应用固有功能由应用实现）。
 
 ```
 插件目录（%APPDATA%/tinkerdesk/plugins/<plugin-id>/）
 ├── manifest.json      ← 元数据（必填）
 ├── index.js           ← 入口（CommonJS，main 进程加载）
-├── guide.md           ← 安装引导文档（推荐，Agent 自动安装时读取，见 §10）
+├── package.json       ← 可选：npm 依赖声明（安装时自动 install）
+├── install.md         ← 可选：复杂安装步骤（Agent 执行——见 §9）
+├── guide.md           ← 安装引导文档（推荐，Agent 自动安装时读取）
 ├── lib/               ← 插件自己的模块
 ├── scripts/           ← 插件自己的脚本（如调用外部引擎）
-├── node_modules/      ← 自带依赖（分发时包含）
-├── models/            ← 模型文件（应用引导下载，可不在包内）
-└── config.json        ← 应用托管：{ enabled, config }（勿手改，应用写入）
+├── node_modules/      ← npm 依赖（自动安装 或 分发自带）
+├── models/            ← 资源文件（assetDeps 下载，可不在包内）
+└── config.json        ← 应用托管：{ enabled, config }（勿手改）
 ```
 
-**职责边界**：
-- 插件只提供**能力**（识别、合成、工具…），不负责 UI 流程
-- 录音、聊天、设置页等**应用固有功能**由应用实现
-- 插件通过声明 `systemInterfaces` 注册为某能力的 provider，由系统设置页选择绑定
+**依赖与资源三分层**（插件自包含原则）：
+
+| 层 | 声明位置 | 安装方式 | 用途 |
+|:--|:--|:--|:--|
+| npm 依赖 | 插件 package.json `dependencies` | 安装时自动 `npm install --prefix 插件目录` | Node.js 生态的 JS 库 |
+| 资源文件 | manifest `assetDeps` | 设置页引导 URL 直链下载 | 模型 / 二进制 / 数据文件 |
+| 外部系统 | `install.md` | Agent 安装（读步骤并执行命令） | git clone / 模型下载 / 环境配置 / 多步流程 |
 
 ---
 
@@ -52,7 +55,7 @@
   ],
   "permissions": ["mic", "audio-output"],
   "description": "一句话描述",
-  "modelDeps": [
+  "assetDeps": [
     {
       "name": "STT 模型（Zipformer 中文 int8）",
       "dest": "models/stt",
@@ -74,7 +77,7 @@
 | `capabilities` | 否 | 能力标签（设置页展示，如 `["stt","tts"]`） |
 | `systemInterfaces` | 否 | **声明的系统开放接口**（见 §4）——声明即成为该接口 provider 候选 |
 | `permissions` | 否 | 权限声明（mic/audio-output/…） |
-| `modelDeps` | 否 | 模型依赖（设置页展示 + 引导下载 + 下载进度） |
+| `assetDeps` | 否 | 资源依赖（设置页展示 + 引导下载 + 下载进度）——模型/二进制/数据文件通用 |
 
 ---
 
@@ -94,7 +97,6 @@ module.exports = {
     return {
       check() {           // ← 强制实现！启用前自检
         const checks = []
-        // ...
         return { ok: checks.every(c => c.ok), checks }
       },
       start() {},         // 可选：启用时
@@ -123,7 +125,7 @@ module.exports = {
 
 | 成员 | 强制 | 说明 |
 |:--|:--|:--|
-| `check()` | ✅ | 自检：返回 `{ ok, checks: [{name, ok, hint?, action?}] }`。`action: 'download-models' \| 'open-config'` 引导 UI 提供对应按钮。**不实现 = 插件加载失败** |
+| `check()` | ✅ | 自检：返回 `{ ok, checks: [{name, ok, hint?, action?}] }`。`action: 'download-assets' \| 'open-config'` 引导 UI 提供对应按钮。**不实现 = 插件加载失败** |
 | `start()` | 否 | 启用时调用（注册后） |
 | `stop()` | 否 | 停用时调用 |
 | `dispose()` | 否 | 应用退出时调用 |
@@ -134,12 +136,14 @@ module.exports = {
 
 ## 4. 系统开放接口（provider 机制）
 
-应用定义能力接口（`system-interfaces.ts`），插件声明实现即成为 provider：
+应用定义能力接口（`system-interfaces.ts`），插件声明实现即成为 provider。**一个插件可同时实现多个接口；同一接口可有多个 provider（用户多选一）**。
 
 ```ts
-// 当前开放接口（新增 = 在 system-interfaces.ts 追加一行 + 插件声明）
+// 当前开放接口（voice / tool / web 三系——新增 = system-interfaces.ts 追加一行 + 插件声明）
 'voice.stt'   → 必须注册频道 stt:transcribe    // 语音转文本（应用录音，插件识别）
 'voice.tts'   → 必须注册频道 tts:speak         // 文本转语音（返回 audio data URL）
+'tool.tts'    → 必须注册频道 tts:speak_file    // TTS 输出到文件（{ text, outputPath } → { filePath }）
+'tool.stt'    → 必须注册频道 stt:transcribe_file // 音频文件转文本（{ filePath } → { text }）
 'web.search'  → 必须注册频道 search:query      // 网页搜索（{ query, limit } → { results: [{title,url,description}] }）
 'web.extract' → 必须注册频道 extract:fetch     // 网页抓取（{ url, limit? } → { content, title? }）
 ```
@@ -150,11 +154,12 @@ module.exports = {
 3. 启用（自检通过）→ PluginManager 注册到该接口的 **provider 清单**
 4. 绑定入口按接口维度：
    - voice.* → 系统设置 → 语音设置选择激活
+   - tool.* → 工具管理页（tool.tts / tool.stt）→ L3 provider 设置页选择激活
    - web.* → 工具管理页（web_search / web_extract 带设置按钮）→ L3 provider 设置页选择激活
-     （未选插件 = 内置兜底；插件失败可自动回退内置——web-provider-config.json 的 fallback 开关）
-5. 一个插件可同时实现多个接口；同一接口可有多个 provider（多选一）
+     （未选插件 = 内置兜底；插件失败可自动回退内置）
+5. **内置实现**（如 Edge TTS、内置搜索源）以「内置 provider」身份预置进注册表（`registerBuiltinPlugin`），与插件 provider 并列——用户可切换，插件失败可回退内置
 
-**channel 约定**：插件注册的频道命名自由，但系统接口的 requiredChannel 是**固定契约**（如 `stt:transcribe`），调用经 PluginManager 转发：`voice:stt:transcribe` → 当前绑定的 provider 的 `stt:transcribe`。
+**channel 约定**：插件注册的频道命名自由，但系统接口的 requiredChannel 是**固定契约**（如 `stt:transcribe`），调用经 PluginManager 转发。
 
 ---
 
@@ -197,31 +202,31 @@ getConfigSchema() {
 ```js
 check() {
   const cfg = ctx.getConfig()
-  const ready = modelsReady(ctx.configDir)
+  const ready = assetsReady(ctx.configDir)
   return {
     ok: ready && !!cfg.apiKey,
     checks: [
-      { name: '模型', ok: ready, hint: '模型未下载（约 126MB）', action: 'download-models' },
+      { name: '资源', ok: ready, hint: '资源未下载（约 126MB）', action: 'download-assets' },
       { name: 'API Key', ok: !!cfg.apiKey, hint: '缺少 API Key', action: 'open-config' },
     ],
   }
 }
 ```
 
-- `action: 'download-models'` → UI 提供"下载模型"按钮（调 `models:download` 频道，见 §6.1）
+- `action: 'download-assets'` → UI 提供"下载资源"按钮（调 `assets:download` 频道，见 §6.1）
 - `action: 'open-config'` → UI 提供"去配置"按钮（打开配置表单）
 - 自检通过后启用会**自动完成注册**；配置页"保存配置"后会自动重跑自检
 
-### 6.1 模型管理（约定频道）
+### 6.1 资源管理（约定频道）
 
-有模型依赖的插件建议实现（manifest 声明 `modelDeps`）：
+有资源依赖的插件建议实现（manifest 声明 `assetDeps`）：
 
 | 频道 | 说明 |
 |:--|:--|
-| `models:status` | → `{ kind: boolean, ..., allReady: boolean }`（kind 与 modelDeps.dest 尾部一致） |
-| `models:download` | 下载缺失模型；下载期间 emit `models:progress` 事件 |
+| `assets:status` | → `{ kind: boolean, ..., allReady: boolean }`（kind 与 assetDeps.dest 尾部一致） |
+| `assets:download` | 下载缺失资源；下载期间 emit `assets:progress` 事件 |
 
-进度事件：`ctx.emit('models:progress', { kind, phase: 'download'|'extract'|'done', percent })`
+进度事件：`ctx.emit('assets:progress', { kind, phase: 'download'|'extract'|'done', percent })`
 
 ---
 
@@ -240,14 +245,54 @@ onPluginEvent(({ pluginId, event, data }) => { ... })
 
 ## 8. 分发与安装
 
-1. 插件包 = 目录（含 node_modules 自带依赖）
-2. 分发：zip（顶层目录 = 插件 id）
-3. 用户安装：解压到 `%APPDATA%/tinkerdesk/plugins/<id>/` → 重启应用
-4. 应用启动：扫描 → manifest 校验 → 加载 → 契约校验 → 读 config.json → `enabled=true` 则自检 → 通过自动注册
+### 8.1 安装流程（v1.0）
+
+```
+用户选择 zip 或目录 → 校验（manifest/哈希）→ 复制到 plugins/<id> →
+  ① 检测 install.md 存在？
+     是 → Agent 安装（读 install.md 执行依赖/环境命令——见 §9）→ 完成后加载
+     否 → ② 检测 package.json 有 dependencies 且无 node_modules？
+          是 → 自动 npm install（--prefix 插件目录——装 Node.js 生态依赖）→ 加载
+          否 → 直接加载
+```
+
+- **npm 依赖**：插件自带 package.json 声明 dependencies——安装时自动安装到**插件自己的 node_modules**（独立——不同插件可共存不同版本——无冲突）。npm-cli 由应用打包（用户无需安装 Node.js）。
+- **资源文件**：manifest `assetDeps`——设置页引导下载（URL 直链 + 进度）。
+- **外部系统**：`install.md`——Agent 安装（任意命令）。
+
+### 8.2 分发格式
+
+- 插件包 = 目录（可含 package.json / lib / scripts / 自带 node_modules）
+- 分发：zip（顶层目录 = 插件 id）
+- 目录安装（本地开发调试）：源码直接可见——不校验哈希清单
+- zip 安装：require 前校验 `sha256sums.json` 哈希清单（防篡改——不匹配直接拒绝）
 
 ---
 
-## 9. 开发调试
+## 9. install.md（Agent 安装）
+
+复杂插件的安装步骤写成 `install.md`（插件根目录），安装时交给 Agent 执行：
+
+```markdown
+# 插件安装说明
+## 依赖安装（Agent 逐条执行 bash 命令块）
+```bash
+git clone https://github.com/xxx/engine.git lib/engine
+python -m venv .venv
+.venv/bin/pip install -r lib/engine/requirements.txt
+```
+## 验证（可选——exit 0 视为通过）
+```bash
+lib/engine/check.sh
+```
+```
+
+安装时：Agent 读 install.md → 逐条执行（工作目录=插件目录）→ 验证通过 → 加载注册。
+适合：拉 git / 下模型 / 环境配置 / 多步骤流程（npm 与 assetDeps 表达不了的场景）。
+
+---
+
+## 10. 开发调试
 
 ```bash
 # 1. 目录结构
@@ -258,7 +303,6 @@ node -e "const m=require('./index.js'); const api=m.init({pluginId:'x',configDir
 
 # 3. 装到应用（每次改代码后复制 + 重启 electron）
 cp -r index.js manifest.json lib %APPDATA%/tinkerdesk/plugins/<id>/
-# 重启 dev：powershell "Get-Process electron,node | Stop-Process -Force" 后 npm run dev:desktop
 
 # 4. 观察加载日志（main 控制台）
 # [plugin] 已加载 <id>@<version> (caps)
@@ -270,34 +314,34 @@ cp -r index.js manifest.json lib %APPDATA%/tinkerdesk/plugins/<id>/
 - main/preload 改动需重启 electron（renderer 是 HMR）
 - 插件代码改动只需复制到插件目录 + 重启（插件是运行时加载，不走构建）
 - 契约校验失败（声明接口未注册频道 / 未实现 check）→ 插件加载失败，日志可见原因
+- 插件 npm 依赖安装失败 → 插件不加载（缺依赖跑不起来——错误信息明确）
 
 ---
 
-## 10. 最小插件模板
+## 11. 最小插件模板
 
 ```js
 // manifest.json
 {
-  "id": "hello-plugin",
-  "name": "Hello 插件",
-  "version": "1.0.0",
+  "id": "example-plugin",
+  "name": "示例插件",
+  "version": "0.1.0",
   "apiVersion": 1,
   "entry": "index.js",
-  "capabilities": ["hello"]
+  "description": "最小完整实现"
 }
 
 // index.js
 module.exports = {
   init(ctx) {
-    ctx.registerIpc('hello', (payload) => ({ message: `你好, ${payload?.name ?? 'Tinker'}!` }))
+    ctx.registerIpc('hello', async (payload) => ({ reply: `你好，${payload?.name ?? '世界'}` }))
     return {
-      check: () => ({ ok: true, checks: [{ name: '就绪', ok: true }] }),
-      getConfigSchema: () => ({
-        type: 'object',
-        properties: {
-          greeting: { type: 'string', title: '问候语', default: '你好' },
-        },
-      }),
+      check() {
+        return { ok: true, checks: [{ name: '基础', ok: true }] }
+      },
+      getConfigSchema() {
+        return { type: 'object', properties: { name: { type: 'string', title: '名字' } } }
+      },
     }
   },
 }
@@ -305,46 +349,9 @@ module.exports = {
 
 ---
 
-## 11. 发布 checklist
+## 12. 安全
 
-- [ ] manifest 字段完整，id 与目录名一致，apiVersion = 1
-- [ ] 实现 `check()`（强制）；自检项 hint/action 齐全
-- [ ] 声明 systemInterfaces 的插件已注册 requiredChannel
-- [ ] modelDeps 的 url 可下载（断点续传支持）、解压后文件与 models:status 一致
-- [ ] 敏感配置用 `secret` 类型
-- [ ] node_modules 自带（分发 zip 包含）
-- [ ] README：安装方法、配置说明、依赖环境
-- [ ] 有外部依赖（Python/GPU/引擎）的插件必须带 `guide.md`（见 §10）
-
----
-
-## 10. 安装引导文档（guide.md）规范
-
-**目的**：让 Agent 或用户无需内置任何插件知识即可完成安装。**凡是需要前置环境（Python/GPU/外部引擎/系统组件）的插件，必须附带 `guide.md`**；纯代码零依赖的插件可选。
-
-**固定格式**（Agent 按此结构解析）：
-
-```markdown
-# <插件名> 安装引导
-
-## 前置依赖
-- 需要安装什么（如：OmniVoice 引擎、Python 3.10+、NVIDIA GPU）
-
-## 环境要求
-- 版本/硬件/驱动要求（如：torch CUDA 版、驱动 ≥ xxx）
-
-## 对接方式
-- 插件如何桥接外部能力（系统接口、配置项含义）
-
-## 安装步骤
-1. 安装前置依赖（给命令或下载地址）
-2. 模型/配置准备（如需）
-
-## 常见路径
-- 各平台默认安装位置（Agent 探测用）
-```
-
-**约定**：
-- Agent 安装流程（skill `tinkerdesk-plugin-install`）：`plugin_install` 装包 → 读插件目录 `guide.md` → 按"安装步骤"用 terminal 准备环境 → `plugin_configure` 自动探测配置 → `plugin_enable` 启用验证
-- 插件**不得**假设系统知道自己的依赖——一切写在 guide.md
-- 环境探测优先顺序：预设路径 → 环境变量（如 `OMNI_VENV_PYTHON`）→ 配置表单手动指定
+- 插件 = main 进程任意代码权限（v1 信任制：用户手动安装 = 主动信任）
+- zip 分发校验 sha256sums.json 哈希清单（防篡改）
+- install.md / npm install 执行前展示命令清单 + 用户确认（知情同意）
+- 插件目录独立（依赖/资源自包含——不污染主应用）
