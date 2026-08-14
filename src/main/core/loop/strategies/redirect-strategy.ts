@@ -1,8 +1,10 @@
 /**
  * strategies/redirect-strategy.ts — 重定向模式
  *
- * 新消息 → 挂起修正 + abort（只断 LLM 流——工具执行中不 abort——等安全边界）。
- * loop 被中断 → 取修正 → 注入（applyActiveTurnRedirect）→ 重建 abort → 继续循环重试。
+ * New message → suspend the correction + abort (only breaks the LLM stream —
+ * no abort during tool execution — waits for a safe boundary).
+ * Loop interrupted → take correction → inject (applyActiveTurnRedirect) →
+ * rebuild abort → continue the loop and retry.
  */
 import { BUSY_MODE_REDIRECT } from '../types'
 import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'

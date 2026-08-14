@@ -1,11 +1,12 @@
 /**
- * tool-call-executor.ts — 工具执行器（OO 化拆分 P3）
+ * tool-call-executor.ts — Tool executor (OO split P3)
  *
- * 单个工具调用的完整执行链内聚于此：
- * 循环防护 → 三层门检（灾难/授权/沙盒）→ 执行/挂起 → 循环防护 → 缓存失效。
- * 审批走 ApprovalManager（requestApproval/waitToolResult）。
+ * One tool call's full execution chain coheres here:
+ * loop guardrail → three-layer gate (catastrophic/authz/sandbox) → execute/suspend
+ * → loop guardrail → cache invalidation.
+ * Approvals go through ApprovalManager (requestApproval/waitToolResult).
  *
- * 生命周期 = 无状态（每轮 Conversation 持有同一实例或新建）。
+ * Lifecycle = stateless (each turn's Conversation holds the same instance or creates a new one).
  */
 import { SandboxDecision } from '../../service/sandbox-whitelist-service'
 import { eventRecorder } from '../../service/event-recorder'

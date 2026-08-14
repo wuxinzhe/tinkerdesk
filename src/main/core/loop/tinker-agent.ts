@@ -1,17 +1,19 @@
 /**
- * tinker-agent.ts — 线程模型 TinkerAgent（三级上下文版）
+ * tinker-agent.ts — Thread-model TinkerAgent (three-level context)
  *
- * 本地客户端用 JS 的 async/await 线程模型，状态保存在函数调用栈里。
- * 上下文管理：SessionContext → ConversationContext → ToolContext
- * 三级继承，所有配置/环境在对话开始前一次性加载，贯穿整个周期。
+ * The local client uses JS async/await as its thread model; state lives in
+ * the function call stack.
+ * Context management: SessionContext → ConversationContext → ToolContext
+ * three-level inheritance; all config/environment loads once before a
+ * conversation starts and spans its whole lifetime.
  *
- * 完整链路：
- *   构建 SessionContext（配置加载）→ 会话加载/创建 → startCycle（ConversationContext）
- *   → 上下文加载（摘要+历史+暂存）→ 提示词构建（system） → LLM 流式调用
- *   → 工具执行（ToolContext）→ 结果回填 → 循环 → 完成 → 落库 → 压缩检查
+ * Full pipeline:
+ *   build SessionContext (config load) → session load/create → startCycle (ConversationContext)
+ *   → context load (summary+history+staging) → prompt build (system) → LLM streaming call
+ *   → tool execution (ToolContext) → result backfill → loop → done → persist → compaction check
  *
- * 对外事件：
- *   chat          — 用户消息入口（onUserMessage）
+ * Outbound events:
+ *   chat          — user message entry (onUserMessage)
  *   onToolResult  — 工具结果回调（外部工具异步返回时挂起恢复）
  *   onApproval    — 审批响应回调（同意/拒绝）
  *   revoke        — 撤回消息

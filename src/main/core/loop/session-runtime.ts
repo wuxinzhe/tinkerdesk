@@ -1,12 +1,13 @@
 /**
- * session-runtime.ts — 会话级活跃状态容器（OO 化拆分）
+ * session-runtime.ts — Session-level active-state container (OO split)
  *
- * 一个会话的运行时状态内聚于此（TinkerAgent 瘦身：不再直接持有队列/中断控制）：
- * - 消息队列（串行处理）
- * - 中断控制（AbortController）
- * - 生命周期：interrupt / clear / dispose（幂等）
+ * One session's runtime state coheres here (TinkerAgent slimmed: no longer
+ * holds the queue/interrupt control directly):
+ * - message queue (serial processing)
+ * - interrupt control (AbortController)
+ * - lifecycle: interrupt / clear / dispose (idempotent)
  *
- * 生命周期 = 会话活跃期；dispose 后即被 Agent 聚合根丢弃。
+ * Lifecycle = session active period; after dispose the Agent aggregate root drops it.
  */
 import { MessageQueueStore } from '../../service/message-queue-store'
 import { eventRecorder } from '../../service/event-recorder'

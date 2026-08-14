@@ -1,13 +1,14 @@
 /**
- * conversation.ts — 对话轮次对象（OO 化拆分 P2/P3 + 响应分支策略化）
+ * conversation.ts — Conversation turn object (OO split P2/P3 + response-branch strategy)
  *
- * 一轮对话的完整状态与逻辑内聚于此：
- * - run()：纯调度（初始化 → while 循环 → 响应分发）
- * - handleXxx()：LLM 响应分支策略化（text / tool_calls / reasoning / truncated / empty / overflow / error）
- * - 工具执行委托 ToolCallExecutor；审批挂起委托 ApprovalManager
- * - 收尾（flush 落库 + 统计 + 事件 + 标题生成）；压缩（主动检查 + 溢出处理）
+ * The full state and logic of one turn coheres here:
+ * - run(): pure orchestration (init → while loop → response dispatch)
+ * - handleXxx(): LLM response branch strategy (text / tool_calls / reasoning / truncated / empty / overflow / error)
+ * - Tool execution delegated to ToolCallExecutor; approval suspension to ApprovalManager
+ * - Wrap-up (flush persistence + stats + events + title generation); compaction (proactive check + overflow handling)
  *
- * 生命周期 = 一轮（轮状态 = 实例字段）；run() 返回后对象即被丢弃。
+ * Lifecycle = one turn (turn state = instance fields); the object is
+ * discarded after run() returns.
  */
 import { MessageFactory } from '../../service/message-service'
 import { eventRecorder } from '../../service/event-recorder'

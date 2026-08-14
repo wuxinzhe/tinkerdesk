@@ -1,8 +1,8 @@
 /**
- * types.ts — TinkerAgent 统一类型定义
+ * types.ts — TinkerAgent unified type definitions
  *
- * 只放类型定义（接口），实现集中在 tinker-agent.ts。
- * ConversationEngine 相关接口（线程模型版）。
+ * Type definitions (interfaces) only; implementations live in tinker-agent.ts.
+ * ConversationEngine-related interfaces (thread-model version).
  */
 import type {LlmRouter} from '../llm/llm-router'
 import type {AgentActionType} from '../constants'

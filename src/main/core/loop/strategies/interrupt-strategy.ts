@@ -1,9 +1,12 @@
 /**
  * strategies/interrupt-strategy.ts — 打断模式
  *
- * 新消息 → 中断当前回合（LLM 流中立即 abort；工具执行中标记——工具跑完
- * 在安全边界退出）——run 退出后带回新消息 → tinker-agent 立即起新回合。
- * 退出前 flush 内存消息到 DB（否则新回合读历史时对话消息丢失）。
+ * New message → interrupt the current turn (immediate abort mid-LLM-stream;
+ * during tool execution mark it — the turn exits at a safe boundary after
+ * the tool finishes) — run returns with the new message → tinker-agent
+ * starts a fresh turn immediately.
+ * Flushes in-memory messages to DB before exiting (otherwise the new turn's
+ * history read would lose conversation messages).
  */
 import { BUSY_MODE_INTERRUPT } from '../types'
 import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'

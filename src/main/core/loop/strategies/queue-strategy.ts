@@ -1,8 +1,9 @@
 /**
  * strategies/queue-strategy.ts — 排队模式（现状行为封装——默认）
  *
- * 新消息 → 入队（现有 MessageQueueStore）——当前回合正常跑完——再消费。
- * loop 不主动 abort——退出即结束——无衔接。
+ * New message → enqueue (existing MessageQueueStore) — the current turn
+ * finishes normally — then the queue is consumed.
+ * The loop never aborts itself — exiting ends the turn — no handoff.
  */
 import { BUSY_MODE_QUEUE } from '../types'
 import type { BusyModeStrategy, BusyStrategyHost, BusyLoopHost } from '../types'
