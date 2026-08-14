@@ -1,5 +1,5 @@
 /**
- * strategies/queue-strategy.ts — 排队模式（现状行为封装——默认）
+ * strategies/queue-strategy.ts — Queue mode (default — wraps the existing behavior)
  *
  * New message → enqueue (existing MessageQueueStore) — the current turn
  * finishes normally — then the queue is consumed.

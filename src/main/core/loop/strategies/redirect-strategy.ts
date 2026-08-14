@@ -1,5 +1,5 @@
 /**
- * strategies/redirect-strategy.ts — 重定向模式
+ * strategies/redirect-strategy.ts — Redirect mode
  *
  * New message → suspend the correction + abort (only breaks the LLM stream —
  * no abort during tool execution — waits for a safe boundary).

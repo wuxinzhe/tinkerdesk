@@ -1,5 +1,5 @@
 /**
- * strategies/interrupt-strategy.ts — 打断模式
+ * strategies/interrupt-strategy.ts — Interrupt mode
  *
  * New message → interrupt the current turn (immediate abort mid-LLM-stream;
  * during tool execution mark it — the turn exits at a safe boundary after
