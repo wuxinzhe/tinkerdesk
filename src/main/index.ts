@@ -51,13 +51,23 @@ function pushFatalTip(message: string): void {
   }
 }
 
+// 防 EPIPE/写失败递归：console.error 本身也可能抛（stderr 管道断了）——
+// 包 try/catch 避免"打印错误又触发 fatal"死循环
+function safeError(...args: unknown[]): void {
+  try {
+    console.error(...args)
+  } catch {
+    // stderr 不可写（管道已断/句柄被关）——放弃打印——避免 fatal 递归
+  }
+}
+
 process.on('uncaughtException', (err) => {
-  console.error('[fatal] 未捕获异常:', err)
+  safeError('[fatal] 未捕获异常:', err)
   pushFatalTip('程序发生内部错误（未捕获异常），请查看日志后重试')
 })
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[fatal-reject] 未处理的 Promise 拒绝:', reason)
+  safeError('[fatal-reject] 未处理的 Promise 拒绝:', reason)
   pushFatalTip('程序发生内部错误（异步操作失败），请查看日志后重试')
 })
 
