@@ -150,7 +150,7 @@ const hasData = computed(() => Object.keys(stats.value).length > 0)
 
 function formatPercent(v: number | undefined): string {
   if (v === undefined || Number.isNaN(v)) return '—'
-  return `${Math.round(v * 100)}%`
+  return `${(v * 100).toFixed(2)}%`
 }
 
 function formatTokens(n: number | undefined): string {
