@@ -1,0 +1,22 @@
+# TinkerDesk 打包配置（electron-builder）
+appId: com.tinkerdesk.app
+productName: TinkerDesk
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+  - "!node_modules/.cache"
+extraResources:
+  # 打包 npm-cli（插件依赖安装用——asar 外——Electron node 可直接执行）
+  - from: resources/npm
+    to: npm
+    filter: ["**/*"]
+npmRebuild: false
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
