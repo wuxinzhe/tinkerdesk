@@ -13,8 +13,7 @@ extraResources:
   - from: resources/npm
     to: npm
     filter: ["**/*"]
-# 构建前生成 resources/npm（npm pack npm——bundled 自包含）
-beforePack: scripts/package-npm.js
+# 构建前生成 resources/npm 由 package.json 的 dist 脚本负责（beforePack 只接受函数——yml 不支持脚本路径）
 npmRebuild: false
 win:
   target:
