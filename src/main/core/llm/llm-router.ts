@@ -150,6 +150,8 @@ export class LlmRouter {
               cacheReadTokens: response.cacheReadTokens,
               cacheWriteTokens: response.cacheWriteTokens,
               latencyMs: Date.now() - startedAt,
+              // 最终文本（完整——对照流式拼接——判断重复在返回层还是累积层）
+              text: typeof response.text === 'string' ? response.text : '',
             },
           })
         }
