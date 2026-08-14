@@ -1,10 +1,11 @@
 /**
  * compaction-service.ts — 上下文压缩服务（Token-based）
  *
- * CompactionService（本地单用户版）：
- * - 触发条件：actualPromptTokens >= contextLimit × thresholdPercent（主动压缩检查）
- * - 压缩策略：从最旧对话开始，逐对话累计 token，保留尾部 tailRatio 不压缩
- * - 中间的旧对话消息 → 调用 LLM 汇总 → 摘要消息 → 归档旧消息
+ * CompactionService (local single-user):
+ * - trigger: actualPromptTokens >= contextLimit × thresholdPercent (proactive compaction check)
+ * - strategy: starting from the oldest conversation, accumulates tokens per
+ *   conversation, keeps the tail tailRatio uncompressed
+ * - older middle conversations → LLM summary → summary message → archive old messages
  * - LLM 摘要失败时使用 fallback 占位符，保证会话不会因压缩失败而永久死亡
  * - 冷却控制：失败后阶梯 TTL 暂停重试；无效/fallback 连续抑制
  */

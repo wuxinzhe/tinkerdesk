@@ -2,7 +2,8 @@ import { getDatabase } from '../repository/database'
 import type { DatabaseSync } from 'node:sqlite'
 
 /**
- * 应用级通用设置（快捷键/主题等全局键值配置）——持久化于 app_settings 表。
+ * App-level general settings (shortcuts/theme and other global key-value
+ * config) — persisted in the app_settings table.
  * 默认值：shortcut.record = 'ctrl+b'（Ctrl+B 按住录音）、theme = 'light'
  */
 

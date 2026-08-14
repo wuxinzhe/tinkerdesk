@@ -1,8 +1,8 @@
 /**
  * sandbox-whitelist-service.ts — 沙箱白名单服务层
  *
- * ISandboxWhitelistService + SandboxService.check（本地单用户版，去 userId）：
- * URL 白名单 + 路径白名单的列表/添加/删除 + 门检（check）。
+ * ISandboxWhitelistService + SandboxService.check (local single-user, no userId):
+ * URL whitelist + path whitelist list/add/delete + gate check (check).
  */
 import type { UserPathWhitelistEntity, UserUrlWhitelistEntity } from '../repository/types'
 import { UserPathWhitelistRepository } from '../repository/user-path-whitelist-repository'

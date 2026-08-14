@@ -1,8 +1,9 @@
 /**
  * tool-auth-service.ts — 工具授权服务层
  *
- * ToolAuthServiceImpl（本地单用户版）：
- * 匹配工具参数字符串中的危险命令模式，命中后返回 ASK 触发用户审批。
+ * ToolAuthServiceImpl (local single-user):
+ * matches dangerous command patterns in tool argument strings; on a hit
+ * returns ASK to trigger user approval.
  * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
  */
 import { AuthzDecision } from './types'

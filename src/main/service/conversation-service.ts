@@ -1,7 +1,7 @@
 /**
  * conversation-service.ts — 对话服务层
  *
- * IConversationService（本地单用户版）。
+ * IConversationService (local single-user).
  */
 import { randomUUID } from 'crypto'
 import { CONV_IN_PROGRESS } from '../core/loop/types'

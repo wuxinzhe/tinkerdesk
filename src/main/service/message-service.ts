@@ -1,9 +1,10 @@
 /**
  * message-service.ts — 消息服务层
  *
- * IMessageService（本地单用户版）：
- * - 两层存储：进行中消息暂存（内存）+ 完成后落库（SQLite）
- * - loadContextMessages：合并历史 + 当前暂存，供 LLM 上下文构建
+ * IMessageService (local single-user):
+ * - two-layer storage: in-progress messages staged (memory) + persisted on
+ *   completion (SQLite)
+ * - loadContextMessages: merges history + current staging for LLM context build
  * - 审批状态更新、对话删除、摘要保存
  */
 import { MessageRepository } from '../repository/message-repository'

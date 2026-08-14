@@ -1,8 +1,10 @@
 /**
  * computer-use-provider.ts — computer_use 工具的外部能力门面（provider + 插件化）
  *
- * computer_use 依赖外部 cua-driver（独立安装——PATH 或官方安装位置）。
- * 以「内置插件」形态注册（builtin-cua-driver）——与 tts/stt provider 架构统一：
+ * computer_use depends on external cua-driver (independently installed —
+ * PATH or the official install location).
+ * Registered as a built-in plugin (builtin-cua-driver) — unified with the
+ * tts/stt provider architecture:
  *   - 工具可用性 = provider 是否配置（插件声明 tool.computer_use 接口）
  *   - 插件自身可用性（cua-driver 是否安装）是插件系统自检的事——
  *     未安装/异常时执行抛错提示（CuaDriverUnavailableError），不拦工具注册

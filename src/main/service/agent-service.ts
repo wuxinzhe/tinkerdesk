@@ -1,9 +1,9 @@
 /**
  * agent-service.ts — Agent 配置服务层
  *
- * IAgentService / AgentService（本地单用户版，去 userId）：
- * listByUser / getAgentInfo / getDetail / create / update / delete。
- * DTO 定义集中在 ./types.ts。
+ * IAgentService / AgentService (local single-user, no userId):
+ * listByUser / getAgentInfo / getDetail / create / update / delete.
+ * DTO definitions centralized in ./types.ts.
  */
 import { AgentRepository } from '../repository/agent-repository'
 import type { AgentConfigRepository } from '../repository/agent-config-repository'

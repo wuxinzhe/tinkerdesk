@@ -1,8 +1,9 @@
 /**
  * prompt-service.ts — 提示词模块服务层
  *
- * UserPromptModuleService（本地单用户版，去 userId/User 前缀）：
- * 模块列表（含启用态过滤）、创建（自动排序）、更新、启用/停用、删除。
+ * UserPromptModuleService (local single-user, no userId/User prefix):
+ * module list (with enabled filter), create (auto-sorted), update,
+ * enable/disable, delete.
  */
 import { PromptModuleRepository } from '../repository/prompt-module-repository'
 import type { UserPromptModuleEntity } from '../repository/types'

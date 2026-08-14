@@ -1,8 +1,9 @@
 /**
  * scene-model-service.ts — 场景模型绑定服务层
  *
- * 多模型语义（v2）：
- * - 一个场景可绑定多个模型（主模型 is_main=1 + 备用 priority 顺序）
+ * Multi-model semantics (v2):
+ * - one scene can bind multiple models (main model is_main=1 + backups in
+ *   priority order)
  * - updateSceneModel = 设置主模型（不再替换整组）
  * - 解绑按 model_id（主对话场景至少保留 1 个由调用方/controller 校验）
  * - 获取顺序：主模型 → 备用（priority 升序）→ 场景无绑定 → 主对话场景主模型（resolveForScene）

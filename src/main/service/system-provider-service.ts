@@ -1,8 +1,8 @@
 /**
  * system-provider-service.ts — 系统供应商服务层
  *
- * IProviderService 的供应商管理部分（本地单用户版）：
- * 供应商列表/详情/CRUD。
+ * IProviderService's provider-management part (local single-user):
+ * provider list/detail/CRUD.
  */
 import { SystemProviderRepository } from '../repository/system-provider-repository'
 import type { SystemProviderEntity } from '../repository/types'

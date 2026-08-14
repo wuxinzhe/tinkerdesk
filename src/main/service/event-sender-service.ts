@@ -1,9 +1,10 @@
 /**
  * service/electron-event-sender.ts — Electron WebContents 事件发送器
  *
- * 实现 IEventSender（协议见 docs/event-protocol.md）：
- * 所有 main → renderer 事件统一走单通道 IPC_MESSAGE（'agent:message'），
- * 消息格式 { route, sessionId, data }——route = '{一级路由}:{二级type}' 单字段两级。
+ * Implements IEventSender (protocol in docs/event-protocol.md):
+ * all main → renderer events go through the single IPC_MESSAGE channel
+ * ('agent:message'), message shape { route, sessionId, data } —
+ * route = '{level1}:{level2-type}' single-field two levels.
  *
  * 一级路由 = 业务域（chat/session/action/tip/error）；客户端 split(':') 解析。
  * 未来接云 Agent：实现同一 IEventSender 接口（WebSocket 传输），route 语义不变。

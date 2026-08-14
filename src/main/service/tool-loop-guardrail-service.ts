@@ -1,8 +1,8 @@
 /**
  * tool-loop-guardrail-service.ts — 工具循环防护服务
  *
- * ToolLoopGuardrail（）：
- * - exact_failure：相同工具+相同参数连续失败 → warn/block
+ * ToolLoopGuardrail:
+ * - exact_failure: same tool + same args failing consecutively → warn/block
  * - same_tool_failure：同工具连续失败（不同参数）→ warn/halt
  * - no_progress：幂等工具返回相同结果 → warn/block
  * 全部阈值由 AgentConfig 驱动（per-agent），默认值

@@ -1,9 +1,9 @@
 /**
  * model-api-client.ts — 供应商模型列表拉取客户端
  *
- * OpenAiModelApiClient：
- * 调用 GET {baseUrl}/models，适用于 OpenAI、DeepSeek、OpenRouter 等
- * 所有兼容 OpenAI API 的供应商。
+ * OpenAiModelApiClient:
+ * calls GET {baseUrl}/models — works for OpenAI, DeepSeek, OpenRouter and any
+ * OpenAI-API-compatible provider.
  */
 import type { ModelInfoDTO } from './types'
 

@@ -1,9 +1,9 @@
 /**
  * session-service.ts — 会话服务层
  *
- * ISessionService（本地单用户版）：
- * create / listSessions / updateTitle / findById / toggleYolo / browseRich。
- * DTO 定义集中在 ./types.ts。
+ * ISessionService (local single-user):
+ * create / listSessions / updateTitle / findById / toggleYolo / browseRich.
+ * DTO definitions centralized in ./types.ts.
  */
 import { randomUUID } from 'crypto'
 import type { MessageRepository } from '../repository/message-repository'

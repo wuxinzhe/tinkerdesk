@@ -1,8 +1,8 @@
 /**
  * skill-category-service.ts — 技能分类服务层
  *
- * ISkillCategoryService（本地单用户版）：
- * 分类列表/详情/创建/更新/删除。
+ * ISkillCategoryService (local single-user):
+ * category list/detail/create/update/delete.
  */
 import { randomUUID } from 'crypto'
 import { SkillCategoryRepository } from '../repository/skill-category-repository'

@@ -1,9 +1,9 @@
 /**
  * memory-store.ts — 文件系统记忆存储
  *
- * MemoryStore（Redis → 文件系统 JSON）：
- * 本地客户端无 Redis，用 userData/memory/{profile}.json 持久化。
- * 原子写（tmp + rename）保证崩溃安全，等价 Redis Lua 的原子性。
+ * MemoryStore (Redis → file-system JSON):
+ * the local client has no Redis; persisted via userData/memory/{profile}.json.
+ * Atomic write (tmp + rename) guarantees crash safety, equivalent to Redis Lua atomicity.
  *
  * 数据格式：{ "entries": string[] }，按 profile 分区。
  * 操作语义版：

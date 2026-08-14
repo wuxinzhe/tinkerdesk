@@ -1,8 +1,8 @@
 /**
  * todo-service.ts — 待办事项服务
  *
- * TodoService（Redis → 文件系统 JSON）：
- * - write：全量替换 或 字段级合并（按 id）
+ * TodoService (Redis → file-system JSON):
+ * - write: full replace or field-level merge (by id)
  * - read：读取 session 的待办列表
  * - 持久化：userData/todo/{sessionId}.json（原子写）
  */

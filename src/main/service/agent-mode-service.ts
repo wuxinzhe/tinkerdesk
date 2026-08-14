@@ -1,10 +1,10 @@
 /**
  * service/agent-mode-service.ts — Agent Mode 服务层
  *
- * AgentModeService（本地单用户版）：
- * - list：全部已注册模式元数据
- * - listOptions：模式选项（前端下拉）
- * - get：按 id+version 查
+ * AgentModeService (local single-user):
+ * - list: all registered mode metadata
+ * - listOptions: mode options (renderer dropdown)
+ * - get: lookup by id+version
  * - checkAgentMode：检查当前 agent 的模式配置是否有效
  */
 import { AgentModeRegistry } from '../core/mode/agent-mode-registry'

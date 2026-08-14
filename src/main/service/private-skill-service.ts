@@ -1,8 +1,9 @@
 /**
  * private-skill-service.ts — 私有技能服务层
  *
- * IPrivateSkillService（本地单用户版，去 userId）：
- * 技能 CRUD（含软删/恢复）、技能文件、技能关联、过滤查询。
+ * IPrivateSkillService (local single-user, no userId):
+ * skill CRUD (incl. soft delete/restore), skill files, skill relations,
+ * filtered queries.
  */
 import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
 import { PrivateSkillRelatedRepository } from '../repository/private-skill-related-repository'

@@ -1,10 +1,10 @@
 /**
  * account-service.ts — 账号初始化服务（4 步向导版）
  *
- * AccountService（本地单用户版）：
- * - checkInitStatus：4 项判断
- *   ① 默认 Agent 存在（is_default=1）
- *   ② 默认 Agent 有完整 AgentConfig 配置行
+ * AccountService (local single-user):
+ * - checkInitStatus: 4 checks
+ *   ① default Agent exists (is_default=1)
+ *   ② default Agent has a full AgentConfig row
  *   ③ 至少一个含 API Key 的模型
  *   ④ 默认 Agent 绑定了主聊天场景模型
  * - initialize 拆 4 步（initStep1~4），每步对应一个表单保存接口

@@ -1,9 +1,10 @@
 /**
  * session-context-factory.ts — SessionContext 构建工厂
  *
- * ：
- * 对话启动前装载全部配置（AgentConfig + ClientEnv + YOLO + sender），
- * 产出一个完整的 SessionContext，作为 TinkerAgent 的唯一入口参数。
+ * SessionContextFactory:
+ * loads all config before a conversation starts (AgentConfig + ClientEnv +
+ * YOLO + sender) and produces a complete SessionContext — the single entry
+ * parameter for TinkerAgent.
  *
  * 本地客户端：
  * - profile 从会话表解析

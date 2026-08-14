@@ -1,9 +1,9 @@
 /**
  * event-recorder.ts — 事件埋点记录器（异步队列——不阻塞主链路）
  *
- * 架构（对齐 usage-recorder 的异步落库模式）：
- *   - record() 只入队（<1ms）——主链路不碰 DB
- *   - 定时器（200ms）或队列满（50 条）→ 批量 INSERT（单事务）→ 严格顺序
+ * Architecture (async-persistence pattern):
+ *   - record() only enqueues (<1ms) — the main path never touches DB
+ *   - timer (200ms) or queue full (50 entries) → batch INSERT (single transaction) → strict order
  *   - 失败不抛（日志兜底）——事件丢了不影响功能
  *
  * 配置（app_settings 键值）：

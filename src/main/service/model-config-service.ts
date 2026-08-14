@@ -1,8 +1,8 @@
 /**
  * model-config-service.ts — 模型配置解析服务层
  *
- * 封装 custom_models + providers → ModelConfig[] 的组装逻辑
- * （原 bootstrap 闭包 resolveModelConfigs 的正式归属）。
+ * Wraps the custom_models + providers → ModelConfig[] assembly logic
+ * (the formal home of the former bootstrap resolveModelConfigs closure).
  * TinkerAgent 注入本服务，按 profile 解析候选模型配置。
  */
 import { CustomModelRepository } from '../repository/custom-model-repository'
