@@ -1,8 +1,10 @@
 /**
  * agent-store.ts — 当前 Agent 状态域
  *
- * 只保留跨组件共享的状态：currentAgent（聊天页 ChatListView/ChatDetailView 共用）。
- * agents 列表（AgentListView 组件内状态）、CRUD 转发（AgentEditView 直接调 agentsApi）均已组件化。
+ * Keeps only cross-component shared state: currentAgent (shared by the chat
+ * pages ChatListView/ChatDetailView). The agents list (component-local state
+ * in AgentListView) and CRUD forwarding (AgentEditView calls agentsApi
+ * directly) are componentized.
  */
 import { defineStore } from 'pinia'
 import { ref } from 'vue'

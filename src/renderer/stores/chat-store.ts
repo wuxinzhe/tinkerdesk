@@ -1,8 +1,9 @@
 /**
- * chat-store.ts — 对话状态管理
+ * chat-store.ts — Chat state management
  *
- * 消息按 sessionId 隔离存储，互不干扰。
- * 本地 TinkerAgent（IPC）：消息流通过 agentApi.chat() 的 onToken 回调 + 返回 MessageVO 驱动。
+ * Messages are stored isolated per sessionId.
+ * Local TinkerAgent (IPC): the message stream is driven by agentApi.chat()'s
+ * onToken callback + the returned MessageVO.
  *
  * 消息路由：agentApi.onMessage → 路由到各个 handler，保持 View → Store → API 单向依赖。
  */

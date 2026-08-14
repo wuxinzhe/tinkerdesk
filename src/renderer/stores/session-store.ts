@@ -1,8 +1,8 @@
 /**
  * session-store.ts — 会话/用户状态管理
  *
- * 职责：当前会话 + 用户 profile + 锁屏
- * （连接状态已删除；token/list 为死代码已删除）
+ * Responsibilities: current session + user profile + lock screen
+ * (connection state removed; token/list dead code removed)
  */
 import { sessionsApi } from '@/renderer/api/sessions-api'
 import type { Session } from '@/renderer/api/types'

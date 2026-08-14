@@ -1,10 +1,10 @@
 /**
  * utils/date-utils.ts — 时间格式化工具（按时间戳 → 展示文本）
  *
- * 从 ChatDetail/MessageBubble/SessionPreviewCard 抽取的 formatTime 系列：
- * - formatClockTime：HH:mm
- * - formatSmartTime：今天 HH:mm / 昨天 HH:mm / M/D HH:mm
- * - formatDateTime：YYYY-MM-DD HH:mm
+ * formatTime series extracted from ChatDetail/MessageBubble/SessionPreviewCard:
+ * - formatClockTime: HH:mm
+ * - formatSmartTime: today HH:mm / yesterday HH:mm / M/D HH:mm
+ * - formatDateTime: YYYY-MM-DD HH:mm
  */
 
 /** 补零 */

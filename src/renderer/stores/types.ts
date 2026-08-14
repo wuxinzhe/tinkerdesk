@@ -1,7 +1,8 @@
 /**
- * stores/types.ts — 对话事件类型定义
+ * stores/types.ts — Chat event type definitions
  *
- * chat-store 处理的事件 payload 类型（原 event-types.ts，已删 STOMP 常量）。
+ * Event payload types handled by chat-store (former event-types.ts; STOMP
+ * constants removed).
  */
 
 // ══════════════════════════════════════════════
