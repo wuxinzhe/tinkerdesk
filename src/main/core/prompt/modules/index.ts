@@ -1,7 +1,7 @@
 /**
  * modules/index.ts — 提示词模块统一出口
  *
- * 复刻 tinker-agent service/prompt 包的全部 15 个模块。
+ * service/prompt 包的全部 15 个模块。
  */
 export {HandlebarsPresetModule} from './preset-module'
 export {

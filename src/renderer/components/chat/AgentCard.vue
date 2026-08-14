@@ -154,7 +154,7 @@ interface AgentInfo {
   userPercent?: number
 }
 
-/** 记忆体积显示（单位：字符——与 hermes memory 一致；非 KB） */
+/** 记忆体积显示（单位：字符——与 memory 一致；非 KB） */
 function formatChars(chars: number | undefined): string {
   if (chars === undefined) return '—'
   return chars.toLocaleString()

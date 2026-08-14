@@ -1,7 +1,7 @@
 /**
  * desktop/read-file-tool.ts — 文件读取工具
  *
- * 复刻 tinker-agent-ui tools/desktop/read-file：
+ * tools/desktop/read-file：
  * - 分页归一化（offset max(1, int)；limit clamp [1,2000]）
  * - 守卫链：设备路径 → 二进制扩展名 → 文件不存在
  * - 行号格式 LINE_NUM|CONTENT（紧凑 gutter，单行 2000 字符截断）
@@ -124,7 +124,7 @@ export class ReadFileTool extends BaseTool {
 
       // 行号分页
       const lines = raw.split('\n')
-      // 去尾部空行（Hermes 用 splitlines() 语义）
+      // 去尾部空行（splitlines() 语义）
       while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
       const totalLines = lines.length
       const endLine = offset + limit - 1

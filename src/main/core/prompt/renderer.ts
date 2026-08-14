@@ -1,7 +1,7 @@
 /**
  * renderer.ts — 提示词模板渲染器
  *
- * 复刻 tinker-agent PromptRenderer：
+ * PromptRenderer：
  * 加载 classpath 下的 .hbs 模板文件，用 Handlebars 渲染。
  * 模板目录：
  *   src/main/resources/prompts/           — 顶层模板（runtime-environment 等）

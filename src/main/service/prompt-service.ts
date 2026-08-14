@@ -1,7 +1,7 @@
 /**
  * prompt-service.ts — 提示词模块服务层
  *
- * 复刻 tinker-agent UserPromptModuleService（本地单用户版，去 userId/User 前缀）：
+ * UserPromptModuleService（本地单用户版，去 userId/User 前缀）：
  * 模块列表（含启用态过滤）、创建（自动排序）、更新、启用/停用、删除。
  */
 import { PromptModuleRepository } from '../repository/prompt-module-repository'

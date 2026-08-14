@@ -1,7 +1,7 @@
 /**
  * skill-view-tool.ts — 技能查看工具
  *
- * 复刻 tinker-agent SkillViewTool：
+ * SkillViewTool：
  * 查看技能详情，渲染 skill-view.hbs 模板。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'

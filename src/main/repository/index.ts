@@ -1,7 +1,7 @@
 /**
  * repository/index.ts — 数据访问层统一出口
  *
- * 对应 tinker-agent repository 包（MyBatis Mapper → TS Repository 类）。
+ * 对应 repository 包（数据访问层——TS Repository 类）。
  * 全部表结构在 database.ts 的 createTables 中定义。
  */
 export { AgentConfigRepository } from './agent-config-repository'

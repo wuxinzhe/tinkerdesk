@@ -1,7 +1,7 @@
 /**
  * types.ts — 提示词模块系统统一类型定义
  *
- * 复刻 tinker-agent core/prompt：
+ * core/prompt：
  * IDynamicPromptModule / PromptModuleEntry / PromptModuleMeta。
  *
  * 提示词模块渲染上下文 = ConversationContext（loop 层），

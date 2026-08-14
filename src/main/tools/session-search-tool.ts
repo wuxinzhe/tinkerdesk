@@ -1,7 +1,7 @@
 /**
  * session-search-tool.ts — 会话搜索工具
  *
- * 复刻 tinker-agent SessionSearchTool：
+ * SessionSearchTool：
  * 4 种查询模式：DISCOVER（搜索）/ SCROLL（滚动窗口）/ READ（整场读取）/ BROWSE（浏览最近）。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'

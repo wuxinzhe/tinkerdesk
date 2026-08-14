@@ -1,7 +1,7 @@
 /**
  * skill-manage-tool.ts — 技能管理工具
  *
- * 复刻 tinker-agent SkillManageTool：
+ * SkillManageTool：
  * create / patch / edit / delete / write_file / remove_file 六种操作。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'

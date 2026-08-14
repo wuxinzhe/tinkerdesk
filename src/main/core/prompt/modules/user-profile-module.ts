@@ -1,7 +1,7 @@
 /**
  * user-profile-module.ts — 用户画像模块
  *
- * 复刻 tinker-agent UserProfileModule：
+ * UserProfileModule：
  * 当 memory 工具可用时，从 MemoryStore 读取用户画像条目（target='user'）并拼接为提示词块。
  * 条目分隔符（\n§\n）。
  */

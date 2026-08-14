@@ -115,7 +115,7 @@ export class ElectronEventSender implements IEventSender {
     }
     this.tokenBuffer = []
     for (const [sessionId, chunks] of bySession) {
-      // 事件埋点：逐 chunk 记录（参考 dsh assistant/chunk——一个 chunk 一条——
+      // 事件埋点：逐 chunk 记录（assistant/chunk——一个 chunk 一条——
       // 完整留底——执行过程透明可追溯；膨胀靠环形总量控制——maxRows 超了挤最早）
       for (const c of chunks) {
         eventRecorder.record({

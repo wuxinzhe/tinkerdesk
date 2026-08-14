@@ -24,7 +24,7 @@ export const TOOL_NAME = 'builtin_tinker_delegate'
 /** 子代理最大深度（父=0 → 子=1 → 孙禁止）——对齐 delegation.max_spawn_depth=1 */
 const MAX_DEPTH = 1
 
-/** 并发子代理上限（对齐 Hermes delegation.max_concurrent_children=3——超限排队） */
+/** 并发子代理上限（delegation.max_concurrent_children=3——超限排队） */
 const MAX_CONCURRENT = 3
 
 /** 子代理结果条目 */
@@ -70,7 +70,7 @@ export class DelegateTool extends BaseTool {
     }
 
     // ── 并发执行（worker 池——上限 MAX_CONCURRENT——超限排队——前批完成继续） ──
-    // 对齐 Hermes delegation.max_concurrent_children=3：并发上限 + 排队防 runaway 堆积
+    // delegation.max_concurrent_children=3：并发上限 + 排队防 runaway 堆积
     const results: Array<{ goal: string; result: string; error?: string }> = []
     let cursor = 0
     const worker = async () => {
@@ -128,7 +128,7 @@ export class DelegateTool extends BaseTool {
 
     // ── 3. 子 TinkerAgent 实例（独立队列/abort——与父互不干扰） ──
     const child = new TinkerAgent({ ...agentLoopOptions, sessionId: childId, profile: parentCtx.profile })
-    // ── 中断传播：父 abort → 子代理立即中断（对齐 Hermes "bail when the parent is interrupted"） ──
+    // ── 中断传播：父 abort → 子代理立即中断（"bail when the parent is interrupted"） ──
     const onParentAbort = (): void => {
       console.log(`action=DELEGATE-INTERRUPT-PROPAGATED sessionId=${childId} parentAborted`)
       child.interrupt(childId)

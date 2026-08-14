@@ -2,7 +2,7 @@
 /**
  * private-skill-repository.ts — 私有技能仓库
  *
- * 复刻 tinker-agent PrivateSkillRepository（去 user_id，UNIQUE(profile, name)）：
+ * PrivateSkillRepository（去 user_id，UNIQUE(profile, name)）：
  * 表 private_skills — 用户私有技能（含运行时条件过滤、触发条件、配置声明）。
  */
 import { getDatabase } from './database'

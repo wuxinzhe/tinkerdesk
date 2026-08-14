@@ -5,7 +5,7 @@
  * 核心功能（注册/调用/管理）在 core/tool（ToolManager/ToolSchema/ToolResult/类型）。
  */
 export { BaseTool } from './base-tool'
-// 复刻 tinker-agent service/tools 的具体工具（内建）
+// service/tools 的具体工具（内建）
 export { TOOL_NAME as CLARIFY_TOOL_NAME, ClarifyTool } from './clarify-tool'
 export { TOOL_NAME as MEMORY_TOOL_NAME, MemoryTool } from './memory-tool'
 export { TOOL_NAME as SESSION_SEARCH_TOOL_NAME, SessionSearchTool } from './session-search-tool'

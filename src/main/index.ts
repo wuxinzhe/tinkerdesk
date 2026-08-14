@@ -230,7 +230,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    // 事件埋点：正常退出前同步落库剩余队列（不丢——对齐 dsh dispose drain）
+    // 事件埋点：正常退出前同步落库剩余队列（不丢——dispose drain）
     try {
       eventRecorder.flushSync()
     } catch {

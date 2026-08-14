@@ -1,7 +1,7 @@
 /**
  * prompt/index.ts — 提示词模块系统统一出口
  *
- * 复刻 tinker-agent core/prompt + service/prompt（TS 版）。
+ * core/prompt + service/prompt（TS 版）。
  */
 export {PromptManager} from './prompt-manager'
 export {PromptModuleBuilder} from './prompt-module-builder'

@@ -1,7 +1,7 @@
 /**
  * message-controller.ts — 消息 IPC controller（class 形式）
  *
- * 复刻 tinker-agent MessageController（本地单用户版，去 userId）：
+ * MessageController（本地单用户版，去 userId）：
  * 会话消息 / 对话消息 / 删除对话消息。
  * 分层：controller → service（MessageService），不直接访问 repository。
  * IPC 前缀：message:*

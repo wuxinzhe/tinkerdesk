@@ -1,7 +1,7 @@
 /**
  * api-response.ts — 统一 API 响应包装
  *
- * 复刻 tinker-agent ApiResponse：
+ * ApiResponse：
  * 成功：{ success: true,  data: {...}, error: null }
  * 失败：{ success: false, data: null,  error: "message" }
  * 所有 IPC controller 返回此结构，前端根据 success 判断。

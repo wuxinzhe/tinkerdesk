@@ -1,7 +1,7 @@
 /**
  * desktop/types.ts — 桌面工具参数类型定义
  *
- * 复刻 tinker-agent-ui src/defines/tools/params.ts：
+ * src/defines/tools/params.ts：
  * 所有桌面工具的 XxxParams 集中管理在此文件。
  */
 import type { ChildProcess } from 'child_process'
@@ -136,7 +136,7 @@ export interface SearchFilesParams {
 
 export interface TerminalParams {
   command: string
-  /** 超时秒数（Hermes 语义：秒；默认 15s，前台最大 600s） */
+  /** 超时秒数（语义：秒；默认 15s，前台最大 600s） */
   timeout?: number
   /** 后台执行：立即返回 session_id，用 process 工具管理 */
   background?: boolean

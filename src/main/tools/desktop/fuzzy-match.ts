@@ -1,7 +1,7 @@
 /**
  * fuzzy-match.ts — 客户端工具内部模块
  *
- * 一比一复刻 Hermes tools/fuzzy_match.py 的 9 策略模糊匹配链：
+ * tools/fuzzy_match.py 的 9 策略模糊匹配链：
  * exact → line_trimmed → whitespace_normalized → indentation_flexible
  * → escape_normalized → trimmed_boundary → unicode_normalized
  * → block_anchor → context_aware

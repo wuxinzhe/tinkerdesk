@@ -7,7 +7,7 @@
  *   irm https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/scripts/install.ps1 | iex
  *
  * 本客户端是 StdioTransport 之上的薄封装：路径解析 + start_session 会话态 + 工具名缓存。
- * computer_use 工具持有它（按会话隔离——对齐 hermes per-session backend）。
+ * computer_use 工具持有它（按会话隔离——per-session backend）。
  */
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'

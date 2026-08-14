@@ -107,7 +107,7 @@ export class WebSearchTool extends BaseTool {
 
       const resultJson = JSON.stringify(responseData, null, 2)
 
-      // Hermes 语义：success=false 时也把 JSON 返回给 LLM（模型能看到错误原因并重试/换工具）
+      // 语义：success=false 时也把 JSON 返回给 LLM（模型能看到错误原因并重试/换工具）
       return ToolResult.sync(resultJson)
     } catch (exc) {
       const errorMsg = `Error searching web: ${errMessage(exc)}`

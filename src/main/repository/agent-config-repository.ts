@@ -1,7 +1,7 @@
 /**
  * agent-config-repository.ts — agent_configs 表仓库
  *
- * 复刻 tinker-agent AgentConfigRepository：
+ * AgentConfigRepository：
  * per-agent 细节配置存储（拍平字段，非 JSONB）。
  * 本地单用户：主键从 (user_id, profile) 简化为 profile。
  */

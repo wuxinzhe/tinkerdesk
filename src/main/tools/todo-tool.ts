@@ -1,8 +1,8 @@
 /**
  * todo-tool.ts — 待办事项工具
  *
- * 复刻 tinker-agent TodoTool：
- * 读取/写入 session 待办列表（全量或合并），Hermes 兼容。
+ * TodoTool：
+ * 读取/写入 session 待办列表（全量或合并），兼容。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { TodoItem } from '../service/todo-service'
@@ -95,7 +95,7 @@ export class TodoTool extends BaseTool {
     return items
   }
 
-  /** 构建 Hermes 兼容 JSON 响应：todos + summary */
+  /** 构建兼容 JSON 响应：todos + summary */
   private buildJsonResponse(items: TodoItem[]): string {
     const list = items ?? []
     const pending = list.filter((i) => i.status === 'pending').length

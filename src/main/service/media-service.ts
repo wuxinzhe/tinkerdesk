@@ -4,7 +4,7 @@
  * 设计（与用户确认）：
  *   - 文件落盘 {userData}/media/{timestamp}_{hash8}{ext}（复制——不动用户原文件）
  *   - DB/消息只存【相对路径】media/xxx.ext（跨机器/迁移安全）
- *   - 消息文本用 Hermes 风格提示：[Image attached at: media/xxx.png]
+ *   - 消息文本用 提示：[Image attached at: media/xxx.png]
  *   - 发给 LLM 前：相对路径 → 绝对路径 → base64（图片）
  *   - 渲染：app-media://media/xxx.ext 自定义协议（只读 media 目录——CSP 安全）
  */

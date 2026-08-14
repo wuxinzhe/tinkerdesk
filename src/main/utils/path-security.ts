@@ -1,7 +1,7 @@
 /**
  * utils/path-security.ts — 路径安全守卫工具
  *
- * 复刻 tinker-agent-ui tools/desktop：
+ * tools/desktop：
  * - checkSensitivePath：敏感系统路径守卫（Windows + Unix）
  * - rejectV4aTraversal：V4A patch 头部 .. traversal 拒绝
  * 被 patch-tool / write-file-tool 共享。

@@ -1,7 +1,7 @@
 /**
  * session-repository.ts — sessions 表仓库
  *
- * 复刻 tinker-agent SessionRepository：
+ * SessionRepository：
  * 会话 CRUD、用户会话列表、标题搜索、浏览摘要、YOLO 切换。
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */

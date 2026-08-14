@@ -1,7 +1,7 @@
 /**
  * desktop/text-to-speech-tool.ts — 文本转语音工具（Agent 可用）
  *
- * 复刻 Hermes text_to_speech（tools/tts_tool.py）：
+ * text_to_speech（tools/tts_tool.py）：
  * - schema：text（必填）+ output_path（可选）
  * - provider 用户配置（内置 Edge 在线语音 / 插件 sherpa / omni-voice），模型只发文本
  * - 长文本按 provider 上限截断
@@ -42,7 +42,7 @@ export class TextToSpeechTool extends BaseTool {
       return ToolResult.sync(JSON.stringify({ success: false, error: 'text 不能为空' }))
     }
     try {
-      // 长文本截断（Edge 上限 5000 字符——与 Hermes PROVIDER_MAX_TEXT_LENGTH 对齐）
+      // 长文本截断（Edge 上限 5000 字符——与 PROVIDER_MAX_TEXT_LENGTH 对齐）
       const MAX_TEXT = 5000
       const effective = text.length > MAX_TEXT ? text.slice(0, MAX_TEXT) : text
 

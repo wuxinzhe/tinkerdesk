@@ -1,7 +1,7 @@
 /**
  * user-disabled-tool-service.ts — 用户禁用工具服务层
  *
- * 复刻 tinker-agent UserDisabledToolRepository 对应服务（本地单用户版，去 userId）：
+ * UserDisabledToolRepository 对应服务（本地单用户版，去 userId）：
  * 禁用工具黑名单的查询/添加/移除。
  */
 import { UserDisabledToolRepository } from '../repository/user-disabled-tool-repository'

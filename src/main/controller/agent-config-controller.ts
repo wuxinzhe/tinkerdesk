@@ -1,7 +1,7 @@
 /**
  * agent-config-controller.ts — Agent 运行参数 IPC controller（class 形式）
  *
- * 复刻 tinker-agent AgentConfigController（本地单用户版，去 userId）：
+ * AgentConfigController（本地单用户版，去 userId）：
  * 读取 / 更新 / 重置 per-agent 运行参数。
  * 分层：controller → service（AgentConfigService），不直接访问 repository。
  * IPC 前缀：agent-config:*

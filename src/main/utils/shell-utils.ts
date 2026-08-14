@@ -1,7 +1,7 @@
 /**
  * shell-utils.ts — Shell 工具函数
  *
- * 复刻 tinker-agent-ui tools/desktop/common/shell-utils.ts：
+ * tools/desktop/common/shell-utils.ts：
  * 根据运行平台返回适当的 shell 命令和参数。
  * 被 terminal 和 process-registry 共同使用。
  */

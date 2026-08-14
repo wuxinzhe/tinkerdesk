@@ -1,7 +1,7 @@
 /**
  * tool-auth-service.ts — 工具授权服务层
  *
- * 复刻 tinker-agent ToolAuthServiceImpl（本地单用户版）：
+ * ToolAuthServiceImpl（本地单用户版）：
  * 匹配工具参数字符串中的危险命令模式，命中后返回 ASK 触发用户审批。
  * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
  */
@@ -146,7 +146,7 @@ export class ToolAuthService {
     if (COMPUTER_USE_SAFE_ACTIONS.has(action)) {
       return AuthzDecision.ALLOW
     }
-    // 硬封锁（无论审批级别——对齐 hermes 1:1）
+    // 硬封锁（无论审批级别——1:1）
     if (action === 'key') {
       const combo = canonKeyCombo(String(args?.keys ?? ''))
       for (const blocked of COMPUTER_USE_BLOCKED_KEY_COMBOS) {

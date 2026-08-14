@@ -1,7 +1,7 @@
 /**
  * private-skill-service.ts — 私有技能服务层
  *
- * 复刻 tinker-agent IPrivateSkillService（本地单用户版，去 userId）：
+ * IPrivateSkillService（本地单用户版，去 userId）：
  * 技能 CRUD（含软删/恢复）、技能文件、技能关联、过滤查询。
  */
 import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'

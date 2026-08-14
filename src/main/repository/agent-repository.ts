@@ -1,7 +1,7 @@
 /**
  * agent-repository.ts — agents 表仓库
  *
- * 复刻 tinker-agent AgentRepository：
+ * AgentRepository：
  * Agent 配置（角色设定、显示信息、模式绑定）CRUD。
  * 本地单用户：主键从 (user_id, profile) 简化为 profile。
  */

@@ -1,7 +1,7 @@
 /**
  * tool-schema.ts — 工具 Schema 类
  *
- * 对应 tinker-agent ToolSchema：OpenAI function calling 中的 tool 对象。
+ * ToolSchema：OpenAI function calling 中的 tool 对象。
  */
 import type { ToolFunction, ToolType } from './types'
 

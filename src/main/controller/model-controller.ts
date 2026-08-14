@@ -1,7 +1,7 @@
 /**
  * model-controller.ts — 模型管理 IPC controller（class 形式）
  *
- * 复刻 tinker-agent ModelController（本地单用户版，去 userId）：
+ * ModelController（本地单用户版，去 userId）：
  * - 请求参数封装为 RequestDTO
  * - 返回类型具体化，不用 unknown
  * - 构造注入 service，register() 统一注册

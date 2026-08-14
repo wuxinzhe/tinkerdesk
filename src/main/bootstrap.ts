@@ -317,7 +317,7 @@ export function bootstrap(
   ]
 
   const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
-  // 工具禁用黑名单持久化（user_disabled_tools 表——复刻 showing-agent，PK(profile, tool_name)）
+  // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
   toolManager.loadDisabled(userDisabledToolService.listAll())
   toolManager.setPersistence((profile, toolNames) => userDisabledToolService.replaceProfile(profile, toolNames))

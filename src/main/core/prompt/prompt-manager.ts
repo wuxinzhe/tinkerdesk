@@ -1,7 +1,7 @@
 /**
  * prompt-manager.ts — 提示词模块管理器
  *
- * 复刻 tinker-agent PromptManager：
+ * PromptManager：
  * 启动时扫描所有 IDynamicPromptModule，将模块标识 → 模块条目的映射加载到内存。
  * 渲染顺序由外部（AgentMode 的 moduleList）定义，本管理器仅负责注册和按序查找。
  */

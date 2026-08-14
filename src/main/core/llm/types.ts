@@ -3,12 +3,12 @@
  *
  * 集中存放 llm 包下所有类型（接口/枚举/回调）+ 场景常量，
  * 实现文件只从本文件 import。
- * 对应 tinker-agent core/llm 包的 ApiMessage / ApiMode / ModelConfig /
+ * core/llm 包的 ApiMessage / ApiMode / ModelConfig /
  * LlmResponse / LlmChunk / OperationDecision / ILlmClient / ILlmOperation。
  */
 import type { ToolSchema } from '../tool/tool-schema'
 
-/** 场景常量（对应 tinker-agent ChatOperation / SummaryOperation / TitleOperation） */
+/** 场景常量（ChatOperation / SummaryOperation / TitleOperation） */
 export const SCENE_CHAT = 'main_conversation'
 export const SCENE_SUMMARY = 'conversation_compression'
 export const SCENE_TITLE = 'title_generation'

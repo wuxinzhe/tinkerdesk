@@ -71,7 +71,7 @@ export class SessionRuntime {
   /** 重定向：挂起修正文本 + abort（LLM 流中断；工具执行中不 abort——等安全边界） */
   requestRedirect(text: string): void {
     this.pendingRedirect = this.pendingRedirect ? `${this.pendingRedirect}\n${text}` : text
-    // 工具执行中不 abort——工具完成后循环回顶注入（对齐 Hermes：不杀工具）
+    // 工具执行中不 abort——工具完成后循环回顶注入（：不杀工具）
     if (!this.executingTools) {
       this.abortController?.abort()
     }

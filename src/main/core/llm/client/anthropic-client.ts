@@ -18,7 +18,7 @@ import { contentToText } from '../types'
 /**
  * anthropic-client.ts — Anthropic 客户端
  *
- * 对应 tinker-agent AnthropicLlmClient：apiMode='anthropic'。
+ * AnthropicLlmClient：apiMode='anthropic'。
  * 使用 Claude 原生 Messages API，工具 schema 从 OpenAI 格式转换。
  */
 export class AnthropicClient implements LlmClient {

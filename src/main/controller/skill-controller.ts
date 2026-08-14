@@ -1,7 +1,7 @@
 /**
  * skill-controller.ts — 技能 IPC controller（class 形式）
  *
- * 复刻 tinker-agent SkillController（本地单用户版，去 userId/官方技能市场）：
+ * SkillController（本地单用户版，去 userId/官方技能市场）：
  * 私有技能列表 / 详情 / 软删 / 恢复 + 技能分类。
  * 分层：controller → service（PrivateSkillService / SkillCategoryService）。
  * IPC 前缀：skill:*

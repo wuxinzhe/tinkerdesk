@@ -1,7 +1,7 @@
 /**
  * agent-manager-controller.ts — Agent 配置 IPC controller（class 形式）
  *
- * 复刻 tinker-agent AgentController（本地单用户版，去 userId/模式注册表）：
+ * AgentController（本地单用户版，去 userId/模式注册表）：
  * Agent 列表 / 创建 / 详情 / 更新 / 删除。
  * 分层：controller → service（AgentService），不直接访问 repository。
  * IPC 前缀：agent-cfg:*

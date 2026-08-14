@@ -20,7 +20,7 @@ export interface EventEnvelope {
 }
 
 // ══════════════════════════════════════════════
-// 服务端 Payload 结构（对应 Java 的 MessagePayload / EventPayload / SignalPayload）
+// 服务端 Payload 结构（的 MessagePayload / EventPayload / SignalPayload）
 // ══════════════════════════════════════════════
 
 /** chat 路由：MessagePayload { type, data: MessageVO } */

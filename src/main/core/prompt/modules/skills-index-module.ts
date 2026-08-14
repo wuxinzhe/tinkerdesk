@@ -1,7 +1,7 @@
 /**
  * skills-index-module.ts — 技能索引模块
  *
- * 复刻 tinker-agent SkillsIndexModule：
+ * SkillsIndexModule：
  * 当 skill_view / skills_list / skill_manage 工具可用时，
  * 查询可用技能列表，按类别分组并格式化为索引文本。
  */

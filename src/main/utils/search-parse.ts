@@ -1,7 +1,7 @@
 /**
  * utils/search-parse.ts — 搜索输出解析与提示工具
  *
- * 复刻 tinker-agent-ui tools/desktop/search-files：
+ * tools/desktop/search-files：
  * - checkSearchEngine：检测 rg / grep 引擎
  * - parseMatchLine / parseSearchContextLine：输出行解析
  * - pathNotFoundHint：路径不存在相似路径提示

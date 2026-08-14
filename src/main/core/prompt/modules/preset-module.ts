@@ -1,7 +1,7 @@
 /**
  * preset-module.ts — Handlebars 预设模块基类
  *
- * 复刻 tinker-agent HandlebarsPresetModule：
+ * HandlebarsPresetModule：
  * 系统预设模块继承此类，通过 PromptRenderer 加载 {id}.hbs 模板。
  * 默认无条件加载（shouldLoad=true），子类可重写。
  */

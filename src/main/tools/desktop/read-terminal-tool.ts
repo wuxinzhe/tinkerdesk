@@ -1,7 +1,7 @@
 /**
  * desktop/read-terminal-tool.ts — 终端输出读取工具
  *
- * 复刻 tinker-agent-ui tools/desktop/read-terminal：
+ * tools/desktop/read-terminal：
  * - 读后台进程输出缓冲（用 session_id 定位）
  * - 字段对齐：{total_lines, start, end, text} + status
  * - start_line 0-indexed（0 = 最旧）；省略 → 最近 200 行

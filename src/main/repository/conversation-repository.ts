@@ -1,7 +1,7 @@
 /**
  * conversation-repository.ts — conversations 表仓库
  *
- * 复刻 tinker-agent ConversationRepository：
+ * ConversationRepository：
  * 对话 CRUD、状态变更、压缩选择。
  */
 import { getDatabase } from './database'

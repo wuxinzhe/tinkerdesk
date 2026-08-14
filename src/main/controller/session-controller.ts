@@ -1,7 +1,7 @@
 /**
  * session-controller.ts — 会话 IPC controller（class 形式）
  *
- * 复刻 tinker-agent SessionController（本地单用户版，去 userId）：
+ * SessionController（本地单用户版，去 userId）：
  * 会话列表 / 创建 / 重命名 / YOLO 查询与切换。
  * 分层：controller → service（SessionService），不直接访问 repository。
  * IPC 前缀：session:*

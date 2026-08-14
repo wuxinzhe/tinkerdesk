@@ -1,7 +1,7 @@
 /**
  * compaction-service.ts — 上下文压缩服务（Token-based）
  *
- * 复刻 tinker-agent CompactionService（本地单用户版）：
+ * CompactionService（本地单用户版）：
  * - 触发条件：actualPromptTokens >= contextLimit × thresholdPercent（主动压缩检查）
  * - 压缩策略：从最旧对话开始，逐对话累计 token，保留尾部 tailRatio 不压缩
  * - 中间的旧对话消息 → 调用 LLM 汇总 → 摘要消息 → 归档旧消息

@@ -10,7 +10,7 @@ import type {ToolSchema} from './tool-schema'
 import type {ToolResult} from './tool-result'
 import type {ToolContext} from '../loop/types'
 
-// ── ToolFunction（对应 Java ToolFunction） ─────────────────────────
+// ── ToolFunction（ToolFunction） ─────────────────────────
 
 /** OpenAI function-calling 格式中的 function 对象 */
 export interface ToolFunction {
@@ -22,11 +22,11 @@ export interface ToolFunction {
   parameters: Record<string, unknown> | null
 }
 
-// ── ToolCall（对应 Java ToolCall，复用项目已有定义） ────────────────
+// ── ToolCall（ToolCall，复用项目已有定义） ────────────────
 
 export type {ToolCall}
 
-// ── IAgentTool（对应 Java IAgentTool） ─────────────────────────────
+// ── IAgentTool（IAgentTool） ─────────────────────────────
 
 /** Agent 工具 SPI 接口（所有工具需实现） */
 export interface IAgentTool {
@@ -62,7 +62,7 @@ export const TOOL_TYPE_MCP = 'mcp'
 /** 工具类型：builtin/desktop/client 走自身执行器；mcp 走 MCP 统一执行器 */
 export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_DESKTOP | typeof TOOL_TYPE_CLIENT | typeof TOOL_TYPE_MCP
 
-// ── 工具注册元信息（对应 Java @AgentTool 注解） ────────────────────
+// ── 工具注册元信息（@AgentTool 注解） ────────────────────
 
 /** 工具元信息 */
 export interface AgentToolMeta {

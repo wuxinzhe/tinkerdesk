@@ -1,7 +1,7 @@
 /**
  * agent-service.ts — Agent 配置服务层
  *
- * 复刻 tinker-agent IAgentService / AgentService（本地单用户版，去 userId）：
+ * IAgentService / AgentService（本地单用户版，去 userId）：
  * listByUser / getAgentInfo / getDetail / create / update / delete。
  * DTO 定义集中在 ./types.ts。
  */

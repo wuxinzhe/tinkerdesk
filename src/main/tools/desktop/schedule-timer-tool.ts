@@ -1,7 +1,7 @@
 /**
  * desktop/schedule-timer-tool.ts — 定时器工具
  *
- * 复刻 tinker-agent-ui tools/desktop/schedule-timer：
+ * tools/desktop/schedule-timer：
  * 内存定时器管理（setTimeout 封装）：start / cancel / list
  */
 import { BaseTool } from '../base-tool'

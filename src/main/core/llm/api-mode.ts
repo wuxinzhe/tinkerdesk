@@ -1,7 +1,7 @@
 /**
  * api-mode.ts — API 模式工具函数
  *
- * 对应 tinker-agent ApiMode：决定客户端使用哪套请求体格式和响应解析逻辑。
+ * ApiMode：决定客户端使用哪套请求体格式和响应解析逻辑。
  * 类型定义集中在 types.ts，本文件只提供转换/路径工具。
  */
 import type { ApiMode } from './types'

@@ -1,7 +1,7 @@
 /**
  * core/llm/operations/title-operation.ts — 对话标题生成操作
  *
- * 复刻 tinker-agent TitleOperation：
+ * TitleOperation：
  * - scene = title_generation
  * - 提取首条 user 消息 → 渲染 title.hbs → LLM 调用 → 返回标题
  */

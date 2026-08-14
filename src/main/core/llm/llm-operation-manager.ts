@@ -3,7 +3,7 @@ import type { LlmOperation } from './types'
 /**
  * llm-operation-manager.ts — LLM Operation 管理器
  *
- * 对应 tinker-agent LlmOperationManager：注入所有 LlmOperation 实现，
+ * LlmOperationManager：注入所有 LlmOperation 实现，
  * 按 scene 索引。支持运行时查询。
  */
 

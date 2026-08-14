@@ -1,7 +1,7 @@
 /**
  * mcp-controller.ts — MCP 服务器管理 IPC controller（class 形式）
  *
- * 复刻 tinker-agent 工具中心的管理接口（本地版）：
+ * 工具中心的管理接口（本地版）：
  * MCP 服务器配置 CRUD + 状态查询 + 环境信息。
  * 分层：controller → service（McpToolCenter，core 模块即 service 层）。
  * IPC 前缀：tool-center:*

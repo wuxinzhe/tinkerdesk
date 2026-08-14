@@ -1,11 +1,11 @@
 /**
- * computer-use-tool.ts — computer_use 工具（对齐 hermes computer_use——功能 1:1）
+ * computer-use-tool.ts — computer_use 工具（computer_use——功能 1:1）
  *
  * 桌面后台控制（cua-driver——macOS/Windows/Linux）：
  *   截图（capture：som/vision/ax）、鼠标（click 系列/drag/scroll）、键盘（type/key/set_value）、
  *   窗口（list_apps/list_windows/focus_app）、wait、typed browser（cua_browser_* 8 个）。
  *
- * 安全模型（与 hermes 1:1）：
+ * 安全模型（1:1）：
  *   - capture/wait/list 系列/cua_browser_state 免费
  *   - 其余 action 经门检层审批（ToolAuthService 按 action 判定——见 tool-auth-service）
  *   - 硬封锁：危险按键组合（清废纸篓/锁屏/登出等）+ 危险文本模式（curl|bash/sudo rm -rf/fork bomb）
@@ -29,7 +29,7 @@ import type { PromptRenderer } from '../../core/prompt/renderer'
 /** 工具名（desktop 组——与 terminal 等客户端工具一致） */
 export const TOOL_NAME = 'desktop_tinker_computer_use'
 
-/** cua-driver typed browser 工具名 → 白名单字段（对齐 hermes _dispatch） */
+/** cua-driver typed browser 工具名 → 白名单字段（_dispatch） */
 const BROWSER_ALLOWED_FIELDS: Record<string, string[]> = {
   browser_navigate: ['url'],
   browser_click: ['ref', 'input_route', 'x', 'y'],
@@ -127,7 +127,7 @@ export class ComputerUseTool extends BaseTool {
     }
   }
 
-  /** action 分发（对齐 hermes _dispatch——参数组装 1:1） */
+  /** action 分发（_dispatch——参数组装 1:1） */
   private async dispatch(client: CuaDriverClient, action: ComputerUseAction, args: Record<string, unknown>): Promise<string> {
     const captureAfter = Boolean(args.capture_after)
 
@@ -163,7 +163,7 @@ export class ComputerUseTool extends BaseTool {
         return this.captureResponse(res, maxElements)
       }
       case 'wait': {
-        // wait = 纯等待（不调 cua-driver——对齐 hermes time.sleep 实现）
+        // wait = 纯等待（不调 cua-driver——time.sleep 实现）
         const seconds = Math.max(0, Math.min(Number(args.seconds ?? 1), 30))
         await new Promise((resolve) => setTimeout(resolve, seconds * 1000))
         return JSON.stringify({ ok: true, message: `waited ${seconds}s` })
@@ -223,7 +223,7 @@ export class ComputerUseTool extends BaseTool {
     }
   }
 
-  /** 输入类 action（click 系列/drag/scroll/type/key/set_value）——对齐 hermes _dispatch 尾部 */
+  /** 输入类 action（click 系列/drag/scroll/type/key/set_value）——_dispatch 尾部 */
   private async dispatchInput(client: CuaDriverClient, action: ComputerUseAction, args: Record<string, unknown>, captureAfter: boolean): Promise<string> {
     const deliveryMode = args.delivery_mode as string | undefined
     const bringToFront = Boolean(args.bring_to_front)
@@ -332,7 +332,7 @@ export class ComputerUseTool extends BaseTool {
     return out
   }
 
-  // ── 结果格式化（对齐 hermes _capture_response / _text_response） ──
+  // ── 结果格式化（_capture_response / _text_response） ──
 
   /**
    * capture 返回：AX 树文本为主（含 [N] 编号——模型可直接点击）。

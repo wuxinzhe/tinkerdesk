@@ -118,7 +118,7 @@ const editing = ref<number | null>(null)
 const editContent = ref('')
 const dragIndex = ref(-1)
 
-// 容量上限（与 main memory-controller charLimit 一致——hermes 同款）：Memory 2200 / User 1375 字符
+// 容量上限（与 main memory-controller charLimit 一致——同款）：Memory 2200 / User 1375 字符
 const CHAR_LIMIT: Record<MemoryTarget, number> = { memory: 2200, user: 1375 }
 const charLimit = computed(() => CHAR_LIMIT[tab.value])
 const usedChars = computed(() => entries.value.reduce((sum, e) => sum + e.length, 0))

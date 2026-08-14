@@ -1,7 +1,7 @@
 /**
  * core/mode/agent-mode.ts — Agent Mode SPI（类型归位 types.ts）
  *
- * 复刻 tinker-agent IAgentMode（@AgentMode 注解 + 生命周期钩子 + 提示词注入）：
+ * IAgentMode（@AgentMode 注解 + 生命周期钩子 + 提示词注入）：
  * - 实现类为无状态单例（TS 版单例或构造注入）
  * - 元数据：id/version/name/description/promptTemplate
  * - getModuleList：动态提示词模块渲染顺序

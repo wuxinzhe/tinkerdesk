@@ -82,7 +82,7 @@ export class LlmRouter {
 
     // Phase 1: 构建输入（options 作为 OperationContext 传给 Operation）
     const opCtx = options as unknown as OperationContext
-    // 发送前防御性修复（Hermes sanitize_api_messages——注入缺失 tool 结果 stub——
+    // 发送前防御性修复（sanitize_api_messages——注入缺失 tool 结果 stub——
     // 严格 provider 400 "tool_calls must be followed by tool messages" 根治）
     const input = sanitizeApiMessages(op.buildInput(opCtx, messages, tools))
     if (!input || input.length === 0) {

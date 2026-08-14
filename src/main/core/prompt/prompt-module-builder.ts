@@ -1,7 +1,7 @@
 /**
  * prompt-module-builder.ts — 提示词模块构建管线
  *
- * 复刻 tinker-agent PromptModuleBuilder：
+ * PromptModuleBuilder：
  * - 动态模块：按 AgentMode 的 moduleList 顺序渲染（运行时模块每次实时渲染）
  * - 静态模块：从 SQLite 查询用户自定义模块（本地版简化）
  * - 缓存：内存 Map（替代 Redis + PG 两层，本地单用户）

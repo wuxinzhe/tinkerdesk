@@ -1,7 +1,7 @@
 /**
  * model-config.ts — 模型配置构造工具
  *
- * 对应 tinker-agent ModelConfig：模型名称、API 密钥、基础 URL、上下文限制、API 模式。
+ * ModelConfig：模型名称、API 密钥、基础 URL、上下文限制、API 模式。
  * 类型定义集中在 types.ts，本文件只提供检测/构造函数。
  */
 import type { ApiMode, ModelConfig, ReasoningCapability } from './types'

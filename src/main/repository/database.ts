@@ -196,7 +196,7 @@ function createTables(database: DatabaseSync): void {
     latency_ms INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`)
-  // 事件埋点表（审计轨迹——只记录不投影——参考 dsh session events + showing-agent activity_log）
+  // 事件埋点表（审计轨迹——只记录不投影——session events + activity_log）
   database.exec(`CREATE TABLE IF NOT EXISTS agent_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT NOT NULL DEFAULT '',

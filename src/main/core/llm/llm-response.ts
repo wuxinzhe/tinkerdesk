@@ -8,7 +8,7 @@ import {
 /**
  * llm-response.ts — LLM 响应常量与工厂
  *
- * 对应 tinker-agent LlmResponse：所有下游层只根据 resType 做分发。
+ * LlmResponse：所有下游层只根据 resType 做分发。
  * 类型定义集中在 types.ts，本文件只提供常量、工厂和查询方法。
  * 常量值定义在 core/constants/llm.ts。
  */

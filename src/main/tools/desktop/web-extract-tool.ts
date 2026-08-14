@@ -1,7 +1,7 @@
 /**
  * web-extract.ts — 客户端工具
  *
- * 一比一复刻 Hermes web_extract_tool：
+ * web_extract_tool：
  * - 多 URL 输入（字符串或 {url}/{href} 对象），按原顺序返回结果
  * - 安全层：URL 内嵌密钥检测（前缀正则 + URL-decode + 敏感查询参数）+ SSRF 防护
  * - registry 分发：firecrawl / tavily / exa / parallel（API，需 key）→ 本地 cheerio 兜底

@@ -1,7 +1,7 @@
 /**
  * user-disabled-tool-repository.ts — 用户禁用工具黑名单仓库
  *
- * 复刻 tinker-agent UserDisabledToolRepository（去 user_id）：
+ * UserDisabledToolRepository（去 user_id）：
  * 表 user_disabled_tools — 纯黑名单，PK(profile, tool_name)。默认空表 = 全部可用。
  */
 import { getDatabase } from './database'

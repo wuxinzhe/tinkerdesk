@@ -1,7 +1,7 @@
 /**
  * tool-loop-guardrail-service.ts — 工具循环防护服务
  *
- * 复刻 tinker-agent ToolLoopGuardrail（移植自 Hermes agent/tool_guardrails.py）：
+ * ToolLoopGuardrail（）：
  * - exact_failure：相同工具+相同参数连续失败 → warn/block
  * - same_tool_failure：同工具连续失败（不同参数）→ warn/halt
  * - no_progress：幂等工具返回相同结果 → warn/block

@@ -96,7 +96,7 @@ export class Conversation implements BusyLoopHost {
     // ── 上下文加载（摘要 + 历史 + 暂存）→ 转 ApiMessage ──
     const history = messageService.loadContextMessages(this.sessionId, this.convId, this.profile)
     // 防御性修复：合并相邻 assistant（tool_calls 后紧跟 assistant = 严格 provider 400——
-    // 移植 Hermes repair_message_sequence）/ 丢弃游离 tool / 合并 user / 修正 system
+    // 移植 repair_message_sequence）/ 丢弃游离 tool / 合并 user / 修正 system
     repairMessageSequence(history)
 
     // ── 提示词构建（system 消息） ──
@@ -645,7 +645,7 @@ export class Conversation implements BusyLoopHost {
     return this.deps.runtime.takePendingRedirect()
   }
 
-  /** 注入修正并重建 abort（redirect 继续循环前）——对齐 Hermes _apply_active_turn_redirect */
+  /** 注入修正并重建 abort（redirect 继续循环前）——_apply_active_turn_redirect */
   async applyActiveTurnRedirect(pending: string): Promise<void> {
     const visible = this.streamTextAccum.trim()
     // 检查点：截取可见文本（剥离 reasoning——原始思考绝不回放）
@@ -658,7 +658,7 @@ export class Conversation implements BusyLoopHost {
       .join('\n')
     // 注入为 user 消息（尾部是 assistant → 单条 user——角色交替合法）
     this.messages.push({ role: ROLE_USER, content: checkpoint })
-    // 存储字段分离（对齐 Hermes）：content 干净（显示原本信息——用户原话）——apiContent 完整检查点（LLM 上下文）
+    // 存储字段分离（）：content 干净（显示原本信息——用户原话）——apiContent 完整检查点（LLM 上下文）
     this.deps.messageService.saveTempMessage(
       MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, pending, undefined, checkpoint)
     )

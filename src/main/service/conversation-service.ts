@@ -1,7 +1,7 @@
 /**
  * conversation-service.ts — 对话服务层
  *
- * 复刻 tinker-agent IConversationService（本地单用户版）。
+ * IConversationService（本地单用户版）。
  */
 import { randomUUID } from 'crypto'
 import { CONV_IN_PROGRESS } from '../core/loop/types'

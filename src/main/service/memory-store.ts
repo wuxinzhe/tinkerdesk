@@ -1,7 +1,7 @@
 /**
  * memory-store.ts — 文件系统记忆存储
  *
- * 复刻 tinker-agent MemoryStore（Redis → 文件系统 JSON）：
+ * MemoryStore（Redis → 文件系统 JSON）：
  * 本地客户端无 Redis，用 userData/memory/{profile}.json 持久化。
  * 原子写（tmp + rename）保证崩溃安全，等价 Redis Lua 的原子性。
  *

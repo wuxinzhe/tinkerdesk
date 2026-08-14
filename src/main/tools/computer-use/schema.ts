@@ -1,5 +1,5 @@
 /**
- * computer-use/schema.ts — computer_use 工具 Schema（对齐 hermes computer_use schema.py）
+ * computer-use/schema.ts — computer_use 工具 Schema（computer_use schema.py）
  *
  * 单一工具 + action 判别器（24 个 action）——保持 schema 紧凑、单轮 token 成本低。
  * 模型无关：capture(mode='som') → click(element=N) 最可靠；像素坐标保留给训练过的模型。

@@ -2,7 +2,7 @@
 /**
  * prompt-module-repository.ts — 提示词模块仓库
  *
- * 复刻 tinker-agent UserPromptModuleRepository（本地单用户版，去 user_id/User 前缀）：
+ * UserPromptModuleRepository（本地单用户版，去 user_id/User 前缀）：
  * 表 prompt_modules — 用户自定义静态提示词模块，纯文本内容，支持 {{变量名}} 模板替换。
  */
 import { getDatabase } from './database'

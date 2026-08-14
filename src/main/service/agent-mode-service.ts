@@ -1,7 +1,7 @@
 /**
  * service/agent-mode-service.ts — Agent Mode 服务层
  *
- * 复刻 tinker-agent AgentModeService（本地单用户版）：
+ * AgentModeService（本地单用户版）：
  * - list：全部已注册模式元数据
  * - listOptions：模式选项（前端下拉）
  * - get：按 id+version 查

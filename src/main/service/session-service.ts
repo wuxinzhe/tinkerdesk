@@ -1,7 +1,7 @@
 /**
  * session-service.ts — 会话服务层
  *
- * 复刻 tinker-agent ISessionService（本地单用户版）：
+ * ISessionService（本地单用户版）：
  * create / listSessions / updateTitle / findById / toggleYolo / browseRich。
  * DTO 定义集中在 ./types.ts。
  */

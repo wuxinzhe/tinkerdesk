@@ -24,7 +24,7 @@ export class ComputerUseProvider {
     return this.pluginManager.getProviders(COMPUTER_USE_INTERFACE).length > 0
   }
 
-  /** 按会话获取/创建 cua-driver 客户端（会话级隔离——对齐 hermes per-session backend） */
+  /** 按会话获取/创建 cua-driver 客户端（会话级隔离——per-session backend） */
   private readonly clients = new Map<string, CuaDriverClient>()
 
   getClient(sessionId: string): CuaDriverClient {

@@ -1,7 +1,7 @@
 /**
  * skills-list-tool.ts — 技能列表工具
  *
- * 复刻 tinker-agent SkillsListTool：
+ * SkillsListTool：
  * 列出可用技能，按分类分组，渲染 skills-list.hbs 模板。
  */
 import type { PromptRenderer } from '../core/prompt/renderer'

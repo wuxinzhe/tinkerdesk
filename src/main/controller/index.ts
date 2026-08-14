@@ -2,7 +2,7 @@
  * controller/index.ts — Controller 层统一出口
  *
  * 本地客户端的 controller：IPC 接口即对外暴露的接口（无 HTTP controller）。
- * 复刻 tinker-agent controller 包（去用户认证/注册/管理后台）。
+ * controller 包（去用户认证/注册/管理后台）。
  */
 export {AgentController} from './agent-controller'
 export {SessionController} from './session-controller'

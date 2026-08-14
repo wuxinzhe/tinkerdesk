@@ -1,7 +1,7 @@
 /**
  * account-controller.ts — 账号初始化 IPC controller（4 步向导版）
  *
- * 复刻 tinker-agent AccountController（本地单用户版，去 userId）：
+ * AccountController（本地单用户版，去 userId）：
  * - account:init-status      → 4 项初始化检查
  * - account:init-step-status → 分步状态检查（configured + 回显）
  * - account:init-step1       → 创建默认 Agent

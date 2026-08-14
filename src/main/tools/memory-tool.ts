@@ -1,7 +1,7 @@
 /**
  * memory-tool.ts — 记忆工具
  *
- * 复刻 tinker-agent MemoryTool：
+ * MemoryTool：
  * 读取/添加/替换/删除/批量操作持久记忆（文件系统 MemoryStore）。
  * 全部返回 JSON 字符串，语义版 7 种响应。
  */

@@ -1,7 +1,7 @@
 /**
  * tool-manager.ts — 工具管理器（统一工具注册中心）
  *
- * 复刻 tinker-agent ToolManager（本地版）：
+ * ToolManager（本地版）：
  * - 启动注册：check 每个工具的可用性，仅缓存可用的 name → tool Map
  * - 工具类型：builtin（内建）/ client（对外）/ mcp（MCP 统一执行器）
  * - 工具执行：取出 tool 实例 → 按 toolType 路由——

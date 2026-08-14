@@ -1,7 +1,7 @@
 /**
  * user-custom-model-service.ts — 用户自定义模型服务层
  *
- * 复刻 tinker-agent IUserCustomModelService / UserCustomModelService（本地单用户版）：
+ * IUserCustomModelService / UserCustomModelService（本地单用户版）：
  * list / create / update / delete / findById / test。
  * DTO 定义集中在 ./types.ts（对齐 dto/model/CustomModelInfoDTO 等）。
  */

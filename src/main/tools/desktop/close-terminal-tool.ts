@@ -1,7 +1,7 @@
 /**
  * desktop/close-terminal-tool.ts — 关闭终端视图工具
  *
- * 复刻 tinker-agent-ui tools/desktop/close-terminal：
+ * tools/desktop/close-terminal：
  * - 语义：关闭后台进程的只读终端视图，**不杀进程**
  * - 进程输出继续缓冲，随时可用 process/read_terminal 查询
  * - process_id 必填；会话不存在不视为错误
@@ -34,7 +34,7 @@ export class CloseTerminalTool extends BaseTool {
       return ToolResult.sync(JSON.stringify({ error: err }))
     }
 
-    // Hermes 语义：只关视图不杀进程；会话已结束/已修剪也能关 tab（缺失 session 不是错误）
+    // 语义：只关视图不杀进程；会话已结束/已修剪也能关 tab（缺失 session 不是错误）
     const session = processRegistry.get(pid)
     const d = {
       status: 'ok',

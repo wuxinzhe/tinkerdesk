@@ -1,7 +1,7 @@
 /**
  * soul-prompt-module.ts — 灵魂提示词模块
  *
- * 复刻 tinker-agent SoulPromptModule：
+ * SoulPromptModule：
  * 从 Agent 配置加载灵魂提示词模板（agent_soul_prompt），渲染后注入。
  * 未配置时返回 null（跳过）。
  */

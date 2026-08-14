@@ -1,7 +1,7 @@
 /**
  * tool-controller.ts — 工具清单与禁用配置 IPC controller（class 形式）
  *
- * 复刻 tinker-agent ToolController（本地单用户版，去 userId）：
+ * ToolController（本地单用户版，去 userId）：
  * 工具清单 / 禁用启用。
  * 分层：controller → ToolManager（工具域 service 层）。
  * IPC 前缀：tool-config:*

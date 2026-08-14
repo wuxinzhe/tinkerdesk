@@ -1,7 +1,7 @@
 /**
  * account-service.ts — 账号初始化服务（4 步向导版）
  *
- * 复刻 tinker-agent AccountService（本地单用户版）：
+ * AccountService（本地单用户版）：
  * - checkInitStatus：4 项判断
  *   ① 默认 Agent 存在（is_default=1）
  *   ② 默认 Agent 有完整 AgentConfig 配置行

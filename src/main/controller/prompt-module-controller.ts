@@ -1,7 +1,7 @@
 /**
  * prompt-module-controller.ts — 提示词模块 IPC controller（class 形式）
  *
- * 复刻 tinker-agent UserPromptModuleController（本地单用户版，去 userId）：
+ * UserPromptModuleController（本地单用户版，去 userId）：
  * 模块列表 / 创建 / 更新 / 删除 / 启用停用。
  * 分层：controller → service（PromptService）。
  * 表含 profile 字段 → 全链路 profile 必传限定（controller → service → repository）。

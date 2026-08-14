@@ -18,7 +18,7 @@ import type { ApiMessage, ChunkCallback, LlmClient, LlmRequest, LlmResponse, Too
 /**
  * openai-client.ts — OpenAI 兼容客户端
  *
- * 对应 tinker-agent OpenAiLlmClient：apiMode='openai'。
+ * OpenAiLlmClient：apiMode='openai'。
  * SDK 异常统一捕获并转换为 LlmResponse error 格式。
  */
 export class OpenAIClient implements LlmClient {

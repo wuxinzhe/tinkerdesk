@@ -2,7 +2,7 @@
 /**
  * private-skill-file-repository.ts — 私有技能文件仓库
  *
- * 复刻 tinker-agent PrivateSkillFileRepository：
+ * PrivateSkillFileRepository：
  * 表 private_skill_files — 技能文件（SKILL.md 等），FK → private_skills。
  */
 import { getDatabase } from './database'
@@ -23,7 +23,7 @@ export class PrivateSkillFileRepository {
   }
 
   /** 保存文件（UPSERT——按 (skill_id, file_type, sort_order) 冲突更新——
-   * 对齐 Hermes write_file 覆盖语义：重复写同一文件不报 UNIQUE 冲突） */
+   * write_file 覆盖语义：重复写同一文件不报 UNIQUE 冲突） */
   save(entity: SkillFileEntity): number {
     const db = getDatabase()
     const result = db

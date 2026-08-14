@@ -1,7 +1,7 @@
 /**
  * sandbox-controller.ts — 沙盒白名单 IPC controller（class 形式）
  *
- * 复刻 tinker-agent SandboxController（本地单用户版，去 userId）：
+ * SandboxController（本地单用户版，去 userId）：
  * URL 白名单 + 路径白名单 CRUD。
  * 分层：controller → service（SandboxWhitelistService）。
  * IPC 前缀：sandbox:*

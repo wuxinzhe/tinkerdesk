@@ -506,7 +506,7 @@ function vadTick(): void {
       console.log('[voice] VAD 说话开始 → 录音（500ms 确认后才打断）')
     }
   } else {
-    // speaking——持续 500ms 确认是说话（不是噪声）→ 打断当前回复（对齐 Hermes barge-in）
+    // speaking——持续 500ms 确认是说话（不是噪声）→ 打断当前回复（barge-in）
     if (!vadBargeFired && performance.now() - vadSpeechStartAt >= VAD_BARGE_CONFIRM_MS) {
       vadBargeFired = true
       if (props.sessionId) {
@@ -925,7 +925,7 @@ function handleSend() {
   nextTick(() => autoResize(textareaRef.value))
 }
 
-/** 多媒体附件：按类型选文件 → 拷贝 media 目录 → 文本提示（Hermes 风格 [Image attached at: media/xxx]） */
+/** 多媒体附件：按类型选文件 → 拷贝 media 目录 → 文本提示（[Image attached at: media/xxx] 风格） */
 async function pickAndSendMedia(kind: 'image' | 'audio' | 'video'): Promise<void> {
   try {
     const rel = await window.api.media.pickAndImport(kind)

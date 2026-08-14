@@ -1,7 +1,7 @@
 /**
  * utils/number.ts — 数字工具函数
  *
- * 复刻 tinker-agent-ui tools/desktop：
+ * tools/desktop：
  * - coerceInt：宽松整数转换（number/string → int，非法回退）
  * - normalizeReadPagination / normalizeSearchPagination：分页归一化
  * 被 read-file-tool / search-files-tool 共享。

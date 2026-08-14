@@ -3,7 +3,7 @@ import type { LlmClient, ModelConfig } from './types'
 /**
  * llm-client-manager.ts — LLM 客户端管理器
  *
- * 对应 tinker-agent LlmClientManager：统一注册、查询入口。
+ * LlmClientManager：统一注册、查询入口。
  * 注册时按 apiMode 建索引，编排层通过 getClient() 按 ApiMode 路由到对应客户端实现。
  */
 

@@ -1,7 +1,7 @@
 /**
  * sandbox-whitelist-service.ts — 沙箱白名单服务层
  *
- * 复刻 tinker-agent ISandboxWhitelistService + SandboxService.check（本地单用户版，去 userId）：
+ * ISandboxWhitelistService + SandboxService.check（本地单用户版，去 userId）：
  * URL 白名单 + 路径白名单的列表/添加/删除 + 门检（check）。
  */
 import type { UserPathWhitelistEntity, UserUrlWhitelistEntity } from '../repository/types'

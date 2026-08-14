@@ -1,7 +1,7 @@
 /**
  * memory-snapshot-module.ts — 记忆快照模块
  *
- * 复刻 tinker-agent MemorySnapshotModule：
+ * MemorySnapshotModule：
  * memory 工具可用时，读取持久记忆条目并注入上下文。
  */
 import type {ConversationContext} from '../types'

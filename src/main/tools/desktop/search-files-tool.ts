@@ -1,7 +1,7 @@
 /**
  * desktop/search-files-tool.ts — 文件搜索工具
  *
- * 复刻 tinker-agent-ui tools/desktop/search-files：
+ * tools/desktop/search-files：
  * - 参数：pattern/target/path/file_glob/limit/offset/output_mode/context
  * - content：rg --line-number --no-heading --with-filename [-C ctx] [--glob] pattern path
  * - files：rg --files --sortr=modified（按修改时间排序）

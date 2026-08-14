@@ -1,7 +1,7 @@
 /**
  * system-context-module.ts — 系统上下文模块
  *
- * 复刻 tinker-agent SystemContextModule：
+ * SystemContextModule：
  * 渲染 context.hbs（Session ID / 日期 / 模型名）。
  */
 import type {ConversationContext} from '../types'

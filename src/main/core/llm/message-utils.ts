@@ -1,7 +1,7 @@
 /**
  * message-utils.ts — LLM 上下文完整性保障（单一职责：组装后防御性修复）
  *
- * 两条防线（对齐 Hermes repair_message_sequence + sanitize_api_messages——
+ * 两条防线（repair_message_sequence + sanitize_api_messages——
  * 均为模块级函数——无状态纯函数——不建类）：
  *
  * ① repairMessageSequence —— 上下文加载后（历史形态修复）——调用点：
@@ -81,7 +81,7 @@ export function repairMessageSequence(messages: ApiMessage[]): void {
 
   // ── Pass 0: 合并相邻 assistant（union tool_calls + 拼接 content + 带 reasoningContent）──
   // 两个 assistant 相邻 = 中间没有 tool/user 轮次——tool_calls 后紧跟 assistant 是
-  // 严格 provider 的 400 根因（Hermes #29148/#49147）——合并后 tool 消息重新配对
+  // 严格 provider 的 400 根因（严格 provider 400 根因）——合并后 tool 消息重新配对
   const pass0: ApiMessage[] = []
   for (const msg of messages) {
     if (!msg) continue
@@ -153,7 +153,7 @@ export function repairMessageSequence(messages: ApiMessage[]): void {
 }
 
 /**
- * 发送前防御性修复（对齐 Hermes sanitize_api_messages——每个 LLM 调用前无条件跑）：
+ * 发送前防御性修复（sanitize_api_messages——每个 LLM 调用前无条件跑）：
  * - 丢弃无配对的 tool 结果（tool_call_id 无前置 assistant 配对）
  * - 【关键】注入 stub tool 结果：assistant 的 tool_calls 缺对应 tool 消息时——
  *   在 assistant 后补占位 tool（严格 provider 400 "must be followed by tool messages" 根治）

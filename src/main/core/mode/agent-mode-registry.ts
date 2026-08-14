@@ -1,11 +1,11 @@
 /**
  * core/mode/agent-mode-registry.ts — Agent Mode 注册表
  *
- * 复刻 tinker-agent AgentModeRegistry（注解扫描缓存 → TS 手动注册）：
+ * AgentModeRegistry（注解扫描缓存 → TS 手动注册）：
  * - executorCache：id → IAgentMode 实例
  * - metaCache：id → version → AgentModeMeta
  * - 查询：findById / findAllActive / listOptions / exists / count
- * 启动时由 bootstrap 注册所有模式实现（替代 Java 注解扫描）。
+ * 启动时由 bootstrap 注册所有模式实现（替代注解扫描）。
  */
 import type { AgentModeMeta, IAgentMode, ModeInfoDTO, ModeOptionDTO } from './agent-mode'
 

@@ -1,7 +1,7 @@
 /**
  * skill-category-service.ts — 技能分类服务层
  *
- * 复刻 tinker-agent ISkillCategoryService（本地单用户版）：
+ * ISkillCategoryService（本地单用户版）：
  * 分类列表/详情/创建/更新/删除。
  */
 import { randomUUID } from 'crypto'

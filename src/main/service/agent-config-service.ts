@@ -1,7 +1,7 @@
 /**
  * agent-config-service.ts — Agent 运行参数服务层
  *
- * 复刻 tinker-agent AgentConfig 相关逻辑（本地单用户版）：
+ * AgentConfig 相关逻辑（本地单用户版）：
  * - get：读取配置，**查不到即报错**（配置缺失是问题，不静默兜底）
  * - update：仅对已有配置行做字段合并，无行报错
  * - reset：按 Agent 的 mode 取 getDefaultConfig() 重置（默认值唯一来源 = DefaultAgentMode）

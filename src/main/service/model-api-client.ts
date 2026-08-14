@@ -1,7 +1,7 @@
 /**
  * model-api-client.ts — 供应商模型列表拉取客户端
  *
- * 复刻 tinker-agent OpenAiModelApiClient：
+ * OpenAiModelApiClient：
  * 调用 GET {baseUrl}/models，适用于 OpenAI、DeepSeek、OpenRouter 等
  * 所有兼容 OpenAI API 的供应商。
  */

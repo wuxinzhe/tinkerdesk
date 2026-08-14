@@ -1,7 +1,7 @@
 /**
  * core/llm/operations/chat-operation.ts — 主对话 Operation
  *
- * 复刻 tinker-agent ChatOperation：
+ * ChatOperation：
  * - scene = chat
  * - buildInput：原样返回（主对话不改造输入，messages 已由 TinkerAgent 组装）
  * - handle：成功即 SUCCESS（错误由 TinkerAgent 分支处理）

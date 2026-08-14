@@ -1,7 +1,7 @@
 /**
  * common/process-registry.ts — 后台进程注册表
  *
- * 复刻 tinker-agent-ui tools/desktop/common/process-registry.ts：
+ * tools/desktop/common/process-registry.ts：
  * 管理通过 terminal(background=true) 启动的进程的生命周期。
  * 提供输出缓冲、状态查询、强制终止等能力。
  * 进程注册表为全局单例，由 process / read_terminal / close_terminal 工具共享。

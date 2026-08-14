@@ -88,7 +88,7 @@ export class MemoryController {
     return ok({ code })
   }
 
-  /** 容量限制（与 AgentConfig 默认一致——hermes 同款：memory 2200 / user 1375 字符） */
+  /** 容量限制（与 AgentConfig 默认一致——同款：memory 2200 / user 1375 字符） */
   private charLimit(target: string): number {
     return target === MemoryStore.TARGET_MEMORY ? 2200 : 1375
   }

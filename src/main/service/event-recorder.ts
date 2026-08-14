@@ -10,7 +10,7 @@
  *   agentEvents.enabled = 'true'   （默认开——总是有证据）
  *   agentEvents.maxRows = '50000'  （环形上限——超了删最旧）
  *
- * 事件类型（event_type + event_name 二维——对齐 showing-agent activity_log）：
+ * 事件类型（event_type + event_name 二维——activity_log）：
  *   conversation: turn_start / turn_end / redirect / abort / flush
  *   llm:          request / response / retry / fallback / error
  *   stream:       token_batch / finish
@@ -83,7 +83,7 @@ class EventRecorder {
     }
   }
 
-  /** 同步落库全部剩余事件（正常退出前调用——不丢队列——对齐 dsh dispose drain） */
+  /** 同步落库全部剩余事件（正常退出前调用——不丢队列——dispose drain） */
   flushSync(): void {
     if (this.timer) {
       clearInterval(this.timer)

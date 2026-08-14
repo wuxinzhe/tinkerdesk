@@ -1,7 +1,7 @@
 /**
  * base-tool.ts — 工具抽象基类
  *
- * 复刻 tinker-agent BaseTool：
+ * BaseTool：
  * 构造时从 tool-schemas/{name}.hbs 模板加载并缓存 ToolSchema，
  * 子类无需重复实现 getSchema()。
  */

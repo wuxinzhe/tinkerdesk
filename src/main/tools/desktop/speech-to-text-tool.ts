@@ -1,7 +1,7 @@
 /**
  * desktop/speech-to-text-tool.ts — 语音转文本工具（Agent 可用）
  *
- * 复刻 Hermes transcription（tools/transcription_tools.py）：
+ * transcription（tools/transcription_tools.py）：
  * - schema：file_path（必填）
  * - provider 用户配置（插件 sherpa 本地等），模型只发文件路径
  * - 返回 { success, text }

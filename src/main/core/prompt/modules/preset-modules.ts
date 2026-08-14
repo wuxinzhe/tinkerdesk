@@ -1,5 +1,5 @@
 /**
- * preset-modules.ts — 纯模板预设模块（复刻 tinker-agent 的 HandlebarsPresetModule 子类）
+ * preset-modules.ts — 纯模板预设模块（的 HandlebarsPresetModule 子类）
  *
  * - ToolEnforcementModule（tool-enforcement）
  * - TaskCompletionModule（task-completion）

@@ -1,7 +1,7 @@
 /**
  * service/agent/default-agent-mode.ts — 默认 Agent Mode
  *
- * 复刻 tinker-agent DefaultAgentMode（全功能默认实现）：
+ * DefaultAgentMode（全功能默认实现）：
  * - 元数据：id=default, version=1.0, 通用模式
  * - getModuleList：动态提示词模块渲染顺序
  * - getDefaultConfig：agent_configs 无行时的配置兜底

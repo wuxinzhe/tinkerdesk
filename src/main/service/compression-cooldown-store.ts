@@ -1,7 +1,7 @@
 /**
  * compression-cooldown-store.ts — 压缩冷却 + 无效/fallback 检测存储
  *
- * 复刻 tinker-agent CompressionCooldownStore（Redis → 本地内存）：
+ * CompressionCooldownStore（Redis → 本地内存）：
  * - 冷却（cooldown）：LLM 调用失败后暂停重试，TTL 自动过期（阶梯 60/300/900s）
  * - 无效压缩检测（ineffective）：连续多次无可压缩内容时停止触发
  * - fallback 连续抑制（fallback）：连续多次用静态占位符时停止主动压缩

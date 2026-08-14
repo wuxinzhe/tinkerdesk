@@ -1,7 +1,7 @@
 /**
  * message-queue-store.ts — 用户消息队列存储
  *
- * 复刻 tinker-agent IMessageQueueStore（本地版，内存实现）：
+ * IMessageQueueStore（本地版，内存实现）：
  * per-session 消息队列 + processing 标志。
  * - enqueueMessage：消息入队
  * - dequeueAll / dequeueBatch / peekAll：取消息（预算驱动）

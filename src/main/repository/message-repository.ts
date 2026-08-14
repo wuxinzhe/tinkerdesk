@@ -1,7 +1,7 @@
 /**
  * message-repository.ts — messages 表仓库
  *
- * 复刻 tinker-agent MessageRepository：
+ * MessageRepository：
  * 消息 CRUD、条件查询、分页、会话历史加载。
  * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
  */
