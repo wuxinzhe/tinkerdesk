@@ -22,6 +22,10 @@ extraResources:
     filter: ["**/*"]
   - from: resources/skill-categories.json
     to: skill-categories.json
+  - from: resources/icon.png
+    to: icon.png
+# 打包图标（build/icon.png——electron-builder 自动生成 ico——exe/安装包/快捷方式）
+icon: build/icon.png
 # 构建前生成 resources/npm 由 package.json 的 dist 脚本负责（beforePack 只接受函数——yml 不支持脚本路径）
 npmRebuild: false
 win:
