@@ -28,6 +28,7 @@ export type EventType =
   | 'tool'
   | 'message'
   | 'interaction'
+  | 'error'
 
 export interface AgentEvent {
   sessionId: string
