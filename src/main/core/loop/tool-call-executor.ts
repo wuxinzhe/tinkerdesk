@@ -101,6 +101,14 @@ export class ToolCallExecutor {
       result = execResult.result
     } catch (e) {
       result = `Error: Tool execution failed: ${(e as Error).message}`
+      // 事件埋点：工具执行失败（异常定位）
+      eventRecorder.record({
+        sessionId: convCtx.sessionId,
+        conversationId: convCtx.conversationId,
+        eventType: 'error',
+        eventName: 'tool_error',
+        payload: { toolName: toolCall.name, toolCallId: toolCall.id, error: (e as Error).message.slice(0, 300) },
+      })
     }
 
     // ── 工具循环防护：执行后检查（warn 时附加引导文本） ──

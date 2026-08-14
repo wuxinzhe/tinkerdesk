@@ -188,6 +188,14 @@ export class LlmRouter {
     }
 
     console.error('所有模型配置均已试过，全部失败')
+    // 事件埋点：LLM 调用最终失败（异常定位）
+    eventRecorder.record({
+      sessionId: options.sessionId ?? '',
+      conversationId: options.conversationId,
+      eventType: 'error',
+      eventName: 'llm_error',
+      payload: { scene, attemptedModels: configs.map((c) => c.modelName) },
+    })
     // 全部失败也记一条（usage 全 0 + status=failed——可用率/失败率统计）
     recordUsage(configs[configs.length - 1]?.modelName ?? 'unknown', 'failed')
     return errorResponse(ERROR_ALL_MODELS_FAILED, '所有可用的模型配置均已试过，全部失败。')

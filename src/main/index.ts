@@ -61,6 +61,21 @@ function safeError(...args: unknown[]): void {
   } catch {
     // stderr 不可写（管道已断/句柄被关）——放弃打印——避免 fatal 递归
   }
+  // 事件埋点：全局异常（uncaught/unhandledRejection——异常定位）
+  try {
+    const err = args.find((a) => a instanceof Error) as Error | undefined
+    eventRecorder.record({
+      sessionId: '',
+      eventType: 'error',
+      eventName: 'system_error',
+      payload: {
+        message: (err?.message ?? args.map(String).join(' ')).slice(0, 300),
+        stack: err?.stack?.slice(0, 500) ?? '',
+      },
+    })
+  } catch {
+    // 埋点失败不影响异常处理
+  }
 }
 
 process.on('uncaughtException', (err) => {
