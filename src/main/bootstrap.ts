@@ -1,10 +1,11 @@
 /**
  * bootstrap.ts — 依赖组装入口（三层结构接线）
  *
- * repository（db/）→ service（service/）→ TinkerAgent（loop/）
- * + prompt（prompt/）+ llm（llm/）+ tools（tools/）+ compaction（service/）
+ * repository (db/) → service (service/) → TinkerAgent (loop/)
+ * + prompt (prompt/) + llm (llm/) + tools (tools/) + compaction (service/)
  *
- * 本地业务无 controller：渲染进程通过 IPC（agent-controller.ts）调用 agentLoop。
+ * No local business controllers: the renderer calls the agent loop via IPC
+ * (agent-controller.ts).
  */
 import { app } from 'electron'
 import { ConversationRepository } from './repository/conversation-repository'

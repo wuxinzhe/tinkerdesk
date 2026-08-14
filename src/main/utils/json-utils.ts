@@ -1,8 +1,8 @@
 /**
  * utils/json-utils.ts — JSON 处理工具
  *
- * - safeParseJson：安全解析 JSON
- *   从 openai-client / anthropic-client 抽取（LLM 工具调用参数解析）
+ * - safeParseJson: safely parse JSON
+ *   (extracted from openai-client / anthropic-client — LLM tool-call arg parsing)
  */
 
 /** 安全解析 JSON：空串/非法返回 {} */

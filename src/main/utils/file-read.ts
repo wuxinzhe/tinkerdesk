@@ -1,8 +1,8 @@
 /**
  * utils/file-read.ts — 文件读取守卫与格式化工具
  *
- * tools/desktop/read-file：
- * - isBlockedDevicePath / hasBinaryExtension：设备路径 + 二进制扩展守卫
+ * File-read helpers:
+ * - isBlockedDevicePath / hasBinaryExtension: device-path + binary-extension guards
  * - truncateToCharBudget：字符预算截断
  * - addLineNumbers：行号格式化（LINE_NUM|CONTENT）
  * 被 read-file-tool 使用。

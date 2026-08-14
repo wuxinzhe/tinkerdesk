@@ -1,7 +1,7 @@
 /**
  * time.ts — 系统时间工具类
  *
- * 统一获取系统时间的入口，main 包内所有时间获取统一走这里。
+ * Unified system-time entry; all time acquisition in the main package goes through here.
  * 三种格式：
  * - nowDb()   — SQLite 存储格式（'YYYY-MM-DD HH:MM:SS'，UTC）
  * - nowIso()  — ISO 8601 字符串

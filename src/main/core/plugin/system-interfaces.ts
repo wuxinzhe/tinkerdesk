@@ -1,11 +1,13 @@
 /**
  * system-interfaces.ts — 系统开放接口定义（单一来源）
  *
- * 应用对外暴露的能力接口清单。任何插件在 manifest.systemInterfaces 声明
- * 实现某个接口（id 匹配），并在入口注册对应频道，即成为该接口的 provider。
+ * The app's externally exposed capability interfaces. Any plugin declaring
+ * an interface in manifest.systemInterfaces (id match) and registering the
+ * matching channels in its entry becomes a provider for that interface.
  *
- * PluginManager 按此清单维护每个接口的 provider 注册表；
- * 系统设置页（如语音设置）从注册表中选择该接口具体调用哪个 provider。
+ * PluginManager maintains the per-interface provider registry from this list;
+ * system settings pages (e.g. voice settings) pick which provider to use
+ * for a given interface from the registry.
  */
 
 export interface SystemInterfaceDef {

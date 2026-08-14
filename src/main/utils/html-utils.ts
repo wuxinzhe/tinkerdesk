@@ -1,7 +1,7 @@
 /**
  * utils/html-utils.ts — HTML 处理工具
  *
- * - stripTags：剥离 HTML 标签并解码常见实体（从 web-search/web-extract 工具抽取）
+ * - stripTags: strips HTML tags and decodes common entities (extracted from web-search/web-extract tools)
  */
 
 /** 剥离 HTML 标签 + 解码常见实体（&amp;/&quot;/&#39;） */

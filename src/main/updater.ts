@@ -1,10 +1,10 @@
 /**
  * updater.ts — 主进程
- * 自动更新模块。启动时自动检查，发现更新后后台下载，
- * 通过 IPC 通知 renderer 更新状态。
+ * Auto-update module. Checks on startup, downloads in the background when an
+ * update is found, notifies the renderer of update status via IPC.
  *
- * 更新服务器：update.tinker-ai.com/releases/
- * Nginx 反向代理，后续切换存储不需改客户端。
+ * Update server: update.tinker-ai.com/releases/
+ * Nginx reverse proxy; switching storage later doesn't require client changes.
  */
 import { autoUpdater } from 'electron-updater'
 import { handleTrusted } from './security/ipc-guard'

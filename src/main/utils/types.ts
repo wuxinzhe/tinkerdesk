@@ -1,8 +1,8 @@
 /**
  * utils/types.ts — 工具函数包类型定义
  *
- * 各工具函数的类型统一归位（SearchMatch / ShellExec），
- * 实现文件从本文件导入。
+ * Central types for util functions (SearchMatch / ShellExec);
+ * implementation files import from this file.
  */
 
 /** 搜索匹配项（path + 行号 + 内容） */

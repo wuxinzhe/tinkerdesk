@@ -1,8 +1,8 @@
 /**
  * resources-path.ts — 资源目录解析
  *
- * electron-vite 构建后 __dirname = out/main，resources 不在 out 内。
- * 统一解析策略（按顺序尝试）：
+ * After electron-vite build, __dirname = out/main — resources are not inside out.
+ * Unified resolution strategy (tried in order):
  *   1. 打包/生产：app.getAppPath()/resources（electron-builder 约定）
  *   2. dev：process.cwd()/src/main/resources（源码目录）
  *   3. 兜底：__dirname 上溯两级的 resources

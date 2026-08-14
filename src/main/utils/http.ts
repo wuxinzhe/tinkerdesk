@@ -1,8 +1,8 @@
 /**
  * utils/http.ts — HTTP 请求工具
  *
- * tools/desktop/web-search/web-extract 的 fetchUrl：
- * GET/POST JSON，带超时 + UA 伪装，返回文本。
+ * fetchUrl (from web-search/web-extract):
+ * GET/POST JSON with timeout + UA spoofing, returns text.
  * 被 web-search-tool / web-extract-tool 共享。
  */
 import { get as httpGet, type IncomingMessage, type RequestOptions } from 'http'

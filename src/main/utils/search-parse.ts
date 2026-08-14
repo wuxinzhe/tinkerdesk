@@ -1,8 +1,8 @@
 /**
  * utils/search-parse.ts — 搜索输出解析与提示工具
  *
- * tools/desktop/search-files：
- * - checkSearchEngine：检测 rg / grep 引擎
+ * Search-parse helpers:
+ * - checkSearchEngine: detects rg / grep engines
  * - parseMatchLine / parseSearchContextLine：输出行解析
  * - pathNotFoundHint：路径不存在相似路径提示
  * 被 search-files-tool 使用。

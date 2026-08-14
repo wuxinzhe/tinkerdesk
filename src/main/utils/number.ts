@@ -1,8 +1,8 @@
 /**
  * utils/number.ts — 数字工具函数
  *
- * tools/desktop：
- * - coerceInt：宽松整数转换（number/string → int，非法回退）
+ * Numeric helpers:
+ * - coerceInt: lenient integer conversion (number/string → int, falls back on invalid)
  * - normalizeReadPagination / normalizeSearchPagination：分页归一化
  * 被 read-file-tool / search-files-tool 共享。
  */

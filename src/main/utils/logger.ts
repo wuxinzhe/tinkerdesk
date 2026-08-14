@@ -1,8 +1,8 @@
 /**
  * utils/logger.ts — 本地端日志文件系统
  *
- * -spring.xml：
- *   - FILE       → tinkerdesk.{yyyy-MM-dd}.log        （按天滚动，保留 30 天）
+ * Logback-style:
+ *   - FILE       → tinkerdesk.{yyyy-MM-dd}.log        (daily rotation, kept 30 days)
  *   - ERROR_FILE → error.{yyyy-MM-dd}.log             （warn/error 双写，保留 30 天）
  *   - CONSOLE    → 控制台原样输出（console.* 拦截后转发）
  *

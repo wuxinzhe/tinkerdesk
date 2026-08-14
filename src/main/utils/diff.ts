@@ -1,8 +1,8 @@
 /**
  * utils/diff.ts — 文本 diff 工具
  *
- * 简单 unified diff 生成：
- * --- a/{path} / +++ b/{path} + 逐行 +/- 对比 + @@ 头。
+ * Simple unified diff generation:
+ * --- a/{path} / +++ b/{path} + per-line +/- comparison + @@ headers.
  * 被 patch-tool 使用。
  */
 

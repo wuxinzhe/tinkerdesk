@@ -1,7 +1,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 
 /**
- * IPC 调用来源校验（安全加固）
+ * IPC call source validation (security hardening)
  *
  * 背景：sandbox:false + 无 CSP 时 renderer 一旦被 XSS，攻击面=全部 IPC 通道。
  * 这里给所有 ipcMain.handle 加 senderFrame 来源校验——只允许应用内部页面调用，

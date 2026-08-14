@@ -1,8 +1,8 @@
 /**
  * redact.ts — 敏感信息脱敏工具
  *
- * agent/redact.py redact_sensitive_text(file_read=True)：
- * - 20+ 已知前缀+ 边界断言（(?<![A-Za-z0-9_-])…(?![A-Za-z0-9_-])）
+ * redact_sensitive_text(file_read=True):
+ * - 20+ known prefixes + boundary assertions ((?<![A-Za-z0-9_-])…(?![A-Za-z0-9_-]))
  * - PRIVATE KEY 块 / Authorization 头 / JSON 敏感字段 / JWT / DB connstring
  */
 

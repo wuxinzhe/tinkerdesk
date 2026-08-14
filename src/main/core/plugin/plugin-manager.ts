@@ -1,12 +1,12 @@
 /**
  * plugin-manager.ts — TinkerDesk 插件管理器（main 进程）
  *
- * 职责：
- * - 扫描 %APPDATA%/tinkerdesk/plugins/ 目录（每个子目录 = 一个插件）
- * - 读取 manifest.json → 校验 → require(entry)（CommonJS）→ init(ctx)
- * - 托管插件配置（plugins/<id>/config.json）
- * - 插件事件转发 renderer（webContents.send('plugin:event', ...)）
- * - 启停 / 状态查询
+ * Responsibilities:
+ * - scans the %APPDATA%/tinkerdesk/plugins/ directory (each subdirectory = one plugin)
+ * - reads manifest.json → validates → require(entry) (CommonJS) → init(ctx)
+ * - hosts plugin configs (plugins/<id>/config.json)
+ * - forwards plugin events to the renderer (webContents.send('plugin:event', ...))
+ * - enable/disable / status queries
  *
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */

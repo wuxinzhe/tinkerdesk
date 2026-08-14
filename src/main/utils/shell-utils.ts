@@ -1,8 +1,8 @@
 /**
  * shell-utils.ts — Shell 工具函数
  *
- * tools/desktop/common/shell-utils.ts：
- * 根据运行平台返回适当的 shell 命令和参数。
+ * Shell-utils:
+ * returns the appropriate shell command and args for the running platform.
  * 被 terminal 和 process-registry 共同使用。
  */
 import type { ShellExec } from './types'
