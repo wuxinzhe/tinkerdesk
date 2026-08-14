@@ -37,7 +37,7 @@ export class ReadTerminalTool extends BaseTool {
     }
 
     const fullText = session.stdout + (session.stderr ? '\n' + session.stderr : '')
-    // 对齐 Python splitlines()：兼容 CRLF
+    // splitlines() 语义：兼容 CRLF
     const lines = fullText.split(/\r?\n/)
     if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
     const totalLines = lines.length

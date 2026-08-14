@@ -10,7 +10,7 @@
  *   agentEvents.enabled = 'true'   （默认开——总是有证据）
  *   agentEvents.maxRows = '50000'  （环形上限——超了删最旧）
  *
- * 事件类型（event_type + event_name 二维——activity_log）：
+ * 事件类型（event_type + event_name 二维）：
  *   conversation: turn_start / turn_end / redirect / abort / flush
  *   llm:          request / response / retry / fallback / error
  *   stream:       token_batch / finish

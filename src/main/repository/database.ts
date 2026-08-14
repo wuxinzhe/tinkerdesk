@@ -15,7 +15,7 @@ function dbPath(): string {
 
 /**
  * 初始化数据库：打开连接 + 建表 + 种子数据（幂等）
- * 参考 tinker-agent schema：custom_models 去掉 user_id，providers 沿用 system_providers
+ * 参考 schema：custom_models 去掉 user_id，providers 沿用 system_providers
  */
 export function initDatabase(): DatabaseSync {
   if (db) {
@@ -196,7 +196,7 @@ function createTables(database: DatabaseSync): void {
     latency_ms INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`)
-  // 事件埋点表（审计轨迹——只记录不投影——session events + activity_log）
+  // 事件埋点表（审计轨迹——只记录不投影——session events 序列）
   database.exec(`CREATE TABLE IF NOT EXISTS agent_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT NOT NULL DEFAULT '',
@@ -544,7 +544,7 @@ function createTables(database: DatabaseSync): void {
 }
 
 /**
- * 预置供应商种子数据（复制自 tinker-agent system_providers 种子数据）
+ * 预置供应商种子数据（system_providers 内置种子）
  * 首次启动导入，幂等（ON CONFLICT DO NOTHING）
  */
 function seedProviders(database: DatabaseSync): void {

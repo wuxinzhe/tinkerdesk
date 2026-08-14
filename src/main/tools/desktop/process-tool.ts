@@ -139,7 +139,7 @@ export class ProcessTool extends BaseTool {
       return ToolResult.sync(JSON.stringify({ status: 'not_found', error: `No process with ID ${sessionId}` }))
     }
     const fullText = mergedOutput(session)
-    // 对齐 Python splitlines()：兼容 CRLF（Windows cmd echo 输出 \r\n）
+    // splitlines() 语义：兼容 CRLF（Windows cmd echo 输出 \r\n）
     const lines = fullText.split(/\r?\n/)
     if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
     const totalLines = lines.length
