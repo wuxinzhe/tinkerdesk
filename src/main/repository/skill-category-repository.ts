@@ -1,9 +1,10 @@
 /**
- * skill-category-repository.ts — 技能分类仓库（本地 JSON 数据源）
+ * skill-category-repository.ts — Skill-category repository (local JSON source)
  *
- * 本地客户端不建 skill_categories 表，分类数据用 JSON 文件维护
- * （src/main/resources/skill-categories.json——skill_categories 表种子数据）。
- * 保留 insert 写库（兼容），读取一律走 JSON。
+ * The local client does not create a skill_categories table; category data is
+ * maintained in a JSON file (src/main/resources/skill-categories.json —
+ * seed data for the skill_categories table). insert-to-DB kept (compat);
+ * reads always go through JSON.
  */
 import { readFileSync } from 'fs'
 import { resolveResource } from '../utils/resources-path'

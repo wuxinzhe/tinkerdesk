@@ -1,9 +1,10 @@
 
 /**
- * prompt-module-repository.ts — 提示词模块仓库
+ * prompt-module-repository.ts — Prompt-module repository
  *
- * UserPromptModuleRepository（本地单用户版，去 user_id/User 前缀）：
- * 表 prompt_modules — 用户自定义静态提示词模块，纯文本内容，支持 {{变量名}} 模板替换。
+ * UserPromptModuleRepository (local single-user, no user_id/User prefix):
+ * table prompt_modules — user-custom static prompt modules, plain text
+ * content, supports {{variable}} template substitution.
  */
 import { getDatabase } from './database'
 import type { UserPromptModuleEntity } from './types'

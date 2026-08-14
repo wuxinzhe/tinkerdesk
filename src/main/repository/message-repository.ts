@@ -1,9 +1,9 @@
 /**
- * message-repository.ts — messages 表仓库
+ * message-repository.ts — messages table repository
  *
- * MessageRepository：
- * 消息 CRUD、条件查询、分页、会话历史加载。
- * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
+ * MessageRepository:
+ * Message CRUD, conditional queries, pagination, session-history load.
+ * Local single-user: user_id dimension removed (the table has no user_id column).
  */
 import { getDatabase, withTransaction } from './database'
 import { nowDb } from '../utils/time'

@@ -1,9 +1,9 @@
 /**
- * agent-repository.ts — agents 表仓库
+ * agent-repository.ts — agents table repository
  *
- * AgentRepository：
- * Agent 配置（角色设定、显示信息、模式绑定）CRUD。
- * 本地单用户：主键从 (user_id, profile) 简化为 profile。
+ * AgentRepository:
+ * Agent config (role, display info, mode binding) CRUD.
+ * Local single-user: PK simplified from (user_id, profile) to profile.
  */
 import { getDatabase } from './database'
 import type { AgentEntity, AgentModeInfoDTO } from './types'

@@ -1,9 +1,9 @@
 
 /**
- * private-skill-file-repository.ts — 私有技能文件仓库
+ * private-skill-file-repository.ts — Private skill file repository
  *
- * PrivateSkillFileRepository：
- * 表 private_skill_files — 技能文件（SKILL.md 等），FK → private_skills。
+ * PrivateSkillFileRepository:
+ * table private_skill_files — skill files (SKILL.md etc.), FK → private_skills.
  */
 import { getDatabase } from './database'
 import type { SkillFileEntity } from './types'

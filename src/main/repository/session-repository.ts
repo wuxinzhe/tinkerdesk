@@ -1,9 +1,9 @@
 /**
- * session-repository.ts — sessions 表仓库
+ * session-repository.ts — sessions table repository
  *
- * SessionRepository：
- * 会话 CRUD、用户会话列表、标题搜索、浏览摘要、YOLO 切换。
- * 本地单用户：去掉 user_id 维度（表里已无 user_id 列）。
+ * SessionRepository:
+ * Session CRUD, user session list, title search, browse summaries, YOLO toggle.
+ * Local single-user: user_id dimension removed (the table has no user_id column).
  */
 import { getDatabase } from './database'
 import type { SessionEntity, SessionSummaryDTO } from './types'

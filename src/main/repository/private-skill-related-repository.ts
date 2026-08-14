@@ -1,9 +1,9 @@
 
 /**
- * private-skill-related-repository.ts — 私有技能关联仓库
+ * private-skill-related-repository.ts — Private skill relation repository
  *
- * 表 private_skill_related — 技能关联（related/prerequisite 等）。
- * id 自增（INTEGER PRIMARY KEY AUTOINCREMENT——不再用 UUID）。
+ * table private_skill_related — skill relations (related/prerequisite etc.).
+ * id auto-increments (INTEGER PRIMARY KEY AUTOINCREMENT — no longer UUID).
  */
 import { getDatabase } from './database'
 import type { SkillRelatedEntity } from './types'

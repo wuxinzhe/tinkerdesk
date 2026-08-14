@@ -1,8 +1,9 @@
 /**
- * user-disabled-tool-repository.ts — 用户禁用工具黑名单仓库
+ * user-disabled-tool-repository.ts — User-disabled tool blacklist repository
  *
- * UserDisabledToolRepository（去 user_id）：
- * 表 user_disabled_tools — 纯黑名单，PK(profile, tool_name)。默认空表 = 全部可用。
+ * UserDisabledToolRepository (no user_id):
+ * table user_disabled_tools — pure blacklist, PK(profile, tool_name).
+ * Empty table = everything available.
  */
 import { getDatabase } from './database'
 

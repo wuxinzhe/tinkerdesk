@@ -1,9 +1,9 @@
 /**
- * agent-config-repository.ts — agent_configs 表仓库
+ * agent-config-repository.ts — agent_configs table repository
  *
- * AgentConfigRepository：
- * per-agent 细节配置存储（拍平字段，非 JSONB）。
- * 本地单用户：主键从 (user_id, profile) 简化为 profile。
+ * AgentConfigRepository:
+ * per-agent detail config storage (flattened columns, not JSONB).
+ * Local single-user: PK simplified from (user_id, profile) to profile.
  */
 import { getDatabase } from './database'
 import type { AgentConfigEntity } from './types'

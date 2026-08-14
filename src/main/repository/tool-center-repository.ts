@@ -1,9 +1,9 @@
 /**
- * tool-center-repository.ts — 工具注册中心仓库
+ * tool-center-repository.ts — Tool-center repository
  *
- * 原 tool-center/db.ts 的 SQLite 持久化层，统一并入主库（node:sqlite）。
- * 表 tool_registry（内置工具检测快照）+ mcp_servers（MCP 服务器配置）。
- * 行类型（ToolRegistryRow/McpServerRow）定义集中在 ./types.ts。
+ * The SQLite persistence layer formerly in tool-center/db.ts, merged into the
+ * main DB (node:sqlite). Tables: mcp_servers (MCP server configs) +
+ * mcp_tools. Row types (McpServerRow/McpToolRow) centralized in ./types.ts.
  */
 import { getDatabase } from './database'
 import { nowDb } from '../utils/time'

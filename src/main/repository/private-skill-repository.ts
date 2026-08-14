@@ -1,9 +1,10 @@
 
 /**
- * private-skill-repository.ts — 私有技能仓库
+ * private-skill-repository.ts — Private skill repository
  *
- * PrivateSkillRepository（去 user_id，UNIQUE(profile, name)）：
- * 表 private_skills — 用户私有技能（含运行时条件过滤、触发条件、配置声明）。
+ * PrivateSkillRepository (no user_id, UNIQUE(profile, name)):
+ * table private_skills — user private skills (incl. runtime condition filters,
+ * trigger conditions, config declarations).
  */
 import { getDatabase } from './database'
 import type { FilteredSkillDTO, PrivateSkillEntity } from './types'

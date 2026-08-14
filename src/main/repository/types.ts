@@ -1,8 +1,9 @@
 /**
- * types.ts — src/main/db 包统一类型定义
+ * types.ts — src/main/db unified type definitions
  *
- * 集中存放 db 包下所有表实体、入参、数据库行、列清单类型。
- * Repository / IPC / 上层服务统一从这里 import，避免散落各处。
+ * Central home for all db-package table entities, input params, DB rows and
+ * column-list types. Repository / IPC / upper services import from here
+ * instead of scattering definitions.
  */
 
 // ── custom_models 表 ──────────────────────────────────────────────

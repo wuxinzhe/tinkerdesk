@@ -2,7 +2,7 @@ import { getDatabase } from './database';
 import { PROVIDER_NUMBER_COLS, PROVIDER_STRING_COLS, ProviderEntity, ProviderRow } from './types';
 
 /**
- * 运行时校验 providers 数据库行（与 custom-model-repository 相同的强类型模式）
+ * Validates a providers DB row at runtime (same strongly-typed pattern as custom-model-repository)
  */
 function toRow(value: unknown): ProviderRow {
   if (typeof value !== 'object' || value === null) {

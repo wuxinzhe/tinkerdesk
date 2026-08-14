@@ -1,8 +1,8 @@
 /**
- * conversation-repository.ts — conversations 表仓库
+ * conversation-repository.ts — conversations table repository
  *
- * ConversationRepository：
- * 对话 CRUD、状态变更、压缩选择。
+ * ConversationRepository:
+ * Conversation CRUD, status changes, compaction selection.
  */
 import { getDatabase } from './database'
 import { nowDb } from '../utils/time'
