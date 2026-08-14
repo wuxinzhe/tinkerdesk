@@ -13,6 +13,8 @@ extraResources:
   - from: resources/npm
     to: npm
     filter: ["**/*"]
+# 构建前生成 resources/npm（npm pack npm——bundled 自包含）
+beforePack: scripts/package-npm.js
 npmRebuild: false
 win:
   target:

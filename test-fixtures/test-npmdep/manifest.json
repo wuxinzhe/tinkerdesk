@@ -1,0 +1,8 @@
+{
+  "id": "test-npmdep",
+  "name": "测试插件（npm 依赖）",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "entry": "index.js",
+  "description": "验证 npm 依赖自动安装"
+}
