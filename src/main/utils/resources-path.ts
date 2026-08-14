@@ -25,7 +25,9 @@ export function getResourcesDir(): string {
   ]
   for (const c of candidates) {
     try {
-      if (existsSync(c)) {
+      // 必须含 tool-schemas 才算有效资源目录（dev 时 process.resourcesPath
+      // = electron/dist/resources——存在但无应用资源——不能命中）
+      if (existsSync(c) && existsSync(join(c, 'tool-schemas'))) {
         return c
       }
     } catch {
