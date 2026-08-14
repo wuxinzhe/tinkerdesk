@@ -26,8 +26,6 @@ TinkerDesk 是一个面向普通用户的本地 AI Agent 桌面应用（Electron
 ```bash
 pnpm install
 pnpm dev:desktop        # 桌面开发模式（HMR）
-# 或
-pnpm dev:web            # Web 模式（浏览器访问）
 ```
 
 ### 生产构建
@@ -96,10 +94,9 @@ TinkerDesk 插件 = `manifest.json` + `index.js`（CommonJS），能力通过接
 ## 开发命令
 
 ```bash
-pnpm typecheck          # 类型检查（web + main）
+pnpm typecheck          # 类型检查（main + renderer）
 pnpm lint               # ESLint
 pnpm build:desktop      # 构建桌面
-pnpm build:web          # 构建 Web
 ```
 
 ## 协议
