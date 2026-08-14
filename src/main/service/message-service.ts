@@ -7,6 +7,7 @@
  * - 审批状态更新、对话删除、摘要保存
  */
 import { MessageRepository } from '../repository/message-repository'
+import { eventRecorder } from './event-recorder'
 import type { MessageEntity } from '../repository/types'
 import { ConversationRepository } from '../repository/conversation-repository'
 import type { ApiMessage } from '../core/llm/types'
@@ -196,6 +197,19 @@ export class MessageService {
     const list = this.tempMessages.get(convId) ?? []
     list.push(entity)
     this.tempMessages.set(convId, list)
+    // 事件埋点：消息产生（落库前——排查消息链路关键证据）
+    eventRecorder.record({
+      sessionId: entity.sessionId,
+      conversationId: convId,
+      eventType: 'message',
+      eventName: 'saved',
+      payload: {
+        messageType: entity.messageType,
+        role: entity.role,
+        headText: (entity.content ?? '').slice(0, 80),
+        toolName: entity.toolName ?? '',
+      },
+    })
   }
 
   /** 读取指定对话的暂存消息（供审批超时标记等场景直接修改） */

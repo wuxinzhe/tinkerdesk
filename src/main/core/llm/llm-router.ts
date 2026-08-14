@@ -10,6 +10,7 @@ import { sanitizeApiMessages } from './message-utils'
 import { ERROR_ALL_MODELS_FAILED, ERROR_INVALID_REQUEST, ERROR_RATE_LIMITED, errorResponse, isSuccess } from './llm-response'
 import type { CallFn, ChunkCallback, LlmResponse, LlmRouterOptions, OperationContext } from './types'
 import { usageRecorder } from './usage-recorder'
+import { eventRecorder } from '../../service/event-recorder'
 import { randomUUID } from 'crypto'
 
 /** 同一模型本地重试上限（限流/网络错误——瞬时故障重试一次大概率成功） */
@@ -95,6 +96,13 @@ export class LlmRouter {
       while (localAttempt < MAX_LOCAL_ATTEMPTS) {
         localAttempt++
         console.log(`model=${config.modelName} attempt=${i + 1}/${configs.length}`)
+        eventRecorder.record({
+          sessionId: options.sessionId ?? '',
+          conversationId: options.conversationId,
+          eventType: 'llm',
+          eventName: 'request',
+          payload: { model: config.modelName, scene, attempt: localAttempt, inputMessages: input.length },
+        })
 
         let response: LlmResponse
         try {
@@ -110,6 +118,13 @@ export class LlmRouter {
         } catch (e) {
           // 调用异常（网络错误等——瞬时）→ 本地快退避重试
           console.warn(`模型 ${config.modelName} 调用异常（${(e as Error).message}），本地重试 ${localAttempt}/${MAX_LOCAL_ATTEMPTS}`)
+          eventRecorder.record({
+            sessionId: options.sessionId ?? '',
+            conversationId: options.conversationId,
+            eventType: 'llm',
+            eventName: 'retry',
+            payload: { model: config.modelName, attempt: localAttempt, reason: (e as Error).message.slice(0, 200) },
+          })
           if (localAttempt < MAX_LOCAL_ATTEMPTS) {
             await sleep(NETWORK_RETRY_WAIT_MS * localAttempt)
             continue
@@ -119,6 +134,24 @@ export class LlmRouter {
 
         if (isSuccess(response)) {
           console.log(`action=LLM_RESPONSE model=${config.modelName} tokens=${response.promptTokens ?? 0}`)
+          eventRecorder.record({
+            sessionId: options.sessionId ?? '',
+            conversationId: options.conversationId,
+            eventType: 'llm',
+            eventName: 'response',
+            payload: {
+              model: config.modelName,
+              scene,
+              finishReason: response.finishReason ?? '',
+              resType: response.resType,
+              retryCount: localAttempt - 1,
+              promptTokens: response.promptTokens,
+              completionTokens: response.completionTokens,
+              cacheReadTokens: response.cacheReadTokens,
+              cacheWriteTokens: response.cacheWriteTokens,
+              latencyMs: Date.now() - startedAt,
+            },
+          })
         }
 
         // Phase 3: Operation 判决
@@ -138,6 +171,13 @@ export class LlmRouter {
               continue
             }
             console.warn(`模型 ${config.modelName} 返回 RETRYABLE（类型=${response.resType}${response.errorMessage ? `，原因=${response.errorMessage}` : ''}），回退到下一个`)
+            eventRecorder.record({
+              sessionId: options.sessionId ?? '',
+              conversationId: options.conversationId,
+              eventType: 'llm',
+              eventName: 'fallback',
+              payload: { model: config.modelName, reason: `${response.resType}${response.errorMessage ? `: ${response.errorMessage}` : ''}` },
+            })
             break
           }
         }

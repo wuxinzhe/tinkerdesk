@@ -196,6 +196,20 @@ function createTables(database: DatabaseSync): void {
     latency_ms INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`)
+  // 事件埋点表（审计轨迹——只记录不投影——参考 dsh session events + showing-agent activity_log）
+  database.exec(`CREATE TABLE IF NOT EXISTS agent_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL DEFAULT '',
+    conversation_id TEXT NOT NULL DEFAULT '',
+    seq INTEGER NOT NULL DEFAULT 0,
+    event_type TEXT NOT NULL,
+    event_name TEXT NOT NULL,
+    payload TEXT NOT NULL DEFAULT '{}',
+    latency_ms INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`)
+  database.exec(`CREATE INDEX IF NOT EXISTS idx_agent_events_session ON agent_events(session_id, seq)`)
+  database.exec(`CREATE INDEX IF NOT EXISTS idx_agent_events_type ON agent_events(event_type, event_name)`)
   database.exec(`
     CREATE TABLE IF NOT EXISTS custom_models (
       id             TEXT PRIMARY KEY,

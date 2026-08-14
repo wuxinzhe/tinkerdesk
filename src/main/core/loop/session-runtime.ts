@@ -9,6 +9,7 @@
  * 生命周期 = 会话活跃期；dispose 后即被 Agent 聚合根丢弃。
  */
 import { MessageQueueStore } from '../../service/message-queue-store'
+import { eventRecorder } from '../../service/event-recorder'
 
 /** pendingBarge 有效期（10s——超时失效——clarify/审批等用户交互挂起不误触发） */
 const BARGE_TTL_MS = 10000
@@ -100,10 +101,22 @@ export class SessionRuntime {
       this.pendingBarge = true
       this.pendingBargeAt = Date.now()
       console.log(`action=VOICE-INTERRUPT-AFTER-TOOLS sessionId=${this.sessionId}`)
+      eventRecorder.record({
+        sessionId: this.sessionId,
+        eventType: 'interaction',
+        eventName: 'voice_barge',
+        payload: { stage: 'after_tools' },
+      })
       return
     }
     this.abortController?.abort()
     console.log(`action=VOICE-INTERRUPT sessionId=${this.sessionId}`)
+    eventRecorder.record({
+      sessionId: this.sessionId,
+      eventType: 'interaction',
+      eventName: 'voice_barge',
+      payload: { stage: 'before_llm' },
+    })
   }
 
   /** 取走待打断标记（工具完成后 conversation 检查——10s 过期失效——避免 clarify/审批等用户交互挂起误触发） */

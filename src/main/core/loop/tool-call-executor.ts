@@ -8,6 +8,7 @@
  * 生命周期 = 无状态（每轮 Conversation 持有同一实例或新建）。
  */
 import { SandboxDecision } from '../../service/sandbox-whitelist-service'
+import { eventRecorder } from '../../service/event-recorder'
 import { AuthzDecision } from '../../service/tool-auth-service'
 import { GuardrailAction, ToolLoopGuardrail, appendGuardrailGuidance, classifyToolFailure, syntheticGuardrailResult } from '../../service/tool-loop-guardrail-service'
 import { APPROVAL_REJECTED_MSG } from '../constants'
@@ -27,6 +28,15 @@ export class ToolCallExecutor {
     const { toolAuthService, sandboxWhitelistService, toolManager, promptModuleBuilder } = this.deps
     const toolCtx = buildToolCtx(convCtx, toolCall, this.deps.runtime.getAbort()?.signal)
     const args = (toolCall.arguments ?? {}) as Record<string, unknown>
+    const startedAt = Date.now()
+    // 事件埋点：工具调用
+    eventRecorder.record({
+      sessionId: convCtx.sessionId,
+      conversationId: convCtx.conversationId,
+      eventType: 'tool',
+      eventName: 'call',
+      payload: { toolName: toolCall.name, toolCallId: toolCall.id, argsSummary: JSON.stringify(args).slice(0, 80) },
+    })
 
     // ── 工具循环防护：执行前检查（block/halt 时不执行，返回合成结果） ──
     const before = guardrail.beforeCall(toolCall.name, args)
@@ -51,6 +61,13 @@ export class ToolCallExecutor {
       }
       if (authz === AuthzDecision.ASK) {
         const approved = await this.deps.approvalManager.requestApproval(convCtx, toolCall, '危险操作，需要审批')
+        eventRecorder.record({
+          sessionId: convCtx.sessionId,
+          conversationId: convCtx.conversationId,
+          eventType: 'tool',
+          eventName: 'approval',
+          payload: { toolName: toolCall.name, toolCallId: toolCall.id, reason: 'danger', decision: approved ? 'approved' : 'rejected' },
+        })
         if (!approved) {
           return APPROVAL_REJECTED_MSG
         }
@@ -59,6 +76,13 @@ export class ToolCallExecutor {
       const sandbox = sandboxWhitelistService.check(convCtx.profile, toolCall.name, args)
       if (sandbox === SandboxDecision.ASK) {
         const approved = await this.deps.approvalManager.requestApproval(convCtx, toolCall, '沙盒限制')
+        eventRecorder.record({
+          sessionId: convCtx.sessionId,
+          conversationId: convCtx.conversationId,
+          eventType: 'tool',
+          eventName: 'approval',
+          payload: { toolName: toolCall.name, toolCallId: toolCall.id, reason: 'sandbox', decision: approved ? 'approved' : 'rejected' },
+        })
         if (!approved) {
           return APPROVAL_REJECTED_MSG
         }
@@ -91,6 +115,16 @@ export class ToolCallExecutor {
       console.log(`清除提示词缓存: tool=${toolCall.name} sessionId=${convCtx.sessionId}`)
       promptModuleBuilder.invalidateSessionCache(convCtx.sessionId, convCtx.profile)
     }
+
+    // 事件埋点：工具结果
+    eventRecorder.record({
+      sessionId: convCtx.sessionId,
+      conversationId: convCtx.conversationId,
+      eventType: 'tool',
+      eventName: 'result',
+      payload: { toolName: toolCall.name, toolCallId: toolCall.id, success: !result.startsWith('Error:'), resultLen: result.length },
+      latencyMs: Date.now() - startedAt,
+    })
 
     return result
   }

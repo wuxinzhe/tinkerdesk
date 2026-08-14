@@ -9,6 +9,7 @@
  * 未来接云 Agent：实现同一 IEventSender 接口（WebSocket 传输），route 语义不变。
  */
 import { webContents } from 'electron'
+import { eventRecorder } from './event-recorder'
 import type { IEventSender } from '../core/loop/types'
 import type { LlmChunk } from '../core/llm/types'
 import type { StreamToken } from '../controller/types'
@@ -114,6 +115,20 @@ export class ElectronEventSender implements IEventSender {
     }
     this.tokenBuffer = []
     for (const [sessionId, chunks] of bySession) {
+      // 事件埋点：token 批次（计数 + 首片段——排查"内容重复/流式异常"关键证据）
+      eventRecorder.record({
+        sessionId,
+        eventType: 'stream',
+        eventName: 'token_batch',
+        payload: {
+          chunkCount: chunks.length,
+          totalChars: chunks.reduce((s, c) => s + (c.text?.length ?? 0) + (c.toolCallArgs?.length ?? 0), 0),
+          headText: (chunks[0]?.text ?? '').slice(0, 8),
+          hasToolCallArgs: chunks.some((c) => !!c.toolCallArgs),
+          hasReasoning: chunks.some((c) => !!c.reasoning),
+          isFinish: chunks.some((c) => c.isFinish),
+        },
+      })
       this.send(sessionId, `${ROUTE_CHAT}:${EVT_CHAT_TOKEN}`, { chunks })
     }
   }

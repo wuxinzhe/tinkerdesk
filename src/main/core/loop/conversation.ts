@@ -10,6 +10,7 @@
  * 生命周期 = 一轮（轮状态 = 实例字段）；run() 返回后对象即被丢弃。
  */
 import { MessageFactory } from '../../service/message-service'
+import { eventRecorder } from '../../service/event-recorder'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { BusyModeRegistry } from './busy-mode-registry'
 import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
@@ -135,6 +136,14 @@ export class Conversation implements BusyLoopHost {
     // 本轮 usage 累计（AgentLoop 每轮响应都累加——会话统计不能只取最后一次响应）
     this.tokenAccum = { prompt: 0, completion: 0, cacheRead: 0, cacheWrite: 0 }
     this.scheduleWorkingTip()
+    // 事件埋点：回合开始
+    eventRecorder.record({
+      sessionId: this.sessionId,
+      conversationId: this.convId,
+      eventType: 'conversation',
+      eventName: 'turn_start',
+      payload: { profile, maxIter: this.maxIter, userText: userMessage.slice(0, 80) },
+    })
 
     try {
       // ── while-loop：LLM 调用 ↔ 工具执行 ──
@@ -420,6 +429,21 @@ export class Conversation implements BusyLoopHost {
     const { sessionId, conversationId: convId, profile } = convCtx
     const { approvalManager, messageService, conversationService, sessionService } = this.deps
     const cycleStats = { durationMs: Date.now() - this.cycleStart, iterationCount: this.iteration, llmRequestCount: this.llmRequestCount }
+    // 事件埋点：回合结束（含原因——completed/max_iter/error 等）
+    eventRecorder.record({
+      sessionId: this.sessionId,
+      conversationId: this.convId,
+      eventType: 'conversation',
+      eventName: 'turn_end',
+      payload: {
+        durationMs: cycleStats.durationMs,
+        iterationCount: cycleStats.iterationCount,
+        llmRequestCount: cycleStats.llmRequestCount,
+        promptTokens: this.tokenAccum.prompt,
+        completionTokens: this.tokenAccum.completion,
+      },
+      latencyMs: cycleStats.durationMs,
+    })
     // 本轮自动批准标记随周期结束清除（下一次对话重新生效审批）
     approvalManager.clearAutoApprove(convId)
     // 收尾三步（消息落库 + 对话状态 + 会话统计）事务原子——任一步失败整体回滚，
@@ -605,6 +629,14 @@ export class Conversation implements BusyLoopHost {
       }
     }
     if (!this.abort.signal.aborted) return true
+    // 事件埋点：回合中断退出（interrupt/queue/手动停止）
+    eventRecorder.record({
+      sessionId: this.sessionId,
+      conversationId: this.convId,
+      eventType: 'conversation',
+      eventName: 'abort',
+      payload: { mode: this.strategy.mode, iteration: this.iteration },
+    })
     return false
   }
 
@@ -631,6 +663,14 @@ export class Conversation implements BusyLoopHost {
       MessageFactory.buildUserMessage(this.convId, this.sessionId, this.profile, pending, undefined, checkpoint)
     )
     this.streamTextAccum = ''
+    // 事件埋点：重定向注入（用户修正——排查 redirect 链路）
+    eventRecorder.record({
+      sessionId: this.sessionId,
+      conversationId: this.convId,
+      eventType: 'conversation',
+      eventName: 'redirect',
+      payload: { pendingText: pending.slice(0, 80), checkpointLen: checkpoint.length },
+    })
     console.log(`action=REDIRECT-APPLIED sessionId=${this.sessionId} convId=${this.convId}`)
   }
 

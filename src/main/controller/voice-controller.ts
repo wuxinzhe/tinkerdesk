@@ -11,6 +11,7 @@
  */
 
 import { handleTrusted } from '../security/ipc-guard'
+import { eventRecorder } from '../service/event-recorder'
 import { VoiceProviderService, type VoiceConfig, type VoiceProviderInfo } from '../service/voice-provider-service'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -89,8 +90,22 @@ export class VoiceController {
   private async transcribe(payload: { samples: Float32Array }): Promise<ApiResult<{ text: string }>> {
     try {
       if (!payload?.samples || payload.samples.length === 0) return fail('音频数据为空')
-      return ok({ text: await this.voiceService.transcribe(payload.samples) })
+      const text = await this.voiceService.transcribe(payload.samples)
+      // 事件埋点：语音识别（含失败——静默/空结果排查）
+      eventRecorder.record({
+        sessionId: '',
+        eventType: 'interaction',
+        eventName: 'voice_stt',
+        payload: { success: !!text, textLen: (text ?? '').length, sampleLen: payload.samples.length },
+      })
+      return ok({ text })
     } catch (e) {
+      eventRecorder.record({
+        sessionId: '',
+        eventType: 'interaction',
+        eventName: 'voice_stt',
+        payload: { success: false, error: (e as Error).message.slice(0, 200) },
+      })
       return fail((e as Error).message)
     }
   }
