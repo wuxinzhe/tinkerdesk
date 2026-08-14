@@ -2,6 +2,7 @@
   "name": "tinkerdesk",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "main": "./out/main/index.js",
   "scripts": {
     "dev:web": "vite --config vite.config.web.ts",
