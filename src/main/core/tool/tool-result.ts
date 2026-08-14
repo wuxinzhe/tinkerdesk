@@ -1,7 +1,7 @@
 /**
- * tool-result.ts — 工具执行结果类
+ * tool-result.ts — Tool execution result
  *
- * ToolResult：封装工具执行结果，供引擎控制循环流程。
+ * ToolResult: wraps a tool execution result; drives the engine's control loop.
  */
 
 /** 工具执行结果封装（isAsync=true 表示已派发，等待回调） */

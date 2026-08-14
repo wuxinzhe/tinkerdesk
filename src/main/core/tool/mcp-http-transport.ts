@@ -1,8 +1,8 @@
 /**
- * mcp-http-transport.ts — MCP Streamable HTTP 传输
+ * mcp-http-transport.ts — MCP Streamable HTTP transport
  *
- * 按 MCP 规范（2025-03-26 Streamable HTTP）实现：
- * - POST {endpoint} 发送 JSON-RPC 请求，请求头：
+ * Implements the MCP spec (2025-03-26 Streamable HTTP):
+ * - POST {endpoint} sends JSON-RPC requests, headers:
  *     Accept: application/json, text/event-stream
  *     Content-Type: application/json
  *     Mcp-Protocol-Version: 2025-03-26（服务端可能要求）

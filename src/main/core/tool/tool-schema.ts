@@ -1,7 +1,7 @@
 /**
- * tool-schema.ts — 工具 Schema 类
+ * tool-schema.ts — Tool schema class
  *
- * ToolSchema：OpenAI function calling 中的 tool 对象。
+ * ToolSchema: the tool object in OpenAI function calling.
  */
 import type { ToolFunction, ToolType } from './types'
 

@@ -1,9 +1,10 @@
 /**
- * tool-manager.ts — 工具管理器（统一工具注册中心）
+ * tool-manager.ts — Tool manager (unified tool registry)
  *
- * ToolManager（本地版）：
- * - 启动注册：check 每个工具的可用性，仅缓存可用的 name → tool Map
- * - 工具类型：builtin（内建）/ client（对外）/ mcp（MCP 统一执行器）
+ * ToolManager (local):
+ * - startup registration: checks each tool's availability, caches only the
+ *   available name → tool map
+ * - tool kinds: builtin (built-in) / client (external-facing) / mcp (unified MCP executor)
  * - 工具执行：取出 tool 实例 → 按 toolType 路由——
  *     builtin / client → tool.execute(ctx)（工具自身执行器）
  *     mcp            → MCP 统一执行器（McpTool.execute 内部转发 mcpManager）

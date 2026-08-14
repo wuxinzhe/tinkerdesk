@@ -1,9 +1,10 @@
 /**
- * tool/mcp-tool.ts — MCP 工具（IAgentTool 同构实现）
+ * tool/mcp-tool.ts — MCP tool (IAgentTool-isomorphic implementation)
  *
- * MCP 工具与内建工具同构：注册到 ToolManager 统一注册中心，
- * 满足 IAgentTool 接口（getSchema / execute / check）。
- * execute 内部转发给 MCP 统一执行器（mcpManager），按服务器路由工具请求。
+ * MCP tools are isomorphic with built-in tools: registered into the unified
+ * ToolManager registry, satisfying the IAgentTool interface (getSchema / execute / check).
+ * execute forwards internally to the unified MCP executor (mcpManager),
+ * routing tool requests per server.
  */
 import type { McpManager } from './mcp-manager'
 import type { ToolContext } from '../loop/types'

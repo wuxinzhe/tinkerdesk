@@ -1,9 +1,9 @@
 /**
- * mcp-stdio-transport.ts — MCP stdio 传输
+ * mcp-stdio-transport.ts — MCP stdio transport
  *
- * spawn 子进程，通过 stdin/stdout 以 JSON-RPC 2.0 通信：
- * - connect：spawn 命令 → 等 stdout 数据（连接就绪）→ initialize 握手
- * - request：写 JSON 行到 stdin，按 id 匹配 stdout 响应
+ * Spawns a child process and communicates over stdin/stdout with JSON-RPC 2.0:
+ * - connect: spawn command → wait for stdout data (connection ready) → initialize handshake
+ * - request: write a JSON line to stdin, match stdout responses by id
  * - listTools / callTool：MCP 标准方法
  * - close：结束子进程（SIGTERM → SIGKILL）
  */

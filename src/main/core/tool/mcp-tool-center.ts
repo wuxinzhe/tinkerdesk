@@ -1,9 +1,9 @@
 /**
- * tool/mcp-tool-center.ts — MCP 工具注册中心（本地版）
+ * tool/mcp-tool-center.ts — MCP tool center (local)
  *
- * 职责：
- *   1. 管理 MCP 服务器配置（连接 + 发现工具 + 状态）
- *   2. 将发现的 MCP 工具封装为 McpTool（IAgentTool 同构实例），
+ * Responsibilities:
+ *   1. manage MCP server configs (connect + discover tools + status)
+ *   2. wrap discovered MCP tools as McpTool (IAgentTool-isomorphic instances),
  *      由 bootstrap 注册进 ToolManager 统一注册中心。
  *
  * TinkerAgent → ToolManager.execute →（toolType=mcp）→ McpTool.execute → mcpManager

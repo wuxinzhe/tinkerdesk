@@ -1,9 +1,9 @@
 /**
- * mcp-manager.ts — MCP 服务器连接管理器
+ * mcp-manager.ts — MCP server connection manager
  *
- * 管理外部 MCP 服务器的生命周期（连接/发现/工具调用路由）：
- *   - stdio 传输：mcp-stdio-transport.ts（spawn 子进程，stdin/stdout 通信）
- *   - http 传输：mcp-http-transport.ts（Streamable HTTP）
+ * Manages external MCP server lifecycles (connect/discover/tool-call routing):
+ *   - stdio transport: mcp-stdio-transport.ts (spawns a child process, stdin/stdout)
+ *   - http transport: mcp-http-transport.ts (Streamable HTTP)
  *
  * 协议：JSON-RPC 2.0
  *   tools/list  → 获取工具列表（含 schema）

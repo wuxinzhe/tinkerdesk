@@ -1,7 +1,8 @@
 /**
- * types.ts — Agent 工具系统统一类型定义
+ * types.ts — Agent tool system unified type definitions
  *
- * 只放类型定义（接口/类型别名），类实现独立成文件：
+ * Type definitions (interfaces/type aliases) only; class implementations live
+ * in separate files:
  * - ToolSchema → tool-schema.ts
  * - ToolResult → tool-result.ts
  */

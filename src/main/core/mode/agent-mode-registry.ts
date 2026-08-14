@@ -2,10 +2,10 @@
  * core/mode/agent-mode-registry.ts — Agent Mode 注册表
  *
  * AgentModeRegistry（注解扫描缓存 → TS 手动注册）：
- * - executorCache：id → IAgentMode 实例
- * - metaCache：id → version → AgentModeMeta
- * - 查询：findById / findAllActive / listOptions / exists / count
- * 启动时由 bootstrap 注册所有模式实现（替代注解扫描）。
+ * - executorCache: id → IAgentMode instance
+ * - metaCache: id → version → AgentModeMeta
+ * - queries: findById / findAllActive / listOptions / exists / count
+ * At startup, bootstrap registers all mode implementations (replacing annotation scanning).
  */
 import type { AgentModeMeta, IAgentMode, ModeInfoDTO, ModeOptionDTO } from './agent-mode'
 
