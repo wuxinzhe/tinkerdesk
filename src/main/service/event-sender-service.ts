@@ -115,15 +115,19 @@ export class ElectronEventSender implements IEventSender {
     }
     this.tokenBuffer = []
     for (const [sessionId, chunks] of bySession) {
-      // 事件埋点：token 批次（计数 + 首片段——排查"内容重复/流式异常"关键证据）
+      // 事件埋点：token 批次（参考 dsh assistant/chunk——完整留底——执行过程可追溯）
+      // 存批次内全部 text 拼接（膨胀靠环形总量控制——maxRows 超了挤最早）
+      const batchText = chunks.map((c) => c.text ?? '').join('')
+      const batchArgs = chunks.map((c) => c.toolCallArgs ?? '').join('')
       eventRecorder.record({
         sessionId,
         eventType: 'stream',
         eventName: 'token_batch',
         payload: {
           chunkCount: chunks.length,
-          totalChars: chunks.reduce((s, c) => s + (c.text?.length ?? 0) + (c.toolCallArgs?.length ?? 0), 0),
-          headText: (chunks[0]?.text ?? '').slice(0, 8),
+          totalChars: batchText.length + batchArgs.length,
+          text: batchText,
+          toolCallArgs: batchArgs.length > 500 ? batchArgs.slice(0, 500) + '…' : batchArgs,
           hasToolCallArgs: chunks.some((c) => !!c.toolCallArgs),
           hasReasoning: chunks.some((c) => !!c.reasoning),
           isFinish: chunks.some((c) => c.isFinish),
