@@ -115,24 +115,24 @@ export class ElectronEventSender implements IEventSender {
     }
     this.tokenBuffer = []
     for (const [sessionId, chunks] of bySession) {
-      // 事件埋点：token 批次（参考 dsh assistant/chunk——完整留底——执行过程可追溯）
-      // 存批次内全部 text 拼接（膨胀靠环形总量控制——maxRows 超了挤最早）
-      const batchText = chunks.map((c) => c.text ?? '').join('')
-      const batchArgs = chunks.map((c) => c.toolCallArgs ?? '').join('')
-      eventRecorder.record({
-        sessionId,
-        eventType: 'stream',
-        eventName: 'token_batch',
-        payload: {
-          chunkCount: chunks.length,
-          totalChars: batchText.length + batchArgs.length,
-          text: batchText,
-          toolCallArgs: batchArgs.length > 500 ? batchArgs.slice(0, 500) + '…' : batchArgs,
-          hasToolCallArgs: chunks.some((c) => !!c.toolCallArgs),
-          hasReasoning: chunks.some((c) => !!c.reasoning),
-          isFinish: chunks.some((c) => c.isFinish),
-        },
-      })
+      // 事件埋点：逐 chunk 记录（参考 dsh assistant/chunk——一个 chunk 一条——
+      // 完整留底——执行过程透明可追溯；膨胀靠环形总量控制——maxRows 超了挤最早）
+      for (const c of chunks) {
+        eventRecorder.record({
+          sessionId,
+          eventType: 'stream',
+          eventName: 'chunk',
+          payload: {
+            text: c.text ?? '',
+            reasoning: c.reasoning ?? '',
+            toolCallArgs: c.toolCallArgs ?? '',
+            toolCallName: c.toolCallName ?? '',
+            toolCallIndex: c.toolCallIndex ?? undefined,
+            isFinish: c.isFinish ?? false,
+            finishReason: c.finishReason ?? '',
+          },
+        })
+      }
       this.send(sessionId, `${ROUTE_CHAT}:${EVT_CHAT_TOKEN}`, { chunks })
     }
   }
