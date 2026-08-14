@@ -5,8 +5,6 @@
   "license": "MIT",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev:web": "vite --config vite.config.web.ts",
-    "build:web": "vite build --config vite.config.web.ts",
     "dev:desktop": "electron-vite dev -- --remote-debugging-port=9222 --inspect=5858",
     "build:desktop": "electron-vite build",
     "preview:desktop": "electron-vite preview",
