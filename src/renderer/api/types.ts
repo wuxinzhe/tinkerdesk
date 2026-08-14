@@ -728,7 +728,7 @@ export interface PluginManifest {
   homepage?: string
   /** 发布者（发布渠道标识） */
   publisher?: string
-  modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
+  assetDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
 }
 
 export interface VoiceProviderInfo {

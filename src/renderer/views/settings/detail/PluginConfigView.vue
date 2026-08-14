@@ -57,14 +57,14 @@ async function load(): Promise<void> {
   }
 }
 
-/** 查询模型就绪状态（仅当插件声明了 modelDeps；未声明的插件不查——查会报 No handler） */
+/** 查询资源就绪状态（仅当插件声明了 assetDeps；未声明的插件不查——查会报 No handler） */
 async function refreshModelsStatus(): Promise<void> {
-  if (!plugin.value?.manifest.modelDeps?.length) {
+  if (!plugin.value?.manifest.assetDeps?.length) {
     modelsStatus.value = {}
     return
   }
   try {
-    const status = await pluginsApi.invokePlugin<Record<string, boolean>>(pluginId.value, 'models:status')
+    const status = await pluginsApi.invokePlugin<Record<string, boolean>>(plugin.value.manifest.id, 'models:status')
     modelsStatus.value = status
   } catch {
     modelsStatus.value = {}
@@ -226,11 +226,11 @@ watch(pluginId, () => {
       </section>
 
       <!-- 模型管理 -->
-      <section v-if="plugin.manifest.modelDeps?.length" class="plugin-config-page__section">
+      <section v-if="plugin.manifest.assetDeps?.length" class="plugin-config-page__section">
         <div class="plugin-config-page__section-title">
-          模型
+          资源
         </div>
-        <div v-for="dep in plugin.manifest.modelDeps" :key="dep.dest" class="plugin-config-page__model">
+        <div v-for="dep in plugin.manifest.assetDeps" :key="dep.dest" class="plugin-config-page__model">
           <div class="plugin-config-page__model-info">
             <div class="plugin-config-page__model-name">
               {{ dep.name }}

@@ -38,12 +38,12 @@ export interface PluginManifest {
   homepage?: string
   /** 发布者（发布渠道标识） */
   publisher?: string
-  /** 模型依赖（设置页引导下载） */
-  modelDeps?: ModelDep[]
+  /** 资源依赖（模型/二进制/数据文件——URL 直链下载到 dest） */
+  assetDeps?: AssetDep[]
 }
 
-/** 模型依赖声明 */
-export interface ModelDep {
+/** 资源依赖声明（模型/二进制/数据文件等任意资源） */
+export interface AssetDep {
   name: string
   /** 下载后存放路径（相对插件目录） */
   dest: string
@@ -84,7 +84,7 @@ export interface PluginContext {
   pluginId: string
   /** 插件目录（读模型/资源） */
   configDir: string
-  /** 插件 manifest（modelDeps 等） */
+  /** 插件 manifest（assetDeps 等） */
   getManifest(): PluginManifest
   /** 插件 → 应用事件（转发 renderer，如 stt:on-text） */
   emit(event: string, data?: unknown): void
