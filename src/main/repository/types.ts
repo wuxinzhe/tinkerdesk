@@ -473,17 +473,7 @@ export interface SceneModelBinding {
   isMain?: boolean
 }
 
-// ── tool-center 持久化（表 tool_registry / mcp_servers） ──
-
-/** 内置工具检测快照行 */
-export interface ToolRegistryRow {
-  id: string
-  source: string
-  available: number
-  reason: string | null
-  schemaJson: string
-  checkedAt: string
-}
+// ── tool-center 持久化（表 mcp_servers） ──
 
 /** MCP 服务器配置行 */
 export interface McpServerRow {

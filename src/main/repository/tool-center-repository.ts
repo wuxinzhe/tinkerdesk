@@ -7,41 +7,13 @@
  */
 import { getDatabase } from './database'
 import { nowDb } from '../utils/time'
-import type { ToolRegistryRow, McpServerRow, McpToolRow } from './types'
+import type { McpServerRow, McpToolRow } from './types'
 
 /** 工具注册中心仓库 */
 export class ToolCenterRepository {
   // ── Tool Registry ──
 
   /** 全量覆盖内置工具检测快照 */
-  saveToolRegistry(tools: Array<{id: string; source: string; available: boolean; reason?: string | null; schema: unknown}>): void {
-    const db = getDatabase()
-    db.prepare('DELETE FROM tool_registry').run()
-    const stmt = db.prepare(
-      'INSERT INTO tool_registry (id, source, available, reason, schema_json, checked_at) VALUES (?, ?, ?, ?, ?, ?)'
-    )
-    const now = nowDb()
-    for (const t of tools) {
-      stmt.run(t.id, t.source, t.available ? 1 : 0, t.reason ?? null, JSON.stringify(t.schema), now)
-    }
-  }
-
-  /** 读取内置工具检测快照 */
-  loadToolRegistry(): ToolRegistryRow[] {
-    const db = getDatabase()
-    const rows = db.prepare('SELECT id, source, available, reason, schema_json, checked_at FROM tool_registry ORDER BY id').all() as Array<{
-      id: string; source: string; available: number; reason: string | null; schema_json: string; checked_at: string
-    }>
-    return rows.map((r) => ({
-      id: r.id,
-      source: r.source,
-      available: r.available,
-      reason: r.reason,
-      schemaJson: r.schema_json,
-      checkedAt: r.checked_at,
-    }))
-  }
-
   // ── MCP Servers ──
 
   /** 全量覆盖 MCP 服务器配置 */

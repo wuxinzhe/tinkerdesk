@@ -476,14 +476,6 @@ function createTables(database: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_user_scene_models_scene ON user_scene_models(profile, scene_id);
 
     -- ── tool-center 持久化（原 tool-center/db.ts，统一并入主库） ──
-    CREATE TABLE IF NOT EXISTS tool_registry (
-      id          TEXT PRIMARY KEY,
-      source      TEXT NOT NULL DEFAULT 'builtin',
-      available   INTEGER NOT NULL DEFAULT 1,
-      reason      TEXT,
-      schema_json TEXT NOT NULL,
-      checked_at  TEXT NOT NULL
-    );
     CREATE TABLE IF NOT EXISTS mcp_servers (
       name        TEXT PRIMARY KEY,
       transport   TEXT NOT NULL DEFAULT 'stdio',
