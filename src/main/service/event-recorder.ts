@@ -82,6 +82,46 @@ class EventRecorder {
     }
   }
 
+  /** 同步落库全部剩余事件（正常退出前调用——不丢队列——对齐 dsh dispose drain） */
+  flushSync(): void {
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
+    }
+    if (this.queue.length === 0) return
+    const batch = this.queue
+    this.queue = []
+    try {
+      const db = getDatabase()
+      const stmt = db.prepare(
+        `INSERT INTO agent_events (session_id, conversation_id, seq, event_type, event_name, payload, latency_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      db.exec('BEGIN')
+      try {
+        for (const evt of batch) {
+          const seq = sessionSeq.get(evt.sessionId) ?? 0
+          sessionSeq.set(evt.sessionId, seq + 1)
+          stmt.run(
+            evt.sessionId,
+            evt.conversationId ?? '',
+            seq,
+            evt.eventType,
+            evt.eventName,
+            JSON.stringify(evt.payload ?? {}),
+            evt.latencyMs ?? 0,
+          )
+        }
+        db.exec('COMMIT')
+      } catch (e) {
+        db.exec('ROLLBACK')
+        throw e
+      }
+    } catch (e) {
+      console.warn(`[event-recorder] 退出落库失败（${(e as Error).message}）——丢弃 ${batch.length} 条`)
+    }
+  }
+
   /** 批量落库（单事务——严格顺序） */
   private flush(): void {
     if (this.timer) {

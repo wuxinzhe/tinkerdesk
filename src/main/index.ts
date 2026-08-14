@@ -29,6 +29,7 @@ import { GeneralSettingsController } from './controller/general-settings-control
 import { initUpdater, registerUpdaterHandlers, checkForUpdatesOnStartup } from './updater'
 import { registerMediaProtocol } from './service/media-service'
 import { usageRecorder } from './core/llm/usage-recorder'
+import { eventRecorder } from './service/event-recorder'
 import { protocol } from 'electron'
 
 // app-media:// 自定义协议特权声明（必须在 app ready 前）：
@@ -214,6 +215,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    // 事件埋点：正常退出前同步落库剩余队列（不丢——对齐 dsh dispose drain）
+    try {
+      eventRecorder.flushSync()
+    } catch {
+      // 落库失败不阻塞退出
+    }
     // usage 统计先清空（需要 DB）——再关库
     usageRecorder.shutdown()
     closeDatabase()
