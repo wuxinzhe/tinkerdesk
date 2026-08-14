@@ -1,16 +1,17 @@
 /**
- * agent-controller.ts — 本地 Agent controller 层（class 形式）
+ * agent-controller.ts — Local agent IPC controller (class form)
  *
- *  的职责 + 类方法化：
- * 每个 IPC 一个独立具名方法，register() 只做 ipcMain.handle 绑定。
- *   agent:chat           → sendChatMessage（对话前经 SessionContextFactory 构建 ctx）
+ * Responsibilities + class-method mapping:
+ * Every IPC gets one named method; register() only binds ipcMain.handle.
+ *   agent:chat           → sendChatMessage (builds ctx via SessionContextFactory before chat)
  *   agent:toolResult     → submitToolResult
  *   agent:approval       → respondApproval
  *   agent:revoke         → revokeChatMessage
  *   agent:interrupt      → interruptSession
  *   agent:clearAll       → clearSessionState
  *
- * 流式 token 通过 agent:token 事件推送；最终响应以 MessageVO 返回（同源）。
+ * Streaming tokens are pushed via the agent:token event; the final
+ * response returns as MessageVO (same source).
  */
 
 import { handleTrusted } from '../security/ipc-guard'

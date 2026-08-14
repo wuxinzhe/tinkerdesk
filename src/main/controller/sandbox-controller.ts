@@ -1,12 +1,13 @@
 /**
  * sandbox-controller.ts — 沙盒白名单 IPC controller（class 形式）
  *
- * SandboxController（本地单用户版，去 userId）：
- * URL 白名单 + 路径白名单 CRUD。
- * 分层：controller → service（SandboxWhitelistService）。
- * IPC 前缀：sandbox:*
+ * SandboxController (local single-user, no userId):
+ * URL whitelist + path whitelist CRUD.
+ * Layering: controller → service (SandboxWhitelistService).
+ * IPC prefix: sandbox:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

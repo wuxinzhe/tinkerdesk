@@ -1,12 +1,13 @@
 /**
  * session-controller.ts — 会话 IPC controller（class 形式）
  *
- * SessionController（本地单用户版，去 userId）：
- * 会话列表 / 创建 / 重命名 / YOLO 查询与切换。
- * 分层：controller → service（SessionService），不直接访问 repository。
- * IPC 前缀：session:*
+ * SessionController (local single-user, no userId):
+ * Session list / create / rename / YOLO query & toggle.
+ * Layering: controller → service (SessionService), never touches repository directly.
+ * IPC prefix: session:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

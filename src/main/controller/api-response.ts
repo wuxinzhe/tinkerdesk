@@ -1,10 +1,10 @@
 /**
- * api-response.ts — 统一 API 响应包装
+ * api-response.ts — Unified API response wrapper
  *
- * ApiResponse：
- * 成功：{ success: true,  data: {...}, error: null }
- * 失败：{ success: false, data: null,  error: "message" }
- * 所有 IPC controller 返回此结构，前端根据 success 判断。
+ * ApiResponse:
+ * success: { success: true,  data: {...}, error: null }
+ * failure: { success: false, data: null,  error: "message" }
+ * Every IPC controller returns this shape; the renderer branches on success.
  */
 export interface ApiResponse<T = unknown> {
   success: boolean

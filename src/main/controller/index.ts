@@ -1,8 +1,8 @@
 /**
  * controller/index.ts — Controller 层统一出口
  *
- * 本地客户端的 controller：IPC 接口即对外暴露的接口（无 HTTP controller）。
- * controller 包（去用户认证/注册/管理后台）。
+ * Local-client controllers: the IPC surface IS the exposed API (no HTTP controllers).
+ * controller package (auth/registration/admin console removed).
  */
 export {AgentController} from './agent-controller'
 export {SessionController} from './session-controller'

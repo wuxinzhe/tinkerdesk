@@ -1,12 +1,13 @@
 /**
  * agent-manager-controller.ts — Agent 配置 IPC controller（class 形式）
  *
- * AgentController（本地单用户版，去 userId/模式注册表）：
- * Agent 列表 / 创建 / 详情 / 更新 / 删除。
- * 分层：controller → service（AgentService），不直接访问 repository。
- * IPC 前缀：agent-cfg:*
+ * AgentManagerController (local single-user, no userId/mode registry):
+ * Agent list / create / detail / update / delete.
+ * Layering: controller → service (AgentService), never touches repository directly.
+ * IPC prefix: agent-cfg:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

@@ -1,9 +1,9 @@
 /**
  * memory-controller.ts — 记忆管理 IPC
  *
- * 记忆内容 CRUD + 拖拽排序（memory:list / add / update / remove / reorder）。
- * 数据源：MemoryStore（文件系统 userData/memory/{target}-{profile}.json——entries: string[]）。
- * target: 'memory'（Agent 记忆）或 'user'（用户画像记忆）。
+ * Memory content CRUD + drag reorder (memory:list / add / update / remove / reorder).
+ * Data source: MemoryStore (file-system userData/memory/{target}-{profile}.json — entries: string[]).
+ * target: 'memory' (agent memory) or 'user' (user-profile memory).
  */
 
 import { handleTrusted } from '../security/ipc-guard'

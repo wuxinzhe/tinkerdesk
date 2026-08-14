@@ -1,12 +1,12 @@
 /**
  * web-provider-controller.ts — Web 工具（搜索/抓取）provider 配置 IPC controller
  *
- * 前端工具管理页（supportsProvider 的工具）的 L3 设置页调用：
- *   web-provider:list  → 某接口的插件 provider 列表 + 激活配置
- *   web-provider:set   → 设置激活 provider / 回退开关
+ * Called from the tool-management L3 settings page (tools with supportsProvider):
+ *   web-provider:list  → plugin provider list for an interface + active config
+ *   web-provider:set   → set active provider / fallback toggle
  *
- * 分层：controller → WebProvider（工具域 service 层）。
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法。
+ * Layering: controller → WebProvider (tool-domain service layer).
+ * Structure: register() only binds ipcMain.handle; logic lives in named methods.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

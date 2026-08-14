@@ -1,10 +1,10 @@
 /**
  * general-settings-controller.ts — 通用设置 IPC（快捷键等全局配置）
  *
- * 频道：
- *   settings:general:get  → { settings, shortcuts } 全部配置（含默认值兜底）
- *   settings:general:set  → 写入单个配置 { key, value }
- *   settings:general:reset → 重置单个配置为默认 { key }
+ * Channels:
+ *   settings:general:get  → { settings, shortcuts } full config (with defaults fallback)
+ *   settings:general:set  → write single config { key, value }
+ *   settings:general:reset → reset single config to default { key }
  */
 
 import { handleTrusted } from '../security/ipc-guard'

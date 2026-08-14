@@ -1,11 +1,12 @@
 /**
  * prompt-module-controller.ts — 提示词模块 IPC controller（class 形式）
  *
- * UserPromptModuleController（本地单用户版，去 userId）：
- * 模块列表 / 创建 / 更新 / 删除 / 启用停用。
- * 分层：controller → service（PromptService）。
- * 表含 profile 字段 → 全链路 profile 必传限定（controller → service → repository）。
- * IPC 前缀：prompt-module:*
+ * UserPromptModuleController (local single-user, no userId):
+ * Module list / create / update / delete / enable-disable.
+ * Layering: controller → service (PromptService).
+ * Table carries a profile column → the whole chain (controller → service
+ * → repository) requires profile to be passed.
+ * IPC prefix: prompt-module:*
  */
 
 import { handleTrusted } from '../security/ipc-guard'

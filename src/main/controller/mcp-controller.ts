@@ -1,12 +1,13 @@
 /**
  * mcp-controller.ts — MCP 服务器管理 IPC controller（class 形式）
  *
- * 工具中心的管理接口（本地版）：
- * MCP 服务器配置 CRUD + 状态查询 + 环境信息。
- * 分层：controller → service（McpToolCenter，core 模块即 service 层）。
- * IPC 前缀：tool-center:*
+ * Tool-center admin interface (local):
+ * MCP server config CRUD + status query + environment info.
+ * Layering: controller → service (McpToolCenter; the core module acts as service layer).
+ * IPC prefix: tool-center:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

@@ -1,18 +1,22 @@
 /**
  * model-controller.ts — 模型管理 IPC controller（class 形式）
  *
- * ModelController（本地单用户版，去 userId）：
- * - 请求参数封装为 RequestDTO
- * - 返回类型具体化，不用 unknown
- * - 构造注入 service，register() 统一注册
+ * ModelController (local single-user, no userId):
+ * - request params wrapped as RequestDTO
+ * - return types concretized, never unknown
+ * - constructor-injected service, register() binds all channels
  *
- * profile 铁律：本地单用户但可多 Agent——scene_models（场景绑定）按 profile 隔离，
- * custom_models（接入的模型）全局共享（所有 agent 可见，查询/CRUD 不按 profile 过滤）。
- * 所有 per-agent 方法 profile 必传（由前端传入，main 不硬编码默认值）。
- * system_providers / fetch-models 为全局或无状态操作，不带 profile。
+ * Profile rule: local single-user but multi-Agent — scene_models (scene
+ * bindings) are isolated per profile; custom_models (connected models)
+ * are shared globally (visible to all agents; queries/CRUD are not
+ * profile-filtered).
+ * All per-agent methods require profile (passed by the renderer; main never
+ * hardcodes a default). system_providers / fetch-models are global or
+ * stateless operations and carry no profile.
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
- * IPC 前缀：model:*
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
+ * IPC prefix: model:*
  */
 
 import { handleTrusted } from '../security/ipc-guard'

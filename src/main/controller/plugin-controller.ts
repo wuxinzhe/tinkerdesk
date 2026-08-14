@@ -1,13 +1,13 @@
 /**
  * plugin-controller.ts — 插件管理 IPC（对齐 Controller 规范：独立具名方法 + register 绑定）
  *
- * 频道：
- *   plugin:list         → 插件列表（manifest + 状态）
- *   plugin:toggle       → 启停插件 { id, enabled }
- *   plugin:get-status   → 实时状态（含插件自定义 detail）
- *   plugin:get-schema   → 配置 Schema（动态表单渲染）
- *   plugin:get-config   → 读取配置（secret 脱敏）
- *   plugin:save-config  → 保存配置 { id, patch }
+ * Channels:
+ *   plugin:list         → plugin list (manifest + status)
+ *   plugin:toggle       → enable/disable plugin { id, enabled }
+ *   plugin:get-status   → live status (incl. plugin-custom detail)
+ *   plugin:get-schema   → config schema (dynamic form rendering)
+ *   plugin:get-config   → read config (secrets masked)
+ *   plugin:save-config  → save config { id, patch }
  */
 import { dialog, BrowserWindow} from 'electron'
 import { handleTrusted } from '../security/ipc-guard'

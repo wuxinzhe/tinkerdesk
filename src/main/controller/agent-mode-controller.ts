@@ -1,10 +1,10 @@
 /**
  * agent-mode-controller.ts — Agent Mode IPC controller（class 形式）
  *
- * AgentModeController（本地单用户版）：
- * 模式列表 / 选项 / 详情 / 配置检查。
- * 分层：controller → service（AgentModeService），不直接访问 registry。
- * IPC 前缀：agent-mode:*
+ * AgentModeController (local single-user):
+ * Mode list / options / detail / config check.
+ * Layering: controller → service (AgentModeService), never touches registry directly.
+ * IPC prefix: agent-mode:*
  */
 
 import { handleTrusted } from '../security/ipc-guard'

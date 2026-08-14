@@ -2,9 +2,9 @@
  * audio-tool-provider-controller.ts — Agent 语音工具（text_to_speech / speech_to_text）
  * provider 配置 IPC controller
  *
- * 前端工具管理页（supportsProvider 的工具）的 L3 设置页调用：
- *   audio-tool-provider:list  → 某接口的插件 provider 列表 + 内置 Edge + 激活配置
- *   audio-tool-provider:set   → 设置激活 provider / 回退开关
+ * Called from the tool-management L3 settings page (tools with supportsProvider):
+ *   audio-tool-provider:list  → plugin provider list for an interface + built-in Edge + active config
+ *   audio-tool-provider:set   → set active provider / fallback toggle
  */
 
 import { handleTrusted } from '../security/ipc-guard'

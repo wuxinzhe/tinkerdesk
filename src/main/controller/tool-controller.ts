@@ -1,12 +1,13 @@
 /**
  * tool-controller.ts — 工具清单与禁用配置 IPC controller（class 形式）
  *
- * ToolController（本地单用户版，去 userId）：
- * 工具清单 / 禁用启用。
- * 分层：controller → ToolManager（工具域 service 层）。
- * IPC 前缀：tool-config:*
+ * ToolController (local single-user, no userId):
+ * Tool list / disable-enable.
+ * Layering: controller → ToolManager (tool-domain service layer).
+ * IPC prefix: tool-config:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

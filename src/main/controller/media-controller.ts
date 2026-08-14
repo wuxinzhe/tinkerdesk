@@ -1,9 +1,9 @@
 /**
  * media-controller.ts — 聊天媒体附件（图片/音频/视频）持久化
  *
- * - media:pick-and-import：弹文件选择框 → 复制到 media 目录 → 返回相对路径
- *   （前端拼装 [Image/Audio/Video attached at: media/xxx] 文本消息）
- * - 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法
+ * - media:pick-and-import: file picker → copy into media dir → return relative path
+ *   (renderer assembles [Image/Audio/Video attached at: media/xxx] text message)
+ * - Structure: register() only binds ipcMain.handle; logic lives in named methods
  */
 import { dialog } from 'electron'
 import { handleTrusted } from '../security/ipc-guard'

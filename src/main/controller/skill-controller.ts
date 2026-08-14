@@ -1,12 +1,13 @@
 /**
  * skill-controller.ts — 技能 IPC controller（class 形式）
  *
- * SkillController（本地单用户版，去 userId/官方技能市场）：
- * 私有技能列表 / 详情 / 软删 / 恢复 + 技能分类。
- * 分层：controller → service（PrivateSkillService / SkillCategoryService）。
- * IPC 前缀：skill:*
+ * SkillController (local single-user, no userId/official skill market):
+ * Private skill list / detail / soft delete / restore + skill categories.
+ * Layering: controller → service (PrivateSkillService / SkillCategoryService).
+ * IPC prefix: skill:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 import { dialog, BrowserWindow} from 'electron'
 import { handleTrusted } from '../security/ipc-guard'

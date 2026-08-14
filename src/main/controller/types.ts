@@ -1,10 +1,11 @@
 /**
  * types.ts — Controller 层 VO 定义（IPC 出口类型）
  *
- * 三层：controller 构建 VO（对外出口），service 构建 DTO，repository 构建 entity。
- * 本地客户端：controller 的 VO 即 IPC 返回给 render 的数据形状。
+ * Three layers: controller builds VOs (outbound), service builds DTOs,
+ * repository builds entities.
+ * Local client: controller VOs ARE the data shape returned to the renderer over IPC.
  *
- * 原 src/defines/api/agent-api-types.ts（Agent 会话统一契约，本地/远端同源）。
+ * Unified agent-session contract (same shape local & remote).
  */
 
 /** 消息角色 */

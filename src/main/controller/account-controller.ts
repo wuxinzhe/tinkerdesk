@@ -1,15 +1,16 @@
 /**
- * account-controller.ts — 账号初始化 IPC controller（4 步向导版）
+ * account-controller.ts — Account setup IPC controller (4-step wizard)
  *
- * AccountController（本地单用户版，去 userId）：
- * - account:init-status      → 4 项初始化检查
- * - account:init-step-status → 分步状态检查（configured + 回显）
- * - account:init-step1       → 创建默认 Agent
- * - account:init-step2       → 写入 AgentConfig（合并保存）
- * - account:init-step3       → 创建含 API Key 的模型
- * - account:init-step4       → 绑定主聊天场景
+ * AccountController (local single-user, no userId):
+ * - account:init-status      → 4-item initialization check
+ * - account:init-step-status → per-step status check (configured + echo)
+ * - account:init-step1       → create default Agent
+ * - account:init-step2       → write AgentConfig (merge-save)
+ * - account:init-step3       → create model with API key
+ * - account:init-step4       → bind main chat scene
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

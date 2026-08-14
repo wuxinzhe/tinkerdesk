@@ -1,13 +1,13 @@
 /**
  * voice-controller.ts — 语音服务 IPC（系统固定接口：录音是应用固有功能，STT/TTS 转发给插件 provider）
  *
- * 频道：
- *   voice:providers      → { stt: [...], tts: [...] } 可用 provider 列表
- *   voice:get-config     → { sttProvider, ttsProvider } 当前激活
- *   voice:set-provider   → 保存激活 { sttProvider?, ttsProvider? }
- *   voice:provider-ready → 查询 provider 模型就绪 { pluginId }
- *   voice:stt:transcribe → { samples: Float32Array } → { text } 转发当前 STT provider
- *   voice:tts:speak      → { text } → { audio } 转发当前 TTS provider
+ * Channels:
+ *   voice:providers      → { stt: [...], tts: [...] } available provider list
+ *   voice:get-config     → { sttProvider, ttsProvider } currently active
+ *   voice:set-provider   → save active { sttProvider?, ttsProvider? }
+ *   voice:provider-ready → query provider model readiness { pluginId }
+ *   voice:stt:transcribe → { samples: Float32Array } → { text } forward to active STT provider
+ *   voice:tts:speak      → { text } → { audio } forward to active TTS provider
  */
 
 import { handleTrusted } from '../security/ipc-guard'

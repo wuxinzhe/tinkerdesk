@@ -1,12 +1,13 @@
 /**
- * agent-config-controller.ts — Agent 运行参数 IPC controller（class 形式）
+ * agent-config-controller.ts — Agent runtime params IPC controller (class form)
  *
- * AgentConfigController（本地单用户版，去 userId）：
- * 读取 / 更新 / 重置 per-agent 运行参数。
- * 分层：controller → service（AgentConfigService），不直接访问 repository。
- * IPC 前缀：agent-config:*
+ * AgentConfigController (local single-user, no userId):
+ * read / update / reset per-agent runtime params.
+ * Layering: controller → service (AgentConfigService), never touches repository directly.
+ * IPC prefix: agent-config:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'

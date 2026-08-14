@@ -1,12 +1,13 @@
 /**
  * message-controller.ts — 消息 IPC controller（class 形式）
  *
- * MessageController（本地单用户版，去 userId）：
- * 会话消息 / 对话消息 / 删除对话消息。
- * 分层：controller → service（MessageService），不直接访问 repository。
- * IPC 前缀：message:*
+ * MessageController (local single-user, no userId):
+ * Session messages / conversation messages / delete conversation messages.
+ * Layering: controller → service (MessageService), never touches repository directly.
+ * IPC prefix: message:*
  *
- * 结构：register() 只做 ipcMain.handle 绑定，逻辑在独立具名方法（入参出参完整类型）。
+ * Structure: register() only binds ipcMain.handle; logic lives in
+ * named methods with fully typed params/returns.
  */
 
 import { handleTrusted } from '../security/ipc-guard'
