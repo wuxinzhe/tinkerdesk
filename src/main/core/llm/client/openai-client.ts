@@ -97,7 +97,9 @@ export class OpenAIClient implements LlmClient {
   /** 非流式调用 */
   async callNonStreaming(request: LlmRequest): Promise<LlmResponse> {
     const { config } = request
-    const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
+    // maxRetries: 0——SDK 层重试会导致流式从头重发、text 累积两遍（DB 重复）；
+    // 重试统一由 llm-router 层控制（response 不累积——每轮全新）
+    const client = new OpenAI({ apiKey: *** baseURL: config.baseUrl, timeout: 60000, maxRetries: 0 })
     try {
       const completion = await client.chat.completions.create({
         model: config.modelName,
@@ -150,7 +152,9 @@ export class OpenAIClient implements LlmClient {
   /** 流式调用：转发 token 的同时缓存拼装完整 LlmResponse */
   async callStreaming(request: LlmRequest, onToken: ChunkCallback): Promise<LlmResponse> {
     const { config } = request
-    const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl, timeout: 60000 })
+    // maxRetries: 0——SDK 层重试会导致流式从头重发、text 累积两遍（DB 重复）——
+    // 重试统一由 llm-router 层控制（response 不累积——每轮全新）
+    const client = new OpenAI({ apiKey: *** baseURL: config.baseUrl, timeout: 60000, maxRetries: 0 })
     try {
       const stream = await client.chat.completions.create({
         model: config.modelName,
