@@ -1,0 +1,15 @@
+{
+  "name": "desktop_tinker_read_file",
+  "description": "Read a text file with pagination and line numbers. Use offset and limit for large files. Returns content with LINE_NUM|CONTENT format, total_lines, file_size, truncated flag and hint for continuation.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "path": { "type": "string", "description": "The absolute or relative path to the file to read" },
+      "offset": { "type": "integer", "description": "Line number to start reading from, 1-indexed", "default": 1 },
+      "limit": { "type": "integer", "description": "Maximum number of lines to return (max 2000)", "default": 500 }
+    },
+    "required": ["path"]
+  },
+  "toolType": "desktop",
+  "emoji": "📄"
+}

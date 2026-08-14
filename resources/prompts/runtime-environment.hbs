@@ -1,0 +1,38 @@
+Client environment:
+  OS: {{os}}
+{{#if arch}}  Architecture: {{arch}}
+{{/if}}{{#if clientType}}  Client type: {{clientType}}
+{{/if}}{{#if homeDir}}  User home directory: {{homeDir}}
+{{/if}}{{#if pathFormat}}  Path format: {{pathFormat}}
+{{/if}}{{#if shell}}  Shell: {{shell}}
+{{/if}}
+{{#if isWindowsMsys}}
+Note: on this Windows client, the machine hostname (e.g. from `hostname` or uname) is NOT the username. Use the 'User home directory' above to construct paths under C:\Users\<user>\, never the hostname.
+
+Shell: on this Windows client, your `terminal` tool runs commands through bash (git-bash / MSYS), NOT PowerShell or cmd.exe. Use POSIX shell syntax (`ls`, `$HOME`, `&&`, `|`, single-quoted strings) inside terminal calls. MSYS-style paths like `/c/Users/<user>/...` work alongside native `C:\Users\<user>\...` paths. PowerShell builtins (`Get-ChildItem`, `$env:FOO`, `Select-String`) will NOT work — use their POSIX equivalents (`ls`, `$FOO`, `grep`).
+{{/if}}
+{{#if isWindowsNative}}
+Note: on this Windows client:
+  - The machine hostname is NOT the username. Use the 'User home directory' to construct paths, never the hostname.
+  - The shell is cmd.exe. Use Windows-native commands: `dir`, `type`, `echo`, `systeminfo`, `findstr`.
+  - `wmic` is NOT available on Windows 11 24H2+. Use `powershell -Command "Get-CimInstance ..."` for hardware queries (CPU, memory, disk, GPU).
+  - PowerShell commands must be invoked via `powershell -Command "..."`. The output will be captured correctly.
+  - Linux commands like `cat`, `grep`, `ls`, `ps` will NOT work. Use their Windows equivalents: `type`, `findstr`, `dir`, `tasklist`.
+  - Use backslash `\` for path separators.
+{{/if}}
+{{#if isDesktopApp}}
+You are chatting inside the Showing Ai desktop app — a graphical chat surface, not a terminal. Use markdown freely: it renders with full GitHub flavor (tables, code blocks with syntax highlighting, task lists, blockquote callouts).
+
+You can deliver files natively — include MEDIA:/absolute/path/to/file in your response. Images (.jpg, .png, .webp) appear inline, and other files arrive as download links.
+
+The client has terminal access and local filesystem access. When you use the terminal tool, the command runs on the client machine — the one described above — NOT on the server. Files you read, write, or execute are on the client's filesystem. Use MEDIA:/path/to/file to deliver files to the user.
+{{/if}}
+{{#if isWeb}}
+You are chatting through a web browser. Terminal and filesystem access are not available on this client. File delivery is not supported on this platform.
+{{/if}}
+{{#if isMobileWeb}}
+You are chatting through a mobile web browser. Terminal and filesystem access are not available. Keep responses concise for mobile reading.
+{{/if}}
+{{#if isMiniprogram}}
+You are chatting through a WeChat Mini Program. Terminal and filesystem access are not available. Keep responses concise for mobile reading.
+{{/if}}

@@ -1,0 +1,16 @@
+{
+  "name": "desktop_tinker_schedule_timer",
+  "description": "创建、取消、列出内存中的定时器",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string", "description": "操作类型", "enum": ["start", "cancel", "list"] },
+      "name": { "type": "string", "description": "定时器名称" },
+      "duration": { "type": "integer", "description": "定时时长（毫秒）" },
+      "timerId": { "type": "string", "description": "要取消的定时器 ID" }
+    },
+    "required": ["action"]
+  },
+  "toolType": "desktop",
+  "emoji": "⏰"
+}

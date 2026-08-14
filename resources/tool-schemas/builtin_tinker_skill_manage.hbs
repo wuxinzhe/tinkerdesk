@@ -1,0 +1,24 @@
+{
+  "name": "builtin_tinker_skill_manage",
+  "description": "Manage skills (create, update, delete). Skills are your procedural memory — reusable approaches for recurring task types. Actions: create: Insert a new skill in the database with name, description, category, and body. edit: Full rewrite of an existing skill's body (and optionally description/category). patch: Targeted find-and-replace within the skill body. Preferred for small fixes — include enough context in old_string. delete: Soft-delete a skill (deactivates it for this user). write_file: Add or overwrite a supporting file attached to a skill (reference / template / script / asset). remove_file: Remove a supporting file from a skill. Schema: private_skills table stores user-scoped skills. skill_files table stores supporting files keyed by file_type. Create when: complex task succeeded (5+ calls), errors overcome, user-corrected approach worked, non-trivial workflow discovered, or user asks you to remember a procedure. Update when: instructions stale/wrong, OS-specific failures, missing steps or pitfalls found during use. After difficult/iterative tasks, offer to save as a skill. Good skills: trigger conditions, numbered steps with exact commands, pitfalls section, verification steps. Use skill_view() to see format examples. For viewing skill content, use skill_view instead.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string", "description": "The action to perform.", "enum": ["create", "patch", "edit", "delete", "write_file", "remove_file"] },
+      "name": { "type": "string", "description": "Skill name (lowercase, hyphens/underscores, max 64 chars). Must match an existing skill for patch/edit/delete/write_file/remove_file." },
+      "description": { "type": "string", "description": "One-line description (for create / edit)." },
+      "category": { "type": "string", "description": "Optional category for organizing the skill (e.g. 'development', 'devops', 'data-science'). Only used with 'create'." },
+      "body": { "type": "string", "description": "Full markdown body content of the skill. Required for 'create' and 'edit'." },
+      "old_string": { "type": "string", "description": "Text to find in the skill body (required for 'patch'). Include enough context to ensure uniqueness unless replace_all=true." },
+      "new_string": { "type": "string", "description": "Replacement text (required for 'patch'). Can be empty string to delete matched text." },
+      "replace_all": { "type": "boolean", "description": "For 'patch': replace all occurrences instead of requiring a unique match (default: false).", "default": false },
+      "file_type": { "type": "string", "description": "For 'write_file'/'remove_file': type of supporting file.", "enum": ["reference", "template", "script", "asset"] },
+      "file_content": { "type": "string", "description": "Content for the supporting file. Required for 'write_file'." },
+      "language": { "type": "string", "description": "Optional programming language for syntax highlighting (e.g. 'python', 'javascript', 'yaml', 'sql'). Only for 'write_file'." },
+      "api_key": { "type": "string", "description": "Optional API key for external service calls. Set this when the skill needs to call an external API. Masked in skill_view output (only first 8 chars shown)." }
+    },
+    "required": ["action", "name"]
+  },
+  "toolType": "builtin",
+  "emoji": "⚙️"
+}

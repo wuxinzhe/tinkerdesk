@@ -1,0 +1,21 @@
+{
+  "name": "tts",
+  "description": "Convert text to speech audio. Returns a MEDIA: file path that the platform delivers as audio. Provider and voice are user-configured (built-in Edge online TTS or plugin providers like sherpa/omni-voice), not model-selected. Compatible providers render as voice bubble; otherwise audio is sent as attachment. Long text is truncated per provider limit.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "The text to convert to speech. Provider-specific character caps apply and are enforced automatically (Edge 5000, others 4k-40k depending on provider); over-long input is truncated."
+      },
+      "output_path": {
+        "type": "string",
+        "description": "Optional custom file path to save the audio. Defaults to audio_cache/<timestamp>.mp3"
+      }
+    },
+    "required": ["text"]
+  },
+  "toolType": "desktop",
+  "supportsProvider": true,
+  "emoji": "🔊"
+}

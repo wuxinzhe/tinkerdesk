@@ -1,0 +1,19 @@
+{
+  "name": "builtin_tinker_session_search",
+  "description": "Search past sessions stored in the local session DB. FTS5-backed retrieval over the PostgreSQL message store. No LLM calls — every shape returns actual messages from the DB. THREE CALLING SHAPES 1) DISCOVERY — pass `query`: Runs FTS5, dedupes hits by session lineage, returns top N sessions each with: snippet, window (default: ±5 messages) around the match, plus bookend_start (first 3 msgs of session) and bookend_end (last 3). Zero LLM cost. Optional: role_filter (comma-separated, e.g. 'user,assistant'), sort ('newest' or 'oldest'). 2) SCROLL — pass `session_id` + `around_message_id`: Returns a window of ±`window` messages centered on the anchor. To scroll forward / backward, re-anchor on the last / first message id of the returned window. Automatically rebinds if the anchor lives in a child session (same lineage). 3) READ — pass `session_id` only (no anchor): Dumps the whole session (first 20 + last 10 messages). Use scroll for targeted slices. 4) BROWSE — no args: Returns recent sessions chronologically (titles, previews, timestamps). Skips current session. Cross-profile: pass `profile` to read another profile's sessions (defaults to current profile).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Search query (discovery mode). Keywords to find in past sessions." },
+      "session_id": { "type": "string", "description": "Session ID for scroll/read mode." },
+      "around_message_id": { "type": "integer", "description": "Message ID to center the scroll window on." },
+      "window": { "type": "integer", "description": "Messages to return on each side of the anchor (default 5)." },
+      "limit": { "type": "integer", "description": "Max sessions to return in discovery mode (default 3)." },
+      "role_filter": { "type": "string", "description": "Comma-separated roles to include in discovery (default: user,assistant)." },
+      "sort": { "type": "string", "description": "Sort order for discovery: 'newest', 'oldest', or omit for relevance ranking." },
+      "profile": { "type": "string", "description": "Profile name for cross-profile session reads (defaults to current profile)." }
+    }
+  },
+  "toolType": "builtin",
+  "emoji": "🔍"
+}

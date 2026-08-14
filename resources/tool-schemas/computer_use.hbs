@@ -1,0 +1,93 @@
+{
+  "name": "computer_use",
+  "description": "后台驱动桌面（cua-driver——macOS/Windows/Linux）：截图、鼠标、键盘、滚动、拖拽——不抢用户光标/键盘焦点。首选工作流：action='capture'（mode='som' 带编号元素覆盖层）后按 element 索引点击；像素坐标保留给训练过的模型。capture 免费（无副作用）；其余 action 需审批。set_value 用于 select/滑块元素（直接选值——不弹原生菜单）。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["capture", "click", "double_click", "right_click", "middle_click", "drag", "scroll", "type", "key", "set_value", "wait", "list_apps", "list_windows", "focus_app", "cua_browser_state", "cua_browser_prepare", "cua_browser_navigate", "cua_browser_click", "cua_browser_type", "cua_browser_pointer", "cua_browser_dialog", "cua_browser_set_input_files", "cua_browser_download"],
+        "description": "执行的动作。capture 免费（无副作用）；其余需审批。"
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["som", "vision", "ax"],
+        "description": "截图模式：som（默认——带编号覆盖层 + AX 树，视觉模型点 element 索引）；vision（纯截图）；ax（仅无障碍树——文本模型）。"
+      },
+      "app": {
+        "type": "string",
+        "description": "限定目标应用（名称或 bundle id；'screen'/'desktop' 捕获桌面）。省略 = 前台应用窗口。"
+      },
+      "pid": { "type": "integer", "description": "精确进程目标（capture——与 window_id 配对）。" },
+      "window_id": { "type": "integer", "description": "精确原生窗口目标（capture——与 pid 配对）。" },
+      "max_elements": {
+        "type": "integer",
+        "description": "AX elements 数组上限（默认 100，硬上限 1000）。密集 UI 可截断——用 app= 缩小范围或提高上限。",
+        "default": 100,
+        "minimum": 1,
+        "maximum": 1000
+      },
+      "element": { "type": "integer", "description": "上次 capture(mode='som') 返回的 1 基 SOM 索引——优先于坐标。" },
+      "coordinate": {
+        "type": "array",
+        "items": { "type": "integer" },
+        "minItems": 2,
+        "maxItems": 2,
+        "description": "像素坐标 [x, y]（相对截图左上角）——无 element 索引时才用。"
+      },
+      "button": { "type": "string", "enum": ["left", "right", "middle"], "description": "鼠标键（默认 left）。" },
+      "modifiers": {
+        "type": "array",
+        "items": { "type": "string", "enum": ["cmd", "shift", "option", "alt", "ctrl", "fn", "win", "windows", "super", "meta"] },
+        "description": "动作期间按住的修饰键。"
+      },
+      "from_element": { "type": "integer", "description": "拖拽源元素索引。" },
+      "to_element": { "type": "integer", "description": "拖拽目标元素索引。" },
+      "from_coordinate": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2, "description": "拖拽源坐标 [x,y]。" },
+      "to_coordinate": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2, "description": "拖拽目标坐标 [x,y]。" },
+      "direction": { "type": "string", "enum": ["up", "down", "left", "right"], "description": "滚动方向。" },
+      "amount": { "type": "integer", "description": "滚轮刻度（默认 3）。" },
+      "value": { "type": "string", "description": "set_value 的值：select 下拉传显示标签（如 'Blue'）；滑块传数值/字符串。" },
+      "text": { "type": "string", "description": "要输入的文本（按当前布局）。" },
+      "keys": { "type": "string", "description": "按键组合，如 'cmd+s'、'ctrl+alt+t'、'return'。'+' 组合。" },
+      "seconds": { "type": "number", "description": "等待秒数（最大 30）。" },
+      "raise_window": { "type": "boolean", "description": "focus_app 专用：true 前置窗口（打扰用户）。默认 false——不抢焦点后台路由。" },
+      "delivery_mode": {
+        "type": "string",
+        "enum": ["background", "foreground"],
+        "description": "输入投递方式：background（默认——不前置不抢焦点）；foreground（短暂前置、执行、恢复原前台）。前置可见——需单独审批。"
+      },
+      "bring_to_front": {
+        "type": "boolean",
+        "description": "仅 delivery_mode='foreground' 有效——显式调用 bring_to_front（持久焦点变化——单独审批范围）。默认 false。"
+      },
+      "tab_id": { "type": "string", "description": "cua_browser_state 返回的不透明 tab 能力。" },
+      "ref": { "type": "string", "description": "最新 cua_browser_state 快照的语义 ref。" },
+      "destination_ref": { "type": "string", "description": "typed pointer 动作的目标 ref。" },
+      "url": { "type": "string", "description": "cua_browser_navigate 的 URL。" },
+      "input_route": {
+        "type": "string",
+        "enum": ["trusted", "dom_event"],
+        "description": "typed-browser 信任级（默认 trusted；dom_event 是显式降级——绝不静默选择）。"
+      },
+      "snapshot_format": { "type": "string", "description": "cua_browser_state 快照格式。" },
+      "query": { "type": "string", "description": "cua_browser_state 查询。" },
+      "scope_ref": { "type": "string", "description": "cua_browser_state 范围 ref。" },
+      "continuation": { "type": "string", "description": "cua_browser_state 续接。" },
+      "profile_mode": { "type": "string", "description": "cua_browser_prepare 配置文件模式（isolated_new 等）。" },
+      "profile_name": { "type": "string", "description": "cua_browser_prepare 配置文件名称。" },
+      "allow_launch": { "type": "boolean", "description": "cua_browser_prepare 允许启动浏览器。" },
+      "browser_pointer_action": { "type": "string", "description": "cua_browser_pointer 的子动作。" },
+      "browser_dialog_action": { "type": "string", "description": "cua_browser_dialog 的子动作。" },
+      "browser_type_mode": { "type": "string", "description": "cua_browser_type 的输入模式。" },
+      "dialog_id": { "type": "string", "description": "cua_browser_dialog 的对话框 id。" },
+      "prompt_text": { "type": "string", "description": "cua_browser_dialog 的提示文本。" },
+      "files": { "type": "array", "items": { "type": "string" }, "description": "cua_browser_set_input_files 的文件列表。" },
+      "destination_root": { "type": "string", "description": "cua_browser_download 的目标根目录。" }
+    },
+    "required": ["action"]
+  },
+  "toolType": "desktop",
+  "emoji": "🖥️",
+  "supportsProvider": true
+}
