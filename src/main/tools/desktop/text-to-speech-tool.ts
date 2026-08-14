@@ -1,7 +1,7 @@
 /**
  * desktop/text-to-speech-tool.ts — 文本转语音工具（Agent 可用）
  *
- * text_to_speech（tools/tts_tool.py）：
+ * Text-to-speech tool:
  * - schema：text（必填）+ output_path（可选）
  * - provider 用户配置（内置 Edge 在线语音 / 插件 sherpa / omni-voice），模型只发文本
  * - 长文本按 provider 上限截断

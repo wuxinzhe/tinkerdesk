@@ -1,7 +1,7 @@
 /**
  * vision-tool.ts — vision_recognize 工具（图像识别——内建 provider 走 llm-router）
  *
- * 可用性：provider 是否配置（VisionProvider 注入——走场景模型）
+ * Availability: whether a provider is configured (VisionProvider injected — uses scene model).
  * 执行：image_url（http/https/data: base64）→ VisionProvider.recognize
  *      → scene=image_recognition（本地 ollama qwen3.5:9B 多模态）→ 返回文本
  */

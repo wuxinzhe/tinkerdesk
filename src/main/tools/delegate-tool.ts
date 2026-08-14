@@ -1,8 +1,9 @@
 /**
  * delegate-tool.ts — 子代理工具
  *
- * 父 Agent 在工具执行中派生子代理：new TinkerAgent（独立实例）→ 子会话 + ephemeral prompt
- * → chat(goal) 同步等待 → 收集结果 JSON → dispose。
+ * The parent Agent spawns a child subagent during tool execution:
+ * new TinkerAgent (independent instance) → child session + ephemeral prompt
+ * → chat(goal) awaited synchronously → collect JSON result → dispose.
  *
  * 限制：
  * - 深度上限 1（子代理上下文中 delegateDepth=1，再 delegate 直接拒绝）

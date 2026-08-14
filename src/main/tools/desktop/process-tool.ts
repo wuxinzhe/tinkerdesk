@@ -1,7 +1,7 @@
 /**
  * desktop/process-tool.ts — 进程管理工具
  *
- * tools/desktop/process：
+ * Process tool:
  * - 8 个 action：list/poll/log/wait/kill/write/submit/close
  * - session_id 强制转字符串（模型可能发整数）
  * - not_found → {status:"not_found", error}；已退出 → {status:"already_exited", ...}

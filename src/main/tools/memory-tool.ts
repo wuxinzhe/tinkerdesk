@@ -1,9 +1,9 @@
 /**
  * memory-tool.ts — 记忆工具
  *
- * MemoryTool：
- * 读取/添加/替换/删除/批量操作持久记忆（文件系统 MemoryStore）。
- * 全部返回 JSON 字符串，语义版 7 种响应。
+ * MemoryTool:
+ * reads/adds/replaces/removes/batches persistent memory (file-system MemoryStore).
+ * Always returns JSON strings — 7 semantic response kinds.
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { MemoryOperation } from '../service/memory-store'

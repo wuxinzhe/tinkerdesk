@@ -1,7 +1,7 @@
 /**
  * desktop/write-file-tool.ts — 文件写入工具
  *
- * tools/desktop/write-file：
+ * Write-file tool:
  * - 参数 path + content
  * - 敏感系统路径守卫（Windows 版：C:\Windows\ 等）
  * - read_file 行号内容拒绝（防止把 "N|content" 显示文本写进文件）

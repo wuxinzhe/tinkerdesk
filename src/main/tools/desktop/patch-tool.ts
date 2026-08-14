@@ -1,7 +1,7 @@
 /**
  * desktop/patch-tool.ts — 文件编辑工具
  *
- * tools/desktop/patch：
+ * Patch tool:
  * - mode=replace：9 策略模糊匹配（fuzzy-match.ts）
  * - mode=patch：V4A 多文件 patch（v4a-patch.ts，两阶段 validate-then-apply）
  * - 敏感路径守卫 + V4A 头部 .. traversal 拒绝

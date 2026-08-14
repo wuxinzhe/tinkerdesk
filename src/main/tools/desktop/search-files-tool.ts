@@ -1,7 +1,7 @@
 /**
  * desktop/search-files-tool.ts — 文件搜索工具
  *
- * tools/desktop/search-files：
+ * Search-files tool:
  * - 参数：pattern/target/path/file_glob/limit/offset/output_mode/context
  * - content：rg --line-number --no-heading --with-filename [-C ctx] [--glob] pattern path
  * - files：rg --files --sortr=modified（按修改时间排序）

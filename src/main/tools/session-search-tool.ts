@@ -1,8 +1,8 @@
 /**
  * session-search-tool.ts — 会话搜索工具
  *
- * SessionSearchTool：
- * 4 种查询模式：DISCOVER（搜索）/ SCROLL（滚动窗口）/ READ（整场读取）/ BROWSE（浏览最近）。
+ * SessionSearchTool:
+ * 4 query modes: DISCOVER (search) / SCROLL (scroll window) / READ (whole-session read) / BROWSE (recent browse).
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { SessionService } from '../service/session-service'

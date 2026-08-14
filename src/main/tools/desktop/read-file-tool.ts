@@ -1,7 +1,7 @@
 /**
  * desktop/read-file-tool.ts — 文件读取工具
  *
- * tools/desktop/read-file：
+ * Read-file tool:
  * - 分页归一化（offset max(1, int)；limit clamp [1,2000]）
  * - 守卫链：设备路径 → 二进制扩展名 → 文件不存在
  * - 行号格式 LINE_NUM|CONTENT（紧凑 gutter，单行 2000 字符截断）

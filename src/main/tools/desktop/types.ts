@@ -1,7 +1,7 @@
 /**
  * desktop/types.ts — 桌面工具参数类型定义
  *
- * src/defines/tools/params.ts：
+ * All desktop-tool XxxParams centralized here.
  * 所有桌面工具的 XxxParams 集中管理在此文件。
  */
 import type { ChildProcess } from 'child_process'

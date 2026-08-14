@@ -1,7 +1,7 @@
 /**
  * desktop/schedule-timer-tool.ts — 定时器工具
  *
- * tools/desktop/schedule-timer：
+ * Schedule-timer tool: in-memory timer management (setTimeout wrapper): start / cancel / list
  * 内存定时器管理（setTimeout 封装）：start / cancel / list
  */
 import { BaseTool } from '../base-tool'

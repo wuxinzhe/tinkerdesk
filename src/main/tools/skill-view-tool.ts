@@ -1,8 +1,8 @@
 /**
  * skill-view-tool.ts — 技能查看工具
  *
- * SkillViewTool：
- * 查看技能详情，渲染 skill-view.hbs 模板。
+ * SkillViewTool:
+ * shows skill details, renders the skill-view.hbs template.
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { PrivateSkillService } from '../service/private-skill-service'

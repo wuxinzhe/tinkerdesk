@@ -1,9 +1,9 @@
 /**
  * base-tool.ts — 工具抽象基类
  *
- * BaseTool：
- * 构造时从 tool-schemas/{name}.hbs 模板加载并缓存 ToolSchema，
- * 子类无需重复实现 getSchema()。
+ * BaseTool:
+ * loads and caches the ToolSchema from the tool-schemas/{name}.hbs template
+ * at construction; subclasses don't reimplement getSchema().
  */
 import { readFileSync } from 'fs'
 import type { PromptRenderer } from '../core/prompt/renderer'

@@ -1,7 +1,7 @@
 /**
  * fuzzy-match.ts — 客户端工具内部模块
  *
- * tools/fuzzy_match.py 的 9 策略模糊匹配链：
+ * 9-strategy fuzzy matching chain:
  * exact → line_trimmed → whitespace_normalized → indentation_flexible
  * → escape_normalized → trimmed_boundary → unicode_normalized
  * → block_anchor → context_aware

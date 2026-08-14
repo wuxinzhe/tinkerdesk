@@ -1,7 +1,7 @@
 /**
  * v4a-patch.ts — 客户端工具内部模块
  *
- * tools/patch_parser.py：
+ * V4A patch parser:
  * - parse_v4a_patch：解析 *** Begin Patch / *** End Patch 之间的
  *   Update / Add / Delete / Move 操作 + hunks
  * - 两阶段：先 validate（模拟应用，不写文件）→ 全部通过才 apply

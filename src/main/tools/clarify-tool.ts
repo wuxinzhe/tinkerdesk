@@ -1,9 +1,9 @@
 /**
  * clarify-tool.ts — 澄清确认工具
  *
- * ClarifyTool：
- * LLM 需要用户从多个选项中选择时调用，向客户端发送 clarify_request 事件，
- * 前端据此渲染 ClarifyCard 交互组件。
+ * ClarifyTool:
+ * called when the LLM needs the user to choose among options; sends a
+ * clarify_request event to the client, which renders a ClarifyCard.
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import { BaseTool } from './base-tool'

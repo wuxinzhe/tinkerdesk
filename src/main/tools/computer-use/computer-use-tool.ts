@@ -1,7 +1,7 @@
 /**
  * computer-use-tool.ts — computer_use 工具（computer_use——功能 1:1）
  *
- * 桌面后台控制（cua-driver——macOS/Windows/Linux）：
+ * Desktop background control (cua-driver — macOS/Windows/Linux):
  *   截图（capture：som/vision/ax）、鼠标（click 系列/drag/scroll）、键盘（type/key/set_value）、
  *   窗口（list_apps/list_windows/focus_app）、wait、typed browser（cua_browser_* 8 个）。
  *

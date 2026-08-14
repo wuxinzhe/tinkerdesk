@@ -1,7 +1,7 @@
 /**
  * desktop/file-mutation-verifier-tool.ts — 文件变更对比工具
  *
- * tools/desktop/file-mutation-verifier（LCS diff）：
+ * File-mutation verifier (LCS diff):
  * - 空/相同 → changed:false
  * - 二进制内容 → 摘要
  * - 否则 LCS diff + added/removed 计数

@@ -1,7 +1,7 @@
 /**
  * desktop/web-search-tool.ts — 网络搜索工具（壳）
  *
- * 执行内核已拆到 providers/search（内置 provider 注册表）。
+ * Execution core split into providers/search (built-in provider registry).
  * 壳职责：schema / 参数校验 / 插件 provider 优先 + 内置回退 / 结果序列化。
  *
  * 环境变量（内置 provider 用）：SHOWING_WEB_SEARCH_BACKEND / TAVILY_API_KEY 等——见 providers/search。

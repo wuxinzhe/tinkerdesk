@@ -1,8 +1,8 @@
 /**
  * todo-tool.ts — 待办事项工具
  *
- * TodoTool：
- * 读取/写入 session 待办列表（全量或合并），兼容。
+ * TodoTool:
+ * reads/writes the session todo list (full or merged).
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { TodoItem } from '../service/todo-service'

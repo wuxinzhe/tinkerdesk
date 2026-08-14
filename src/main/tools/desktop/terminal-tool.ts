@@ -1,7 +1,7 @@
 /**
  * desktop/terminal-tool.ts — 终端工具
  *
- * tools/desktop/terminal：
+ * Terminal tool:
  * - 参数：command/background/timeout/workdir/pty/notify_on_complete/watch_patterns
  * - timeout 单位秒，默认 15s，前台最大 600s（超出拒绝并建议 background）
  * - 破坏性命令检测 → status: blocked

@@ -1,7 +1,7 @@
 /**
  * computer-use/cua-driver-client.ts — cua-driver MCP 客户端（基于 tinkerdesk StdioTransport）
  *
- * cua-driver 是外部独立程序（trycua 项目——Rust 实现，Windows/macOS/Linux）：
+ * cua-driver is an external standalone program (trycua — Rust, Windows/macOS/Linux):
  *   cua-driver mcp   ← stdio 传输的 MCP 服务
  * 安装（Windows PowerShell）：
  *   irm https://raw.githubusercontent.com/trycua/cua/main/libs/cua-driver/scripts/install.ps1 | iex

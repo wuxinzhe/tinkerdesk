@@ -1,8 +1,8 @@
 /**
  * skill-manage-tool.ts — 技能管理工具
  *
- * SkillManageTool：
- * create / patch / edit / delete / write_file / remove_file 六种操作。
+ * SkillManageTool:
+ * six operations: create / patch / edit / delete / write_file / remove_file.
  */
 import type { PromptRenderer } from '../core/prompt/renderer'
 import { PrivateSkillFileRepository } from '../repository/private-skill-file-repository'
