@@ -21,6 +21,12 @@ let errorFile: fs.WriteStream | null = null
 /** 日志保留天数 */
 const MAX_HISTORY_DAYS = 30
 
+/** 日志级别顺序（DEBUG 最低——低于 minLevel 的不写文件） */
+const LEVEL_ORDER = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 } as const
+type LogLevelName = keyof typeof LEVEL_ORDER
+/** 最低落盘级别（initLogger 时确定——生产默认 INFO——debug 日志不落盘） */
+let minLevel: number = LEVEL_ORDER.DEBUG
+
 function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
@@ -56,6 +62,7 @@ function ensureStreams(): void {
 
 function write(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', args: unknown[]): void {
   if (!logDir) return
+  if (LEVEL_ORDER[level] < minLevel) return // 低于最低级别——不写文件（debug 日志不落盘）
   ensureStreams()
   const line = `[${timeKey(new Date())}] [${level}] ${args.map(safeStringify).join(' ')}`
   currentFile?.write(line + '\n')
@@ -83,7 +90,15 @@ export function initLogger(): void {
   logDir = path.join(app.getPath('userData'), 'logs')
   fs.mkdirSync(logDir, { recursive: true })
   cleanupOldLogs()
-  console.log(`[logger] 日志目录: ${logDir}（按天滚动，保留 ${MAX_HISTORY_DAYS} 天）`)
+  // 最低落盘级别：LOG_LEVEL 环境变量显式指定（DEBUG/INFO/WARN/ERROR）——
+  // 未指定时生产（打包/安装版）默认 INFO（debug 日志不落盘——日志量可控），dev 默认 DEBUG
+  const envLevel = (process.env.LOG_LEVEL ?? '').toUpperCase() as LogLevelName
+  minLevel = envLevel in LEVEL_ORDER
+    ? LEVEL_ORDER[envLevel]
+    : process.env.NODE_ENV === 'production'
+      ? LEVEL_ORDER.INFO
+      : LEVEL_ORDER.DEBUG
+  console.log(`[logger] 日志目录: ${logDir}（按天滚动，保留 ${MAX_HISTORY_DAYS} 天；最低落盘级别: ${minLevel === 0 ? 'DEBUG' : minLevel === 1 ? 'INFO' : minLevel === 2 ? 'WARN' : 'ERROR'}）`)
 
   const orig = {
     log: console.log,
