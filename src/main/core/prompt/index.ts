@@ -1,7 +1,7 @@
 /**
- * prompt/index.ts — 提示词模块系统统一出口
+ * prompt/index.ts — Prompt-module system unified export
  *
- * core/prompt + service/prompt（TS 版）。
+ * core/prompt + service/prompt (TS version).
  */
 export {PromptManager} from './prompt-manager'
 export {PromptModuleBuilder} from './prompt-module-builder'

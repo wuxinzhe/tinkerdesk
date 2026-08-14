@@ -1,9 +1,9 @@
 /**
  * soul-prompt-module.ts — 灵魂提示词模块
  *
- * SoulPromptModule：
- * 从 Agent 配置加载灵魂提示词模板（agent_soul_prompt），渲染后注入。
- * 未配置时返回 null（跳过）。
+ * SoulPromptModule:
+ * Loads the soul-prompt template (agent_soul_prompt) from agent config,
+ * renders and injects it. Returns null when unconfigured (skipped).
  */
 import type {ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'

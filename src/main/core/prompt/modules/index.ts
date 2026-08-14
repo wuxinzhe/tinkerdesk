@@ -1,7 +1,7 @@
 /**
- * modules/index.ts — 提示词模块统一出口
+ * modules/index.ts — Prompt-modules unified export
  *
- * service/prompt 包的全部 15 个模块。
+ * All 15 modules of the service/prompt package.
  */
 export {HandlebarsPresetModule} from './preset-module'
 export {

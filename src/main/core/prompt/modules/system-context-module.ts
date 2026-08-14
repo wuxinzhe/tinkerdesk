@@ -1,8 +1,8 @@
 /**
  * system-context-module.ts — 系统上下文模块
  *
- * SystemContextModule：
- * 渲染 context.hbs（Session ID / 日期 / 模型名）。
+ * SystemContextModule:
+ * Renders context.hbs (Session ID / date / model name).
  */
 import type {ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'

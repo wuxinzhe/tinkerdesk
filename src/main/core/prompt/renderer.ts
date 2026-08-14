@@ -1,11 +1,11 @@
 /**
- * renderer.ts — 提示词模板渲染器
+ * renderer.ts — Prompt template renderer
  *
- * PromptRenderer：
- * 加载 classpath 下的 .hbs 模板文件，用 Handlebars 渲染。
- * 模板目录：
- *   src/main/resources/prompts/           — 顶层模板（runtime-environment 等）
- *   src/main/resources/prompts/partials/  — 模块局部模板（skills-index 等）
+ * PromptRenderer:
+ * Loads .hbs template files (from resources) and renders with Handlebars.
+ * Template directories:
+ *   src/main/resources/prompts/           — top-level templates (runtime-environment etc.)
+ *   src/main/resources/prompts/partials/  — module partials (skills-index etc.)
  */
 import {readFileSync} from 'fs'
 import Handlebars from 'handlebars'

@@ -1,9 +1,10 @@
 /**
  * user-profile-module.ts — 用户画像模块
  *
- * UserProfileModule：
- * 当 memory 工具可用时，从 MemoryStore 读取用户画像条目（target='user'）并拼接为提示词块。
- * 条目分隔符（\n§\n）。
+ * UserProfileModule:
+ * When the memory tool is available, reads user-profile entries
+ * (target='user') from MemoryStore and concatenates them as a prompt block.
+ * Entry separator (\n§\n).
  */
 import type {ConversationContext} from '../types'
 import {HandlebarsPresetModule} from './preset-module'

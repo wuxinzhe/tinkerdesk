@@ -1,9 +1,10 @@
 /**
  * preset-module.ts — Handlebars 预设模块基类
  *
- * HandlebarsPresetModule：
- * 系统预设模块继承此类，通过 PromptRenderer 加载 {id}.hbs 模板。
- * 默认无条件加载（shouldLoad=true），子类可重写。
+ * HandlebarsPresetModule:
+ * System preset modules extend this class; it loads the {id}.hbs template
+ * via PromptRenderer. Loads unconditionally by default (shouldLoad=true);
+ * subclasses may override.
  */
 import type {IDynamicPromptModule, ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'

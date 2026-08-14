@@ -1,9 +1,9 @@
 /**
- * preset-modules.ts — 纯模板预设模块（的 HandlebarsPresetModule 子类）
+ * preset-modules.ts — Template-only preset modules (HandlebarsPresetModule subclasses)
  *
- * - ToolEnforcementModule（tool-enforcement）
- * - TaskCompletionModule（task-completion）
- * - OpenAIExecutionModule（openai-execution）
+ * - ToolEnforcementModule (tool-enforcement)
+ * - TaskCompletionModule (task-completion)
+ * - OpenAIExecutionModule (openai-execution)
  * - GoogleOperationalModule（google-operational）
  * - MemoryGuidanceModule（memory，条件：memory 工具可用）
  * - SessionSearchModule（session-search，条件：session_search 工具可用）

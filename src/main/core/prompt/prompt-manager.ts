@@ -1,9 +1,11 @@
 /**
- * prompt-manager.ts — 提示词模块管理器
+ * prompt-manager.ts — Prompt-module manager
  *
- * PromptManager：
- * 启动时扫描所有 IDynamicPromptModule，将模块标识 → 模块条目的映射加载到内存。
- * 渲染顺序由外部（AgentMode 的 moduleList）定义，本管理器仅负责注册和按序查找。
+ * PromptManager:
+ * On startup scans all IDynamicPromptModule implementations and loads the
+ * module-id → module-entry map into memory.
+ * Render order is defined externally (AgentMode's moduleList); this manager
+ * only registers and looks up in order.
  */
 import type {IDynamicPromptModule, PromptModuleEntry} from './types'
 

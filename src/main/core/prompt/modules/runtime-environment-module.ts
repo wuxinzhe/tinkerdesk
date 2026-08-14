@@ -1,8 +1,9 @@
 /**
  * runtime-environment-module.ts — 运行时环境模块
  *
- * RuntimeEnvironmentModule：
- * 渲染 runtime-environment.hbs（OS/架构/客户端类型/Shell/HomeDir + 各平台标志位）。
+ * RuntimeEnvironmentModule:
+ * Renders runtime-environment.hbs (OS/arch/client-type/Shell/HomeDir +
+ * per-platform flags).
  */
 import type {ConversationContext} from '../types'
 import type {PromptRenderer} from '../renderer'

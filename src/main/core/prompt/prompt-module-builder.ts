@@ -1,10 +1,11 @@
 /**
- * prompt-module-builder.ts — 提示词模块构建管线
+ * prompt-module-builder.ts — Prompt-module build pipeline
  *
- * PromptModuleBuilder：
- * - 动态模块：按 AgentMode 的 moduleList 顺序渲染（运行时模块每次实时渲染）
- * - 静态模块：从 SQLite 查询用户自定义模块（本地版简化）
- * - 缓存：内存 Map（替代 Redis + PG 两层，本地单用户）
+ * PromptModuleBuilder:
+ * - dynamic modules: rendered in AgentMode's moduleList order (runtime modules
+ *   render live every time)
+ * - static modules: user-custom modules queried from SQLite (local simplified)
+ * - cache: in-memory Map (replaces Redis + PG two layers — local single-user)
  */
 import type { SessionRepository } from '../../repository/session-repository'
 import { todayDate } from '../../utils/time'

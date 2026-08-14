@@ -1,8 +1,9 @@
 /**
  * memory-snapshot-module.ts — 记忆快照模块
  *
- * MemorySnapshotModule：
- * memory 工具可用时，读取持久记忆条目并注入上下文。
+ * MemorySnapshotModule:
+ * When the memory tool is available, reads persisted memory entries and
+ * injects them into the context.
  */
 import type {ConversationContext} from '../types'
 import {HandlebarsPresetModule} from './preset-module'

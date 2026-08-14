@@ -1,11 +1,12 @@
 /**
- * types.ts — 提示词模块系统统一类型定义
+ * types.ts — Prompt-module system unified type definitions
  *
- * core/prompt：
- * IDynamicPromptModule / PromptModuleEntry / PromptModuleMeta。
+ * core/prompt:
+ * IDynamicPromptModule / PromptModuleEntry / PromptModuleMeta.
  *
- * 提示词模块渲染上下文 = ConversationContext（loop 层），
- * 模块直接消费对话上下文，不再定义中间 PromptContext 对象。
+ * The prompt-module render context = ConversationContext (loop layer);
+ * modules consume the conversation context directly — no intermediate
+ * PromptContext object is defined.
  */
 import type {ConversationContext} from '../loop/types'
 
