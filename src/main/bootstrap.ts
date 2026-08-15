@@ -263,7 +263,7 @@ export function bootstrap(
       }))
     },
   }
-  const promptModuleBuilder = new PromptModuleBuilder(promptManager, sessionRepo, staticModuleRepo)
+  const promptModuleBuilder = new PromptModuleBuilder(promptManager, sessionRepo, staticModuleRepo, renderer)
 
   // ── Tools（内建工具 + 调用方自定义工具） ──
   const builtinTools: AgentToolRegistration[] = [

@@ -10,6 +10,7 @@
 import type { SessionRepository } from '../../repository/session-repository'
 import { todayDate } from '../../utils/time'
 import type { PromptManager } from './prompt-manager'
+import type { PromptRenderer } from './renderer'
 import type { ConversationContext, IStaticPromptModuleRepository } from './types'
 
 export type { IStaticPromptModuleRepository, StaticPromptModule } from './types'
@@ -25,7 +26,8 @@ export class PromptModuleBuilder {
   constructor(
     private readonly promptManager: PromptManager,
     private readonly sessionRepository: SessionRepository,
-    private readonly staticModuleRepo: IStaticPromptModuleRepository
+    private readonly staticModuleRepo: IStaticPromptModuleRepository,
+    private readonly renderer?: PromptRenderer,
   ) { }
 
   /** 构建完整 system prompt（入参直接为 ConversationContext，不构造中间对象） */
@@ -147,7 +149,7 @@ export class PromptModuleBuilder {
     return parts.join('\n\n').trim()
   }
 
-  /** 渲染用户自定义静态模块（本地版：从注入的仓库查，无 Handlebars 内联编译） */
+  /** 渲染用户自定义静态模块（支持 {{变量}}——与预设模块同一套上下文变量） */
   private buildStaticModules(ctx: ConversationContext): string {
     const parts: string[] = []
     const modules = this.staticModuleRepo.findByProfile(ctx.profile)
@@ -155,8 +157,19 @@ export class PromptModuleBuilder {
       if (!m.enabled || !m.content || m.content.trim() === '') {
         continue
       }
-      // 本地版：静态模块内容直接拼接（无 Handlebars 模板变量，如需支持可后续接入）
-      parts.push(m.content.trim())
+      let rendered = m.content.trim()
+      // 模板变量渲染（profile/sessionId/date/os/arch/...——buildContextMap 同源）
+      if (this.renderer && rendered.includes('{{')) {
+        const compiled = this.renderer.compileInline(rendered)
+        if (compiled) {
+          try {
+            rendered = compiled(this.buildContextMap(ctx))
+          } catch {
+            // 渲染失败回退原文
+          }
+        }
+      }
+      parts.push(rendered)
     }
     return parts.join('\n\n').trim()
   }

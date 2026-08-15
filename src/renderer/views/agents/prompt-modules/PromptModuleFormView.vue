@@ -38,8 +38,8 @@
               <tr><td><code>{{homeDir}}</code></td><td>用户主目录</td></tr>
               <tr><td><code>{{pathFormat}}</code></td><td>路径风格 (windows/unix)</td></tr>
               <tr><td><code>{{date}}</code></td><td>当前日期</td></tr>
-              <tr><td><code>{{userId}}</code></td><td>用户 ID</td></tr>
-              <tr><td><code>{{profile}}</code></td><td>Profile</td></tr>
+              <tr><td><code>{{profile}}</code></td><td>Agent 画像（profile）</td></tr>
+              <tr><td><code>{{sessionId}}</code></td><td>会话 ID</td></tr>
             </tbody>
           </table>
         </details>
