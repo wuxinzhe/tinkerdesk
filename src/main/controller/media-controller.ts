@@ -39,7 +39,8 @@ export class MediaController {
         filters,
       })
       if (result.canceled || result.filePaths.length === 0) {
-        return fail('已取消')
+        // 取消 = 正常返回空（不是错误——前端不弹提示）
+        return ok('')
       }
       const rel = importMediaFile(result.filePaths[0])
       return ok(rel)
@@ -57,7 +58,8 @@ export class MediaController {
         filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }],
       })
       if (result.canceled || result.filePaths.length === 0) {
-        return fail('已取消')
+        // 取消 = 正常返回空数组（不是错误——前端不弹提示）
+        return ok([])
       }
       const picked = result.filePaths.slice(0, 5)
       const rels = picked.map((p) => importMediaFile(p))
@@ -82,7 +84,8 @@ export class MediaController {
         defaultPath: defaultName,
       })
       if (result.canceled || !result.filePath) {
-        return fail('已取消')
+        // 取消 = 正常返回空（不是错误——前端不弹提示）
+        return ok('')
       }
       copyFileSync(absPath, result.filePath)
       return ok(result.filePath)
