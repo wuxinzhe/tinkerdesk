@@ -31,12 +31,7 @@ export class MediaController {
           ? [{ name: '音频', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] }]
           : kind === 'video'
             ? [{ name: '视频', extensions: ['mp4', 'webm', 'mkv', 'mov'] }]
-            : [
-                { name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] },
-                { name: '音频', extensions: ['wav', 'mp3', 'ogg', 'm4a', 'flac'] },
-                { name: '视频', extensions: ['mp4', 'webm', 'mkv', 'mov'] },
-                { name: '所有文件', extensions: ['*'] },
-              ]
+            : [{ name: '所有文件', extensions: ['*'] }]
     try {
       const result = await dialog.showOpenDialog({
         title: '选择要发送的多媒体文件',
