@@ -251,8 +251,17 @@ export function bootstrap(
     new MemorySnapshotModule(renderer, (profile) => memoryStore.readAll(MemoryStore.TARGET_MEMORY, profile)),
   ]
   const promptManager = new PromptManager(allModules)
+  // 静态提示词模块（用户自定义——prompt_modules 表——构建 system prompt 时加载）
   const staticModuleRepo = {
-    findByProfile: (_profile: string) => [] as Array<{ id: string; content: string; enabled: boolean; sortOrder: number }>,
+    findByProfile: (profile: string) => {
+      const repo = new PromptModuleRepository()
+      return repo.findByProfile(profile).map((m) => ({
+        id: String(m.id),
+        content: m.content,
+        enabled: m.enabled,
+        sortOrder: m.sortOrder,
+      }))
+    },
   }
   const promptModuleBuilder = new PromptModuleBuilder(promptManager, sessionRepo, staticModuleRepo)
 

@@ -174,7 +174,7 @@ app.whenReady().then(() => {
   new WebProviderController(desk.webProviderService).register()
   new AudioToolProviderController(desk.audioToolProvider).register()
   new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
-  new PromptModuleController(desk.promptService).register()
+  new PromptModuleController(desk.promptService, desk.promptModuleBuilder).register()
   new SandboxController(desk.sandboxWhitelistService).register()
 
   // 注册 IPC handlers

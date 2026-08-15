@@ -11,6 +11,7 @@
 
 import { handleTrusted } from '../security/ipc-guard'
 import type {PromptService} from '../service/prompt-service'
+import type {PromptModuleBuilder} from '../core/prompt/prompt-module-builder'
 import type {UserPromptModuleEntity} from '../repository/types'
 import type {ApiResponse} from './api-response'
 import {ok, fail} from './api-response'
@@ -18,7 +19,10 @@ import type {CreatePromptModuleRequestDTO, UpdatePromptModuleRequestDTO, PromptM
 
 /** 提示词模块 controller */
 export class PromptModuleController {
-  constructor(private readonly moduleService: PromptService) { }
+  constructor(
+    private readonly moduleService: PromptService,
+    private readonly promptModuleBuilder?: PromptModuleBuilder,
+  ) { }
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立方法） */
   register(): void {
@@ -48,6 +52,7 @@ export class PromptModuleController {
     if (!module) {
       return fail(`模块已存在: ${payload.name}`)
     }
+    this.invalidatePromptCache(profile)
     return ok(module)
   }
 
@@ -68,18 +73,39 @@ export class PromptModuleController {
       return fail('更新失败')
     }
     const result = this.moduleService.findById(payload.id, payload.profile)
-    return result ? ok(result) : fail('模块不存在')
+    if (result) {
+      this.invalidatePromptCache(payload.profile)
+      return ok(result)
+    }
+    return fail('模块不存在')
   }
 
   /** 删除提示词模块（profile 限定） */
   private deletePromptModule(payload: PromptModuleIdRequestDTO): ApiResponse<null> {
     const deleted = this.moduleService.deleteById(payload.id, payload.profile)
-    return deleted ? ok(null) : fail('模块不存在')
+    if (deleted) {
+      this.invalidatePromptCache(payload.profile)
+      return ok(null)
+    }
+    return fail('模块不存在')
   }
 
   /** 启用/停用提示词模块（profile 限定） */
   private togglePromptModule(payload: TogglePromptModuleRequestDTO): ApiResponse<null> {
     const updated = this.moduleService.setEnabled(payload.id, payload.enabled, payload.profile)
-    return updated ? ok(null) : fail('模块不存在')
+    if (updated) {
+      this.invalidatePromptCache(payload.profile)
+      return ok(null)
+    }
+    return fail('模块不存在')
+  }
+
+  /** 模块变更 → 重置该 profile 下所有会话的 system prompt 缓存（下次构建重新加载） */
+  private invalidatePromptCache(profile: string): void {
+    try {
+      this.promptModuleBuilder?.invalidateProfileCache(profile)
+    } catch {
+      // 缓存失效失败不影响保存结果
+    }
   }
 }
