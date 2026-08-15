@@ -9,20 +9,21 @@ files:
   - package.json
   - "!node_modules/.cache"
 extraResources:
-  # 打包 npm-cli（插件依赖安装用——asar 外——Electron node 可直接执行）
+  # 构建产物资源（npm-cli——打包时生成——git 忽略）
   - from: resources/npm
     to: npm
     filter: ["**/*"]
-  # 应用资源（工具 schema 模板 / 提示词模板 / 技能分类——getResourcesDir 读取）
-  - from: resources/tool-schemas
+  # 应用资源（工具 schema 模板 / 提示词模板 / 技能分类 / 图标——getResourcesDir 读取——
+  # 单一来源 src/main/resources——dev 加载与打包拷贝同源）
+  - from: src/main/resources/tool-schemas
     to: tool-schemas
     filter: ["**/*"]
-  - from: resources/prompts
+  - from: src/main/resources/prompts
     to: prompts
     filter: ["**/*"]
-  - from: resources/skill-categories.json
+  - from: src/main/resources/skill-categories.json
     to: skill-categories.json
-  - from: resources/icon.png
+  - from: src/main/resources/icon.png
     to: icon.png
 # 打包图标（build/icon.png——electron-builder 自动生成 ico——exe/安装包/快捷方式）
 icon: build/icon.png
