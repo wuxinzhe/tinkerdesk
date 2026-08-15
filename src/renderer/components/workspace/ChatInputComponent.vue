@@ -1552,6 +1552,14 @@ defineExpose({ focus })
   .chat-input__compact-btn {
     transition: none;
   }
+  .panel-slide-enter-active,
+  .panel-slide-leave-active {
+    transition: opacity 120ms ease;
+  }
+  .panel-slide-enter-from,
+  .panel-slide-leave-to {
+    transform: none;
+  }
 }
 .chat-input__panel-config-label {
   font-size: 13px;
@@ -1601,18 +1609,21 @@ defineExpose({ focus })
   cursor: not-allowed;
 }
 
-/* ── 面板滑动动画（Transition 包 grid——enter/leave 切 grid-template-rows） ── */
+/* ── 面板滑动动画（展开配置行——transform+opacity——轻量） ── */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* transform + opacity（GPU 属性——emil）——先前 grid-template-rows 在 flex 元素上无效（闪切） */
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), opacity 180ms ease;
 }
 .panel-slide-enter-from,
 .panel-slide-leave-to {
-  grid-template-rows: 0fr;
+  transform: translateY(-6px);
+  opacity: 0;
 }
 .panel-slide-enter-to,
 .panel-slide-leave-from {
-  grid-template-rows: 1fr;
+  transform: translateY(0);
+  opacity: 1;
 }
 
 /* ── YOLO 详情过渡 ── */
