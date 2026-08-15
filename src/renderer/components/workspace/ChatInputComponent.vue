@@ -217,11 +217,11 @@
                 </template>
               </ChatInputPanelFeature>
             </div>
-            <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证——
-                 同一时刻只有一个 key 能匹配——不可能同时展开两个） -->
-            <!-- 回复提醒配置（展开行：Switch 开关） -->
-            <Transition name="panel-slide">
-              <div v-if="activePanelKey === 'notify'" class="chat-input__panel-config">
+            <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证）——
+                 单 Transition + mode="out-in"：先折叠旧的，再展开新的（顺序动画不重叠） -->
+            <Transition name="panel-slide" mode="out-in">
+              <!-- 回复提醒配置（展开行：Switch 开关） -->
+              <div v-if="activePanelKey === 'notify'" key="notify" class="chat-input__panel-config">
                 <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
                 <label class="chat-input__switch">
                   <input
@@ -233,10 +233,8 @@
                   <span class="chat-input__switch-slider" />
                 </label>
               </div>
-            </Transition>
-            <!-- 压缩配置（展开行：上下文容量 + 手动压缩按钮） -->
-            <Transition name="panel-slide">
-              <div v-if="activePanelKey === 'compact'" class="chat-input__panel-config chat-input__panel-config--column">
+              <!-- 压缩配置（展开行：上下文容量 + 手动压缩按钮） -->
+              <div v-else-if="activePanelKey === 'compact'" key="compact" class="chat-input__panel-config chat-input__panel-config--column">
                 <div class="chat-input__compact">
                   <div class="chat-input__compact-header">
                     <span class="chat-input__compact-label">上下文容量</span>
