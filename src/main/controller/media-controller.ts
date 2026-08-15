@@ -9,13 +9,16 @@ import { dialog } from 'electron'
 import { handleTrusted } from '../security/ipc-guard'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
-import { importMediaFile } from '../service/media-service'
+import { importMediaFile, resolveMediaPath } from '../service/media-service'
+import { existsSync, copyFileSync } from 'node:fs'
+import { basename } from 'node:path'
 
 /** 媒体控制器 */
 export class MediaController {
   register(): void {
     handleTrusted('media:pick-and-import', async (_event, payload) => this.pickAndImport(payload))
     handleTrusted('media:pick-images', async (_event) => this.pickImages())
+    handleTrusted('media:save-as', async (_event, payload) => this.saveAs(payload))
   }
 
   /** 弹文件选择框 → 复制到 media 目录 → 返回相对路径（media/xxx.ext） */
@@ -66,6 +69,30 @@ export class MediaController {
       return ok(rels)
     } catch (e) {
       return fail(e instanceof Error ? e.message : '导入图片失败')
+    }
+  }
+
+  /** 媒体文件另存为（消息列表下载按钮——保存对话框 → 复制到用户选择位置） */
+  private async saveAs(payload: { relPath?: string }): Promise<ApiResponse<string>> {
+    try {
+      const relPath = payload?.relPath
+      if (!relPath) return fail('缺少文件路径')
+      const absPath = resolveMediaPath(relPath)
+      if (!existsSync(absPath)) {
+        return fail(`文件不存在: ${absPath}`)
+      }
+      const defaultName = basename(absPath)
+      const result = await dialog.showSaveDialog({
+        title: '保存文件',
+        defaultPath: defaultName,
+      })
+      if (result.canceled || !result.filePath) {
+        return fail('已取消')
+      }
+      copyFileSync(absPath, result.filePath)
+      return ok(result.filePath)
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '保存失败')
     }
   }
 }

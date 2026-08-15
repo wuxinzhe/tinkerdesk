@@ -372,6 +372,8 @@ const api = {
     pickAndImport: (kind?: 'image' | 'audio' | 'video') => inv('media:pick-and-import', { kind }).then(unwrap),
     /** 多图选择（最多 5 张）→ 相对路径数组 */
     pickImages: () => inv('media:pick-images').then(unwrap),
+    /** 媒体文件另存为（消息列表下载按钮）→ 保存路径 */
+    saveAs: (relPath: string) => inv('media:save-as', { relPath }).then(unwrap),
   },
 
   // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──

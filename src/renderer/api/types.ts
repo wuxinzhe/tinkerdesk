@@ -990,6 +990,8 @@ export interface WindowApi {
     pickAndImport: (kind?: 'image' | 'audio' | 'video') => Promise<string>
     /** 多图选择（最多 5 张）→ 相对路径数组 */
     pickImages: () => Promise<string[]>
+    /** 媒体文件另存为（消息列表下载按钮）→ 保存路径 */
+    saveAs: (relPath: string) => Promise<string>
   },
 
   webProvider: {

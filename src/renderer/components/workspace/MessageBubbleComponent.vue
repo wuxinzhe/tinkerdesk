@@ -80,13 +80,48 @@
               alt="图片"
               @error="onImgError"
             />
-            <audio
+            <!-- 音频：待发区样式（正方形 + 音符 + 悬浮播放 + 右上角下载） -->
+            <div
               v-for="att in mediaAttachments.filter((a) => a.type === 'Audio')"
               :key="att.relPath"
-              class="bubble-media__audio"
-              :src="mediaUrl(att.relPath)"
-              controls
-            />
+              class="bubble-media__file"
+              :title="att.relPath.split('/').pop()"
+            >
+              <div class="bubble-media__file-icon bubble-media__file-icon--audio">
+                <svg class="bubble-media__note" :class="{ playing: bubblePlaying === att.relPath }" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+                <!-- 悬浮播放/暂停（点击直接播放） -->
+                <button
+                  class="bubble-media__play"
+                  :class="{ playing: bubblePlaying === att.relPath }"
+                  :title="bubblePlaying === att.relPath ? '暂停' : '播放'"
+                  @click.stop="toggleBubbleAudio(att.relPath)"
+                >
+                  <svg v-if="bubblePlaying !== att.relPath" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="7,4 20,12 7,20" />
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                </button>
+              </div>
+              <!-- 下载（悬浮显示——右上角——另存为） -->
+              <button
+                class="bubble-media__download"
+                title="保存文件"
+                @click.stop="downloadMedia(att.relPath)"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3v12" />
+                  <path d="M7 10l5 5 5-5" />
+                  <path d="M4 21h16" />
+                </svg>
+              </button>
+            </div>
             <video
               v-for="att in mediaAttachments.filter((a) => a.type === 'Video')"
               :key="att.relPath"
@@ -219,6 +254,43 @@ function onImgError(e: Event): void {
   img.dataset.fallback = '1'
   const original = img.dataset.original
   if (original) img.src = original
+}
+
+// ── 消息音频播放/下载（待发区样式——音符 + 悬浮播放 + 右上角下载） ──
+
+/** 当前播放的消息音频（relPath） */
+const bubblePlaying = ref<string | null>(null)
+let bubbleAudioEl: HTMLAudioElement | null = null
+
+/** 播放/暂停切换（app-media:// 直接播放） */
+function toggleBubbleAudio(relPath: string): void {
+  if (bubblePlaying.value === relPath) {
+    stopBubbleAudio()
+    return
+  }
+  stopBubbleAudio()
+  bubblePlaying.value = relPath
+  const audio = new Audio(`app-media://${relPath.replace(/\\/g, '/')}`)
+  bubbleAudioEl = audio
+  audio.play().catch(() => stopBubbleAudio())
+  audio.addEventListener('ended', () => stopBubbleAudio())
+}
+
+function stopBubbleAudio(): void {
+  if (bubbleAudioEl) {
+    bubbleAudioEl.pause()
+    bubbleAudioEl = null
+  }
+  bubblePlaying.value = null
+}
+
+/** 下载（另存为——保存对话框） */
+async function downloadMedia(relPath: string): Promise<void> {
+  try {
+    await window.api.media.saveAs(relPath)
+  } catch {
+    // 取消/失败静默
+  }
 }
 
 function openConversationDetail(sessionId: string | undefined, conversationId: string | undefined) {
@@ -385,6 +457,115 @@ const bubbleStyleClass = computed(() =>
 }
 .bubble-media__video {
   max-height: 220px;
+}
+
+/* ── 音频文件块（对齐文件待发区样式——64px 正方形 + 音符 + 播放 + 下载） ── */
+.bubble-media__file {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
+}
+
+.bubble-media__file-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tk-text-secondary);
+  border-radius: 10px;
+}
+
+.bubble-media__file-icon--audio {
+  position: relative;
+}
+
+.bubble-media__note {
+  transition: color 180ms ease;
+}
+
+.bubble-media__note.playing {
+  color: var(--tk-accent);
+}
+
+/* 悬浮播放/暂停（中间） */
+.bubble-media__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, background-color 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  padding: 0;
+}
+
+.bubble-media__file:hover .bubble-media__play,
+.bubble-media__play.playing {
+  opacity: 1;
+}
+
+.bubble-media__play.playing {
+  background: var(--tk-accent);
+}
+
+.bubble-media__play:active {
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+/* 下载按钮（悬浮显示——右上角——圆心与角点对齐） */
+.bubble-media__download {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, background-color 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  padding: 0;
+}
+
+.bubble-media__file:hover .bubble-media__download {
+  opacity: 1;
+}
+
+.bubble-media__download:hover {
+  background: var(--tk-accent);
+}
+
+.bubble-media__download:active {
+  transform: scale(0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble-media__note,
+  .bubble-media__play,
+  .bubble-media__download {
+    transition: none;
+  }
 }
 
 /* ── Row ── */
