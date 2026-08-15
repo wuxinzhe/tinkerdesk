@@ -140,11 +140,11 @@
         <div v-if="panelOpen" class="chat-input__panel">
           <div class="chat-input__panel-inner">
             <div class="chat-input__panel-icons">
-              <!-- 图片附件：选图 → 拷贝 media 目录 → [Image attached at: media/xxx] -->
+              <!-- 图片附件：多选（最多 5 张）→ 拷贝 media 目录 → 拼接 [Image attached at: media/xxx] -->
               <button
                 class="chat-input__panel-icon"
-                :title="'发送图片'"
-                @click="pickAndSendMedia('image')"
+                :title="'发送图片（最多 5 张）'"
+                @click="pickAndSendImages"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -1106,14 +1106,25 @@ function handleSend() {
 }
 
 /** 多媒体附件：按类型选文件 → 拷贝 media 目录 → 文本提示（[Image attached at: media/xxx] 风格） */
-async function pickAndSendMedia(kind: 'image' | 'audio' | 'video'): Promise<void> {
+async function pickAndSendMedia(kind: 'audio' | 'video'): Promise<void> {
   try {
     const rel = await window.api.media.pickAndImport(kind)
     if (!rel) return
-    const label = kind === 'image' ? 'Image' : kind === 'audio' ? 'Audio' : 'Video'
+    const label = kind === 'audio' ? 'Audio' : 'Video'
     emit('send', `[${label} attached at: ${rel}]`)
   } catch {
     // 取消/失败静默（dialog 取消返回 fail——不打扰）
+  }
+}
+
+/** 多图附件：多选（最多 5 张）→ 拼接多条 [Image attached at: media/xxx] 为一条消息 */
+async function pickAndSendImages(): Promise<void> {
+  try {
+    const rels = await window.api.media.pickImages()
+    if (!rels || rels.length === 0) return
+    emit('send', rels.map((rel) => `[Image attached at: ${rel}]`).join('\n'))
+  } catch {
+    // 取消/失败静默
   }
 }
 

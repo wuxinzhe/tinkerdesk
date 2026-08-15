@@ -27,13 +27,25 @@ export class VisionRecognizeTool extends BaseTool {
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as { image_url?: unknown; prompt?: unknown }
-    const imageUrl = typeof args.image_url === 'string' ? args.image_url.trim() : ''
-    if (!imageUrl) {
+    // 兼容：image_url 可以是字符串（单图）或数组（多图——最多 5）
+    const raw = args.image_url
+    const images: string[] = []
+    if (typeof raw === 'string') {
+      if (raw.trim()) images.push(raw.trim())
+    } else if (Array.isArray(raw)) {
+      for (const item of raw) {
+        if (typeof item === 'string' && item.trim()) images.push(item.trim())
+      }
+    }
+    if (images.length === 0) {
       return ToolResult.sync(JSON.stringify({ success: false, error: 'image_url 不能为空' }))
+    }
+    if (images.length > 5) {
+      images.length = 5
     }
     const prompt = typeof args.prompt === 'string' && args.prompt.trim() ? args.prompt.trim() : '描述这张图片'
     try {
-      const text = await this.visionProvider!.recognize(ctx.profile, [imageUrl], prompt)
+      const text = await this.visionProvider!.recognize(ctx.profile, images, prompt)
       return ToolResult.sync(JSON.stringify({ success: true, text }))
     } catch (e) {
       return ToolResult.sync(JSON.stringify({ success: false, error: (e as Error).message }))

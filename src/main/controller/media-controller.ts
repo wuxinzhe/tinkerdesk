@@ -15,6 +15,7 @@ import { importMediaFile } from '../service/media-service'
 export class MediaController {
   register(): void {
     handleTrusted('media:pick-and-import', async (_event, payload) => this.pickAndImport(payload))
+    handleTrusted('media:pick-images', async (_event) => this.pickImages())
   }
 
   /** 弹文件选择框 → 复制到 media 目录 → 返回相对路径（media/xxx.ext） */
@@ -45,7 +46,26 @@ export class MediaController {
       const rel = importMediaFile(result.filePaths[0])
       return ok(rel)
     } catch (e) {
-      return fail((e as Error).message)
+      return fail(e instanceof Error ? e.message : '导入媒体失败')
+    }
+  }
+
+  /** 多图选择（最多 5 张）→ 返回相对路径数组（media/xxx.jpg） */
+  private async pickImages(): Promise<ApiResponse<string[]>> {
+    try {
+      const result = await dialog.showOpenDialog({
+        title: '选择图片（最多 5 张）',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: '图片', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] }],
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        return fail('已取消')
+      }
+      const picked = result.filePaths.slice(0, 5)
+      const rels = picked.map((p) => importMediaFile(p))
+      return ok(rels)
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '导入图片失败')
     }
   }
 }

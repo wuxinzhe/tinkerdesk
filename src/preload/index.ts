@@ -370,6 +370,8 @@ const api = {
   // ── 媒体附件（MediaController——pick-and-import 返回相对路径 media/xxx.ext；kind 限定文件类型）──
   media: {
     pickAndImport: (kind?: 'image' | 'audio' | 'video') => inv('media:pick-and-import', { kind }).then(unwrap),
+    /** 多图选择（最多 5 张）→ 相对路径数组 */
+    pickImages: () => inv('media:pick-images').then(unwrap),
   },
 
   // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──

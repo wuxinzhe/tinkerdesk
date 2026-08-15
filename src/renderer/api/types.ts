@@ -988,6 +988,8 @@ export interface WindowApi {
 
   media: {
     pickAndImport: (kind?: 'image' | 'audio' | 'video') => Promise<string>
+    /** 多图选择（最多 5 张）→ 相对路径数组 */
+    pickImages: () => Promise<string[]>
   },
 
   webProvider: {
