@@ -208,11 +208,11 @@
                 @toggle="togglePanelFeature"
               >
                 <template #icon>
+                  <!-- 档案柜（三抽屉）——压缩=内容归档——线条化与面板图标一致 -->
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 14v-2a8 8 0 0116 0v2" />
-                    <path d="M4 14h3l-1.5 3h-3z" />
-                    <path d="M20 14h-3l1.5 3h3z" />
-                    <path d="M12 19v3" />
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18M3 15h18" />
+                    <path d="M9 6h6M9 12h6M9 18h6" />
                   </svg>
                 </template>
               </ChatInputPanelFeature>
