@@ -48,15 +48,27 @@ export class VisionProvider {
     }
     content.push({ type: 'text', text: prompt })
     const messages: ApiMessage[] = [{ role: 'user', content }]
+    const modelConfigs = this.modelConfigService.resolveForScene(profile, SCENE_VISION)
     const response = await this.llmRouter.execute({
       scene: SCENE_VISION,
       messages,
       tools: [],
-      modelConfigs: this.modelConfigService.resolveForScene(profile, SCENE_VISION),
+      modelConfigs,
     })
     if (isSuccess(response)) {
       return response.text.trim()
     }
-    throw new VisionException(response.errorMessage ?? '图像识别失败')
+    // 失败——区分"模型服务不可用"（连接层问题）与其他错误：
+    // 图片路径已由上层解析验证（resolveMediaPath + mediaFileToDataUrl）——
+    // 走到这里失败几乎都是模型服务问题——明确提示避免误判为图片问题
+    const msg = response.errorMessage ?? ''
+    const modelName = modelConfigs[0]?.modelName ?? '未知模型'
+    const baseUrl = modelConfigs[0]?.baseUrl ?? ''
+    const serviceDown = /网络错误|connection|econnrefused|timed ?out|socket/i.test(msg)
+    throw new VisionException(
+      serviceDown
+        ? `图像识别失败：模型服务不可用（${modelName} @ ${baseUrl}）——请确认模型服务已启动，或在模型设置中更换 image_recognition 场景绑定的模型。`
+        : `图像识别失败：${msg}`,
+    )
   }
 }
