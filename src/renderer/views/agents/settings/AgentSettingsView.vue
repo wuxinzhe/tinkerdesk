@@ -604,6 +604,8 @@ onBeforeUnmount(() => {
 .agent-settings__prompt-actions {
   display: flex;
   justify-content: flex-end;
+  /* 与 textarea/row 的左右 16px 统一——按钮不贴卡片边缘 */
+  padding: 0 16px;
   margin-top: 12px;
 }
 
