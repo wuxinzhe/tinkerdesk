@@ -1617,8 +1617,9 @@ defineExpose({ focus })
 /* ── 展开配置高度动画（grid 折叠/展开——wrap 是 grid 容器） ── */
 .chat-input__panel-config-wrap {
   display: grid;
-  grid-template-rows: 1fr;
-  /* 关键：grid item min-height: 0——0fr 才能真正收缩到 0（否则被内容撑住不折叠） */
+  /* 关键：minmax(0, 1fr)——1fr 默认 minmax(auto, 1fr)（min=auto 内容最小高度）——
+     动画插值中途 min 从 auto 突变 0 会卡在内容最小高度——min 固定 0 才平滑 */
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .chat-input__panel-config-wrap > * {
@@ -1628,7 +1629,7 @@ defineExpose({ focus })
 
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  /* grid-template-rows 高度过渡（emil ease-out）——只动画行高（布局属性，但范围小、频率低可接受） */
+  /* grid-template-rows 高度过渡（emil ease-out）——只动画行高 */
   transition: grid-template-rows 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .panel-slide-enter-from,
@@ -1637,7 +1638,7 @@ defineExpose({ focus })
 }
 .panel-slide-enter-to,
 .panel-slide-leave-from {
-  grid-template-rows: 1fr;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 /* ── YOLO 详情过渡 ── */
