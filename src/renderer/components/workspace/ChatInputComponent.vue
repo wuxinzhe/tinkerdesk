@@ -218,9 +218,18 @@
               </ChatInputPanelFeature>
             </div>
             <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证）——
-                 grid 高度动画：wrap 是 grid 容器（grid-template-rows 0fr↔1fr 平滑折叠/展开）——
-                 mode="out-in"：先折叠旧的，再展开新的 -->
-            <Transition name="panel-slide" mode="out-in">
+                 手风琴高度动画（JS 测量 scrollHeight + transition height——最可靠丝滑——
+                 不依赖 grid 插值）——mode="out-in"：先折叠旧的，再展开新的 -->
+            <Transition
+              name="accordion"
+              mode="out-in"
+              @before-enter="accordionBeforeEnter"
+              @enter="accordionEnter"
+              @after-enter="accordionAfterEnter"
+              @before-leave="accordionBeforeLeave"
+              @leave="accordionLeave"
+              @after-leave="accordionAfterLeave"
+            >
               <!-- 回复提醒配置（展开行：Switch 开关） -->
               <div v-if="activePanelKey === 'notify'" key="notify" class="chat-input__panel-config-wrap">
                 <div class="chat-input__panel-config">
@@ -363,6 +372,47 @@ watch(activePanelKey, async (key) => {
     compactStats.value = { currentTokens: 0, maxTokens: 0 }
   }
 })
+
+// ── 手风琴高度动画（JS 测量 scrollHeight + transition height——
+//    最可靠的折叠/展开动画——不依赖 grid 插值） ──
+
+function accordionBeforeEnter(el: Element): void {
+  const node = el as HTMLElement
+  node.style.height = '0'
+  node.style.overflow = 'hidden'
+}
+
+function accordionEnter(el: Element, done: () => void): void {
+  const node = el as HTMLElement
+  node.style.height = `${node.scrollHeight}px`
+  node.addEventListener('transitionend', done, { once: true })
+}
+
+function accordionAfterEnter(el: Element): void {
+  const node = el as HTMLElement
+  node.style.height = ''
+  node.style.overflow = ''
+}
+
+function accordionBeforeLeave(el: Element): void {
+  const node = el as HTMLElement
+  node.style.height = `${node.scrollHeight}px`
+  node.style.overflow = 'hidden'
+  // 强制 reflow——起始高度先生效，动画才从当前高度出发
+  void node.offsetHeight
+}
+
+function accordionLeave(el: Element, done: () => void): void {
+  const node = el as HTMLElement
+  node.style.height = '0'
+  node.addEventListener('transitionend', done, { once: true })
+}
+
+function accordionAfterLeave(el: Element): void {
+  const node = el as HTMLElement
+  node.style.height = ''
+  node.style.overflow = ''
+}
 
 /** 手动压缩：确认 → 执行 → 刷新容量 */
 async function doCompact(): Promise<void> {
@@ -1565,8 +1615,7 @@ defineExpose({ focus })
   .panel-slide-leave-to {
     grid-template-rows: 0fr;
   }
-}
-.chat-input__panel-config-label {
+}.chat-input__panel-config-label {
   font-size: 13px;
   color: var(--tk-text-primary);
 }
@@ -1614,31 +1663,10 @@ defineExpose({ focus })
   cursor: not-allowed;
 }
 
-/* ── 展开配置高度动画（grid 折叠/展开——wrap 是 grid 容器） ── */
+/* ── 展开配置高度动画（手风琴——JS 测量 scrollHeight + transition height） ── */
 .chat-input__panel-config-wrap {
-  display: grid;
-  /* 关键：minmax(0, 1fr)——1fr 默认 minmax(auto, 1fr)（min=auto 内容最小高度）——
-     动画插值中途 min 从 auto 突变 0 会卡在内容最小高度——min 固定 0 才平滑 */
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.chat-input__panel-config-wrap > * {
-  min-height: 0;
   overflow: hidden;
-}
-
-.panel-slide-enter-active,
-.panel-slide-leave-active {
-  /* grid-template-rows 高度过渡（emil ease-out）——只动画行高 */
-  transition: grid-template-rows 220ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-.panel-slide-enter-from,
-.panel-slide-leave-to {
-  grid-template-rows: 0fr;
-}
-.panel-slide-enter-to,
-.panel-slide-leave-from {
-  grid-template-rows: minmax(0, 1fr);
+  transition: height 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* ── YOLO 详情过渡 ── */
