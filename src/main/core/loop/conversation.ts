@@ -12,6 +12,7 @@
  */
 import { MessageFactory } from '../../service/message-service'
 import { eventRecorder } from '../../service/event-recorder'
+import { getShortName } from '../../utils/tool-display'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { BusyModeRegistry } from './busy-mode-registry'
 import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
@@ -419,7 +420,8 @@ export class Conversation implements BusyLoopHost {
       const elapsedSec = (Date.now() - this.cycleStart) / 1000
       if (elapsedSec >= 60) {
         const min = Math.floor(elapsedSec / 60)
-        this.ctx.sendTips(EVT_TIP_WORKING, `⏳ Tinker 工作中：已执行${min}分钟 — 当前轮次${this.iteration}/${this.maxIter},调用中的工具：${this.currentToolName}`)
+        const toolName = this.currentToolName ? getShortName(this.currentToolName) : ''
+        this.ctx.sendTips(EVT_TIP_WORKING, `⏳ Tinker 工作中：已执行${min}分钟 — 当前轮次${this.iteration}/${this.maxIter}${toolName ? `,调用中的工具：${toolName}` : ''}`)
       }
       this.scheduleWorkingTip()
     }, 60_000)
