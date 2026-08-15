@@ -40,8 +40,9 @@ export class VisionRecognizeTool extends BaseTool {
     if (images.length === 0) {
       return ToolResult.sync(JSON.stringify({ success: false, error: 'image_url 不能为空' }))
     }
-    if (images.length > 5) {
-      images.length = 5
+    if (images.length > 4) {
+      // 单批上限 4（本地视觉模型实测稳定边界——超出截断，剩余由 LLM 分批再调）
+      images.length = 4
     }
     const prompt = typeof args.prompt === 'string' && args.prompt.trim() ? args.prompt.trim() : '描述这张图片'
     try {

@@ -7,8 +7,8 @@
       "image_url": {
         "type": "array",
         "items": { "type": "string" },
-        "maxItems": 5,
-        "description": "Image URLs/paths to analyze (up to 5). Accepts http/https URLs, data: base64 data URLs, or relative paths from image attachment messages (e.g. media/xxx.jpg — the app resolves them automatically)."
+        "maxItems": 4,
+        "description": "Image URLs/paths to analyze (up to 4 — the local vision model reliably handles at most 4 images per call; split larger batches across multiple calls). Accepts http/https URLs, data: base64 data URLs, or relative paths from image attachment messages (e.g. media/xxx.jpg — the app resolves them automatically)."
       },
       "prompt": {
         "type": "string",
