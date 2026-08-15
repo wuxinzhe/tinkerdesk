@@ -184,38 +184,44 @@
                 </svg>
                 <span>历史预览</span>
               </button>
-              <!-- 回复提醒：点击展开下方配置（Switch——per-session） -->
-              <button
-                class="chat-input__panel-icon"
-                :class="{ 'chat-input__panel-icon--active': notifyOpen }"
-                :title="'回复提醒'"
-                @click="notifyOpen = !notifyOpen"
+              <!-- 回复提醒：点击展开下方配置（Switch——per-session）——互斥展开（单一 activePanelKey） -->
+              <ChatInputPanelFeature
+                id="notify"
+                label="回复提醒"
+                title="回复提醒"
+                :active="activePanelKey === 'notify'"
+                @toggle="togglePanelFeature"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 01-3.46 0" />
-                </svg>
-                <span>回复提醒</span>
-              </button>
-              <!-- 上下文压缩：点击展开容量显示 + 手动压缩 -->
-              <button
-                class="chat-input__panel-icon"
-                :class="{ 'chat-input__panel-icon--active': compactOpen }"
-                :title="'上下文压缩'"
-                @click="compactOpen = !compactOpen"
+                <template #icon>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 01-3.46 0" />
+                  </svg>
+                </template>
+              </ChatInputPanelFeature>
+              <!-- 上下文压缩：点击展开容量显示 + 手动压缩——互斥展开（单一 activePanelKey） -->
+              <ChatInputPanelFeature
+                id="compact"
+                label="压缩"
+                title="上下文压缩"
+                :active="activePanelKey === 'compact'"
+                @toggle="togglePanelFeature"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 14v-2a8 8 0 0116 0v2" />
-                  <path d="M4 14h3l-1.5 3h-3z" />
-                  <path d="M20 14h-3l1.5 3h3z" />
-                  <path d="M12 19v3" />
-                </svg>
-                <span>压缩</span>
-              </button>
+                <template #icon>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 14v-2a8 8 0 0116 0v2" />
+                    <path d="M4 14h3l-1.5 3h-3z" />
+                    <path d="M20 14h-3l1.5 3h3z" />
+                    <path d="M12 19v3" />
+                  </svg>
+                </template>
+              </ChatInputPanelFeature>
             </div>
+            <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证——
+                 同一时刻只有一个 key 能匹配——不可能同时展开两个） -->
             <!-- 回复提醒配置（展开行：Switch 开关） -->
             <Transition name="panel-slide">
-              <div v-if="notifyOpen" class="chat-input__panel-config">
+              <div v-if="activePanelKey === 'notify'" class="chat-input__panel-config">
                 <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
                 <label class="chat-input__switch">
                   <input
@@ -230,7 +236,7 @@
             </Transition>
             <!-- 压缩配置（展开行：上下文容量 + 手动压缩按钮） -->
             <Transition name="panel-slide">
-              <div v-if="compactOpen" class="chat-input__panel-config chat-input__panel-config--column">
+              <div v-if="activePanelKey === 'compact'" class="chat-input__panel-config chat-input__panel-config--column">
                 <div class="chat-input__compact">
                   <div class="chat-input__compact-header">
                     <span class="chat-input__compact-label">上下文容量</span>
@@ -273,6 +279,7 @@ import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-uti
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { getCachedRecordShortcut, setCachedRecordShortcut } from '@/renderer/utils/shortcut-cache'
 import ChatSettingsDrawer from './ChatSettingsDrawer.vue'
+import ChatInputPanelFeature from './ChatInputPanelFeature.vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: string
@@ -303,7 +310,6 @@ const panelOpen = ref(false)
 const sessionStore = useSessionStore()
 
 // ── 回复提醒（per-session notify_on_complete——对话完成时播放提醒音效） ──
-const notifyOpen = ref(false)
 const notifyEnabled = ref(false)
 
 /** 切换回复提醒开关（保存 per-session 配置） */
@@ -316,8 +322,20 @@ function toggleNotifyComplete(): void {
   })
 }
 
+// ── 互斥展开（单一 activePanelKey——结构保证同一时刻只展开一个功能） ──
+const activePanelKey = ref<string | null>(null)
+
+/** 点击功能图标：切换该功能的展开状态（toggle——天然互斥） */
+function togglePanelFeature(id: string): void {
+  activePanelKey.value = activePanelKey.value === id ? null : id
+}
+
+/** 面板关闭 → 重置展开状态（下次打开从收起开始） */
+watch(panelOpen, (open) => {
+  if (!open) activePanelKey.value = null
+})
+
 // ── 上下文压缩（容量显示 + 手动压缩——profile/sessionId 必传） ──
-const compactOpen = ref(false)
 const compactStats = ref({ currentTokens: 0, maxTokens: 0 })
 const compactLoading = ref(false)
 
@@ -333,9 +351,9 @@ const compactPercent = computed(() => {
   return `${Math.min(100, (currentTokens / maxTokens) * 100)}%`
 })
 
-/** 展开时加载容量（当前上下文 tokens + 模型上限） */
-watch(compactOpen, async (open) => {
-  if (!open || !props.sessionId) return
+/** 展开压缩时加载容量（当前上下文 tokens + 模型上限） */
+watch(activePanelKey, async (key) => {
+  if (key !== 'compact' || !props.sessionId) return
   try {
     compactStats.value = await window.api.sessions.contextStats(props.profile, props.sessionId)
   } catch {
@@ -369,7 +387,7 @@ async function doCompact(): Promise<void> {
 watch(
   () => props.sessionId,
   (sid) => {
-    notifyOpen.value = false
+    activePanelKey.value = null
     const s = sessionStore.currentSession
     notifyEnabled.value = s?.id === sid ? Boolean(s.notifyOnComplete) : false
   },
