@@ -122,9 +122,9 @@
                 </svg>
               </button>
             </div>
-            <!-- 视频：普通文件样式（后缀显示——与待发区一致——暂无视频缩略图） -->
+            <!-- 视频/普通文件：待发区样式（正方形 + 后缀 + 悬浮下载——暂无视频缩略图） -->
             <div
-              v-for="att in mediaAttachments.filter((a) => a.type === 'Video')"
+              v-for="att in mediaAttachments.filter((a) => a.type === 'Video' || a.type === 'File')"
               :key="att.relPath"
               class="bubble-media__file"
               :title="att.relPath.split('/').pop()"
@@ -132,6 +132,18 @@
               <div class="bubble-media__file-icon">
                 <span class="bubble-media__ext">{{ (att.relPath.match(/\.[^.]+$/) ?? ['?'])[0].replace('.', '').toUpperCase().slice(0, 5) }}</span>
               </div>
+              <!-- 下载（悬浮显示——右上角——另存为） -->
+              <button
+                class="bubble-media__download"
+                title="保存文件"
+                @click.stop="downloadMedia(att.relPath)"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3v12" />
+                  <path d="M7 10l5 5 5-5" />
+                  <path d="M4 21h16" />
+                </svg>
+              </button>
             </div>
           </div>
           <template v-if="textWithoutMedia">{{ textWithoutMedia }}</template>
