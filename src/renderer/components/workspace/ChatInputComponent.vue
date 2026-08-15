@@ -1358,7 +1358,7 @@ defineExpose({ focus })
 .chat-input__pending {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 0 16px;
+  padding: 10px 16px 0px;
   margin-bottom: 4px;
   scrollbar-width: thin;
 }
