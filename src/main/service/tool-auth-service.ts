@@ -119,6 +119,7 @@ export class ToolAuthService {
     // 仅对终端类工具做参数危险检测（其它工具参数非命令语义）
     const isTerminalLike = toolName === 'terminal'
       || toolName === 'desktop_tinker_terminal'
+      || toolName === 'desktop_tinker_pwsh'
       || toolName.endsWith('_terminal')
 
     if (!isTerminalLike) {

@@ -30,7 +30,7 @@ const MUTATING_TOOLS = new Set([
   'terminal', 'execute_code', 'write_file', 'patch', 'todo', 'memory',
   'skill_manage', 'browser_click', 'browser_type', 'browser_press',
   'browser_scroll', 'browser_navigate', 'send_message', 'cronjob',
-  'delegate_task', 'process', 'desktop_tinker_terminal', 'desktop_tinker_write_file',
+  'delegate_task', 'process', 'desktop_tinker_terminal', 'desktop_tinker_pwsh', 'desktop_tinker_write_file',
   'desktop_tinker_patch', 'desktop_tinker_process',
 ])
 
@@ -191,7 +191,7 @@ export class ToolLoopGuardrail {
 
   private failureRecoveryHint(toolName: string, count: number): string {
     const common = `${toolName} has failed ${count} times this turn. This looks like a loop. Do not switch to text-only replies; keep using tools, but diagnose before retrying. First inspect the latest error/output and verify your assumptions. `
-    if (toolName === 'terminal' || toolName === 'desktop_tinker_terminal') {
+    if (toolName === 'terminal' || toolName === 'desktop_tinker_terminal' || toolName === 'desktop_tinker_pwsh') {
       return common + 'For terminal failures, run a small diagnostic such as `pwd && ls -la` in the same tool, then try an absolute path, a simpler command, a different working directory, or a different tool such as read_file/write_file/patch.'
     }
     return common + 'Try different arguments, a narrower query/path, an absolute path when relevant, or a different tool that can make progress. If the blocker is external, report the blocker after one diagnostic attempt instead of repeating the same failing path.'
@@ -243,7 +243,7 @@ export function classifyToolFailure(toolName: string, result: string): boolean {
   if (!result) {
     return false
   }
-  if (toolName === 'terminal' || toolName === 'desktop_tinker_terminal') {
+  if (toolName === 'terminal' || toolName === 'desktop_tinker_terminal' || toolName === 'desktop_tinker_pwsh') {
     try {
       const data = JSON.parse(result) as { exit_code?: number }
       if (typeof data.exit_code === 'number' && data.exit_code !== 0) {

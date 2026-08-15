@@ -48,8 +48,11 @@ export class TerminalTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  /** 可用性检测：至少一个 shell 可用（cmd Windows 恒有——恒可用） */
-  check(): boolean {
+  /** 平台门控：bash 工具仅非 Windows（Windows 用 PowerShell 工具——灰色展示原因） */
+  check(): boolean | { ok: boolean; reason: string } {
+    if (process.platform === 'win32') {
+      return { ok: false, reason: 'Windows 请使用 PowerShell 终端工具（pwsh）——bash 方言/编码在 Windows 不可靠' }
+    }
     return detectAvailableShells().length > 0
   }
 

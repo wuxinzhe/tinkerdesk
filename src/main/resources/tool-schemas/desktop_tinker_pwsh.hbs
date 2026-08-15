@@ -1,0 +1,18 @@
+{
+  "name": "desktop_tinker_pwsh",
+  "description": "Execute a command in the Windows PowerShell terminal (powershell.exe -NoProfile -Command). PowerShell dialect: native Windows paths (C:\\...), $env:NAME environment variables, cmdlets (Get-ChildItem, Get-Content, Select-String). A killed process settles as exit code 1 without a signal marker — treat a bare exit 1 after an interruption as termination, not command failure. Foreground (default): blocks until done, returns full output. Background (background=true): spawns a persistent process, returns session_id immediately; manage it with process/read_terminal/close_terminal.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "command": { "type": "string", "description": "The PowerShell command to execute" },
+      "background": { "type": "boolean", "description": "Whether to run in background (default: false)", "default": false },
+      "timeout": { "type": "integer", "description": "Command timeout in seconds (default: 15, foreground max: 600)" },
+      "workdir": { "type": "string", "description": "Working directory for this command (uses process cwd if not set)" },
+      "notify_on_complete": { "type": "boolean", "description": "If True and background=True, you will be notified when the process exits. MUTUALLY EXCLUSIVE with watch_patterns.", "default": false },
+      "watch_patterns": { "type": "array", "items": { "type": "string" }, "description": "List of strings to watch for in background output. MUTUALLY EXCLUSIVE with notify_on_complete — set one, not both." }
+    },
+    "required": ["command"]
+  },
+  "toolType": "desktop",
+  "emoji": "💻"
+}

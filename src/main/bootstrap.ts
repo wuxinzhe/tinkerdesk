@@ -121,6 +121,7 @@ import {
   SearchFilesTool,
   TERMINAL_TOOL_NAME,
   TerminalTool,
+  PwshTool,
   WEB_EXTRACT_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
   WebExtractTool,
@@ -301,6 +302,7 @@ export function bootstrap(
 
   const desktopTools: AgentToolRegistration[] = [
     { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new TerminalTool(renderer) },
+    { meta: { name: PWSH_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new PwshTool(renderer) },
     { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️', toolType: TOOL_TYPE_DESKTOP }, tool: new ProcessTool(renderer) },
     { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋', toolType: TOOL_TYPE_DESKTOP }, tool: new ReadTerminalTool(renderer) },
     { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌', toolType: TOOL_TYPE_DESKTOP }, tool: new CloseTerminalTool(renderer) },

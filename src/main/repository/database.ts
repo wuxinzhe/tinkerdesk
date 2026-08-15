@@ -161,7 +161,7 @@ function seedDefaultSkills(database: DatabaseSync): void {
           ? 'plugin,install,agent'
           : 'skill,authoring,规范',
         d.name === 'tinkerdesk-plugin-install'
-          ? 'desktop_tinker_plugin_install,desktop_tinker_plugin_configure,desktop_tinker_plugin_enable,desktop_tinker_plugin_list,desktop_tinker_plugin_uninstall,desktop_tinker_read_file,desktop_tinker_terminal'
+          ? 'desktop_tinker_plugin_install,desktop_tinker_plugin_configure,desktop_tinker_plugin_enable,desktop_tinker_plugin_list,desktop_tinker_plugin_uninstall,desktop_tinker_read_file,desktop_tinker_terminal,desktop_tinker_pwsh'
           : 'desktop_tinker_skill_manage',
         d.name === 'tinkerdesk-plugin-install'
           ? '装插件,安装插件,卸载插件,配置插件,plugin install'

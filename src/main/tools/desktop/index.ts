@@ -6,6 +6,7 @@
  * 全部实现 IAgentTool（extends BaseTool，schema 从 tool-schemas/*.hbs 加载）。
  */
 export { TerminalTool, TOOL_NAME as TERMINAL_TOOL_NAME } from './terminal-tool'
+export { PwshTool, TOOL_NAME as PWSH_TOOL_NAME } from './pwsh-tool'
 export { ProcessTool, TOOL_NAME as PROCESS_TOOL_NAME } from './process-tool'
 export { ReadTerminalTool, TOOL_NAME as READ_TERMINAL_TOOL_NAME } from './read-terminal-tool'
 export { CloseTerminalTool, TOOL_NAME as CLOSE_TERMINAL_TOOL_NAME } from './close-terminal-tool'
