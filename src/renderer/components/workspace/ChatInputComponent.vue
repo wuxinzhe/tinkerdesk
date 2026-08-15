@@ -127,8 +127,16 @@
         </div>
       </div>
 
-      <!-- 功能面板 -->
-      <Transition name="panel-slide">
+      <!-- 功能面板（手风琴高度动画——同配置展开方案） -->
+      <Transition
+        name="accordion"
+        @before-enter="accordionBeforeEnter"
+        @enter="accordionEnter"
+        @after-enter="accordionAfterEnter"
+        @before-leave="accordionBeforeLeave"
+        @leave="accordionLeave"
+        @after-leave="accordionAfterLeave"
+      >
         <div v-if="panelOpen" class="chat-input__panel">
           <div class="chat-input__panel-inner">
             <div class="chat-input__panel-icons">
@@ -1474,15 +1482,14 @@ defineExpose({ focus })
   margin-top: 8px;
   border-top: 1px solid var(--tk-border);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
   background: var(--tk-bg-primary);
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows 260ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* 手风琴高度动画（JS hooks 控制 height——overflow hidden 裁剪内容） */
+  overflow: hidden;
+  transition: height 260ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* 内层：overflow 裁剪 + 允许压缩（grid 0fr 收起的关键） */
+/* 内层：内容区（overflow 由外层裁剪） */
 .chat-input__panel-inner {
   overflow: hidden;
-  min-height: 0;
 }
 .chat-input__panel-icons {
   display: flex;
@@ -1621,14 +1628,6 @@ defineExpose({ focus })
   .chat-input__compact-fill,
   .chat-input__compact-btn {
     transition: none;
-  }
-  .panel-slide-enter-active,
-  .panel-slide-leave-active {
-    transition: none;
-  }
-  .panel-slide-enter-from,
-  .panel-slide-leave-to {
-    grid-template-rows: 0fr;
   }
 }.chat-input__panel-config-label {
   font-size: 13px;
