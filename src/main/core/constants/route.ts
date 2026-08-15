@@ -1,7 +1,7 @@
 /**
  * constants/route.ts — 推送事件路由常量（单字段两级：{一级}:{二级}）
  *
- * 协议见 docs/event-protocol.md：
+ * 协议见 docs/archive/event-protocol.md：
  * 一级 = 业务域（chat/session/action/tip/error）；二级 = 域内事件 type。
  * 完整 route = ROUTE + ':' + type——客户端 split(':') 解析。
  */

@@ -166,7 +166,7 @@ export interface SessionContextBuildOptions {
 /**
  * 事件发送器接口：
  * 每种方法对应一个业务域（一级路由），内部组装 route = '{一级}:{二级}'。
- * 协议见 docs/event-protocol.md。
+ * 协议见 docs/archive/event-protocol.md。
  */
 export interface IEventSender {
   /** chat 域（对话内容流：token/approval/clarify/interaction_status） */
