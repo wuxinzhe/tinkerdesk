@@ -122,6 +122,7 @@ import {
   TERMINAL_TOOL_NAME,
   TerminalTool,
   PwshTool,
+  PWSH_TOOL_NAME,
   WEB_EXTRACT_TOOL_NAME,
   WEB_SEARCH_TOOL_NAME,
   WebExtractTool,
