@@ -365,18 +365,17 @@ const bubbleStyleClass = computed(() =>
 
 .bubble-media {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;        /* 超出气泡最大宽度换行 */
   gap: 6px;
   margin-bottom: 2px;
 }
 .bubble-media__img {
-  /* 展示时：max-height 限制高度——宽度按比例自适应（不写死 max-width） */
-  max-width: 100%;
-  max-height: 260px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 8px;
+  /* 缩略图（thumb 优先——onerror 回退原图）——尺寸与文件待发区预览一致（64px 正方形） */
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
   display: block;
 }
 .bubble-media__audio,
