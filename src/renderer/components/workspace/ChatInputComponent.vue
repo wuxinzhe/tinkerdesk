@@ -1143,7 +1143,7 @@ defineExpose({ focus })
 .chat-input {
   position: relative;   /* 设置抽屉定位基准 */
   z-index: 10;          /* 上层——抽屉（z 下层）从输入框背后拉出 */
-  padding: 8px 16px;
+  padding: 8px 16px 0;  /* 底部 0——间距由 row 的 margin-bottom 承担 */
   border-top: 1px solid var(--tk-border);
   background: var(--tk-bg-primary);
   /* emil：浮起于消息列表之上——向上投射阴影（hairline 分隔 + 极淡大阴影） */
@@ -1158,6 +1158,7 @@ defineExpose({ focus })
   position: relative;  /* ChatSettingsDrawer 锚定基准（bottom: 100% 在输入行上方） */
   display: flex;
   align-items: center;
+  margin-bottom: 8px;  /* 与面板之间的间距（面板自身不再带 margin-top） */
   gap: 8px;
 }
 
@@ -1476,10 +1477,9 @@ defineExpose({ focus })
 
 
 /* ── 功能面板（+ 展开——历史预览等）── */
-/* Transition 根元素 = grid 容器。静态 = 展开态（1fr）——Transition class 移除后保持；
-   enter-from/leave-to 用 0fr 覆盖初始/结束——动画后回到 1fr 不会裁内容 */
+/* 功能面板（手风琴高度动画——JS hooks 控制 height） */
 .chat-input__panel {
-  margin-top: 8px;
+  /* 无 margin-top——与输入行的间距由 .chat-input__row 的 margin-bottom 承担 */
   border-top: 1px solid var(--tk-border);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
   background: var(--tk-bg-primary);
   /* 手风琴高度动画（JS hooks 控制 height——overflow hidden 裁剪内容） */
