@@ -20,3 +20,4 @@ screenshots/
 
 # 构建产物：npm-cli 打包（electron-builder afterPack 生成）
 resources/npm/
+resources/*.tgz
