@@ -1,6 +1,6 @@
 {
   "name": "desktop_tinker_vision_recognize",
-  "description": "Analyze images using a multimodal vision model. Accepts one or more image URLs/paths (up to 5) plus an optional text prompt/question. Returns the model's textual analysis of the image(s). Use this when the user asks about the content of an image, screenshot, or visual data. IMPORTANT: when the user sends image attachments (their message contains lines like '[Image attached at: media/xxx.jpg]'), pass those relative paths (e.g. media/20260815_1325_86a3ed28.jpg) as image_url — the app resolves them to local files automatically. Do NOT search the filesystem to locate the images; just call this tool with the paths from the attachments.",
+  "description": "Analyze images using a multimodal vision model. Accepts one or more image URLs/paths (up to 5) plus an optional text prompt/question. Returns the model's textual analysis of the image(s). Use this when the user asks about the content of an image, screenshot, or visual data. IMPORTANT: when the user sends image attachments (their message contains lines like '[Image attached at: media/xxx.jpg]'), pass those relative paths (e.g. media/20260815_1325_86a3ed28.jpg) as image_url — the app resolves them to local files automatically. Do NOT search the filesystem to locate the images. When the user's message combines text with images, ALWAYS pass that text (the user's question/instruction) as the prompt parameter so the vision model sees it.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -12,7 +12,7 @@
       },
       "prompt": {
         "type": "string",
-        "description": "Optional question or instruction about the image(s). Default: '描述这张图片'"
+        "description": "OPTIONAL text question/instruction about the image(s). When the user's message combines text with images, pass the user's text here (e.g. '这张图里是什么', '读取图里的代码'). Default: '描述这张图片'."
       }
     },
     "required": ["image_url"]
