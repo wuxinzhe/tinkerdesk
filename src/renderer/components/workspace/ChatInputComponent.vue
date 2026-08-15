@@ -1393,11 +1393,11 @@ defineExpose({ focus })
   letter-spacing: 0.5px;
 }
 
-/* 删除按钮（悬浮显示——左上角） */
+/* 删除按钮（悬浮显示——右上角） */
 .pending-file__remove {
   position: absolute;
   top: 3px;
-  left: 3px;
+  right: 3px;
   width: 18px;
   height: 18px;
   display: flex;
