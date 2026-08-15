@@ -122,13 +122,17 @@
                 </svg>
               </button>
             </div>
-            <video
+            <!-- 视频：普通文件样式（后缀显示——与待发区一致——暂无视频缩略图） -->
+            <div
               v-for="att in mediaAttachments.filter((a) => a.type === 'Video')"
               :key="att.relPath"
-              class="bubble-media__video"
-              :src="mediaUrl(att.relPath)"
-              controls
-            />
+              class="bubble-media__file"
+              :title="att.relPath.split('/').pop()"
+            >
+              <div class="bubble-media__file-icon">
+                <span class="bubble-media__ext">{{ (att.relPath.match(/\.[^.]+$/) ?? ['?'])[0].replace('.', '').toUpperCase().slice(0, 5) }}</span>
+              </div>
+            </div>
           </div>
           <template v-if="textWithoutMedia">{{ textWithoutMedia }}</template>
         </template>
@@ -457,6 +461,14 @@ const bubbleStyleClass = computed(() =>
 }
 .bubble-media__video {
   max-height: 220px;
+}
+
+/* 视频/普通文件后缀（bubble-media__file 内） */
+.bubble-media__ext {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text-secondary);
+  letter-spacing: 0.5px;
 }
 
 /* ── 音频文件块（对齐文件待发区样式——64px 正方形 + 音符 + 播放 + 下载） ── */
