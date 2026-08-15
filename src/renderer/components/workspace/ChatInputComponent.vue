@@ -1,6 +1,63 @@
 <template>
   <div class="chat-input-wrap">
     <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
+      <!-- 文件待发区（选文件不自动发送——回车时随文字一起发送） -->
+      <div v-if="pendingFiles.length" class="chat-input__pending">
+        <div class="chat-input__pending-inner">
+          <div
+            v-for="f in pendingFiles"
+            :key="f.relPath"
+            class="pending-file"
+            :title="f.name"
+          >
+            <!-- 图片：缩略图（thumb 优先——onerror 回退原图） -->
+            <img
+              v-if="f.kind === 'image'"
+              class="pending-file__img"
+              :src="pendingThumbUrl(f.relPath)"
+              :data-original="pendingMediaUrl(f.relPath)"
+              alt=""
+              @error="onPendingImgError"
+            />
+            <!-- 音频：音符图标 + 悬浮播放按钮 -->
+            <div v-else-if="f.kind === 'audio'" class="pending-file__icon pending-file__icon--audio">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+              <!-- 悬浮播放/暂停按钮（点击直接播放） -->
+              <button
+                class="pending-file__play"
+                :title="playingAudio === f.relPath ? '暂停' : '播放'"
+                @click.stop="togglePendingAudio(f.relPath)"
+              >
+                <svg v-if="playingAudio !== f.relPath" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="7,4 20,12 7,20" />
+                </svg>
+                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              </button>
+            </div>
+            <!-- 其他：文件后缀 -->
+            <div v-else class="pending-file__icon">
+              <span class="pending-file__ext">{{ (f.ext || '?').replace('.', '').toUpperCase().slice(0, 5) }}</span>
+            </div>
+            <!-- 删除（悬浮显示） -->
+            <button
+              class="pending-file__remove"
+              title="移除"
+              @click.stop="removePendingFile(f.relPath)"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="chat-input__row">
         <!-- 输入方式选择（点击展开抽屉：按住说话 / VAD 监听 / 文字输入——选中排最左——选中即应用并关闭） -->
         <div class="chat-input__mode-picker">
@@ -140,11 +197,11 @@
         <div v-if="panelOpen" class="chat-input__panel">
           <div class="chat-input__panel-inner">
             <div class="chat-input__panel-icons">
-              <!-- 图片附件：多选（最多 5 张）→ 拷贝 media 目录 → 拼接 [Image attached at: media/xxx] -->
+              <!-- 图片附件：多选（最多 5 张）→ 加入待发区（回车随消息发送） -->
               <button
                 class="chat-input__panel-icon"
-                :title="'发送图片（最多 5 张）'"
-                @click="pickAndSendImages"
+                :title="'添加图片（最多 5 张）'"
+                @click="pickAndQueueImages"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -153,11 +210,11 @@
                 </svg>
                 <span>图片</span>
               </button>
-              <!-- 音频附件 -->
+              <!-- 音频附件：选择 → 加入待发区 -->
               <button
                 class="chat-input__panel-icon"
-                :title="'发送音频'"
-                @click="pickAndSendMedia('audio')"
+                :title="'添加音频'"
+                @click="pickAndQueueAudio"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M9 18V5l12-2v13" />
@@ -166,17 +223,30 @@
                 </svg>
                 <span>音频</span>
               </button>
-              <!-- 视频附件 -->
+              <!-- 视频附件：选择 → 加入待发区（归 other——后缀显示） -->
               <button
                 class="chat-input__panel-icon"
-                :title="'发送视频'"
-                @click="pickAndSendMedia('video')"
+                :title="'添加视频'"
+                @click="pickAndQueueFile"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="5" width="13" height="14" rx="2" />
                   <polygon points="16,10 21,7 21,17 16,14" />
                 </svg>
                 <span>视频</span>
+              </button>
+              <!-- 文件附件：通用选择（文档/压缩包等——归 other——后缀显示） -->
+              <button
+                class="chat-input__panel-icon"
+                :title="'添加文件'"
+                @click="pickAndQueueFile"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8M8 17h5" />
+                </svg>
+                <span>文件</span>
               </button>
               <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
               <button
@@ -1099,30 +1169,133 @@ function insertNewline() {
 
 function handleSend() {
   const text = props.modelValue.trim()
-  if (!text || props.disabled) return
-  emit('send', text)
+  if ((!text && pendingFiles.value.length === 0) || props.disabled) return
+  // 待发区文件随消息一起发送（文字在前、文件在后）
+  const filesText = pendingFiles.value
+    .map((f) => (f.kind === 'image' ? `[Image attached at: ${f.relPath}]` : f.kind === 'audio' ? `[Audio attached at: ${f.relPath}]` : `[File attached at: ${f.relPath}]`))
+    .join('\n')
+  const content = text ? (filesText ? `${text}\n${filesText}` : text) : filesText
+  emit('send', content)
   emit('update:modelValue', '')
+  pendingFiles.value = []
+  stopPendingAudio()
   nextTick(() => autoResize(textareaRef.value))
 }
 
-/** 多媒体附件：按类型选文件 → 拷贝 media 目录 → 文本提示（[Image attached at: media/xxx] 风格） */
-async function pickAndSendMedia(kind: 'audio' | 'video'): Promise<void> {
-  try {
-    const rel = await window.api.media.pickAndImport(kind)
-    if (!rel) return
-    const label = kind === 'audio' ? 'Audio' : 'Video'
-    emit('send', `[${label} attached at: ${rel}]`)
-  } catch {
-    // 取消/失败静默（dialog 取消返回 fail——不打扰）
+// ── 文件待发区（选文件不自动发送——回车时随文字一起发送） ──
+
+interface PendingFile {
+  relPath: string
+  kind: 'image' | 'audio' | 'other'
+  name: string
+  ext: string
+}
+
+const pendingFiles = ref<PendingFile[]>([])
+/** 当前播放的待发音频（relPath → 播放状态） */
+const playingAudio = ref<string | null>(null)
+let pendingAudioEl: HTMLAudioElement | null = null
+
+/** 图片扩展名集合（文件按钮通用选择时分类用） */
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'])
+const AUDIO_EXTS = new Set(['.wav', '.mp3', '.ogg', '.m4a', '.flac', '.aac'])
+
+function classifyMedia(relPath: string): 'image' | 'audio' | 'other' {
+  const ext = (relPath.match(/\.[^.]+$/) ?? [''])[0].toLowerCase()
+  if (IMAGE_EXTS.has(ext)) return 'image'
+  if (AUDIO_EXTS.has(ext)) return 'audio'
+  return 'other' // 视频/文档/压缩包等一律 other（后缀显示）
+}
+
+/** 加入待发区（图片多选 / 音频 / 通用文件统一入口） */
+function addPendingFiles(relPaths: string[]): void {
+  for (const rel of relPaths) {
+    if (!rel) continue
+    const name = rel.split('/').pop() ?? rel
+    const ext = (name.match(/\.[^.]+$/) ?? [''])[0].toLowerCase()
+    pendingFiles.value.push({ relPath: rel, kind: classifyMedia(rel), name, ext })
   }
 }
 
-/** 多图附件：多选（最多 5 张）→ 拼接多条 [Image attached at: media/xxx] 为一条消息 */
-async function pickAndSendImages(): Promise<void> {
+/** 待发区删除（同时停掉该文件的音频播放） */
+function removePendingFile(relPath: string): void {
+  if (playingAudio.value === relPath) stopPendingAudio()
+  pendingFiles.value = pendingFiles.value.filter((f) => f.relPath !== relPath)
+}
+
+/** 待发区音频播放/暂停切换（app-media:// 直接播放） */
+function togglePendingAudio(relPath: string): void {
+  if (playingAudio.value === relPath) {
+    stopPendingAudio()
+    return
+  }
+  stopPendingAudio()
+  playingAudio.value = relPath
+  const audio = new Audio(`app-media://${relPath.replace(/\\/g, '/')}`)
+  pendingAudioEl = audio
+  audio.play().catch(() => {
+    stopPendingAudio()
+  })
+  audio.addEventListener('ended', () => stopPendingAudio())
+}
+
+function stopPendingAudio(): void {
+  if (pendingAudioEl) {
+    pendingAudioEl.pause()
+    pendingAudioEl = null
+  }
+  playingAudio.value = null
+}
+
+/** 待发区图片缩略图 URL（thumb 优先——onerror 回退原图） */
+function pendingThumbUrl(relPath: string): string {
+  const name = relPath.replace(/\\/g, '/').split('/').pop() ?? ''
+  const base = name.replace(/\.[^.]+$/, '')
+  return `app-media://media/thumbs/${base}_thumb.jpg`
+}
+
+/** 待发区原图 URL（app-media:// 协议） */
+function pendingMediaUrl(relPath: string): string {
+  return `app-media://${relPath.replace(/\\/g, '/')}`
+}
+
+/** 待发区缩略图加载失败 → 回退原图（只回退一次） */
+function onPendingImgError(e: Event): void {
+  const img = e.target as HTMLImageElement
+  if (!img || img.dataset.fallback) return
+  img.dataset.fallback = '1'
+  const original = img.dataset.original
+  if (original) img.src = original
+}
+
+/** 多图选择 → 加入待发区（不自动发送） */
+async function pickAndQueueImages(): Promise<void> {
   try {
     const rels = await window.api.media.pickImages()
     if (!rels || rels.length === 0) return
-    emit('send', rels.map((rel) => `[Image attached at: ${rel}]`).join('\n'))
+    addPendingFiles(rels)
+  } catch {
+    // 取消/失败静默
+  }
+}
+
+/** 音频选择 → 加入待发区 */
+async function pickAndQueueAudio(): Promise<void> {
+  try {
+    const rel = await window.api.media.pickAndImport('audio')
+    if (!rel) return
+    addPendingFiles([rel])
+  } catch {
+    // 取消/失败静默
+  }
+}
+
+/** 通用文件选择（其他类型——含视频/文档——按扩展名分类）→ 加入待发区 */
+async function pickAndQueueFile(): Promise<void> {
+  try {
+    const rel = await window.api.media.pickAndImport()
+    if (!rel) return
+    addPendingFiles([rel])
   } catch {
     // 取消/失败静默
   }
@@ -1163,6 +1336,125 @@ defineExpose({ focus })
 
 .chat-input--disabled {
   opacity: 0.6;
+}
+
+/* ── 文件待发区（横向滚动——正方形组件——emil 低调） ── */
+
+.chat-input__pending {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 16px;
+  margin-bottom: 4px;
+  scrollbar-width: thin;
+}
+
+.chat-input__pending-inner {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0 6px;
+  width: max-content;
+}
+
+.pending-file {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
+}
+
+.pending-file__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pending-file__icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tk-text-secondary);
+}
+
+.pending-file__icon--audio {
+  position: relative;
+}
+
+.pending-file__ext {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text-secondary);
+  letter-spacing: 0.5px;
+}
+
+/* 删除按钮（悬浮显示——左上角） */
+.pending-file__remove {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  padding: 0;
+}
+
+.pending-file:hover .pending-file__remove {
+  opacity: 1;
+}
+
+.pending-file__remove:active {
+  transform: scale(0.9);
+}
+
+/* 音频播放按钮（悬浮中间显示） */
+.pending-file__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  padding: 0;
+}
+
+.pending-file:hover .pending-file__play {
+  opacity: 1;
+}
+
+.pending-file__play:active {
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-file__remove,
+  .pending-file__play {
+    transition: opacity 140ms ease;
+  }
 }
 
 .chat-input__row {
