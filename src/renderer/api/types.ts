@@ -844,6 +844,10 @@ export interface WindowApi {
     setReasoningDepth: (profile: string, sessionId: string, reasoningDepth: string) => Promise<boolean>
     getReasoningDepth: (profile: string, sessionId: string) => Promise<string>
     setNotifyComplete: (profile: string, sessionId: string, enabled: boolean) => Promise<boolean>
+    /** 上下文容量（当前 tokens + 模型上限——压缩面板显示） */
+    contextStats: (profile: string, sessionId: string) => Promise<{ currentTokens: number; maxTokens: number }>
+    /** 手动压缩指定会话（profile + sessionId 必传） */
+    compact: (profile: string, sessionId: string) => Promise<{ success: boolean; message: string }>
     /** 会话统计（数据面板：平均命中率 + memory 占用） */
     stats: (profile: string, sessionId: string) => Promise<{
       hitRate: number; promptTokens: number; totalTokens: number; rounds: number

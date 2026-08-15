@@ -165,7 +165,7 @@ app.whenReady().then(() => {
   // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
   usageRecorder.init()
   new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
-  new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService).register()
+  new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService, desk.compactionService).register()
   new MessageController(desk.messageService).register()
   new MediaController().register()
   new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()

@@ -15,6 +15,8 @@ import type { SessionService } from '../service/session-service'
 import { MemoryStore } from '../service/memory-store'
 import type { AgentConfigService } from '../service/agent-config-service'
 import type { ModelConfigService } from '../service/model-config-service'
+import type { CompactionService } from '../service/compaction-service'
+import { SCENE_CHAT, SCENE_SUMMARY } from '../core/llm/types'
 import type { SessionEntity } from '../repository/types'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
@@ -46,6 +48,7 @@ export class SessionController {
     private readonly memoryStore?: MemoryStore,
     private readonly agentConfigService?: AgentConfigService,
     private readonly modelConfigService?: ModelConfigService,
+    private readonly compactionService?: CompactionService,
   ) { }
 
   /** 注册全部 IPC handler（只做绑定，逻辑在独立具名方法） */
@@ -58,6 +61,8 @@ export class SessionController {
     handleTrusted('session:set-notify-complete', (_event, payload) => this.setNotifyComplete(payload))
     handleTrusted('session:getYolo', (_event, payload) => this.getYolo(payload))
     handleTrusted('session:toggleYolo', (_event, payload) => this.toggleYolo(payload))
+    handleTrusted('session:context-stats', (_event, payload) => this.contextStats(payload))
+    handleTrusted('session:compact', (_event, payload) => this.compactSession(payload))
     handleTrusted('session:stats', (_event, payload) => this.getStats(payload))
     handleTrusted('dashboard:get', (_event, payload) => this.getDashboard(payload))
   }
@@ -139,6 +144,52 @@ export class SessionController {
     }
     const newYolo = this.sessionService.toggleYolo(payload.sessionId, session.profile)
     return ok(newYolo)
+  }
+
+  /** 上下文容量（当前 tokens + 模型上限——chat-input 压缩面板显示用） */
+  private contextStats(payload: { profile: string; sessionId: string }): ApiResponse<{ currentTokens: number; maxTokens: number }> {
+    try {
+      const session = this.sessionService.findById(payload.sessionId, payload.profile)
+      if (!session) {
+        return fail('会话不存在')
+      }
+      const mainConfigs = this.modelConfigService?.resolveForScene(payload.profile, SCENE_CHAT) ?? []
+      const maxTokens = mainConfigs[0]?.contextLimit ?? 0
+      return ok({ currentTokens: session.currentContextTokens ?? 0, maxTokens })
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '读取上下文容量失败')
+    }
+  }
+
+  /** 手动压缩指定会话（profile + sessionId 必传） */
+  private async compactSession(payload: { profile: string; sessionId: string }): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    try {
+      const session = this.sessionService.findById(payload.sessionId, payload.profile)
+      if (!session) {
+        return fail('会话不存在')
+      }
+      if (!this.compactionService || !this.modelConfigService || !this.agentConfigService) {
+        return fail('压缩服务未就绪')
+      }
+      const mainConfigs = this.modelConfigService.resolveForScene(payload.profile, SCENE_CHAT)
+      const mainConfig = mainConfigs[0]
+      if (!mainConfig) {
+        return fail('未找到主聊天模型配置')
+      }
+      const agentConfig = this.agentConfigService.get(payload.profile)
+      const compressConfigs = this.modelConfigService.resolveForScene(payload.profile, SCENE_SUMMARY)
+      const compressConfig = compressConfigs[0] ?? mainConfig
+      const okResult = await this.compactionService.compact(
+        payload.sessionId,
+        payload.profile,
+        mainConfig.contextLimit,
+        agentConfig?.tailRatio ?? 0.5,
+        compressConfig,
+      )
+      return ok({ success: okResult, message: okResult ? '压缩完成' : '无可压缩内容（上下文大头可能为 system prompt/工具 schema）' })
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '压缩失败')
+    }
   }
 
   /** 数据面板整合接口（只读——一次性给前端全部读数） */

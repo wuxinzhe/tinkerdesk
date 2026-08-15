@@ -197,6 +197,21 @@
                 </svg>
                 <span>回复提醒</span>
               </button>
+              <!-- 上下文压缩：点击展开容量显示 + 手动压缩 -->
+              <button
+                class="chat-input__panel-icon"
+                :class="{ 'chat-input__panel-icon--active': compactOpen }"
+                :title="'上下文压缩'"
+                @click="compactOpen = !compactOpen"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 14v-2a8 8 0 0116 0v2" />
+                  <path d="M4 14h3l-1.5 3h-3z" />
+                  <path d="M20 14h-3l1.5 3h3z" />
+                  <path d="M12 19v3" />
+                </svg>
+                <span>压缩</span>
+              </button>
             </div>
             <!-- 回复提醒配置（展开行：Switch 开关） -->
             <Transition name="panel-slide">
@@ -211,6 +226,27 @@
                   />
                   <span class="chat-input__switch-slider" />
                 </label>
+              </div>
+            </Transition>
+            <!-- 压缩配置（展开行：上下文容量 + 手动压缩按钮） -->
+            <Transition name="panel-slide">
+              <div v-if="compactOpen" class="chat-input__panel-config chat-input__panel-config--column">
+                <div class="chat-input__compact">
+                  <div class="chat-input__compact-header">
+                    <span class="chat-input__compact-label">上下文容量</span>
+                    <span class="chat-input__compact-nums">{{ fmtTokens(compactStats.currentTokens) }} / {{ fmtTokens(compactStats.maxTokens) }}</span>
+                  </div>
+                  <div class="chat-input__compact-bar">
+                    <div class="chat-input__compact-fill" :style="{ width: compactPercent }" />
+                  </div>
+                  <button
+                    class="chat-input__compact-btn"
+                    :disabled="compactLoading || compactStats.currentTokens === 0"
+                    @click="doCompact"
+                  >
+                    {{ compactLoading ? '压缩中…' : '压缩上下文' }}
+                  </button>
+                </div>
               </div>
             </Transition>
           </div>
@@ -232,7 +268,8 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import '@/renderer/api/types'
-import { showErrorToast } from '@/renderer/utils/notification-utils'
+import { confirm } from '@/renderer/api/confirm'
+import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { getCachedRecordShortcut, setCachedRecordShortcut } from '@/renderer/utils/shortcut-cache'
 import ChatSettingsDrawer from './ChatSettingsDrawer.vue'
@@ -277,6 +314,55 @@ function toggleNotifyComplete(): void {
   window.api.sessions.setNotifyComplete(props.profile, props.sessionId, next).catch(() => {
     notifyEnabled.value = !next // 保存失败回滚
   })
+}
+
+// ── 上下文压缩（容量显示 + 手动压缩——profile/sessionId 必传） ──
+const compactOpen = ref(false)
+const compactStats = ref({ currentTokens: 0, maxTokens: 0 })
+const compactLoading = ref(false)
+
+/** token 数量格式化（≥10000 显示 k——紧凑） */
+function fmtTokens(n: number): string {
+  return n >= 10000 ? `${(n / 1000).toFixed(0)}k` : String(n)
+}
+
+/** 容量百分比（细进度条宽度） */
+const compactPercent = computed(() => {
+  const { currentTokens, maxTokens } = compactStats.value
+  if (maxTokens <= 0) return '0%'
+  return `${Math.min(100, (currentTokens / maxTokens) * 100)}%`
+})
+
+/** 展开时加载容量（当前上下文 tokens + 模型上限） */
+watch(compactOpen, async (open) => {
+  if (!open || !props.sessionId) return
+  try {
+    compactStats.value = await window.api.sessions.contextStats(props.profile, props.sessionId)
+  } catch {
+    compactStats.value = { currentTokens: 0, maxTokens: 0 }
+  }
+})
+
+/** 手动压缩：确认 → 执行 → 刷新容量 */
+async function doCompact(): Promise<void> {
+  if (!props.sessionId || compactLoading.value) return
+  const { currentTokens, maxTokens } = compactStats.value
+  const ok = await confirm({
+    title: '压缩上下文？',
+    message: `将旧对话汇总为摘要并归档（释放上下文空间）。当前 ${fmtTokens(currentTokens)} / 上限 ${fmtTokens(maxTokens)}。`,
+    confirmText: '压缩',
+  })
+  if (!ok) return
+  compactLoading.value = true
+  try {
+    const res = await window.api.sessions.compact(props.profile, props.sessionId)
+    showInfoToast(res.message)
+    compactStats.value = await window.api.sessions.contextStats(props.profile, props.sessionId)
+  } catch {
+    showErrorToast({ code: 'compact:error', message: '压缩失败' })
+  } finally {
+    compactLoading.value = false
+  }
 }
 
 /** session 变化 → 读回复提醒配置（session 对象带 notifyOnComplete——list/create 返回） */
@@ -1367,6 +1453,89 @@ defineExpose({ focus })
   border: 1px solid var(--tk-border);
   border-radius: 12px;
   background: var(--tk-bg-secondary);
+}
+
+/* 压缩展开行（竖排：容量条 + 按钮） */
+.chat-input__panel-config--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.chat-input__compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.chat-input__compact-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.chat-input__compact-label {
+  font-size: 12px;
+  color: var(--tk-text-secondary);
+}
+
+.chat-input__compact-nums {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 细容量条（低调——3px——accent 填充） */
+.chat-input__compact-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tk-border);
+  overflow: hidden;
+}
+
+.chat-input__compact-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--tk-accent);
+  transition: width 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* 压缩按钮（次级——accent 描边——按压反馈） */
+.chat-input__compact-btn {
+  align-self: flex-end;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-accent);
+  background: transparent;
+  border: 1px solid var(--tk-accent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 180ms ease;
+}
+
+.chat-input__compact-btn:hover {
+  background: color-mix(in srgb, var(--tk-accent) 8%, transparent);
+}
+
+.chat-input__compact-btn:active {
+  transform: scale(0.97);
+}
+
+.chat-input__compact-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-input__compact-fill,
+  .chat-input__compact-btn {
+    transition: none;
+  }
 }
 .chat-input__panel-config-label {
   font-size: 13px;

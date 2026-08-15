@@ -219,6 +219,8 @@ const api = {
     setReasoningDepth: (profile: string, sessionId: string, reasoningDepth: string) => inv('session:set-reasoning-depth', { profile, sessionId, reasoningDepth }).then(unwrap),
     getReasoningDepth: (profile: string, sessionId: string) => inv('session:get-reasoning-depth', { profile, sessionId }).then(unwrap),
     setNotifyComplete: (profile: string, sessionId: string, enabled: boolean) => inv('session:set-notify-complete', { profile, sessionId, enabled }).then(unwrap),
+    contextStats: (profile: string, sessionId: string) => inv('session:context-stats', { profile, sessionId }).then(unwrap),
+    compact: (profile: string, sessionId: string) => inv('session:compact', { profile, sessionId }).then(unwrap),
     /** 会话统计（数据面板：平均命中率 + memory 占用） */
     stats: (profile: string, sessionId: string) => inv('session:stats', { profile, sessionId }).then(unwrap),
     /** 数据面板整合（只读——上下文窗口/阈值/统计/memory 一口气给前端） */
