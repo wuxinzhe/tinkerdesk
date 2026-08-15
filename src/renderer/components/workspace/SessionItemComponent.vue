@@ -9,7 +9,7 @@
     @click="onClick"
   >
     <div class="session-item__icon">
-      <!-- 阶段图标（优先级：等审批 > 等回答 > 工具 > 工作中 > 完成 > 空闲）——切换水平翻转（像翻牌——低调不抢注意力） -->
+      <!-- 阶段图标（优先级：等审批 > 等回答 > 工具 > 工作中 > 完成 > 空闲）——切换旧缩小/新放大（低调不抢注意力） -->
       <Transition name="icon-flip" mode="out-in">
         <!-- 等审批：黄色感叹号（等待用户操作——区别于工作中） -->
         <span v-if="stage === 'approval'" key="approval" class="session-item__stage session-item__stage--wait" title="等待审批">
@@ -211,18 +211,20 @@ function onClick() {
   color: var(--tk-accent);
 }
 
-/* 阶段图标切换过渡（水平翻转——像翻牌——低调不抢注意力） */
+/* 阶段图标切换过渡（旧图标缩小 / 新图标放大——低调不抢注意力） */
 .icon-flip-enter-active,
 .icon-flip-leave-active {
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), opacity 160ms ease;
 }
 
 .icon-flip-enter-from {
-  transform: rotateY(90deg);
+  transform: scale(0.4);
+  opacity: 0;
 }
 
 .icon-flip-leave-to {
-  transform: rotateY(-90deg);
+  transform: scale(0.4);
+  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
