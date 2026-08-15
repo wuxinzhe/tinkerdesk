@@ -1,6 +1,6 @@
 # 插件体系
 
-TinkerDesk 插件 = 一段 JS 代码（CommonJS）+ `manifest.json` 声明，运行在**主进程**（与 Agent 引擎同进程——插件即代码，拥有 main 进程权限）。
+TinkerDesk 插件 = 一段 JS 代码（CommonJS）+ `manifest.json` 声明，运行在 **独立 Worker 线程**（worker_threads——plugin-host-worker）——插件代码（无论同步/CPU 密集/阻塞）只影响自己的 worker，**main 进程事件循环零影响**。插件通过 `ctx.registerIpc()` 注册频道、`ctx.emit()` 发事件，与主进程走消息转发。
 
 ## 插件是什么
 
@@ -50,7 +50,7 @@ web.extract   → 抓取 provider（web-extract 工具）
 
 ## 安全模型
 
-- **v1 信任制**：用户手动下载解压 = 主动信任——插件拥有 main 进程权限（与 Agent 同级）
+- **v1 信任制 + 线程隔离**：用户手动下载解压 = 主动信任——插件在独立 Worker 线程运行——插件崩溃/死循环不拖垮主进程（API/ctx 经消息代理转发）
 - 插件事件经 `plugin:event` 转发 renderer
 - 配置读取 secret 脱敏（save 原样 / get 掩码）
 - 插件目录外安装动作（install.md）由用户自管——应用不代执行任意命令
