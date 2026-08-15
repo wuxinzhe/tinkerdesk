@@ -1368,7 +1368,7 @@ defineExpose({ focus })
   height: 64px;
   flex-shrink: 0;
   border-radius: 10px;
-  overflow: hidden;
+  /* overflow visible——删除按钮圆心压在角点（半内半外）——图片圆角由 img 自身裁剪 */
   background: var(--tk-bg-secondary);
   border: 1px solid var(--tk-border);
   /* emil：只动画 transform/opacity（GPU）——hover 轻微抬升 */
@@ -1414,6 +1414,8 @@ defineExpose({ focus })
   height: 100%;
   object-fit: cover;
   display: block;
+  /* 自身圆角（父级 overflow visible——图片仍按圆角裁剪） */
+  border-radius: 10px;
 }
 
 .pending-file__icon {
@@ -1423,6 +1425,7 @@ defineExpose({ focus })
   align-items: center;
   justify-content: center;
   color: var(--tk-text-secondary);
+  border-radius: 10px;
 }
 
 .pending-file__icon--audio {
@@ -1445,11 +1448,11 @@ defineExpose({ focus })
   color: var(--tk-accent);
 }
 
-/* 删除按钮（悬浮显示——右上角——hover 变红） */
+/* 删除按钮（悬浮显示——右上角——圆心与正方形角点对齐——半内半外） */
 .pending-file__remove {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: -9px;
+  right: -9px;
   width: 18px;
   height: 18px;
   display: flex;
