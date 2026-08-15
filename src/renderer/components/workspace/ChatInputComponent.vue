@@ -1158,7 +1158,7 @@ defineExpose({ focus })
   position: relative;  /* ChatSettingsDrawer 锚定基准（bottom: 100% 在输入行上方） */
   display: flex;
   align-items: center;
-  margin-bottom: 8px;  /* 与面板之间的间距（面板自身不再带 margin-top） */
+  padding-bottom: 8px;  /* 与面板之间的间距（panel 自身无 margin——动画元素不残留间距） */
   gap: 8px;
 }
 
@@ -1479,16 +1479,16 @@ defineExpose({ focus })
 /* ── 功能面板（+ 展开——历史预览等）── */
 /* 功能面板（手风琴高度动画——JS hooks 控制 height） */
 .chat-input__panel {
-  /* 无 margin-top——与输入行的间距由 .chat-input__row 的 margin-bottom 承担 */
-  border-top: 1px solid var(--tk-border);   /* 只有顶部边框——面板贴输入框，与输入框分隔 */
+  /* 无 margin-top / 无 border-top——间距与分隔线都由 inner 承担（动画元素干净） */
   background: var(--tk-bg-primary);
   /* 手风琴高度动画（JS hooks 控制 height——overflow hidden 裁剪内容） */
   overflow: hidden;
   transition: height 260ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* 内层：内容区（overflow 由外层裁剪） */
+/* 内层：内容区（overflow 由外层裁剪；顶部边框 = 面板与输入行的分隔线） */
 .chat-input__panel-inner {
+  border-top: 1px solid var(--tk-border);
   overflow: hidden;
 }
 .chat-input__panel-icons {
