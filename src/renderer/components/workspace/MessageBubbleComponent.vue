@@ -75,8 +75,10 @@
               v-for="att in mediaAttachments.filter((a) => a.type === 'Image')"
               :key="att.relPath"
               class="bubble-media__img"
-              :src="mediaUrl(att.relPath)"
+              :src="mediaThumbUrl(att.relPath)"
+              :data-original="mediaUrl(att.relPath)"
               alt="图片"
+              @error="onImgError"
             />
             <audio
               v-for="att in mediaAttachments.filter((a) => a.type === 'Audio')"
@@ -198,6 +200,25 @@ const textWithoutMedia = computed(() =>
 /** 相对路径 → app-media:// 协议 URL（main 只读 media 目录） */
 function mediaUrl(relPath: string): string {
   return `app-media://${relPath.replace(/\\/g, '/')}`
+}
+
+/**
+ * 图片缩略图 URL（优先缩略图——>1MB 的图导入时生成 media/thumbs/xxx_thumb.jpg；
+ * 缩略图不存在（小图未生成）→ 加载失败 → onImgError 回退原图）
+ */
+function mediaThumbUrl(relPath: string): string {
+  const name = relPath.replace(/\\/g, '/').split('/').pop() ?? ''
+  const base = name.replace(/\.[^.]+$/, '')
+  return `app-media://media/thumbs/${base}_thumb.jpg`
+}
+
+/** 缩略图加载失败 → 回退原图（data-original 由模板传入——只回退一次） */
+function onImgError(e: Event): void {
+  const img = e.target as HTMLImageElement
+  if (!img || img.dataset.fallback) return
+  img.dataset.fallback = '1'
+  const original = img.dataset.original
+  if (original) img.src = original
 }
 
 function openConversationDetail(sessionId: string | undefined, conversationId: string | undefined) {

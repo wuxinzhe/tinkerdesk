@@ -8,13 +8,40 @@
  *   - 发给 LLM 前：相对路径 → 绝对路径 → base64（图片）
  *   - 渲染：app-media://media/xxx.ext 自定义协议（只读 media 目录——CSP 安全）
  */
-import { app } from 'electron'
+import { app, nativeImage } from 'electron'
 import { createHash } from 'node:crypto'
-import { copyFileSync, existsSync, readFileSync, statSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { basename, extname, join, resolve, sep } from 'node:path'
 /** media 根目录（{userData}/media） */
 export function getMediaRoot(): string {
   return join(app.getPath('userData'), 'media')
+}
+
+/** 缩略图根目录（{userData}/media/thumbs——渲染列表用——只对 >1MB 图片生成） */
+export function getThumbsRoot(): string {
+  return join(getMediaRoot(), 'thumbs')
+}
+
+/** 原图相对路径（media/xxx.jpg）→ 缩略图相对路径（media/thumbs/xxx_thumb.jpg） */
+export function thumbRelPath(relPath: string): string {
+  const name = basename(relPath).replace(/\.[^.]+$/, '')
+  return `media/thumbs/${name}_thumb.jpg`
+}
+
+/** 生成缩略图（宽 400 JPEG——失败静默——只对 >1MB 且支持的图片格式） */
+function ensureThumbnail(absPath: string, relPath: string): void {
+  try {
+    const size = statSync(absPath).size
+    if (size <= 1024 * 1024) return // 阈值：超过 1MB 才生成缩略图
+    const image = nativeImage.createFromPath(absPath)
+    if (image.isEmpty()) return
+    const thumb = image.resize({ width: 400 })
+    const thumbsDir = getThumbsRoot()
+    if (!existsSync(thumbsDir)) mkdirSync(thumbsDir, { recursive: true })
+    writeFileSync(join(thumbsDir, `${basename(relPath).replace(/\.[^.]+$/, '')}_thumb.jpg`), thumb.toJPEG(80))
+  } catch {
+    // 缩略图失败静默（不影响原图导入）
+  }
 }
 
 /** 确保 media 目录存在 */
@@ -54,7 +81,10 @@ export function importMediaFile(sourcePath: string): string {
   if (!existsSync(target)) {
     copyFileSync(sourcePath, target)
   }
-  return `media/${fileName}`
+  const relPath = `media/${fileName}`
+  // 大图（>1MB）生成缩略图——列表渲染优先用（不占流量/内存）
+  ensureThumbnail(target, relPath)
+  return relPath
 }
 
 /** 相对路径（media/xxx）→ 绝对路径；已经是绝对路径则原样 */
