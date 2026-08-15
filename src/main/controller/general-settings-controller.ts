@@ -5,10 +5,13 @@
  *   settings:general:get  → { settings, shortcuts } full config (with defaults fallback)
  *   settings:general:set  → write single config { key, value }
  *   settings:general:reset → reset single config to default { key }
+ *   settings:events:count → current agent_events row count (capacity display)
+ *   settings:events:clear → wipe all agent_events rows (one-click cleanup)
  */
 
 import { handleTrusted } from '../security/ipc-guard'
 import { getAppSettings, setAppSetting, resetAppSetting } from '../service/general-settings-service'
+import { eventRecorder } from '../service/event-recorder'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -28,6 +31,8 @@ export class GeneralSettingsController {
     handleTrusted('settings:general:reset', (_event, payload: { key: string }) =>
       this.reset(payload),
     )
+    handleTrusted('settings:events:count', () => this.eventsCount())
+    handleTrusted('settings:events:clear', () => this.eventsClear())
   }
 
   private get(): ApiResult<ReturnType<typeof getAppSettings>> {
@@ -55,6 +60,25 @@ export class GeneralSettingsController {
       return ok(undefined as never)
     } catch (e) {
       return fail(e instanceof Error ? e.message : '重置通用设置失败')
+    }
+  }
+
+  /** 事件埋点当前条数（设置页容量显示） */
+  private eventsCount(): ApiResult<number> {
+    try {
+      return ok(eventRecorder.countAll())
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '读取事件容量失败')
+    }
+  }
+
+  /** 一键清空事件表（保留表结构） */
+  private eventsClear(): ApiResult<never> {
+    try {
+      eventRecorder.clearAll()
+      return ok(undefined as never)
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : '清空事件失败')
     }
   }
 }

@@ -178,6 +178,27 @@ class EventRecorder {
       // 清理失败不阻塞
     }
   }
+
+  /** 当前事件条数（设置页容量显示） */
+  countAll(): number {
+    try {
+      const db = getDatabase()
+      const row = db.prepare('SELECT COUNT(*) AS c FROM agent_events').get() as { c: number }
+      return row.c
+    } catch {
+      return 0
+    }
+  }
+
+  /** 清空全部事件（设置页一键清理——保留表结构） */
+  clearAll(): void {
+    try {
+      const db = getDatabase()
+      db.prepare('DELETE FROM agent_events').run()
+    } catch (e) {
+      console.warn(`[event-recorder] 清空失败（${(e as Error).message}）`)
+    }
+  }
 }
 
 /** 全局单例 */

@@ -68,6 +68,41 @@
           </div>
         </div>
       </div>
+      <!-- ── 事件记录组 ── -->
+      <div class="general-settings__group">
+        <div class="general-settings__group-header">
+          <span class="general-settings__group-title">事件记录</span>
+          <span class="general-settings__group-desc">Agent 执行链路留底（LLM/工具/消息/异常）——用于问题追溯</span>
+        </div>
+        <div class="event-row">
+          <div class="event-row__info">
+            <span class="event-row__label">启用事件记录</span>
+            <span class="event-row__desc">关闭后不再记录新事件（已有数据保留）</span>
+          </div>
+          <button
+            class="event-switch"
+            role="switch"
+            :aria-checked="eventsEnabled"
+            :title="eventsEnabled ? '关闭事件记录' : '开启事件记录'"
+            @click="toggleEvents"
+          >
+            <span class="event-switch__thumb" />
+          </button>
+        </div>
+        <div class="event-row">
+          <div class="event-row__info">
+            <span class="event-row__label">已记录</span>
+            <span class="event-row__desc">{{ eventCount.toLocaleString() }} 条（上限 50000——超出自动清理最旧）</span>
+          </div>
+          <button
+            class="event-row__clear"
+            :disabled="eventCount === 0"
+            @click="clearEvents"
+          >
+            清空
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -75,6 +110,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { SaPageHero } from '@/renderer/components'
+import { confirm } from '@/renderer/api/confirm'
 import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 import { applyTheme } from '@/renderer/utils/theme'
 import { invalidateRecordShortcut } from '@/renderer/utils/shortcut-cache'
@@ -93,6 +129,41 @@ const shortcuts = ref<ShortcutItem[]>([])
 const capturingKey = ref<string | null>(null)
 /** 页面进入动画标记（挂载后置 true 触发 stagger transition） */
 const mounted = ref(false)
+
+/* ── 事件记录 ── */
+
+/** 事件埋点开关（agentEvents.enabled——默认开） */
+const eventsEnabled = ref(true)
+/** 当前事件条数（agent_events） */
+const eventCount = ref(0)
+
+async function toggleEvents(): Promise<void> {
+  eventsEnabled.value = !eventsEnabled.value
+  try {
+    await window.api.generalSettings.set('agentEvents.enabled', eventsEnabled.value ? 'true' : 'false')
+    showInfoToast(eventsEnabled.value ? '事件记录已开启' : '事件记录已关闭')
+  } catch {
+    eventsEnabled.value = !eventsEnabled.value
+    showErrorToast({ code: 'events:toggle:error', message: '保存失败' })
+  }
+}
+
+async function clearEvents(): Promise<void> {
+  const ok = await confirm({
+    title: '清空事件记录？',
+    message: `将删除全部 ${eventCount.value.toLocaleString()} 条事件（不可恢复）——仅影响追溯记录，不影响聊天数据。`,
+    confirmText: '清空',
+    destructive: true,
+  })
+  if (!ok) return
+  try {
+    await window.api.events.clear()
+    eventCount.value = 0
+    showInfoToast('事件记录已清空')
+  } catch {
+    showErrorToast({ code: 'events:clear:error', message: '清空失败' })
+  }
+}
 
 /* ── 主题 ── */
 
@@ -130,6 +201,10 @@ async function load(): Promise<void> {
     if (saved && THEMES.some((t) => t.id === saved)) {
       theme.value = saved
     }
+    // 事件记录开关（默认开——未设置时走默认 true）
+    eventsEnabled.value = settings['agentEvents.enabled'] !== 'false'
+    // 当前事件条数
+    eventCount.value = await window.api.events.count()
   } catch {
     showErrorToast({ code: 'shortcut:load:error', message: '读取通用设置失败' })
   }
@@ -511,6 +586,116 @@ onUnmounted(() => {
   .theme-segmented__item {
     flex: 1;
     padding: 0 8px;
+  }
+}
+
+/* ── 事件记录行（对齐 shortcut-row 布局） ── */
+
+.event-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--tk-border);
+}
+
+.event-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.event-row__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+}
+
+.event-row__desc {
+  font-size: 11px;
+  color: var(--tk-text-secondary);
+}
+
+/* 低调开关（自绘——thumb 滑动 160ms ease-out） */
+.event-switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--tk-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.event-switch:active {
+  transform: scale(0.94);
+}
+
+.event-switch[aria-checked='true'] {
+  background: var(--tk-accent);
+}
+
+.event-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.event-switch[aria-checked='true'] .event-switch__thumb {
+  transform: translateX(14px);
+}
+
+/* 清空按钮（次级——危险确认走 confirm 弹窗） */
+.event-row__clear {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-text-secondary);
+  background: transparent;
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    color 180ms ease,
+    border-color 180ms ease;
+}
+
+.event-row__clear:hover {
+  color: var(--tk-destructive);
+  border-color: var(--tk-destructive);
+}
+
+.event-row__clear:active {
+  transform: scale(0.97);
+}
+
+.event-row__clear:disabled {
+  opacity: 0.45;
+  cursor: default;
+  color: var(--tk-text-secondary);
+  border-color: var(--tk-border);
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-switch,
+  .event-switch__thumb,
+  .event-row__clear {
+    transition: none;
   }
 }
 </style>

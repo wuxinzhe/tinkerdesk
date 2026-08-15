@@ -430,6 +430,12 @@ const api = {
     set: (key: string, value: string) => inv('settings:general:set', { key, value }).then(unwrap),
     reset: (key: string) => inv('settings:general:reset', { key }).then(unwrap),
   },
+
+  // ── 事件记录（agent_events 容量/清空） ──
+  events: {
+    count: () => inv('settings:events:count').then(unwrap),
+    clear: () => inv('settings:events:clear').then(unwrap),
+  },
 }
 
 contextBridge.exposeInMainWorld('api', api)

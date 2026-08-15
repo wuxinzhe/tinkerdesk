@@ -1033,6 +1033,12 @@ export interface WindowApi {
     set: (key: string, value: string) => Promise<void>
     reset: (key: string) => Promise<void>
   }
+
+  /** 事件记录（agent_events 容量/清空） */
+  events: {
+    count: () => Promise<number>
+    clear: () => Promise<void>
+  }
 }
 
 declare global {
