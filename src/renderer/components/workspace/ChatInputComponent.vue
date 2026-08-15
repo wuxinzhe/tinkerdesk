@@ -218,38 +218,43 @@
               </ChatInputPanelFeature>
             </div>
             <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证）——
-                 单 Transition + mode="out-in"：先折叠旧的，再展开新的（顺序动画不重叠） -->
+                 grid 高度动画：wrap 是 grid 容器（grid-template-rows 0fr↔1fr 平滑折叠/展开）——
+                 mode="out-in"：先折叠旧的，再展开新的 -->
             <Transition name="panel-slide" mode="out-in">
               <!-- 回复提醒配置（展开行：Switch 开关） -->
-              <div v-if="activePanelKey === 'notify'" key="notify" class="chat-input__panel-config">
-                <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
-                <label class="chat-input__switch">
-                  <input
-                    type="checkbox"
-                    :checked="notifyEnabled"
-                    :disabled="!sessionId"
-                    @change="toggleNotifyComplete"
-                  />
-                  <span class="chat-input__switch-slider" />
-                </label>
+              <div v-if="activePanelKey === 'notify'" key="notify" class="chat-input__panel-config-wrap">
+                <div class="chat-input__panel-config">
+                  <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
+                  <label class="chat-input__switch">
+                    <input
+                      type="checkbox"
+                      :checked="notifyEnabled"
+                      :disabled="!sessionId"
+                      @change="toggleNotifyComplete"
+                    />
+                    <span class="chat-input__switch-slider" />
+                  </label>
+                </div>
               </div>
               <!-- 压缩配置（展开行：上下文容量 + 手动压缩按钮） -->
-              <div v-else-if="activePanelKey === 'compact'" key="compact" class="chat-input__panel-config chat-input__panel-config--column">
-                <div class="chat-input__compact">
-                  <div class="chat-input__compact-header">
-                    <span class="chat-input__compact-label">上下文容量</span>
-                    <span class="chat-input__compact-nums">{{ fmtTokens(compactStats.currentTokens) }} / {{ fmtTokens(compactStats.maxTokens) }}</span>
+              <div v-else-if="activePanelKey === 'compact'" key="compact" class="chat-input__panel-config-wrap">
+                <div class="chat-input__panel-config chat-input__panel-config--column">
+                  <div class="chat-input__compact">
+                    <div class="chat-input__compact-header">
+                      <span class="chat-input__compact-label">上下文容量</span>
+                      <span class="chat-input__compact-nums">{{ fmtTokens(compactStats.currentTokens) }} / {{ fmtTokens(compactStats.maxTokens) }}</span>
+                    </div>
+                    <div class="chat-input__compact-bar">
+                      <div class="chat-input__compact-fill" :style="{ width: compactPercent }" />
+                    </div>
+                    <button
+                      class="chat-input__compact-btn"
+                      :disabled="compactLoading || compactStats.currentTokens === 0"
+                      @click="doCompact"
+                    >
+                      {{ compactLoading ? '压缩中…' : '压缩上下文' }}
+                    </button>
                   </div>
-                  <div class="chat-input__compact-bar">
-                    <div class="chat-input__compact-fill" :style="{ width: compactPercent }" />
-                  </div>
-                  <button
-                    class="chat-input__compact-btn"
-                    :disabled="compactLoading || compactStats.currentTokens === 0"
-                    @click="doCompact"
-                  >
-                    {{ compactLoading ? '压缩中…' : '压缩上下文' }}
-                  </button>
                 </div>
               </div>
             </Transition>
@@ -1554,11 +1559,11 @@ defineExpose({ focus })
   }
   .panel-slide-enter-active,
   .panel-slide-leave-active {
-    transition: opacity 120ms ease;
+    transition: none;
   }
   .panel-slide-enter-from,
   .panel-slide-leave-to {
-    transform: none;
+    grid-template-rows: 0fr;
   }
 }
 .chat-input__panel-config-label {
@@ -1609,21 +1614,30 @@ defineExpose({ focus })
   cursor: not-allowed;
 }
 
-/* ── 面板滑动动画（展开配置行——transform+opacity——轻量） ── */
+/* ── 展开配置高度动画（grid 折叠/展开——wrap 是 grid 容器） ── */
+.chat-input__panel-config-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  /* 关键：grid item min-height: 0——0fr 才能真正收缩到 0（否则被内容撑住不折叠） */
+}
+
+.chat-input__panel-config-wrap > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  /* transform + opacity（GPU 属性——emil）——先前 grid-template-rows 在 flex 元素上无效（闪切） */
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), opacity 180ms ease;
+  /* grid-template-rows 高度过渡（emil ease-out）——只动画行高（布局属性，但范围小、频率低可接受） */
+  transition: grid-template-rows 220ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .panel-slide-enter-from,
 .panel-slide-leave-to {
-  transform: translateY(-6px);
-  opacity: 0;
+  grid-template-rows: 0fr;
 }
 .panel-slide-enter-to,
 .panel-slide-leave-from {
-  transform: translateY(0);
-  opacity: 1;
+  grid-template-rows: 1fr;
 }
 
 /* ── YOLO 详情过渡 ── */
