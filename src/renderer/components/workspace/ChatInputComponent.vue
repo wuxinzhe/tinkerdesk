@@ -227,11 +227,11 @@
                 </svg>
                 <span>音频</span>
               </button>
-              <!-- 视频附件：选择 → 加入待发区（归 other——后缀显示） -->
+              <!-- 视频附件：视频类型选择 → 加入待发区（显示归 other——后缀） -->
               <button
                 class="chat-input__panel-icon"
                 :title="'添加视频'"
-                @click="pickAndQueueFile"
+                @click="pickAndQueueVideo"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="5" width="13" height="14" rx="2" />
@@ -1294,7 +1294,18 @@ async function pickAndQueueAudio(): Promise<void> {
   }
 }
 
-/** 通用文件选择（其他类型——含视频/文档——按扩展名分类）→ 加入待发区 */
+/** 视频选择（视频类型过滤——mp4/webm/mkv/mov）→ 加入待发区（显示归 other——后缀） */
+async function pickAndQueueVideo(): Promise<void> {
+  try {
+    const rel = await window.api.media.pickAndImport('video')
+    if (!rel) return
+    addPendingFiles([rel])
+  } catch {
+    // 取消/失败静默
+  }
+}
+
+/** 通用文件选择（其他类型——文档/压缩包等——按扩展名分类）→ 加入待发区 */
 async function pickAndQueueFile(): Promise<void> {
   try {
     const rel = await window.api.media.pickAndImport()
