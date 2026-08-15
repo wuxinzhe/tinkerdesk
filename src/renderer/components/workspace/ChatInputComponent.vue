@@ -1,61 +1,65 @@
 <template>
   <div class="chat-input-wrap">
     <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
-      <!-- 文件待发区（选文件不自动发送——回车时随文字一起发送） -->
+      <!-- 文件待发区（选文件不自动发送——回车时随文字一起发送——emil 设计） -->
       <div v-if="pendingFiles.length" class="chat-input__pending">
         <div class="chat-input__pending-inner">
-          <div
-            v-for="f in pendingFiles"
-            :key="f.relPath"
-            class="pending-file"
-            :title="f.name"
-          >
-            <!-- 图片：缩略图（thumb 优先——onerror 回退原图） -->
-            <img
-              v-if="f.kind === 'image'"
-              class="pending-file__img"
-              :src="pendingThumbUrl(f.relPath)"
-              :data-original="pendingMediaUrl(f.relPath)"
-              alt=""
-              @error="onPendingImgError"
-            />
-            <!-- 音频：音符图标 + 悬浮播放按钮 -->
-            <div v-else-if="f.kind === 'audio'" class="pending-file__icon pending-file__icon--audio">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-              <!-- 悬浮播放/暂停按钮（点击直接播放） -->
-              <button
-                class="pending-file__play"
-                :title="playingAudio === f.relPath ? '暂停' : '播放'"
-                @click.stop="togglePendingAudio(f.relPath)"
-              >
-                <svg v-if="playingAudio !== f.relPath" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="7,4 20,12 7,20" />
+          <TransitionGroup name="pending-file" tag="div" class="chat-input__pending-list">
+            <div
+              v-for="(f, i) in pendingFiles"
+              :key="f.relPath"
+              class="pending-file"
+              :title="f.name"
+              :style="{ transitionDelay: `${i * 30}ms` }"
+            >
+              <!-- 图片：缩略图（thumb 优先——onerror 回退原图） -->
+              <img
+                v-if="f.kind === 'image'"
+                class="pending-file__img"
+                :src="pendingThumbUrl(f.relPath)"
+                :data-original="pendingMediaUrl(f.relPath)"
+                alt=""
+                @error="onPendingImgError"
+              />
+              <!-- 音频：音符图标 + 悬浮播放按钮 -->
+              <div v-else-if="f.kind === 'audio'" class="pending-file__icon pending-file__icon--audio">
+                <svg class="pending-file__note" :class="{ playing: playingAudio === f.relPath }" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
                 </svg>
-                <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                <!-- 悬浮播放/暂停按钮（点击直接播放） -->
+                <button
+                  class="pending-file__play"
+                  :class="{ playing: playingAudio === f.relPath }"
+                  :title="playingAudio === f.relPath ? '暂停' : '播放'"
+                  @click.stop="togglePendingAudio(f.relPath)"
+                >
+                  <svg v-if="playingAudio !== f.relPath" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="7,4 20,12 7,20" />
+                  </svg>
+                  <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                </button>
+              </div>
+              <!-- 其他：文件后缀 -->
+              <div v-else class="pending-file__icon">
+                <span class="pending-file__ext">{{ (f.ext || '?').replace('.', '').toUpperCase().slice(0, 5) }}</span>
+              </div>
+              <!-- 删除（悬浮显示——右上角） -->
+              <button
+                class="pending-file__remove"
+                title="移除"
+                @click.stop="removePendingFile(f.relPath)"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <!-- 其他：文件后缀 -->
-            <div v-else class="pending-file__icon">
-              <span class="pending-file__ext">{{ (f.ext || '?').replace('.', '').toUpperCase().slice(0, 5) }}</span>
-            </div>
-            <!-- 删除（悬浮显示） -->
-            <button
-              class="pending-file__remove"
-              title="移除"
-              @click.stop="removePendingFile(f.relPath)"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+          </TransitionGroup>
         </div>
       </div>
       <div class="chat-input__row">
@@ -1338,7 +1342,7 @@ defineExpose({ focus })
   opacity: 0.6;
 }
 
-/* ── 文件待发区（横向滚动——正方形组件——emil 低调） ── */
+/* ── 文件待发区（emil——横向滚动——正方形组件） ── */
 
 .chat-input__pending {
   overflow-x: auto;
@@ -1349,10 +1353,13 @@ defineExpose({ focus })
 }
 
 .chat-input__pending-inner {
-  display: flex;
-  gap: 8px;
   padding: 2px 0 6px;
   width: max-content;
+}
+
+.chat-input__pending-list {
+  display: flex;
+  gap: 8px;
 }
 
 .pending-file {
@@ -1364,6 +1371,42 @@ defineExpose({ focus })
   overflow: hidden;
   background: var(--tk-bg-secondary);
   border: 1px solid var(--tk-border);
+  /* emil：只动画 transform/opacity（GPU）——hover 轻微抬升 */
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* 进入：滑入 + 淡入（不 scale(0)——从 0.95 起步——stagger 由 transitionDelay 控制） */
+.pending-file-enter-active {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms ease;
+}
+
+.pending-file-enter-from {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+/* 退出：缩小 + 淡出（比进入快——emil 不对称） */
+.pending-file-leave-active {
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), opacity 140ms ease;
+}
+
+.pending-file-leave-to {
+  transform: scale(0.9);
+  opacity: 0;
+}
+
+.pending-file-leave-active {
+  position: absolute;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pending-file:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--tk-accent) 40%, var(--tk-border));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .pending-file__img {
@@ -1393,7 +1436,16 @@ defineExpose({ focus })
   letter-spacing: 0.5px;
 }
 
-/* 删除按钮（悬浮显示——右上角） */
+/* 音符播放中：accent 色 + 轻微律动（低调——不抢注意力） */
+.pending-file__note {
+  transition: color 180ms ease;
+}
+
+.pending-file__note.playing {
+  color: var(--tk-accent);
+}
+
+/* 删除按钮（悬浮显示——右上角——hover 变红） */
 .pending-file__remove {
   position: absolute;
   top: 3px;
@@ -1409,7 +1461,8 @@ defineExpose({ focus })
   color: #fff;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 140ms ease, background-color 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
   padding: 0;
 }
 
@@ -1417,11 +1470,15 @@ defineExpose({ focus })
   opacity: 1;
 }
 
-.pending-file__remove:active {
-  transform: scale(0.9);
+.pending-file__remove:hover {
+  background: var(--tk-destructive);
 }
 
-/* 音频播放按钮（悬浮中间显示） */
+.pending-file__remove:active {
+  transform: scale(0.88);
+}
+
+/* 音频播放按钮（悬浮中间显示——播放中常显 accent） */
 .pending-file__play {
   position: absolute;
   top: 50%;
@@ -1438,12 +1495,18 @@ defineExpose({ focus })
   color: #fff;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 140ms ease, transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 140ms ease, background-color 180ms ease,
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1);
   padding: 0;
 }
 
-.pending-file:hover .pending-file__play {
+.pending-file:hover .pending-file__play,
+.pending-file__play.playing {
   opacity: 1;
+}
+
+.pending-file__play.playing {
+  background: var(--tk-accent);
 }
 
 .pending-file__play:active {
@@ -1451,9 +1514,18 @@ defineExpose({ focus })
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pending-file,
   .pending-file__remove,
-  .pending-file__play {
-    transition: opacity 140ms ease;
+  .pending-file__play,
+  .pending-file__note,
+  .pending-file-enter-active,
+  .pending-file-leave-active {
+    transition: none;
+  }
+  .pending-file-enter-from,
+  .pending-file-leave-to {
+    transform: none;
+    opacity: 1;
   }
 }
 
