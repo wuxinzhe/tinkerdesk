@@ -376,6 +376,9 @@ watch(activePanelKey, async (key) => {
 // ── 手风琴高度动画（JS 测量 scrollHeight + transition height——
 //    最可靠的折叠/展开动画——不依赖 grid 插值） ──
 
+/** prefers-reduced-motion：跳过高度动画（直接完成） */
+const REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 function accordionBeforeEnter(el: Element): void {
   const node = el as HTMLElement
   node.style.height = '0'
@@ -384,6 +387,12 @@ function accordionBeforeEnter(el: Element): void {
 
 function accordionEnter(el: Element, done: () => void): void {
   const node = el as HTMLElement
+  if (REDUCED_MOTION) {
+    node.style.height = ''
+    node.style.overflow = ''
+    done()
+    return
+  }
   node.style.height = `${node.scrollHeight}px`
   node.addEventListener('transitionend', done, { once: true })
 }
@@ -404,6 +413,12 @@ function accordionBeforeLeave(el: Element): void {
 
 function accordionLeave(el: Element, done: () => void): void {
   const node = el as HTMLElement
+  if (REDUCED_MOTION) {
+    node.style.height = ''
+    node.style.overflow = ''
+    done()
+    return
+  }
   node.style.height = '0'
   node.addEventListener('transitionend', done, { once: true })
 }
@@ -1619,7 +1634,6 @@ defineExpose({ focus })
   font-size: 13px;
   color: var(--tk-text-primary);
 }
-
 /* Switch（CSS 绘制：轨道 + 滑块——ChatSettingsDrawer 同款语义） */
 .chat-input__switch {
   position: relative;
