@@ -221,7 +221,7 @@ export function bootstrap(
   const sessionService = new SessionService(sessionRepo, messageRepo)
   const cooldownStore = new CompressionCooldownStore()
   const todoService = new TodoService(app.getPath('userData'))
-  const compactionService = new CompactionService(llmRouter, messageService, conversationService, cooldownStore, todoService)
+  const compactionService = new CompactionService(llmRouter, messageService, conversationService, cooldownStore, todoService, sessionRepo)
 
   // ── Prompt（预设模块 + 调用方自定义模块） ──
 

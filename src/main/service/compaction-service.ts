@@ -18,6 +18,7 @@ import type { CompressionCooldownStore } from './compression-cooldown-store'
 import type { ConversationService } from './conversation-service'
 import type { MessageService } from './message-service'
 import type { TodoService } from './todo-service'
+import type { SessionRepository } from '../repository/session-repository'
 
 /** 压缩服务 */
 export class CompactionService {
@@ -26,7 +27,8 @@ export class CompactionService {
     private readonly messageService: MessageService,
     private readonly conversationService: ConversationService,
     private readonly cooldownStore: CompressionCooldownStore,
-    private readonly todoService?: TodoService
+    private readonly todoService?: TodoService,
+    private readonly sessionRepository?: SessionRepository
   ) { }
 
   /**
@@ -117,6 +119,11 @@ export class CompactionService {
 
     this.messageService.saveSummary(sessionId, profile, finalSummary)
     this.conversationService.batchUpdateStatus(sessionId, compressConvIds, CONV_COMPRESSED)
+
+    // 压缩后立即刷新 current_context_tokens（估算新上下文 ≈ 摘要 token——
+    // 不依赖下次 LLM 请求——设置页容量立即显示降幅）
+    // 估算：摘要 4 字符 ≈ 1 token（中文略保守——新上下文主体就是摘要）
+    this.sessionRepository?.updateContextTokens(sessionId, profile, Math.max(1, Math.ceil(finalSummary.length / 4)))
 
     // 完整可追溯日志：压缩结果 + 影响范围（归档对话数/消息数/是否 fallback）
     console.log(

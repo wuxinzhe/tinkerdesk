@@ -235,4 +235,10 @@ export class SessionRepository {
       .run(enabled ? 1 : 0, sessionId, profile)
     return Number(result.changes) > 0
   }
+
+  /** 更新会话当前上下文 token（压缩后立即刷新——不依赖下次请求） */
+  updateContextTokens(sessionId: string, profile: string, tokens: number): void {
+    const db = getDatabase()
+    db.prepare('UPDATE sessions SET current_context_tokens = ? WHERE id = ? AND profile = ?').run(tokens, sessionId, profile)
+  }
 }
