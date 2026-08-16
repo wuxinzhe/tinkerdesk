@@ -1064,6 +1064,8 @@ export interface WindowApi {
     saveConfig: (id: string, patch: Record<string, unknown>) => Promise<boolean>
     /** 主进程资源下载（depName 指定单个资源） */
     downloadAssets: (id: string, depName?: string) => Promise<{ name: string; ok: boolean; error?: string }[]>
+    /** 资源就绪状态（主进程文件检查——不依赖 Worker） */
+    assetStatus: (id: string) => Promise<Record<string, boolean>>
     /** 调用插件注册的 IPC 能力 */
     invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
     /** 文件选择对话框（配置表单 file 字段） */

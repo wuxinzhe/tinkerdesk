@@ -68,6 +68,17 @@ export class PluginController {
     handleTrusted('plugin:download-assets', async (_event, payload: { id: string; depName?: string }) =>
       this.downloadAssets(payload),
     )
+    handleTrusted('plugin:asset-status', (_event, payload: { id: string }) => this.assetStatus(payload))
+  }
+
+  /** 资源就绪状态（主进程文件检查——配置页"已就绪"判定） */
+  private async assetStatus(payload: { id: string }): Promise<ApiResult<Record<string, boolean>>> {
+    try {
+      if (!payload?.id) return fail('id 不能为空')
+      return ok(this.pluginManager.getAssetStatus(payload.id))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
   }
 
   /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用——depName 指定单个资源——进度经 plugin:assets-progress 事件推送） */

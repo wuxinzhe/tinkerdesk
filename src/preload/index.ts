@@ -432,6 +432,8 @@ const api = {
       inv('plugin:save-config', { id, patch }).then(unwrap),
     /** 主进程资源下载（不依赖 Worker——配置页下载按钮——depName 指定单个资源） */
     downloadAssets: (id: string, depName?: string) => inv('plugin:download-assets', { id, depName }).then(unwrap),
+    /** 资源就绪状态（主进程文件检查——不依赖 Worker） */
+    assetStatus: (id: string) => inv('plugin:asset-status', { id }).then(unwrap),
     /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
     invoke: (id: string, channel: string, payload?: unknown) =>
       inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),

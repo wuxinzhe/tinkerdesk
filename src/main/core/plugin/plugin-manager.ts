@@ -380,6 +380,21 @@ export class PluginManager {
     this.emitTarget.send('plugin:event', { pluginId, event, data })
   }
 
+  /** 资源就绪状态（主进程文件检查——不依赖 Worker——配置页"已就绪"判定） */
+  getAssetStatus(id: string): Record<string, boolean> {
+    const record = this.registry.get(id)
+    if (!record) return {}
+    const dir = join(this.pluginsDir, record.manifest.id)
+    const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
+    const status: Record<string, boolean> = {}
+    for (const dep of deps) {
+      const key = dep.dest.split('/').pop() ?? dep.dest
+      const destDir = join(dir, dep.dest)
+      status[key] = existsSync(destDir) && readdirSync(destDir).length > 0
+    }
+    return status
+  }
+
   /** 主进程静态声明式检查（不执行插件代码——文件系统检查） */
   staticCheck(record: PluginRecord): { ok: boolean; reason?: string } {
     if (record.manifest.builtin) return { ok: true }
