@@ -65,7 +65,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { MarketPluginDetail } from '@/renderer/api/types'
-import { SaActionBtn, L3PageLayout, MarkdownRender } from '@/renderer/components'
+import { SaActionBtn, L3PageLayout } from '@/renderer/components'
+import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 
 const route = useRoute()
