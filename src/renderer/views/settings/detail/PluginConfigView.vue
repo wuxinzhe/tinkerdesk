@@ -44,6 +44,12 @@ const assetDepsList = computed(() => {
   return deps as { name: string; dest: string; sizeMB: number; url: string }[]
 })
 
+/** degraded 态信息（Worker 不可用——资源未就绪——显示下载入口） */
+const degradedSchema = computed<{ degraded: boolean; note?: string } | null>(() => {
+  const s = schema.value as { degraded?: boolean; note?: string } | null
+  return s?.degraded ? { degraded: true, note: s.note } : null
+})
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -244,8 +250,8 @@ watch(pluginId, () => {
         <div class="plugin-config-page__section-title">
           资源
         </div>
-        <div v-if="(schema as unknown as { degraded?: boolean })?.degraded" class="plugin-config-page__muted" style="margin-bottom: 8px">
-          {{ (schema as unknown as { note?: string })?.note }}
+        <div v-if="degradedSchema" class="plugin-config-page__muted" style="margin-bottom: 8px">
+          {{ degradedSchema.note }}
         </div>
         <div v-for="dep in assetDepsList" :key="dep.dest" class="plugin-config-page__model">
           <div class="plugin-config-page__model-info">
