@@ -223,16 +223,19 @@ export class PluginInstaller {
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
   }
 
-  /** 资源下载（配置页手动触发——读 manifest 勾选的 assetDeps——不依赖 Worker） */
+  /** 资源下载（配置页手动触发——读 manifest 的 assetDeps——不依赖 Worker——depName 指定单个资源下载） */
   async downloadAssets(
     manifest: PluginManifest,
     onProgress?: (depName: string, received: number, total: number) => void,
+    depName?: string,
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
     if (deps.length === 0) throw new Error(`插件 ${manifest.id} 未声明资源依赖（assetDeps）`)
     const dir = join(this.deps.pluginsDir, manifest.id)
+    const targets = depName ? deps.filter((d) => d.name === depName) : deps
+    if (targets.length === 0) throw new Error(`未找到资源: ${depName}`)
     const results: { name: string; ok: boolean; error?: string }[] = []
-    for (const dep of deps) {
+    for (const dep of targets) {
       if (dep.optional) continue
       try {
         const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)

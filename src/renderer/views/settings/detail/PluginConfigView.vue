@@ -26,7 +26,7 @@ const loading = ref(true)
 /** 模型状态/进度 */
 const modelsStatus = ref<Record<string, boolean>>({})
 const modelProgress = ref<Record<string, { phase: string; percent: number; hint?: string }>>({})
-const downloading = ref(false)
+const downloading = ref<string | boolean>(false)
 
 const statusText = computed(() => {
   const s = plugin.value?.status
@@ -83,6 +83,29 @@ async function refreshModelsStatus(): Promise<void> {
     modelsStatus.value = status ?? {}
   } catch {
     modelsStatus.value = {}
+  }
+}
+
+/** 下载单个资源（每个资源独立按钮——depName 指定） */
+async function downloadDep(depName: string): Promise<void> {
+  if (downloading.value) return
+  downloading.value = depName
+  modelProgress.value = { ...modelProgress.value, [depName]: { phase: 'download', percent: 0 } }
+  try {
+    const results = await window.api.plugins.downloadAssets(pluginId.value, depName)
+    const failed = results.filter((r) => !r.ok)
+    if (failed.length > 0) {
+      showInfoToast(`下载失败: ${failed.map((f) => f.name + (f.error ? `（${f.error}）` : '')).join('、')}`)
+    }
+    await refreshModelsStatus()
+    // 完成停留 1.5s 再清除进度（让用户看到 100%）
+    setTimeout(() => {
+      modelProgress.value = {}
+    }, 1500)
+  } catch (e) {
+    showInfoToast(`下载失败: ${(e as Error).message}`)
+  } finally {
+    downloading.value = ''
   }
 }
 
@@ -280,7 +303,7 @@ watch(pluginId, () => {
             <span v-if="modelsStatus?.[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
             <span v-else class="plugin-config-page__ready plugin-config-page__ready--no">未就绪</span>
             <div
-              v-if="downloading || (modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done')"
+              v-if="downloading === dep.name || (modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done')"
               class="plugin-config-page__progress"
             >
               <div
@@ -292,17 +315,21 @@ watch(pluginId, () => {
                   modelProgress[dep.dest.split('/').pop() ?? '']?.hint
                     ?? (modelProgress[dep.dest.split('/').pop() ?? '']?.phase === 'extract'
                       ? '解压中…'
-                      : (downloading && !modelProgress[dep.dest.split('/').pop() ?? '']?.percent)
+                      : (downloading === dep.name && !modelProgress[dep.dest.split('/').pop() ?? '']?.percent)
                         ? '下载中…'
                         : (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%')
                 }}
               </span>
             </div>
+            <button
+              v-if="!modelsStatus?.[dep.dest.split('/').pop() ?? ''] && downloading !== dep.name"
+              class="plugin-config-page__download"
+              @click="downloadDep(dep.name)"
+            >
+              下载
+            </button>
           </div>
         </div>
-        <button class="plugin-config-page__download" :disabled="downloading" @click="downloadModels">
-          {{ downloading ? '下载中…' : '下载模型' }}
-        </button>
       </section>
 
       <!-- 配置表单（schema 驱动，页面内嵌非弹窗） -->

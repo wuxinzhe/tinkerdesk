@@ -65,13 +65,13 @@ export class PluginController {
     handleTrusted('plugin:save-config', (_event, payload: { id: string; patch: Record<string, unknown> }) =>
       this.savePluginConfig(payload),
     )
-    handleTrusted('plugin:download-assets', async (_event, payload: { id: string }) =>
+    handleTrusted('plugin:download-assets', async (_event, payload: { id: string; depName?: string }) =>
       this.downloadAssets(payload),
     )
   }
 
-  /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用——进度经 plugin:assets-progress 事件推送） */
-  private async downloadAssets(payload: { id: string }): Promise<ApiResult<{ name: string; ok: boolean; error?: string }[]>> {
+  /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用——depName 指定单个资源——进度经 plugin:assets-progress 事件推送） */
+  private async downloadAssets(payload: { id: string; depName?: string }): Promise<ApiResult<{ name: string; ok: boolean; error?: string }[]>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
       const id = payload.id
@@ -80,7 +80,7 @@ export class PluginController {
         if (wc && !wc.isDestroyed()) {
           wc.send('plugin:assets-progress', { pluginId: id, depName, received, total })
         }
-      })
+      }, payload.depName)
       return ok(results)
     } catch (e) {
       return fail((e as Error).message)

@@ -252,10 +252,11 @@ export class PluginManager {
   async downloadAssets(
     id: string,
     onProgress?: (depName: string, received: number, total: number) => void,
+    depName?: string,
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
-    return this.installer.downloadAssets(record.manifest, onProgress)
+    return this.installer.downloadAssets(record.manifest, onProgress, depName)
   }
 
   /** 插件自检（Worker 经消息代理） */

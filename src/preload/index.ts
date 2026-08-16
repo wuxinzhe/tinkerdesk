@@ -430,8 +430,8 @@ const api = {
     getConfig: (id: string) => invSilent('plugin:get-config', { id }).then(unwrap),
     saveConfig: (id: string, patch: Record<string, unknown>) =>
       inv('plugin:save-config', { id, patch }).then(unwrap),
-    /** 主进程资源下载（不依赖 Worker——配置页下载按钮） */
-    downloadAssets: (id: string) => inv('plugin:download-assets', { id }).then(unwrap),
+    /** 主进程资源下载（不依赖 Worker——配置页下载按钮——depName 指定单个资源） */
+    downloadAssets: (id: string, depName?: string) => inv('plugin:download-assets', { id, depName }).then(unwrap),
     /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
     invoke: (id: string, channel: string, payload?: unknown) =>
       inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
