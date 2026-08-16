@@ -12,64 +12,39 @@
  */
 import { execFileSync } from 'child_process'
 import { app } from 'electron'
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'fs'
 import { basename, join } from 'path'
-import { Worker } from 'worker_threads'
 import { handleTrusted } from '../../security/ipc-guard'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
-import { installNpmDeps, locateManifestDir, resolveNpmCli, tarBin, verifyHashes } from './plugin-installer'
 import { PluginHost } from './plugin-host'
-import { downloadAssets as assetsDownload } from './plugin-assets'
-import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
+import { ProviderRegistry } from './plugin-registry'
+import { PluginLoader } from './plugin-loader'
+import { installNpmDeps, locateManifestDir, tarBin, verifyHashes } from './plugin-installer'
+import { persistEnabled, readConfigFile, writeConfigFile } from './plugin-store'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 
 import type {
-  PluginApi,
   PluginCheckResult,
-  PluginConfigFile,
   PluginContext,
   PluginInfo,
   PluginManifest,
   PluginRecord,
   PluginStatus,
   TinkerPlugin,
-  ToggleResult,
+  ToggleResult
 } from './types'
 
 export class PluginManager {
   private readonly pluginsDir: string
   private readonly registry = new Map<string, PluginRecord>()
-  /** Worker ready 处理（PluginHost 回调）：注册插件声明的 IPC 通道 + 接口契约校验 + 自动注册 */
-  private onWorkerReady(record: PluginRecord, channels: string[]): void {
-    for (const channel of channels) {
-      this.registerPluginIpc(record.manifest.id, channel, (payload) => this.host.invokeWorker(record, 'invoke', { channel, payload }))
-    }
-    // 接口契约校验：声明的系统开放接口必须注册了 requiredChannel
-    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
-      if (def.requiredChannel && !this.ipcHandlers.has(`plugin:${record.manifest.id}:${def.requiredChannel}`)) {
-        record.error = `声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`
-        console.error(`[plugin] ${record.manifest.id}: ${record.error}`)
-        this.host.terminateWorker(record)
-        return
-      }
-    }
-    console.log(`[plugin] 已加载 ${record.manifest.id}@${record.manifest.version} (${record.manifest.capabilities?.join(',') ?? '无能力'})`)
-    if (record.enabled) {
-      this.autoRegister(record)
-    }
-  }
+  
 
-  /** Worker fatal 处理（PluginHost 回调）：记录错误 + 终止 */
-  private onWorkerFatal(record: PluginRecord, error: string): void {
-    record.error = error
-    console.error(`[plugin] ${record.manifest.id} Worker 错误:`, error)
-    this.host.terminateWorker(record)
-  }
+  
 
   /** 插件注册的 IPC handler（channel → handler），供应用内部转发（接口转发等） */
   private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
-  /** 系统开放接口的 provider 注册表：interfaceId → 已注册（started）插件 id 列表 */
-  private readonly interfaceProviders = new Map<string, string[]>()
+  /** 接口 provider 注册表（独立域——PluginRegistry） */
+  private readonly providerRegistry = new ProviderRegistry()
   /** renderer 事件转发目标（由 index.ts 注入 mainWindow.webContents） */
   private emitTarget: Electron.WebContents | null = null
   /** worker 调用 id → resolver（消息代理的挂起调用） */
@@ -77,12 +52,24 @@ export class PluginManager {
   private workerCallSeq = 0
   /** Worker 宿主（spawn/terminate/消息代理——Worker 生命周期归 PluginHost） */
   private readonly host: PluginHost
+  /** 加载与注册编排（loadPlugin/autoRegister/ready/fatal——归 PluginLoader）——
+   *  host ↔ loader 互相引用（host hooks 延迟调用 loader——闭包安全） */
+  private loader!: PluginLoader
 
   constructor() {
+    this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is PluginRecord => !!r))
+    this.loader = new PluginLoader({
+      registry: this.registry,
+      host: this.host,
+      providerRegistry: this.providerRegistry,
+      registerIpc: (pluginId, channel, handler) => this.registerPluginIpc(pluginId, channel, handler),
+      hasChannel: (pluginId, channel) => this.ipcHandlers.has(`plugin:${pluginId}:${channel}`),
+      forwardEvent: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
+    })
     this.host = new PluginHost({
-      onReady: (record, channels) => this.onWorkerReady(record, channels),
+      onReady: (record, channels) => this.loader.onWorkerReady(record, channels),
       onEmit: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
-      onFatal: (record, error) => this.onWorkerFatal(record, error),
+      onFatal: (record, error) => this.loader.onWorkerFatal(record, error),
     })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
     mkdirSync(this.pluginsDir, { recursive: true })
@@ -101,7 +88,7 @@ export class PluginManager {
       if (name.startsWith('.') || name.startsWith('_')) continue
       try {
         if (!existsSync(join(dir, 'manifest.json'))) continue
-        this.loadPlugin(dir)
+        this.loader.load(dir)
       } catch (e) {
         console.error(`[plugin] 加载失败 ${name}:`, (e as Error).message)
         this.registry.set(name, {
@@ -174,52 +161,7 @@ export class PluginManager {
     console.log(`[plugin] 已加载内置 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
 
     if (record.enabled) {
-      this.autoRegister(record)
-    }
-  }
-
-  /**
-   * 校验并加载单个插件（读 manifest → Worker 宿主加载 → init）。
-   * 骨架同步返回（registry 建立）——插件在 Worker 线程后台加载——
-   * ready 后自动注册 IPC 通道并（若启用）自检注册——main 事件循环零阻塞。
-   */
-  private loadPlugin(dir: string): void {
-    const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as PluginManifest
-
-    // 校验
-    if (!manifest.id || !manifest.entry || !manifest.name) {
-      throw new Error('manifest 缺少 id/entry/name')
-    }
-    if (manifest.apiVersion !== 1) {
-      throw new Error(`不支持的 apiVersion: ${manifest.apiVersion}（当前支持 1）`)
-    }
-    if (manifest.id !== dir.split(/[\\/]/).pop()) {
-      throw new Error(`manifest.id(${manifest.id}) 与目录名不一致`)
-    }
-    if (this.registry.has(manifest.id)) {
-      throw new Error(`插件已存在: ${manifest.id}`)
-    }
-
-    const configFile = join(dir, 'config.json')
-    const { enabled, config } = readConfigFile(configFile)
-
-    const record: PluginRecord = {
-      manifest,
-      api: null,
-      ctx: null,
-      enabled,
-      started: false,
-      worker: null,
-    }
-    this.registry.set(manifest.id, record)
-
-    // 在 Worker 线程加载执行插件（外部插件不可信——线程隔离——同步/死循环/CPU 密集
-    // 阻塞的只是 Worker 自己的线程——main 事件循环零影响）
-    try {
-      this.host.spawnWorker(record, dir, configFile, config)
-    } catch (e) {
-      record.error = (e as Error).message
-      console.error(`[plugin] ${manifest.id} Worker 启动失败:`, record.error)
+      this.loader.autoRegister(record)
     }
   }
 
@@ -230,79 +172,13 @@ export class PluginManager {
   
 
   
-
-  
-
-  /** 启动时自动注册（持久化 enabled 且自检通过才真正 start；未就绪保持 enabled 标记等待修复） */
-  private autoRegister(record: PluginRecord): void {
-    // 内置插件（可信——main 直跑）：本地自检
-    if (!record.worker) {
-      if (!record.api) return
-      try {
-        const check = record.api.check()
-        if (check && check.ok) {
-          void record.api.start?.()
-          record.started = true
-          this.registerProviders(record)
-          console.log(`[plugin] 自动注册 ${record.manifest.id}（自检通过）`)
-        } else {
-          console.warn(`[plugin] ${record.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
-        }
-      } catch (e) {
-        console.error(`[plugin] 自动注册失败 ${record.manifest.id}:`, (e as Error).message)
-      }
-      return
-    }
-    // 外部插件（Worker 宿主）：自检经消息代理异步执行——main 事件循环零阻塞
-    void this.host.invokeWorker(record, 'call', { method: 'check' })
-      .then((check) => {
-        const c = check as PluginCheckResult | boolean | undefined
-        const ok = typeof c === 'boolean' ? c : !!c?.ok
-        if (!ok) {
-          console.warn(`[plugin] ${record.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
-          return
-        }
-        return this.host.invokeWorker(record, 'call', { method: 'start' }).then(() => {
-          record.started = true
-          this.registerProviders(record)
-          console.log(`[plugin] 自动注册 ${record.manifest.id}（自检通过）`)
-        })
-      })
-      .catch((e) => {
-        console.error(`[plugin] 自动注册失败 ${record.manifest.id}:`, (e as Error).message)
-      })
-  }
-
-  /** 插件注册到其声明接口的 provider 清单 */
-  private registerProviders(record: PluginRecord): void {
-    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
-      const list = this.interfaceProviders.get(def.id) ?? []
-      if (!list.includes(record.manifest.id)) {
-        list.push(record.manifest.id)
-        this.interfaceProviders.set(def.id, list)
-        console.log(`[plugin] ${record.manifest.id} → 注册为接口 ${def.id} 的 provider`)
-      }
-    }
-  }
-
-  /** 插件从 provider 清单注销 */
-  private unregisterProviders(record: PluginRecord): void {
-    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
-      const list = this.interfaceProviders.get(def.id) ?? []
-      const next = list.filter((id) => id !== record.manifest.id)
-      this.interfaceProviders.set(def.id, next)
-    }
-  }
 
   /**
    * 查询某系统开放接口的 provider 清单（已注册的插件）
    * 系统设置页（如语音设置）从清单中选择具体调用哪个 provider
    */
   getProviders(interfaceId: string): PluginRecord[] {
-    const ids = this.interfaceProviders.get(interfaceId) ?? []
-    return ids
-      .map((id) => this.registry.get(id))
-      .filter((r): r is PluginRecord => !!r && r.started)
+    return this.providerRegistry.getProviders(interfaceId)
   }
 
   /** 系统开放接口定义（设置页展示用） */
@@ -310,9 +186,9 @@ export class PluginManager {
     return SYSTEM_INTERFACES
   }
 
-  
 
-  
+
+
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
@@ -354,9 +230,9 @@ export class PluginManager {
     )
   }
 
-  
 
-  
+
+
 
   /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
   async installPlugin(srcDir: string): Promise<PluginInfo> {
@@ -388,13 +264,13 @@ export class PluginManager {
     // 依赖安装：插件 package.json 声明了 npm 依赖且未自带 node_modules → 自动 npm install
     await installNpmDeps(destDir)
     // 加载（含契约校验）
-    this.loadPlugin(destDir)
+    this.loader.load(destDir)
     const record = this.registry.get(manifest.id)
     if (!record) {
       throw new Error(`插件加载失败: ${manifest.id}`)
     }
     // 安装后默认启用（自检通过才注册）
-    this.autoRegister(record)
+    this.loader.autoRegister(record)
     console.log(`[plugin] 已安装 ${manifest.id}@${manifest.version}`)
     return {
       manifest: record.manifest,
@@ -439,12 +315,6 @@ export class PluginManager {
       rmSync(tmpDir, { recursive: true, force: true })
     }
   }
-
-  
-
-  
-
-  
 
   /** 主进程静态声明式检查（不执行插件代码——文件系统检查）：
    *  manifest 已读（loadPlugin 时校验）；entry 存在；依赖 node_modules 存在；
@@ -526,13 +396,13 @@ export class PluginManager {
       await record.api.start?.()
       record.enabled = true
       record.started = true
-      this.registerProviders(record)
+      this.providerRegistry.register(record)
       persistEnabled(record)
     } else if (!enabled && record.enabled) {
       await record.api.stop?.()
       record.enabled = false
       record.started = false
-      this.unregisterProviders(record)
+      this.providerRegistry.unregister(record)
       persistEnabled(record)
     }
     return { ok: true, enabled: record.enabled, started: record.started }
@@ -547,7 +417,7 @@ export class PluginManager {
     }
     if (record.started) {
       void record.api?.stop?.()
-      this.unregisterProviders(record)
+      this.providerRegistry.unregister(record)
       record.started = false
       record.enabled = false
     }
@@ -560,7 +430,7 @@ export class PluginManager {
     console.log(`[plugin] 已卸载 ${id}`)
   }
 
-  
+
 
   /** 插件自检（启用前调用；不改变状态） */
   async check(id: string): Promise<PluginCheckResult> {
