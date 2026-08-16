@@ -40,6 +40,8 @@ export interface PluginManifest {
   publisher?: string
   /** 资源依赖（模型/二进制/数据文件——URL 直链下载到 dest） */
   assetDeps?: AssetDep[]
+  /** 旧字段别名（modelDeps——兼容早期插件——与 assetDeps 同构） */
+  modelDeps?: AssetDep[]
 }
 
 /** 资源依赖声明（模型/二进制/数据文件等任意资源） */

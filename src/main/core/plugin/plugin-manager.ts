@@ -588,6 +588,20 @@ export class PluginManager {
         return { ok: false, reason: `资源未就绪: ${missing.join('、')}` }
       }
     }
+    // 旧字段别名（modelDeps——兼容早期插件）
+    if (record.manifest.modelDeps && record.manifest.modelDeps.length > 0) {
+      const missing: string[] = []
+      for (const dep of record.manifest.modelDeps) {
+        if (dep.optional) continue
+        const destDir = join(dir, dep.dest)
+        if (!existsSync(destDir) || readdirSync(destDir).length === 0) {
+          missing.push(`${dep.name}（约 ${dep.sizeMB}MB——可下载）`)
+        }
+      }
+      if (missing.length > 0) {
+        return { ok: false, reason: `资源未就绪: ${missing.join('、')}` }
+      }
+    }
     return { ok: true }
   }
 
@@ -708,7 +722,7 @@ export class PluginManager {
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
-    const deps = record.manifest.assetDeps ?? []
+    const deps = (record.manifest.assetDeps ?? record.manifest.modelDeps) ?? []
     if (deps.length === 0) throw new Error(`插件 ${id} 未声明资源依赖（assetDeps）`)
     const dir = join(this.pluginsDir, id)
     const results: { name: string; ok: boolean; error?: string }[] = []

@@ -210,22 +210,32 @@ export class PluginController {
       if (schema) return ok(schema)
       // schema 为 null（Worker 未就绪/插件 api 不可用——如资源缺失）——
       // 分层自检容错：主进程静态检查（entry/资源就绪度）→ 配置页仍可开（含资源下载入口）
-      const record = this.pluginManager.getRecord(payload.id)
-      if (record) {
-        const staticOk = this.pluginManager.staticCheck(record)
-        if (staticOk.ok || !staticOk.ok && (record.manifest.assetDeps?.length ?? 0) > 0) {
-          return ok({
-            configurable: true,
-            degraded: true,
-            note: staticOk.reason ?? '插件未就绪（Worker 不可用）——资源下载后重启生效',
-            assetDeps: record.manifest.assetDeps ?? [],
-          })
-        }
-      }
-      return ok(null)
+      const degraded = this.degradedSchema(payload.id)
+      return degraded ? ok(degraded) : ok(null)
     } catch (e) {
+      // Worker 代理调用失败（Worker 挂但 api 代理存在——调用 reject）——
+      // 同样走分层容错——配置页可开（不因 Worker 挂而打不开）
+      const degraded = this.degradedSchema(payload.id)
+      if (degraded) return ok(degraded)
       return fail((e as Error).message)
     }
+  }
+
+  /** 分层容错：Worker 不可用但主进程静态检查通过/有资源依赖 → 返回 degraded 可配置信息 */
+  private degradedSchema(id: string): { configurable: true; degraded: true; note: string; assetDeps: import('../core/plugin/types').AssetDep[] } | null {
+    const record = this.pluginManager.getRecord(id)
+    if (!record) return null
+    const staticOk = this.pluginManager.staticCheck(record)
+    const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
+    if (staticOk.ok || !staticOk.ok && deps.length > 0) {
+      return {
+        configurable: true,
+        degraded: true,
+        note: staticOk.reason ?? '插件未就绪（Worker 不可用）——资源下载后重启生效',
+        assetDeps: deps,
+      }
+    }
+    return null
   }
 
   /** 读取配置（secret 脱敏——Worker 插件异步获取） */
