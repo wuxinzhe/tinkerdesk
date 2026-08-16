@@ -230,8 +230,8 @@ export class PluginManager {
   }
 
   /** 分步安装：执行下一步 */
-  stepInstall(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register'): Promise<{ ok: boolean; error?: string }> {
-    return this.installer.step(sessionId, stage)
+  stepInstall(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register', onProgress?: (depName: string, received: number, total: number) => void): Promise<{ ok: boolean; error?: string }> {
+    return this.installer.step(sessionId, stage, onProgress)
   }
 
   /** 分步安装：下载 tarball（带进度回调） */

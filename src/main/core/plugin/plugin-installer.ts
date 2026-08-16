@@ -93,8 +93,8 @@ export class PluginInstaller {
     return session
   }
 
-  /** 执行下一步（copy/deps/assets/register——失败可重试该步） */
-  async step(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register'): Promise<{ ok: boolean; error?: string }> {
+  /** 执行下一步（copy/deps/assets/register——失败可重试该步——assets 下载带进度回调） */
+  async step(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register', onProgress?: (depName: string, received: number, total: number) => void): Promise<{ ok: boolean; error?: string }> {
     const session = this.sessions.get(sessionId)
     if (!session) throw new Error(`安装会话不存在: ${sessionId}`)
     if (!session.manifest) throw new Error('安装会话未完成校验')
@@ -108,7 +108,7 @@ export class PluginInstaller {
           await this.installNpmDeps(session.pluginDir)
           break
         case 'assets':
-          await this.downloadAssetsTo(session.manifest, session.pluginDir, session.skipAssets)
+          await this.downloadAssetsTo(session.manifest, session.pluginDir, session.skipAssets, onProgress)
           break
         case 'register':
           this.deps.registerPlugin(session.srcDir)

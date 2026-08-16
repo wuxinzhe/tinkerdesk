@@ -113,6 +113,16 @@
                   </span>
                   <span class="iw-stage__name">{{ stageLabel(stage) }}</span>
                 </div>
+                <!-- 资源下载进度（assets 阶段——按 depName 显示当前下载项） -->
+                <div v-if="assetsProgress.active" class="iw-assets-progress">
+                  <div class="iw-assets-progress__row">
+                    <span class="iw-assets-progress__name">{{ assetsProgress.name }}</span>
+                    <span class="iw-assets-progress__pct">{{ assetsProgress.percent > 0 ? `${assetsProgress.percent}%` : '' }}</span>
+                  </div>
+                  <div class="iw-assets-progress__bar">
+                    <div class="iw-assets-progress__fill" :style="{ transform: `scaleX(${assetsProgress.percent / 100})` }"></div>
+                  </div>
+                </div>
                 <!-- 失败错误（独立行——不挤压阶段标签——可换行完整显示） -->
                 <div v-if="installFailed" class="iw-stage-err">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
@@ -184,6 +194,8 @@ const downloading = ref(false)
 const downloadPercent = ref(0)
 const downloadReceived = ref(0)
 const downloadTotal = ref(0)
+/** 资源下载进度（安装 assets 阶段） */
+const assetsProgress = ref<{ active: boolean; name: string; percent: number }>({ active: false, name: '', percent: 0 })
 
 const downloadMeta = computed(() => {
   const recv = formatSize(downloadReceived.value)
@@ -298,16 +310,29 @@ async function startInstall() {
   currentStep.value = installStepIndex.value
   installFailed.value = false
   stageError.value = ''
-  for (const stage of installStages) {
-    const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
-    session.value!.stages = r.stages
-    if (!r.ok) {
-      installFailed.value = true
-      stageError.value = r.error ?? '安装失败'
-      return
+  assetsProgress.value = { active: false, name: '', percent: 0 }
+  // 监听资源下载进度（assets 阶段——plugin:assets-progress——sessionId 匹配）
+  const offAssets = window.api.onEvent('plugin:assets-progress', (data) => {
+    const d = data as { sessionId?: string; depName: string; received: number; total: number }
+    if (d.sessionId && d.sessionId !== session.value?.sessionId) return
+    const percent = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
+    assetsProgress.value = { active: true, name: d.depName, percent }
+  })
+  try {
+    for (const stage of installStages) {
+      const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
+      session.value!.stages = r.stages
+      if (!r.ok) {
+        installFailed.value = true
+        stageError.value = r.error ?? '安装失败'
+        return
+      }
     }
+    currentStep.value = doneStepIndex.value
+  } finally {
+    offAssets()
+    assetsProgress.value = { active: false, name: '', percent: 0 }
   }
-  currentStep.value = doneStepIndex.value
 }
 
 function skippedAssets(): string[] {
@@ -712,6 +737,40 @@ function close() {
 
 .iw-stage__name {
   flex: 1;
+}
+
+/* 资源下载进度（安装 assets 阶段） */
+.iw-assets-progress {
+  padding: 2px 0 4px;
+}
+
+.iw-assets-progress__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--tk-text-secondary);
+  margin-bottom: 6px;
+}
+
+.iw-assets-progress__pct {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: var(--tk-accent);
+}
+
+.iw-assets-progress__bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tk-bg-secondary);
+  overflow: hidden;
+}
+
+.iw-assets-progress__fill {
+  height: 100%;
+  background: var(--tk-accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* 失败错误（独立行——不挤压阶段标签——换行完整显示） */

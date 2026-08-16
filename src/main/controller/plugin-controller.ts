@@ -164,7 +164,7 @@ export class PluginController {
     }
   }
 
-  /** 分步安装：执行下一步（copy/deps/assets/register——失败可重试该步） */
+  /** 分步安装：执行下一步（copy/deps/assets/register——失败可重试该步——assets 下载带进度事件） */
   private async installStep(payload: { sessionId: string; stage: string; skipAssets?: string[] }): Promise<ApiResult<unknown>> {
     try {
       const stage = payload?.stage as 'copy' | 'deps' | 'assets' | 'register'
@@ -173,7 +173,14 @@ export class PluginController {
       if (stage === 'assets' && payload.skipAssets) {
         session.skipAssets = payload.skipAssets
       }
-      const r = await this.pluginManager.stepInstall(payload?.sessionId ?? '', stage)
+      const sid = payload?.sessionId ?? ''
+      const r = await this.pluginManager.stepInstall(sid, stage, (depName, received, total) => {
+        // 资源下载进度（复用 plugin:assets-progress 事件——安装向导监听）
+        const wc = this.pluginManager.getEmitTarget()
+        if (wc && !wc.isDestroyed()) {
+          wc.send('plugin:assets-progress', { pluginId: 'install', sessionId: sid, depName, received, total })
+        }
+      })
       return ok({ ok: r.ok, error: r.error, stages: session.stages })
     } catch (e) {
       return fail((e as Error).message)
