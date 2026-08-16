@@ -58,6 +58,12 @@ export class PluginManager {
 
   constructor() {
     this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is PluginRecord => !!r))
+    // host 先建（hooks 闭包延迟调用 loader——loader 随后赋值——消息到来时已就绪）
+    this.host = new PluginHost({
+      onReady: (record, channels) => this.loader.onWorkerReady(record, channels),
+      onEmit: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
+      onFatal: (record, error) => this.loader.onWorkerFatal(record, error),
+    })
     this.loader = new PluginLoader({
       registry: this.registry,
       host: this.host,
@@ -65,11 +71,6 @@ export class PluginManager {
       registerIpc: (pluginId, channel, handler) => this.registerPluginIpc(pluginId, channel, handler),
       hasChannel: (pluginId, channel) => this.ipcHandlers.has(`plugin:${pluginId}:${channel}`),
       forwardEvent: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
-    })
-    this.host = new PluginHost({
-      onReady: (record, channels) => this.loader.onWorkerReady(record, channels),
-      onEmit: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
-      onFatal: (record, error) => this.loader.onWorkerFatal(record, error),
     })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
     mkdirSync(this.pluginsDir, { recursive: true })
