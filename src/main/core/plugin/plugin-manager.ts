@@ -380,7 +380,8 @@ export class PluginManager {
     this.emitTarget.send('plugin:event', { pluginId, event, data })
   }
 
-  /** 资源就绪状态（主进程文件检查——不依赖 Worker——配置页"已就绪"判定——key 用资源名保证唯一） */
+  /** 资源就绪状态（主进程文件检查——不依赖 Worker——key 用资源名保证唯一——
+   *  普通文件资源按具体文件存在判定（同目录多模型不互相误判）；压缩包按目录非空） */
   getAssetStatus(id: string): Record<string, boolean> {
     const record = this.registry.get(id)
     if (!record) return {}
@@ -388,9 +389,17 @@ export class PluginManager {
     const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
     const status: Record<string, boolean> = {}
     for (const dep of deps) {
-      const key = dep.name
       const destDir = join(dir, dep.dest)
-      status[key] = existsSync(destDir) && readdirSync(destDir).length > 0
+      const lower = dep.url.toLowerCase()
+      const isArchive = lower.endsWith('.zip') || lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz')
+      if (isArchive) {
+        // 压缩包：目录非空即就绪（内容结构由解压逻辑保证）
+        status[dep.name] = existsSync(destDir) && readdirSync(destDir).length > 0
+      } else {
+        // 普通文件：具体文件存在才就绪（同目录多资源互不影响）
+        const file = basename(dep.url)
+        status[dep.name] = existsSync(join(destDir, file))
+      }
     }
     return status
   }
