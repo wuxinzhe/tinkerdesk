@@ -161,7 +161,7 @@ export class PluginManager {
     persistEnabled(record)
     if (!enabled) {
       if (record.worker) {
-        void record.api?.stop?.()
+        void record.api?.stop?.().catch(() => {})
         this.terminateWorker(record)
       } else {
         record.api?.dispose?.()
@@ -187,7 +187,7 @@ export class PluginManager {
       throw new Error(`内置插件不可卸载: ${id}`)
     }
     if (record.started) {
-      void record.api?.stop?.()
+      void record.api?.stop?.().catch(() => {})
       this.unregisterProviders(record)
       record.started = false
       record.enabled = false
@@ -276,7 +276,7 @@ export class PluginManager {
   disposeAll(): void {
     for (const record of this.registry.values()) {
       try {
-        void record.api?.stop?.()
+        void record.api?.stop?.().catch(() => {})
         if (record.worker) this.terminateWorker(record)
         else record.api?.dispose?.()
       } catch {
