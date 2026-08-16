@@ -18,9 +18,9 @@
  *     { type: 'emit', event, data }                                    插件 ctx.emit 转发
  *     { type: 'fatal', message }                                       插件加载/执行致命错误
  */
-import { parentPort, workerData, type MessagePort } from 'worker_threads'
-import { readFileSync, existsSync, writeFileSync, renameSync } from 'fs'
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { parentPort, workerData, type MessagePort } from 'worker_threads'
 import type { HostData, PluginApi, PluginContext, PluginManifest, TinkerPlugin } from './types'
 
 /** Worker 侧宿主桥：状态封装 + 协议处理（每个 Worker 一个实例） */
