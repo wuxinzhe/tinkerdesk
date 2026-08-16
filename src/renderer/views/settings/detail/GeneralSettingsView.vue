@@ -34,6 +34,15 @@
         </div>
       </div>
 
+      <!-- ── 语音设置组（STT/TTS provider——整合自原语音设置 Lv2） ── -->
+      <div class="general-settings__group">
+        <div class="general-settings__group-header">
+          <span class="general-settings__group-title">语音</span>
+          <span class="general-settings__group-desc">选择语音输入（STT）和朗读（TTS）提供商</span>
+        </div>
+        <VoiceSettingsPanel />
+      </div>
+
       <!-- ── 快捷键配置组 ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
@@ -109,6 +118,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { SaPageHero , L3PageLayout } from '@/renderer/components'
+import VoiceSettingsPanel from '@/renderer/components/workspace/VoiceSettingsPanel.vue'
 import { confirm } from '@/renderer/api/confirm'
 import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 import { applyTheme } from '@/renderer/utils/theme'

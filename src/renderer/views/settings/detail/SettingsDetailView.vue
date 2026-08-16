@@ -12,7 +12,6 @@
       <PluginSettingsView v-else-if="section === 'plugins'" />
 
       <!-- 语音设置 -->
-      <VoiceSettingsView v-else-if="section === 'voice'" />
 
       <!-- 通用设置（快捷键等） -->
       <GeneralSettingsView v-else-if="section === 'general'" />
