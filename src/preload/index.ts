@@ -452,6 +452,8 @@ const api = {
     installDownload: (sessionId: string) => inv('plugin:install-download', { sessionId }).then(unwrap),
     /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
     marketList: (payload?: { category?: string; search?: string }) => inv('plugin:market-list', payload ?? {}).then(unwrap),
+    /** 插件市场详情（npm 包元数据 + readme） */
+    marketDetail: (name: string) => inv('plugin:market-detail', { name }).then(unwrap),
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => inv('plugin:uninstall', { id }).then(unwrap),
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */

@@ -14,7 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { PluginManager } from '../core/plugin/plugin-manager'
-import { listMarketPlugins } from '../service/plugin-market-service'
+import { getMarketPluginDetail, listMarketPlugins } from '../service/plugin-market-service'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -54,6 +54,7 @@ export class PluginController {
     handleTrusted('plugin:install-step', (_event, payload: { sessionId: string; stage: string; skipAssets?: string[] }) => this.installStep(payload))
     handleTrusted('plugin:install-download', (_event, payload: { sessionId: string }) => this.installDownload(payload))
     handleTrusted('plugin:market-list', (_event, payload: { category?: string; search?: string } = {}) => this.marketList(payload))
+    handleTrusted('plugin:market-detail', (_event, payload: { name: string }) => this.marketDetail(payload))
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
@@ -192,6 +193,16 @@ export class PluginController {
           : null,
         assetDeps: (session.manifest?.assetDeps ?? session.manifest?.modelDeps ?? []).map((d) => ({ name: d.name, dest: d.dest, sizeMB: d.sizeMB, optional: !!d.optional })),
       })
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 插件详情（npm 包元数据 + 官方标记 + 已安装——详情页） */
+  private async marketDetail(payload: { name: string }): Promise<ApiResult<import('../service/plugin-market-service').MarketPluginDetail>> {
+    try {
+      const installedIds = this.pluginManager.list().map((p) => p.manifest.id)
+      return ok(await getMarketPluginDetail(payload?.name ?? '', installedIds))
     } catch (e) {
       return fail((e as Error).message)
     }

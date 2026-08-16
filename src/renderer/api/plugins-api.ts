@@ -8,6 +8,7 @@ import type {
   ConfigSchema,
   InstallSessionInfo,
   MarketListResult,
+  MarketPluginDetail,
   PluginCheckResult,
   PluginInfo,
   PluginStatus,
@@ -30,6 +31,8 @@ export interface PluginApi {
   installDownload(sessionId: string): Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>; manifest?: { id: string; name: string; version: string; capabilities: string[] } | null; assetDeps?: { name: string; dest: string; sizeMB: number; optional: boolean }[] }>
   /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
   marketList(payload?: { category?: string; search?: string }): Promise<MarketListResult>
+  /** 插件市场详情（npm 包元数据 + readme） */
+  marketDetail(name: string): Promise<MarketPluginDetail>
   /** 卸载插件（删除插件及下载的模型） */
   uninstall(id: string): Promise<void>
   getStatus(id: string): Promise<PluginStatus>
@@ -65,6 +68,8 @@ export const pluginsApi: PluginApi = {
   installDownload: (sessionId) => window.api.plugins.installDownload(sessionId),
   /** 插件市场列表（npm registry search） */
   marketList: (payload?: { category?: string; search?: string }) => window.api.plugins.marketList(payload),
+  /** 插件市场详情 */
+  marketDetail: (name) => window.api.plugins.marketDetail(name),
   uninstall: (id) => window.api.plugins.uninstall(id),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),

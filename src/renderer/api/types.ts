@@ -290,6 +290,20 @@ export interface MarketListResult {
   categories: string[]
 }
 
+/** 插件详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
+export interface MarketPluginDetail {
+  name: string
+  version: string
+  description: string
+  readme: string
+  homepage: string
+  categories: string[]
+  official: boolean
+  installed: boolean
+  updated: string
+  dependencies: string[]
+}
+
 /** 分步安装会话信息（controller → renderer） */
 export interface InstallSessionInfo {
   sessionId: string
@@ -1066,6 +1080,8 @@ export interface WindowApi {
     installDownload: (sessionId: string) => Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>; manifest?: { id: string; name: string; version: string; capabilities: string[] } | null; assetDeps?: { name: string; dest: string; sizeMB: number; optional: boolean }[] }>
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
     marketList: (payload?: { category?: string; search?: string }) => Promise<MarketListResult>
+    /** 插件市场详情（npm 包元数据 + readme） */
+    marketDetail: (name: string) => Promise<MarketPluginDetail>
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => Promise<void>
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */

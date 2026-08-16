@@ -285,6 +285,15 @@ const router = createRouter({
           // 插件市场（独立 L3——安装按钮跳转入口）
         },
         {
+          path: 'settings/plugins-market/:pkg',
+          components: {
+            default: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
+            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            level3: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
+          },
+          // 插件市场详情（readme 展示）
+        },
+        {
           path: 'settings/plugins/install',
           components: {
             default: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),

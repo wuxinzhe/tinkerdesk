@@ -53,6 +53,7 @@
         v-for="plugin in plugins"
         :key="plugin.name"
         class="plugin-card"
+        @click="viewDetail(plugin)"
       >
         <div class="plugin-card__body">
           <div class="plugin-card__icon">
@@ -85,7 +86,7 @@
             :done-text="'已安装'"
             :loading-text="'安装中...'"
             variant="primary"
-            @click="installPlugin(plugin)"
+            @click.stop="installPlugin(plugin)"
           />
         </div>
       </div>
@@ -157,6 +158,11 @@ async function installPlugin(plugin: MarketPluginItem) {
   if (plugin.installed || installing.value.has(plugin.name)) return
   // 跳转分步安装向导（L3 页面——pkg 参数）
   router.push({ path: '/workspace/settings/plugins/install', query: { pkg: plugin.name } })
+}
+
+/** 点击卡片 → 详情页（readme） */
+function viewDetail(plugin: MarketPluginItem) {
+  router.push(`/workspace/settings/plugins-market/${encodeURIComponent(plugin.name)}`)
 }
 </script>
 
@@ -243,6 +249,7 @@ async function installPlugin(plugin: MarketPluginItem) {
   border: 1px solid var(--tk-border);
   background: var(--tk-bg-primary);
   overflow: hidden;
+  cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
