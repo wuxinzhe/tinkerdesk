@@ -5,6 +5,7 @@
         <!-- 标题 -->
         <div class="iw-header">
           <div class="iw-title">安装插件</div>
+        </div>
 
         <!-- 步骤条 -->
         <div class="iw-steps">
@@ -103,6 +104,8 @@
           <template v-else>
             <SaActionBtn text="完成" variant="primary" @click="finish" />
           </template>
+        </div>
+      </div>
       </div>
     </div>
   </L3PageLayout>
