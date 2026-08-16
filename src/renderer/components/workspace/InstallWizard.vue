@@ -21,8 +21,18 @@
         </div>
 
         <div class="iw-body">
-          <!-- Step 1：确认信息 -->
-          <div v-if="currentStep === 0">
+          <!-- Step 0（npm）：下载安装包 -->
+          <div v-if="currentStep === 0 && isNpm" class="iw-download">
+            <div v-if="loading" class="iw-loading">
+              <div class="iw-loading__spinner"></div>
+              正在下载安装包（npm pack）...
+            </div>
+            <div v-else-if="startError" class="iw-error">{{ startError }}</div>
+            <div v-else class="iw-download__done">✓ 安装包下载完成</div>
+          </div>
+
+          <!-- Step 1/0：确认信息 -->
+          <div v-else-if="(isNpm && currentStep === 1) || (!isNpm && currentStep === 0)">
             <div v-if="loading" class="iw-loading">校验安装包中...</div>
             <div v-else-if="session" class="iw-confirm">
               <div class="iw-plugin-name">{{ session.manifest?.name }} <span class="iw-version">v{{ session.manifest?.version }}</span></div>
@@ -34,8 +44,8 @@
             <div v-else class="iw-error">{{ startError }}</div>
           </div>
 
-          <!-- Step 2：资源勾选 -->
-          <div v-else-if="currentStep === 1" class="iw-assets">
+          <!-- Step 2/1：资源勾选 -->
+          <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)" class="iw-assets">
             <div v-if="!session?.assetDeps?.length" class="iw-note">该插件无需下载资源（无模型/二进制依赖）</div>
             <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
               <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" />
@@ -50,8 +60,8 @@
             </label>
           </div>
 
-          <!-- Step 3：安装进度 -->
-          <div v-else-if="currentStep === 2" class="iw-progress">
+          <!-- Step 3/2：安装进度 -->
+          <div v-else-if="(isNpm && currentStep === 3) || (!isNpm && currentStep === 2)" class="iw-progress">
             <div v-for="stage in installStages" :key="stage" class="iw-stage">
               <span :class="['iw-stage__dot', stageStatus(stage)]"></span>
               <span class="iw-stage__label">{{ stageLabel(stage) }}</span>
@@ -62,7 +72,7 @@
             </div>
           </div>
 
-          <!-- Step 4：完成 -->
+          <!-- Step 4/3：完成 -->
           <div v-else class="iw-done">
             <div class="iw-done__icon">✓</div>
             <div class="iw-done__text">安装完成</div>
@@ -71,7 +81,11 @@
 
         <!-- 底部操作 -->
         <div class="iw-footer">
-          <template v-if="currentStep === 0">
+          <template v-if="currentStep === 0 && isNpm">
+            <SaActionBtn text="取消" @click="close" />
+            <SaActionBtn text="下一步" variant="primary" :disabled="loading || !session" @click="next" />
+          </template>
+          <template v-else-if="currentStep === 0 && !isNpm">
             <SaActionBtn text="取消" @click="close" />
             <SaActionBtn text="下一步" variant="primary" :disabled="!session || loading" @click="next" />
           </template>
@@ -79,7 +93,7 @@
             <SaActionBtn text="上一步" @click="currentStep = 0" />
             <SaActionBtn text="开始安装" variant="primary" @click="startInstall" />
           </template>
-          <template v-else-if="currentStep === 2">
+          <template v-else-if="currentStep === 2 || (currentStep === 3 && isNpm)">
             <SaActionBtn v-if="!installFailed" text="安装中..." :loading="true" disabled />
           </template>
           <template v-else>
@@ -109,12 +123,26 @@ const selectedAssets = ref<string[]>([])
 const installFailed = ref(false)
 const stageError = ref('')
 
-const steps = [
-  { key: 'confirm', label: '确认信息' },
-  { key: 'assets', label: '依赖资源' },
-  { key: 'install', label: '安装' },
-  { key: 'done', label: '完成' },
-]
+/** npm 来源有下载步骤（local 无） */
+const isNpm = computed(() => session.value?.sourceType === 'npm')
+
+/** 动态步骤（npm：下载→确认→资源→安装→完成；local：确认→资源→安装→完成） */
+const steps = computed(() => {
+  const base = [
+    { key: 'confirm', label: '确认信息' },
+    { key: 'assets', label: '依赖资源' },
+    { key: 'install', label: '安装' },
+    { key: 'done', label: '完成' },
+  ]
+  if (isNpm.value) {
+    return [{ key: 'download', label: '下载安装包' }, ...base]
+  }
+  return base
+})
+
+/** 安装阶段在步骤数组中的偏移（npm 有下载步——安装从 index 3；local 从 2） */
+const installStepIndex = computed(() => (isNpm.value ? 3 : 2))
+const doneStepIndex = computed(() => (isNpm.value ? 4 : 3))
 
 const installStages = ['copy', 'deps', 'assets', 'register'] as const
 
@@ -127,14 +155,15 @@ function stageStatus(s: string): 'pending' | 'running' | 'done' | 'failed' {
 }
 
 function stepDone(i: number): boolean {
-  if (i === 0) return !!session.value
+  if (i === 0 && isNpm.value) return !!session.value
+  if (i === 0 && !isNpm.value) return !!session.value
   if (i === 1) return currentStep.value > 1
-  if (i === 2) return currentStep.value >= 3
-  return currentStep.value >= 3
+  if (i === installStepIndex.value) return currentStep.value >= doneStepIndex.value
+  return currentStep.value >= doneStepIndex.value
 }
 
 function stepFailed(i: number): boolean {
-  return i === 2 && installFailed.value
+  return i === installStepIndex.value && installFailed.value
 }
 
 watch(
@@ -165,7 +194,7 @@ function next() {
 }
 
 async function startInstall() {
-  currentStep.value = 2
+  currentStep.value = installStepIndex.value
   installFailed.value = false
   stageError.value = ''
   for (const stage of installStages) {
@@ -177,7 +206,7 @@ async function startInstall() {
       return
     }
   }
-  currentStep.value = 3
+  currentStep.value = doneStepIndex.value
 }
 
 function skippedAssets(): string[] {
@@ -198,7 +227,7 @@ async function retryFailed() {
       return
     }
   }
-  currentStep.value = 3
+  currentStep.value = doneStepIndex.value
 }
 
 function finish() {

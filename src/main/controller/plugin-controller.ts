@@ -143,6 +143,7 @@ export class PluginController {
         : this.pluginManager.startInstallPath(payload.path ?? '')
       return ok({
         sessionId: session.sessionId,
+        sourceType: payload.pkg ? 'npm' : 'local',
         manifest: session.manifest
           ? { id: session.manifest.id, name: session.manifest.name, version: session.manifest.version, capabilities: session.manifest.capabilities ?? [] }
           : null,

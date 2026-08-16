@@ -293,6 +293,8 @@ export interface MarketListResult {
 /** 分步安装会话信息（controller → renderer） */
 export interface InstallSessionInfo {
   sessionId: string
+  /** 来源：npm 在线 / local 本地 */
+  sourceType: 'npm' | 'local'
   manifest: { id: string; name: string; version: string; capabilities: string[] } | null
   assetDeps: { name: string; dest: string; sizeMB: number; optional: boolean }[]
   stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>
