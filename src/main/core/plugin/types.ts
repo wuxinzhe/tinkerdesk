@@ -49,6 +49,8 @@ export interface AssetDep {
   dest: string
   sizeMB: number
   url: string
+  /** 可选依赖（外部引擎自带/用户自管——静态检查跳过——不提示下载） */
+  optional?: boolean
 }
 
 /* ── 配置 Schema（动态表单渲染协议，UI 不写死插件字段） ── */

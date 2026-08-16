@@ -724,6 +724,8 @@ export class PluginManager {
     if (record.manifest.assetDeps && record.manifest.assetDeps.length > 0) {
       const missing: string[] = []
       for (const dep of record.manifest.assetDeps) {
+        // 可选依赖（外部引擎自带/用户自管——如 IndexTTS 声音克隆模型）跳过
+        if (dep.optional) continue
         const destDir = join(dir, dep.dest)
         if (!existsSync(destDir) || readdirSync(destDir).length === 0) {
           missing.push(`${dep.name}（约 ${dep.sizeMB}MB——可下载）`)
@@ -858,6 +860,8 @@ export class PluginManager {
     const dir = join(this.pluginsDir, id)
     const results: { name: string; ok: boolean; error?: string }[] = []
     for (const dep of deps) {
+      // 可选依赖不下载（外部引擎自带/用户自管）
+      if (dep.optional) continue
       try {
         const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
         await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
