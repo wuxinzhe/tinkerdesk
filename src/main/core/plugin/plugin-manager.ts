@@ -10,17 +10,17 @@
  *
  * 安全模型（v1 信任制）：用户手动下载解压 = 主动信任；插件 = main 进程任意代码权限。
  */
-import { app} from 'electron'
-import { handleTrusted } from '../../security/ipc-guard'
-import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
-import { join, basename } from 'path'
-import { createHash } from 'crypto'
 import { execFileSync } from 'child_process'
-import { execFile } from 'child_process'
-import { promisify } from 'util'
+import { app } from 'electron'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'fs'
+import { basename, join } from 'path'
 import { Worker } from 'worker_threads'
+import { handleTrusted } from '../../security/ipc-guard'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
 import { installNpmDeps, locateManifestDir, resolveNpmCli, tarBin, verifyHashes } from './plugin-installer'
+import { PluginHost } from './plugin-host'
+import { downloadAssets as assetsDownload } from './plugin-assets'
+import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 
 import type {
@@ -39,6 +39,33 @@ import type {
 export class PluginManager {
   private readonly pluginsDir: string
   private readonly registry = new Map<string, PluginRecord>()
+  /** Worker ready 处理（PluginHost 回调）：注册插件声明的 IPC 通道 + 接口契约校验 + 自动注册 */
+  private onWorkerReady(record: PluginRecord, channels: string[]): void {
+    for (const channel of channels) {
+      this.registerPluginIpc(record.manifest.id, channel, (payload) => this.host.invokeWorker(record, 'invoke', { channel, payload }))
+    }
+    // 接口契约校验：声明的系统开放接口必须注册了 requiredChannel
+    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
+      if (def.requiredChannel && !this.ipcHandlers.has(`plugin:${record.manifest.id}:${def.requiredChannel}`)) {
+        record.error = `声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`
+        console.error(`[plugin] ${record.manifest.id}: ${record.error}`)
+        this.host.terminateWorker(record)
+        return
+      }
+    }
+    console.log(`[plugin] 已加载 ${record.manifest.id}@${record.manifest.version} (${record.manifest.capabilities?.join(',') ?? '无能力'})`)
+    if (record.enabled) {
+      this.autoRegister(record)
+    }
+  }
+
+  /** Worker fatal 处理（PluginHost 回调）：记录错误 + 终止 */
+  private onWorkerFatal(record: PluginRecord, error: string): void {
+    record.error = error
+    console.error(`[plugin] ${record.manifest.id} Worker 错误:`, error)
+    this.host.terminateWorker(record)
+  }
+
   /** 插件注册的 IPC handler（channel → handler），供应用内部转发（接口转发等） */
   private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
   /** 系统开放接口的 provider 注册表：interfaceId → 已注册（started）插件 id 列表 */
@@ -48,8 +75,15 @@ export class PluginManager {
   /** worker 调用 id → resolver（消息代理的挂起调用） */
   private workerCalls = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
   private workerCallSeq = 0
+  /** Worker 宿主（spawn/terminate/消息代理——Worker 生命周期归 PluginHost） */
+  private readonly host: PluginHost
 
   constructor() {
+    this.host = new PluginHost({
+      onReady: (record, channels) => this.onWorkerReady(record, channels),
+      onEmit: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
+      onFatal: (record, error) => this.onWorkerFatal(record, error),
+    })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
     mkdirSync(this.pluginsDir, { recursive: true })
   }
@@ -182,151 +216,22 @@ export class PluginManager {
     // 在 Worker 线程加载执行插件（外部插件不可信——线程隔离——同步/死循环/CPU 密集
     // 阻塞的只是 Worker 自己的线程——main 事件循环零影响）
     try {
-      this.spawnPluginWorker(record, dir, configFile, config)
+      this.host.spawnWorker(record, dir, configFile, config)
     } catch (e) {
       record.error = (e as Error).message
       console.error(`[plugin] ${manifest.id} Worker 启动失败:`, record.error)
     }
   }
 
-  /** 创建插件宿主 Worker 并接线（ready → 注册 IPC 通道 + 自检；fatal/error → 标记状态） */
-  private spawnPluginWorker(record: PluginRecord, dir: string, configFile: string, config: Record<string, unknown>): void {
-    const worker = new Worker(join(__dirname, 'plugin-host-worker.js'), {
-      workerData: {
-        pluginDir: dir,
-        entry: record.manifest.entry,
-        manifest: record.manifest,
-        configFile,
-      },
-    })
-    record.worker = worker
-    // 代理 api/ctx：方法调用转发 Worker（现有代码 record.api/ctx 直接调用——零改动）
-    record.api = this.createWorkerApiProxy(record)
-    record.ctx = this.createWorkerCtxProxy(record, dir, config)
+  
 
-    worker.on('message', (msg: { type: string; callId?: number; ok?: boolean; data?: unknown; error?: string; event?: string; channels?: string[] }) => {
-      if (msg.type === 'ready') {
-        // 插件 init 完成——注册其声明的 IPC 通道（renderer 可调）
-        const channels = msg.channels ?? []
-        for (const channel of channels) {
-          this.registerPluginIpc(record.manifest.id, channel, (payload) => this.invokeWorker(record, 'invoke', { channel, payload }))
-        }
-        // 接口契约校验：声明的系统开放接口必须注册了 requiredChannel
-        for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
-          if (def.requiredChannel && !this.ipcHandlers.has(`plugin:${record.manifest.id}:${def.requiredChannel}`)) {
-            record.error = `声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`
-            console.error(`[plugin] ${record.manifest.id}: ${record.error}`)
-            this.terminateWorker(record)
-            return
-          }
-        }
-        console.log(`[plugin] 已加载 ${record.manifest.id}@${record.manifest.version} (${record.manifest.capabilities?.join(',') ?? '无能力'})`)
-        if (record.enabled) {
-          this.autoRegister(record)
-        }
-        return
-      }
-      if (msg.type === 'result') {
-        const call = this.workerCalls.get(msg.callId ?? -1)
-        if (!call) return
-        this.workerCalls.delete(msg.callId ?? -1)
-        if (msg.ok) call.resolve(msg.data)
-        else call.reject(new Error(msg.error ?? '插件调用失败'))
-        return
-      }
-      if (msg.type === 'emit') {
-        this.forwardEvent(record.manifest.id, msg.event ?? '', msg.data)
-        return
-      }
-      if (msg.type === 'fatal') {
-        record.error = msg.error ?? '插件 Worker 异常'
-        console.error(`[plugin] ${record.manifest.id} Worker 错误:`, record.error)
-        this.terminateWorker(record)
-      }
-    })
+  
 
-    worker.on('error', (err) => {
-      record.error = err.message
-      console.error(`[plugin] ${record.manifest.id} Worker 异常:`, err.message)
-    })
+  
 
-    worker.on('exit', (code) => {
-      if (record.worker === worker) record.worker = null
-      // 非正常退出（非 terminate）——清除挂起调用
-      if (code !== 0) {
-        for (const [id, call] of this.workerCalls) {
-          if ((call as unknown as { worker?: Worker }).worker === worker) {
-            this.workerCalls.delete(id)
-            call.reject(new Error(`插件 ${record.manifest.id} Worker 已退出 (code=${code})`))
-          }
-        }
-      }
-    })
-  }
+  
 
-  /** 调用 Worker 执行（invoke handler / call 生命周期方法）——消息代理 + Promise */
-  private invokeWorker(record: PluginRecord, type: 'invoke' | 'call', body: Record<string, unknown>): Promise<unknown> {
-    const worker = record.worker
-    if (!worker) return Promise.reject(new Error(`插件 ${record.manifest.id} Worker 不可用`))
-    const callId = ++this.workerCallSeq
-    return new Promise((resolve, reject) => {
-      this.workerCalls.set(callId, { resolve, reject })
-      worker.postMessage({ type, callId, ...body })
-    })
-  }
-
-  /** Worker 插件的 api 代理（方法调用 → Worker 执行——现有代码 record.api.check() 等零改动） */
-  private createWorkerApiProxy(record: PluginRecord): PluginApi {
-    const call = (method: string): Promise<unknown> => this.invokeWorker(record, 'call', { method })
-    return {
-      // check 契约是同步返回——代理异步（调用方 await 场景安全；类型上兼容）
-      check: (() => call('check')) as unknown as () => PluginCheckResult,
-      start: () => call('start') as Promise<void>,
-      stop: () => call('stop') as Promise<void>,
-      dispose: (() => call('dispose')) as unknown as () => Promise<void>,
-      getStatus: (() => call('getStatus')) as unknown as PluginApi['getStatus'],
-      getConfigSchema: (() => call('getConfigSchema')) as unknown as PluginApi['getConfigSchema'],
-    }
-  }
-
-  /** Worker 插件的 ctx 代理（配置 main 侧读写——与 Worker 同文件——保持一致） */
-  private createWorkerCtxProxy(record: PluginRecord, dir: string, config: Record<string, unknown>): PluginContext {
-    const configFile = join(dir, 'config.json')
-    return {
-      pluginId: record.manifest.id,
-      configDir: dir,
-      getManifest: () => record.manifest,
-      emit: (event, data) => this.forwardEvent(record.manifest.id, event, data),
-      // IPC 注册在 Worker 内完成（ready 时 main 统一注册代理）——main 侧 no-op
-      registerIpc: () => {
-        /* no-op */
-      },
-      getConfig: <T>() => config as T,
-      setConfig: (patch) => {
-        Object.assign(config, patch)
-        this.writeConfigFile(configFile, { enabled: record.enabled, config })
-      },
-    }
-  }
-
-  /** 终止插件 Worker（卸载/停用/崩溃回收） */
-  private terminateWorker(record: PluginRecord): void {
-    if (record.worker) {
-      try {
-        record.worker.terminate()
-      } catch {
-        // 忽略终止错误
-      }
-      record.worker = null
-    }
-    // 清理该插件的挂起调用
-    for (const [id, call] of this.workerCalls) {
-      if ((call as unknown as { pluginId?: string }).pluginId === record.manifest.id) {
-        this.workerCalls.delete(id)
-        call.reject(new Error(`插件 ${record.manifest.id} 已终止`))
-      }
-    }
-  }
+  
 
   /** 启动时自动注册（持久化 enabled 且自检通过才真正 start；未就绪保持 enabled 标记等待修复） */
   private autoRegister(record: PluginRecord): void {
@@ -349,7 +254,7 @@ export class PluginManager {
       return
     }
     // 外部插件（Worker 宿主）：自检经消息代理异步执行——main 事件循环零阻塞
-    void this.invokeWorker(record, 'call', { method: 'check' })
+    void this.host.invokeWorker(record, 'call', { method: 'check' })
       .then((check) => {
         const c = check as PluginCheckResult | boolean | undefined
         const ok = typeof c === 'boolean' ? c : !!c?.ok
@@ -357,7 +262,7 @@ export class PluginManager {
           console.warn(`[plugin] ${record.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
           return
         }
-        return this.invokeWorker(record, 'call', { method: 'start' }).then(() => {
+        return this.host.invokeWorker(record, 'call', { method: 'start' }).then(() => {
           record.started = true
           this.registerProviders(record)
           console.log(`[plugin] 自动注册 ${record.manifest.id}（自检通过）`)
@@ -665,7 +570,7 @@ export class PluginManager {
       record.enabled = false
     }
     if (record.worker) {
-      this.terminateWorker(record)
+      this.host.terminateWorker(record)
     }
     const dir = join(this.pluginsDir, id)
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
@@ -802,7 +707,7 @@ export class PluginManager {
         if (record.worker) {
           // 外部插件：通知 stop 后终止 Worker（干净退出）
           void record.api?.stop?.()
-          this.terminateWorker(record)
+          this.host.terminateWorker(record)
         } else {
           record.api?.dispose?.()
         }
