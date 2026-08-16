@@ -147,8 +147,10 @@ async function rerunCheck(): Promise<void> {
   }
 }
 
-// models:progress 事件 → 进度
+// models:progress 事件 → 进度（旧链路——插件 Worker 上报）
 let offEvent: (() => void) | null = null
+// 主进程资源下载进度（新链路——plugin:assets-progress）
+let offAssetsProgress: (() => void) | null = null
 onMounted(() => {
   load()
   offEvent = onPluginEvent(({ pluginId: pid, event, data }) => {
@@ -157,9 +159,20 @@ onMounted(() => {
     modelProgress.value = { ...modelProgress.value, [kind]: { phase, percent, hint } }
     if (phase === 'done') void refreshModelsStatus()
   })
+  // 主进程下载进度（depName → dest 文件名匹配——更新对应资源）
+  offAssetsProgress = window.api.onEvent('plugin:assets-progress', (data) => {
+    const d = data as { pluginId: string; depName: string; received: number; total: number }
+    if (d.pluginId !== pluginId.value) return
+    const dep = assetDepsList.value.find((x) => x.name === d.depName)
+    const key = dep ? dep.dest.split('/').pop() ?? '' : d.depName
+    const percent = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
+    modelProgress.value = { ...modelProgress.value, [key]: { phase: percent >= 100 ? 'done' : 'download', percent } }
+    if (percent >= 100) void refreshModelsStatus()
+  })
 })
 onUnmounted(() => {
   offEvent?.()
+  offAssetsProgress?.()
 })
 
 // 同路由 param 变化（example-plugin → speech-sherpa）时组件复用，需重新加载

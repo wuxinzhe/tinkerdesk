@@ -70,11 +70,18 @@ export class PluginController {
     )
   }
 
-  /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用） */
+  /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用——进度经 plugin:assets-progress 事件推送） */
   private async downloadAssets(payload: { id: string }): Promise<ApiResult<{ name: string; ok: boolean; error?: string }[]>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.pluginManager.downloadAssets(payload.id))
+      const id = payload.id
+      const results = await this.pluginManager.downloadAssets(id, (depName, received, total) => {
+        const wc = this.pluginManager.getEmitTarget()
+        if (wc && !wc.isDestroyed()) {
+          wc.send('plugin:assets-progress', { pluginId: id, depName, received, total })
+        }
+      })
+      return ok(results)
     } catch (e) {
       return fail((e as Error).message)
     }
