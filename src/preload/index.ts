@@ -92,6 +92,29 @@ function inv<T>(channel: string, ...args: unknown[]): Promise<T> {
   })
 }
 
+/** 静默 IPC 调用（探测性调用专用——失败只 console 不弹全局 toast——
+ *  如插件配置页一次性探测 check/schema/config/status——Worker 挂时
+ *  多个失败是预期——不该弹多次相同错误） */
+function invSilent<T>(channel: string, ...args: unknown[]): Promise<T> {
+  const t = Date.now()
+  const req = truncateLog(redactArgs(args))
+  return ipcRenderer.invoke(channel, ...args).then((res) => {
+    const r = res as { success?: boolean; data?: unknown; error?: string | null }
+    const failed = r?.success === false
+    const ms = Date.now() - t
+    if (failed) {
+      console.warn(`[IPC] ~ ${channel} ${ms}ms`, r?.error ?? '操作失败', req)
+    } else {
+      const resp = truncateLog(redactArgs(r?.data))
+      console.log(`[IPC] ✓ ${channel} ${ms}ms`, req, '→', resp)
+    }
+    return res as T
+  }).catch((e: Error) => {
+    console.warn(`[IPC] ~ ${channel} ${Date.now() - t}ms`, e.message || '操作失败，请重试', req)
+    throw e
+  })
+}
+
 /** 派发全局通知事件（GlobalTipToast 监听；type: error | tip） */
 function dispatchGlobalTip(type: 'error' | 'tip', code: string, message: string): void {
   try {
@@ -394,10 +417,11 @@ const api = {
   plugins: {
     list: () => inv('plugin:list').then(unwrap),
     toggle: (id: string, enabled: boolean) => inv('plugin:toggle', { id, enabled }).then(unwrap),
-    check: (id: string) => inv('plugin:check', { id }).then(unwrap),
-    getStatus: (id: string) => inv('plugin:get-status', { id }).then(unwrap),
-    getSchema: (id: string) => inv('plugin:get-schema', { id }).then(unwrap),
-    getConfig: (id: string) => inv('plugin:get-config', { id }).then(unwrap),
+    // 探测性调用（配置页一次性加载多个——失败是预期——静默不弹全局错误）
+    check: (id: string) => invSilent('plugin:check', { id }).then(unwrap),
+    getStatus: (id: string) => invSilent('plugin:get-status', { id }).then(unwrap),
+    getSchema: (id: string) => invSilent('plugin:get-schema', { id }).then(unwrap),
+    getConfig: (id: string) => invSilent('plugin:get-config', { id }).then(unwrap),
     saveConfig: (id: string, patch: Record<string, unknown>) =>
       inv('plugin:save-config', { id, patch }).then(unwrap),
     /** 主进程资源下载（不依赖 Worker——配置页下载按钮） */
