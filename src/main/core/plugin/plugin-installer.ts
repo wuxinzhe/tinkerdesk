@@ -43,6 +43,10 @@ export class PluginInstaller {
     const pluginDir = this.locateSource(src)
     const manifest = this.readManifest(pluginDir)
     this.validateManifest(manifest, pluginDir)
+    // 已安装校验（同 id 已注册 → 拒绝——更新走独立入口）
+    if (this.deps.hasPlugin(manifest.id)) {
+      throw new Error(`插件已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
+    }
     session.pluginDir = pluginDir
     session.manifest = manifest
     session.stages.validate = 'done'

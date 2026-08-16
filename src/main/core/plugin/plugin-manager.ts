@@ -43,6 +43,7 @@ export class PluginManager {
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
     this.installer = new PluginInstaller({
       pluginsDir: this.pluginsDir,
+      hasPlugin: (id) => this.registry.has(id),
       registerPlugin: (srcDir) => {
         // 安装完成：从安装目录加载并注册（同 loadAll 流程）
         const destDir = join(this.pluginsDir, JSON.parse(readFileSync(join(srcDir, 'manifest.json'), 'utf-8')).id as string)

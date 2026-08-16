@@ -231,6 +231,8 @@ export interface InstallerDeps {
   pluginsDir: string
   /** 创建并注册 Plugin（validate 后调用——安装器完成文件操作后交 manager） */
   registerPlugin: (srcDir: string) => PluginRecord
+  /** 查询插件是否已安装（安装前校验——同 id 已装 → 拒绝） */
+  hasPlugin: (id: string) => boolean
 }
 
 /* ── Plugin 活动对象 ── */
