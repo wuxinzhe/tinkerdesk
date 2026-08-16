@@ -12,15 +12,14 @@
  */
 import { execFileSync } from 'child_process'
 import { app } from 'electron'
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'fs'
-import { basename, join } from 'path'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'fs'
+import { join } from 'path'
 import { handleTrusted } from '../../security/ipc-guard'
-import { downloadFile, execFileAsync } from '../../utils/process-utils'
+import { PluginAssets } from './plugin-assets'
 import { PluginHost } from './plugin-host'
-import { ProviderRegistry } from './plugin-registry'
-import { PluginLoader } from './plugin-loader'
-import { downloadAssets as assetsDownload } from './plugin-assets'
 import { installNpmDeps, locateManifestDir, tarBin, verifyHashes } from './plugin-installer'
+import { PluginLoader } from './plugin-loader'
+import { ProviderRegistry } from './plugin-registry'
 import { persistEnabled, readConfigFile, writeConfigFile } from './plugin-store'
 import { matchSystemInterfaces } from './system-interfaces'
 
@@ -49,6 +48,8 @@ export class PluginManager {
   /** 加载与注册编排（loadPlugin/autoRegister/ready/fatal——归 PluginLoader）——
    *  host ↔ loader 互相引用（host hooks 延迟调用 loader——闭包安全） */
   private loader!: PluginLoader
+  /** 资源下载器（构造注入插件目录） */
+  private readonly assets: PluginAssets
 
   constructor() {
     this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is PluginRecord => !!r))
@@ -67,6 +68,7 @@ export class PluginManager {
       forwardEvent: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
     })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
+    this.assets = new PluginAssets(this.pluginsDir)
     mkdirSync(this.pluginsDir, { recursive: true })
   }
 
@@ -168,29 +170,7 @@ export class PluginManager {
     return this.providerRegistry.getProviders(interfaceId)
   }
 
-  /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
-  private forwardEvent(pluginId: string, event: string, data?: unknown): void {
-    console.log(`[plugin:event] ${pluginId}:${event}`, JSON.stringify(data)?.slice(0, 80))
-    this.emitTarget?.send('plugin:event', { pluginId, event, data })
-  }
 
-  /** 插件注册 IPC 能力（renderer 调用 plugin:<id>:<channel>；应用内部可经 invokePlugin 调用） */
-  private registerPluginIpc(pluginId: string, channel: string, handler: (payload: unknown) => unknown): void {
-    const full = `plugin:${pluginId}:${channel}`
-    if (this.ipcHandlers.has(full)) {
-      console.warn(`[plugin] ${full} 已注册，跳过`)
-      return
-    }
-    this.ipcHandlers.set(full, handler)
-    handleTrusted(full, async (_event, payload: unknown) => {
-      try {
-        return { success: true, data: await handler(payload) }
-      } catch (e) {
-        console.error(`[plugin] ${full} 调用失败:`, (e as Error).message)
-        return { success: false, error: (e as Error).message }
-      }
-    })
-  }
 
   /** 应用内部调用插件 IPC（不经 renderer；如 VoiceProviderService 转发 STT/TTS） */
   async invokePlugin<T>(pluginId: string, channel: string, payload?: unknown): Promise<T> {
@@ -201,7 +181,7 @@ export class PluginManager {
     return (await handler(payload)) as T
   }
 
-  
+
 
   /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
   async installPlugin(srcDir: string): Promise<PluginInfo> {
@@ -399,8 +379,6 @@ export class PluginManager {
     console.log(`[plugin] 已卸载 ${id}`)
   }
 
-
-
   /** 插件自检（启用前调用；不改变状态） */
   async check(id: string): Promise<PluginCheckResult> {
     const record = this.registry.get(id)
@@ -435,7 +413,7 @@ export class PluginManager {
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
-    return assetsDownload(this.pluginsDir, record.manifest, onProgress)
+    return this.assets.download(record.manifest, onProgress)
   }
 
 
@@ -494,5 +472,29 @@ export class PluginManager {
       }
     }
     this.registry.clear()
+  }
+
+  /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
+  private forwardEvent(pluginId: string, event: string, data?: unknown): void {
+    console.log(`[plugin:event] ${pluginId}:${event}`, JSON.stringify(data)?.slice(0, 80))
+    this.emitTarget?.send('plugin:event', { pluginId, event, data })
+  }
+
+  /** 插件注册 IPC 能力（renderer 调用 plugin:<id>:<channel>；应用内部可经 invokePlugin 调用） */
+  private registerPluginIpc(pluginId: string, channel: string, handler: (payload: unknown) => unknown): void {
+    const full = `plugin:${pluginId}:${channel}`
+    if (this.ipcHandlers.has(full)) {
+      console.warn(`[plugin] ${full} 已注册，跳过`)
+      return
+    }
+    this.ipcHandlers.set(full, handler)
+    handleTrusted(full, async (_event, payload: unknown) => {
+      try {
+        return { success: true, data: await handler(payload) }
+      } catch (e) {
+        console.error(`[plugin] ${full} 调用失败:`, (e as Error).message)
+        return { success: false, error: (e as Error).message }
+      }
+    })
   }
 }
