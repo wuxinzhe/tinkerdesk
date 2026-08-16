@@ -89,7 +89,7 @@
 import { ref, computed, onMounted } from 'vue'
 import type { MarketPluginItem } from '@/renderer/api/types'
 import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
-import { pluginsApi } from '@/renderer/api'
+import { pluginsApi } from '@/renderer/api/plugins-api'
 
 const plugins = ref<MarketPluginItem[]>([])
 const loading = ref(true)

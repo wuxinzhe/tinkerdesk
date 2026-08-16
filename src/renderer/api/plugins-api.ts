@@ -43,6 +43,10 @@ export const pluginsApi: PluginApi = {
   toggle: (id, enabled) => window.api.plugins.toggle(id, enabled),
   check: (id) => window.api.plugins.check(id),
   install: (path) => window.api.plugins.install(path),
+  /** 在线安装（npm 包名） */
+  installNpm: (pkg, registry) => window.api.plugins.installNpm(pkg, registry),
+  /** 插件市场列表（npm registry search） */
+  marketList: () => window.api.plugins.marketList(),
   uninstall: (id) => window.api.plugins.uninstall(id),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),
