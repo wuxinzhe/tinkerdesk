@@ -8,8 +8,8 @@
  * 分步骤安装（向导支持）：validate → copy → deps → assets → 完成
  * 每步可独立调用（失败重试该步——不重头）。
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, cpSync } from 'fs'
-import { join } from 'path'
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, cpSync } from 'fs'
+import { basename, join } from 'path'
 import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
@@ -64,7 +64,7 @@ export class PluginInstaller {
           await this.installNpmDeps(session.pluginDir)
           break
         case 'assets':
-          await this.downloadAssets(session.manifest, session.pluginDir, session.skipAssets)
+          await this.downloadAssetsTo(session.manifest, session.pluginDir, session.skipAssets)
           break
         case 'register':
           this.deps.registerPlugin(session.srcDir)
@@ -102,6 +102,41 @@ export class PluginInstaller {
   uninstall(id: string): void {
     const dir = join(this.deps.pluginsDir, id)
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
+  }
+
+  /** 资源下载（配置页手动触发——读 manifest 勾选的 assetDeps——不依赖 Worker） */
+  async downloadAssets(
+    manifest: PluginManifest,
+    onProgress?: (depName: string, received: number, total: number) => void,
+  ): Promise<{ name: string; ok: boolean; error?: string }[]> {
+    const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
+    if (deps.length === 0) throw new Error(`插件 ${manifest.id} 未声明资源依赖（assetDeps）`)
+    const dir = join(this.deps.pluginsDir, manifest.id)
+    const results: { name: string; ok: boolean; error?: string }[] = []
+    for (const dep of deps) {
+      if (dep.optional) continue
+      try {
+        const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
+        await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
+        const destDir = join(dir, dep.dest)
+        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
+        const lower = dep.url.toLowerCase()
+        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
+          await execFileAsync(tarBin(), ['-xjf', tmp, '-C', destDir])
+        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
+          await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
+        } else if (lower.endsWith('.zip')) {
+          await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+        } else {
+          renameSync(tmp, join(destDir, basename(dep.url)))
+        }
+        if (existsSync(tmp)) rmSync(tmp, { force: true })
+        results.push({ name: dep.name, ok: true })
+      } catch (e) {
+        results.push({ name: dep.name, ok: false, error: (e as Error).message })
+      }
+    }
+    return results
   }
 
   // ── 私有实现 ──
@@ -184,8 +219,8 @@ export class PluginInstaller {
     return 'npm'
   }
 
-  /** 资源下载（勾选的 assetDeps——跳过 skipAssets——可选依赖跳过） */
-  private async downloadAssets(manifest: PluginManifest, pluginDir: string, skipAssets: string[]): Promise<void> {
+  /** 资源下载到插件目录（安装阶段——勾选的 assetDeps——跳过 skipAssets——可选依赖跳过） */
+  private async downloadAssetsTo(manifest: PluginManifest, pluginDir: string, skipAssets: string[]): Promise<void> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
     for (const dep of deps) {
       if (dep.optional) continue

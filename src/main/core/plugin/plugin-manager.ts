@@ -15,7 +15,6 @@ import { handleTrusted } from '../../security/ipc-guard'
 import { PluginHost } from './plugin-host'
 import { ProviderRegistry } from './plugin-registry'
 import { PluginInstaller } from './plugin-installer'
-import { PluginAssets } from './plugin-assets'
 import { Plugin } from './plugin'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 import { matchSystemInterfaces } from './system-interfaces'
@@ -33,8 +32,6 @@ export class PluginManager {
   private readonly host: PluginHost
   /** 接口 provider 注册表（独立域——PluginRegistry） */
   private readonly providerRegistry = new ProviderRegistry()
-  /** 资源下载器（构造注入插件目录） */
-  private readonly assets: PluginAssets
   /** 安装器（独立子系统——安装/资源/卸载） */
   private readonly installer: PluginInstaller
   constructor() {
@@ -46,7 +43,6 @@ export class PluginManager {
       onFatal: (record, error) => (record as Plugin).onWorkerFatal(error),
     })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
-    this.assets = new PluginAssets(this.pluginsDir)
     this.installer = new PluginInstaller({
       pluginsDir: this.pluginsDir,
       registerPlugin: (srcDir) => {
@@ -196,7 +192,7 @@ export class PluginManager {
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
-    return this.assets.download(record.manifest, onProgress)
+    return this.installer.downloadAssets(record.manifest, onProgress)
   }
 
   /** 插件自检（Worker 经消息代理） */
