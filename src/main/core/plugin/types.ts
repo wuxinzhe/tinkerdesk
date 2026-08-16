@@ -207,7 +207,7 @@ export interface SystemInterfaceDef {
   optionalChannels?: string[]
 }
 
-/** PluginLoader 依赖（manager 注入——避免反向依赖） */
+/** PluginLoader 依赖（manager 注入——避免反向依赖）——已并入 Plugin 类（保留类型引用兼容） */
 export interface PluginLoaderDeps {
   registry: Map<string, PluginRecord>
   host: import('./plugin-host').PluginHost
