@@ -112,7 +112,11 @@
                     <span v-else class="iw-stage__dot"></span>
                   </span>
                   <span class="iw-stage__name">{{ stageLabel(stage) }}</span>
-                  <span v-if="stageStatus(stage) === 'failed'" class="iw-stage__err">{{ stageError }}</span>
+                </div>
+                <!-- 失败错误（独立行——不挤压阶段标签——可换行完整显示） -->
+                <div v-if="installFailed" class="iw-stage-err">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                  <span>{{ stageError }}</span>
                 </div>
                 <div v-if="installFailed" class="iw-retry">
                   <SaActionBtn text="重试该步" variant="primary" @click="retryFailed" />
@@ -710,9 +714,23 @@ function close() {
   flex: 1;
 }
 
-.iw-stage__err {
+/* 失败错误（独立行——不挤压阶段标签——换行完整显示） */
+.iw-stage-err {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 59, 48, 0.06);
   color: #ff3b30;
   font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.iw-stage-err svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .iw-retry {
