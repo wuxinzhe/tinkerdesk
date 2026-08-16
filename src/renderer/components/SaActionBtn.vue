@@ -5,7 +5,7 @@
       'sa-action-btn--done': done,
     }]"
     :disabled="loading || done || disabled"
-    @click="$emit('click')"
+    @click="$emit('click', $event)"
   >
     <svg v-if="loading" class="sa-action-btn__spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32" />
