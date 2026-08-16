@@ -5,7 +5,7 @@
  * 系统固定接口的多 provider 抽象：插件声明 systemInterfaces（voice.stt/voice.tts）即成为 provider。
  * 模型下载与 provider 详细配置在「插件设置」——这里只选择当前激活的 STT / TTS provider。
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { VoiceProviderInfo } from '@/renderer/api/types'
 import { NSelect } from 'naive-ui'
 
@@ -13,11 +13,12 @@ const providers = ref<{ stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] }>({ 
 const config = ref<{ sttProvider: string | null; ttsProvider: string | null }>({ sttProvider: null, ttsProvider: null })
 const readyMap = ref<Record<string, boolean>>({})
 
+/** 只显示就绪的 provider（未就绪不出现——用户补充：只显示一切就绪的选项） */
 const sttOptions = computed(() =>
-  providers.value.stt.map((p) => ({ label: readyMap.value[p.pluginId] ? p.name : `${p.name}（未就绪）`, value: p.pluginId })),
+  providers.value.stt.filter((p) => readyMap.value[p.pluginId]).map((p) => ({ label: p.name, value: p.pluginId })),
 )
 const ttsOptions = computed(() =>
-  providers.value.tts.map((p) => ({ label: readyMap.value[p.pluginId] ? p.name : `${p.name}（未就绪）`, value: p.pluginId })),
+  providers.value.tts.filter((p) => readyMap.value[p.pluginId]).map((p) => ({ label: p.name, value: p.pluginId })),
 )
 
 async function load(): Promise<void> {
