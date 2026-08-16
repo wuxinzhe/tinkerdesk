@@ -55,7 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { CustomModelInfo, SystemProvider } from '@/renderer/api/types'
-import { SaSection, SaLoading, SaEmpty, SaCardRow, SaPageHero } from '@/renderer/components'
+import { SaSection, SaLoading, SaEmpty, SaCardRow, SaPageHero , L3PageLayout } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { modelsApi } from '@/renderer/api/models-api'
 

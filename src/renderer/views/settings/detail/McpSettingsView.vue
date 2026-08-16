@@ -77,7 +77,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getToolCenterApi, type McpServerState } from '@/renderer/api/tool-center-api'
-import { SaLoading, SaEmpty, SaPageHero } from '@/renderer/components'
+import { SaLoading, SaEmpty, SaPageHero , L3PageLayout } from '@/renderer/components'
 import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 
 const router = useRouter()

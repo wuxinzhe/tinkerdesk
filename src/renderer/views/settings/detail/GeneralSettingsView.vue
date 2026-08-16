@@ -108,7 +108,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { SaPageHero } from '@/renderer/components'
+import { SaPageHero , L3PageLayout } from '@/renderer/components'
 import { confirm } from '@/renderer/api/confirm'
 import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 import { applyTheme } from '@/renderer/utils/theme'
