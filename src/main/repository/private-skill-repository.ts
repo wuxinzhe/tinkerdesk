@@ -11,7 +11,7 @@ import type { FilteredSkillDTO, PrivateSkillEntity } from './types'
 
 
 
-const COLS = 'id, name, display_name, description, category, version, author, license, platforms, tags, dependencies, requires_toolsets, requires_tools, fallback_for_toolsets, fallback_for_tools, triggers, trigger_conditions, config, env_vars, commands, envs, api_key, body, is_deleted, deleted_at, profile, official_skill_id, created_at, updated_at'
+const COLS = 'id, name, display_name, description, category, version, author, license, platforms, tags, dependencies, requires_toolsets, requires_tools, fallback_for_toolsets, fallback_for_tools, triggers, trigger_conditions, config, env_vars, commands, compatibility, allowed_tools, metadata, envs, api_key, body, is_deleted, deleted_at, profile, official_skill_id, created_at, updated_at'
 
 function toEntity(row: Record<string, unknown>): PrivateSkillEntity {
   return {
@@ -35,6 +35,9 @@ function toEntity(row: Record<string, unknown>): PrivateSkillEntity {
     config: row.config as string,
     envVars: row.env_vars as string,
     commands: row.commands as string,
+    compatibility: row.compatibility as string,
+    allowedTools: row.allowed_tools as string,
+    metadata: row.metadata as string,
     envs: row.envs as string | null,
     apiKey: row.api_key as string | null,
     body: row.body as string,
@@ -123,7 +126,7 @@ export class PrivateSkillRepository {
            id, name, display_name, description, category, version, author, license,
            platforms, tags, dependencies, requires_toolsets, requires_tools,
            fallback_for_toolsets, fallback_for_tools, triggers, trigger_conditions,
-           config, env_vars, commands, envs, api_key, body, is_deleted, deleted_at,
+           config, env_vars, commands, compatibility, allowed_tools, metadata, envs, api_key, body, is_deleted, deleted_at,
            profile, official_skill_id
          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (profile, name) DO UPDATE SET
@@ -145,6 +148,9 @@ export class PrivateSkillRepository {
            config = excluded.config,
            env_vars = excluded.env_vars,
            commands = excluded.commands,
+           compatibility = excluded.compatibility,
+           allowed_tools = excluded.allowed_tools,
+           metadata = excluded.metadata,
            envs = excluded.envs,
            api_key = excluded.api_key,
            body = excluded.body,

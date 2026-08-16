@@ -99,6 +99,29 @@
             </div>
             <input :value="model.requiresTools" class="sfp__input" placeholder="逗号分隔" @input="set('requiresTools', ($event.target as HTMLInputElement).value)" />
           </div>
+        </div>
+        <div class="sfp-row">
+          <div class="sfp__field">
+            <div class="sfp__field-label">
+              兼容性（环境要求）
+            </div>
+            <input :value="model.compatibility" class="sfp__input" placeholder="如: 需要网络访问, 桌面端" @input="set('compatibility', ($event.target as HTMLInputElement).value)" />
+          </div>
+          <div class="sfp__field">
+            <div class="sfp__field-label">
+              允许工具（白名单）
+            </div>
+            <input :value="model.allowedTools" class="sfp__input" placeholder="逗号分隔，如: terminal,web" @input="set('allowedTools', ($event.target as HTMLInputElement).value)" />
+          </div>
+        </div>
+        <div class="sfp-row">
+          <div class="sfp__field">
+            <div class="sfp__field-label">
+              元数据（JSON）
+            </div>
+            <input :value="model.metadata" class="sfp__input" placeholder='{"key": "value"}' @input="set('metadata', ($event.target as HTMLInputElement).value)" />
+          </div>
+          <div class="sfp__field">
           <div class="sfp__field">
             <div class="sfp__field-label">
               工具集回退
@@ -181,6 +204,9 @@ export interface SkillFormModel {
   tags: string
   dependencies: string
   requiresToolsets: string
+  compatibility: string
+  allowedTools: string
+  metadata: string
   requiresTools: string
   fallbackForToolsets: string
   fallbackForTools: string

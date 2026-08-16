@@ -253,6 +253,9 @@ export interface SkillInfoVO {
   config: string
   envVars: string
   commands: string
+  compatibility: string
+  allowedTools: string
+  metadata: string
   envs: string
   /** 启用状态（停用 = 软删） */
   isEnabled: boolean

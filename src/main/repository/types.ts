@@ -351,6 +351,9 @@ export interface PrivateSkillEntity {
   config: string
   envVars: string
   commands: string
+  compatibility: string
+  allowedTools: string
+  metadata: string
   envs: string | null
   apiKey: string | null
   body: string

@@ -47,6 +47,9 @@ export function toSkillInfoVO(
     related: related ?? undefined,
     envVars: s.envVars ?? '',
     commands: s.commands ?? '',
+    compatibility: s.compatibility ?? '',
+    allowedTools: s.allowedTools ?? '',
+    metadata: s.metadata ?? '{}',
     envs: s.envs ?? '',
     isEnabled: !s.isDeleted,
     body: includeBody ? (s.body ?? '') : undefined,
@@ -255,6 +258,9 @@ export class SkillController {
     config?: string
     envVars?: string
     commands?: string
+    compatibility?: string
+    allowedTools?: string
+    metadata?: string
     body?: string
     files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
     /** 关联技能（frontmatter related: [name...]——按 name 匹配已有技能，写入 private_skill_related） */
@@ -301,6 +307,9 @@ export class SkillController {
         config: payload.config ?? '[]',
         commands: payload.commands ?? '',
         envVars: payload.envVars ?? '',
+        compatibility: payload.compatibility ?? '',
+        allowedTools: payload.allowedTools ?? '',
+        metadata: payload.metadata ?? '{}',
         body,
       },
       files,
@@ -319,6 +328,7 @@ export class SkillController {
     tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
     config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    compatibility?: string; allowedTools?: string; metadata?: string
     /** 关联技能名数组（编辑时全量替换——清旧写新） */
     related?: string[]
   }): ApiResponse<SkillInfoVO> {
@@ -348,6 +358,9 @@ export class SkillController {
       envVars: payload.envVars,
       commands: payload.commands,
       envs: payload.envs,
+      compatibility: payload.compatibility,
+      allowedTools: payload.allowedTools,
+      metadata: payload.metadata,
       body: payload.body,
     }, payload.related)
     if (!updated) return fail('技能不存在或更新失败')
@@ -437,6 +450,9 @@ function parseSkillMarkdown(content: string): {
   triggerConditions?: string
   commands?: string
   envVars?: string
+  compatibility?: string
+  allowedTools?: string
+  metadata?: string
   body: string
 } {
   const m = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/.exec(content)
@@ -480,6 +496,9 @@ function parseSkillMarkdown(content: string): {
     triggerConditions: fields.trigger_conditions ?? fields.triggerConditions,
     commands: fields.commands,
     envVars: fields.env_vars ?? fields.envVars,
+    compatibility: fields.compatibility,
+    allowedTools: fields.allowed_tools ?? fields.allowedTools,
+    metadata: fields.metadata,
     body,
-  }
+    }
 }

@@ -94,6 +94,9 @@ interface SkillImportForm {
   config: string
   envVars: string
   commands: string
+  compatibility: string
+  allowedTools: string
+  metadata: string
   body: string
   files: Array<{ fileType: string; name: string; content: string; sortOrder: number }>
 }
@@ -110,7 +113,7 @@ const emptyForm = (): SkillImportForm => ({
   name: '', displayName: '', description: '', category: '', version: '', author: '', license: '',
   platforms: '', tags: '', dependencies: '', requiresToolsets: '', requiresTools: '',
   fallbackForToolsets: '', fallbackForTools: '', triggers: '', triggerConditions: '',
-  config: '[]', envVars: '', commands: '', body: '', files: [],
+  config: '[]', envVars: '', commands: '', compatibility: '', allowedTools: '', metadata: '{}', body: '', files: [],
 })
 
 const form = ref<SkillImportForm>(emptyForm())
@@ -156,6 +159,9 @@ async function handleImport() {
       config: parsed.config ?? '[]',
       envVars: parsed.envVars ?? '',
       commands: parsed.commands ?? '',
+      compatibility: parsed.compatibility ?? '',
+      allowedTools: parsed.allowedTools ?? '',
+      metadata: parsed.metadata ?? '{}',
       body: parsed.body,
       files: file.files.map((f, i) => ({ fileType: f.fileType, name: f.name, content: f.content, sortOrder: f.sortOrder ?? i })),
     }

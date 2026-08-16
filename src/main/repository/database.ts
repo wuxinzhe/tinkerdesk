@@ -25,6 +25,7 @@ export function initDatabase(): DatabaseSync {
   db.exec('PRAGMA journal_mode = WAL;');
   createTables(db);
   ensureSkillRelatedSchema(db);
+  ensureSkillColumns(db);
   ensureSceneModelSchema(db);
   ensureSessionSchema(db);
   seedProviders(db);
@@ -69,6 +70,23 @@ function ensureSessionSchema(database: DatabaseSync): void {
       notify_on_complete INTEGER NOT NULL DEFAULT 0
     )
   `)
+}
+
+/** 补 private_skills 新增列（开发阶段结构对齐——PRAGMA 检测缺列 → ALTER ADD——
+ *  agentskills.io 规范对齐：compatibility/allowed_tools/metadata） */
+function ensureSkillColumns(database: DatabaseSync): void {
+  const cols = new Set(
+    (database.prepare(`PRAGMA table_info(private_skills)`).all() as Array<{ name: string }>).map((c) => c.name),
+  )
+  if (!cols.has('compatibility')) {
+    database.exec(`ALTER TABLE private_skills ADD COLUMN compatibility TEXT NOT NULL DEFAULT ''`)
+  }
+  if (!cols.has('allowed_tools')) {
+    database.exec(`ALTER TABLE private_skills ADD COLUMN allowed_tools TEXT NOT NULL DEFAULT ''`)
+  }
+  if (!cols.has('metadata')) {
+    database.exec(`ALTER TABLE private_skills ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'`)
+  }
 }
 
 /** 结构对齐（开发阶段）：user_scene_models 旧版（PK 含 priority——单模型替换语义）直接重建为多模型结构——不迁移数据 */
@@ -384,6 +402,9 @@ function createTables(database: DatabaseSync): void {
       commands              TEXT NOT NULL DEFAULT '',
       envs                  TEXT,
       api_key               TEXT,
+      compatibility         TEXT NOT NULL DEFAULT '',
+      allowed_tools         TEXT NOT NULL DEFAULT '',
+      metadata              TEXT NOT NULL DEFAULT '{}',
       body                  TEXT NOT NULL DEFAULT '',
       is_deleted            INTEGER NOT NULL DEFAULT 0,
       deleted_at            TEXT,

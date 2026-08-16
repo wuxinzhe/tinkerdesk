@@ -29,6 +29,9 @@ export interface ParsedSkill {
   commands?: string
   envVars?: string
   config?: string
+  compatibility?: string
+  allowedTools?: string
+  metadata?: string
   body: string
 }
 
@@ -76,6 +79,9 @@ export function parseSkillMarkdown(content: string): ParsedSkill {
     triggerConditions: fields.trigger_conditions ?? fields.triggerConditions,
     commands: fields.commands,
     envVars: fields.env_vars ?? fields.envVars,
+    compatibility: fields.compatibility,
+    allowedTools: fields.allowed_tools ?? fields.allowedTools,
+    metadata: fields.metadata,
     config: fields.config ?? '[]',
     // related 是数组语义（frontmatter related: [a, b]）——逗号拆分
     related: fields.related

@@ -44,7 +44,7 @@ export class SkillsApi {
     version?: string; author?: string; license?: string; platforms?: string; tags?: string
     dependencies?: string; requiresToolsets?: string; requiresTools?: string
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
-    config?: string; envVars?: string; commands?: string; body?: string
+    config?: string; envVars?: string; commands?: string; compatibility?: string; allowedTools?: string; metadata?: string; body?: string
     files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
     related?: string[]
   }): Promise<SkillInfo> {
@@ -58,7 +58,7 @@ export class SkillsApi {
     version?: string; author?: string; license?: string
     tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
     fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
-    config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+    config?: string; envVars?: string; commands?: string; compatibility?: string; allowedTools?: string; metadata?: string; envs?: string; body?: string
     related?: string[]
   }): Promise<SkillInfo> {
     const data = await window.api.skills.update(payload)

@@ -340,6 +340,9 @@ export interface SkillInfo {
   config?: string
   envVars?: string
   commands?: string
+  compatibility?: string
+  allowedTools?: string
+  metadata?: string
   isEnabled?: boolean
   isInstalled?: boolean
   updatedAt?: string
@@ -984,7 +987,7 @@ export interface WindowApi {
       version?: string; author?: string; license?: string; platforms?: string; tags?: string
       dependencies?: string; requiresToolsets?: string; requiresTools?: string
       fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
-      config?: string; envVars?: string; commands?: string; body?: string
+      config?: string; envVars?: string; commands?: string; compatibility?: string; allowedTools?: string; metadata?: string; body?: string
       files?: Array<{ fileType: string; name?: string; content: string; sortOrder?: number }>
     }) => Promise<SkillInfo>
     /** 选择技能文件并读取内容（返回 { path, content, files, preview }，取消返回 null） */
@@ -994,7 +997,7 @@ export interface WindowApi {
       version?: string; author?: string; license?: string
       tags?: string; platforms?: string; dependencies?: string; requiresToolsets?: string; requiresTools?: string
       fallbackForToolsets?: string; fallbackForTools?: string; triggers?: string; triggerConditions?: string
-      config?: string; envVars?: string; commands?: string; envs?: string; body?: string
+      config?: string; envVars?: string; commands?: string; compatibility?: string; allowedTools?: string; metadata?: string; envs?: string; body?: string
     }) => Promise<SkillInfo>
     delete: (id: string, profile?: string) => Promise<null>
     /** 按技能 id 查文件列表 */

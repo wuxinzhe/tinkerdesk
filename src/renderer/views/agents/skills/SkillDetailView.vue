@@ -171,6 +171,24 @@
             </div>
             <pre class="detail-section__code">{{ skill.commands }}</pre>
           </div>
+          <div v-if="skill.compatibility" class="detail-section">
+            <div class="detail-section__label">
+              兼容性（环境要求）
+            </div>
+            <pre class="detail-section__code">{{ skill.compatibility }}</pre>
+          </div>
+          <div v-if="skill.allowedTools" class="detail-section">
+            <div class="detail-section__label">
+              允许工具（白名单）
+            </div>
+            <pre class="detail-section__code">{{ skill.allowedTools }}</pre>
+          </div>
+          <div v-if="skill.metadata && skill.metadata !== '{}'" class="detail-section">
+            <div class="detail-section__label">
+              元数据
+            </div>
+            <pre class="detail-section__code">{{ skill.metadata }}</pre>
+          </div>
         </div>
       </div>
 
@@ -255,7 +273,8 @@ const drafts = ref({
   name: '', displayName: '', description: '', category: '', tags: '', platforms: '',
   version: '', author: '', license: '',
   dependencies: '', requiresToolsets: '', requiresTools: '', fallbackForToolsets: '', fallbackForTools: '',
-  triggers: '', triggerConditions: '', config: '', envVars: '', commands: '', body: '',
+  triggers: '', triggerConditions: '', config: '', envVars: '', commands: '',
+  compatibility: '', allowedTools: '', metadata: '{}', body: '',
   relatedNames: '',
 })
 
@@ -319,6 +338,9 @@ function startEdit() {
     config: skill.value.config ?? '[]',
     envVars: skill.value.envVars ?? '',
     commands: skill.value.commands ?? '',
+    compatibility: skill.value.compatibility ?? '',
+    allowedTools: skill.value.allowedTools ?? '',
+    metadata: skill.value.metadata ?? '{}',
     body: skill.value.body ?? '',
     relatedNames: (skill.value.related ?? []).map((r) => r.name).join(', '),
   }

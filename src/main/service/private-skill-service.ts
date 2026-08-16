@@ -212,6 +212,9 @@ export class PrivateSkillService {
     triggerConditions?: string
     commands?: string
     envVars?: string
+    compatibility?: string
+    allowedTools?: string
+    metadata?: string
     config?: string
     body: string
     apiKey?: string | null
@@ -241,6 +244,9 @@ export class PrivateSkillService {
       config: input.config ?? '[]',
       envVars: input.envVars ?? '',
       commands: input.commands ?? '',
+      compatibility: input.compatibility ?? '',
+      allowedTools: input.allowedTools ?? '',
+      metadata: input.metadata ?? '{}',
       envs: null,
       officialSkillId: null,
     })
@@ -302,6 +308,9 @@ export class PrivateSkillService {
     config?: string
     envVars?: string
     commands?: string
+    compatibility?: string
+    allowedTools?: string
+    metadata?: string
     envs?: string
     body?: string
   }): PrivateSkillEntity | null {
@@ -329,6 +338,9 @@ export class PrivateSkillService {
       config: input.config !== undefined ? input.config : existing.config,
       envVars: input.envVars !== undefined ? input.envVars : existing.envVars,
       commands: input.commands !== undefined ? input.commands : existing.commands,
+      compatibility: input.compatibility !== undefined ? input.compatibility : existing.compatibility,
+      allowedTools: input.allowedTools !== undefined ? input.allowedTools : existing.allowedTools,
+      metadata: input.metadata !== undefined ? input.metadata : existing.metadata,
       envs: input.envs !== undefined ? input.envs : existing.envs,
       body: input.body !== undefined ? input.body : existing.body,
     }
