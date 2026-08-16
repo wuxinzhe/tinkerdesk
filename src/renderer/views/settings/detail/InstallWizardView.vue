@@ -54,7 +54,12 @@
                   </div>
                   <div v-if="downloadPercent > 0" class="iw-download__meta">{{ downloadMeta }}</div>
                 </div>
-                <div v-else-if="startError" class="iw-state is-error">{{ startError }}</div>
+                <div v-else-if="startError" class="iw-state is-error">
+                  <div>{{ startError }}</div>
+                  <div class="iw-retry">
+                    <SaActionBtn text="重试" variant="primary" @click="retryStart" />
+                  </div>
+                </div>
                 <div v-else class="iw-state is-ok">安装包已就绪</div>
               </div>
 
@@ -245,6 +250,8 @@ function stageStatus(s: string): 'pending' | 'running' | 'done' | 'failed' {
 
 function stepDone(i: number): boolean {
   if (i === 0) return !!session.value
+  // 资源步骤：开始安装（进入安装步）即算完成
+  if (i === assetsStepIndex.value) return currentStep.value >= installStepIndex.value
   if (i === 1) return currentStep.value > 1
   if (i === installStepIndex.value) return currentStep.value >= doneStepIndex.value
   return currentStep.value >= doneStepIndex.value
@@ -255,7 +262,7 @@ function stepFailed(i: number): boolean {
 }
 
 watch(
-  () => route.query.pkg,
+  () => [route.query.pkg, route.query.path] as const,
   () => start(),
 )
 
@@ -269,7 +276,7 @@ async function start() {
       pkg: pkg.value || undefined,
       path: path.value || undefined,
     })
-    selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.dest)
+    selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.name)
     if (session.value?.sourceType === 'npm' && pkg.value) {
       await doDownload()
     }
@@ -278,6 +285,16 @@ async function start() {
   } finally {
     loading.value = false
   }
+}
+
+/** 重试（下载失败后——重新执行当前阶段） */
+async function retryStart(): Promise<void> {
+  startError.value = ''
+  if (session.value?.sourceType === 'npm' && pkg.value && !session.value.manifest) {
+    await doDownload()
+    return
+  }
+  await start()
 }
 
 async function doDownload() {

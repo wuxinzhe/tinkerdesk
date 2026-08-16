@@ -82,9 +82,7 @@
           <SaActionBtn
             :text="'安装'"
             :done="plugin.installed"
-            :loading="installing.has(plugin.name)"
             :done-text="'已安装'"
-            :loading-text="'安装中...'"
             variant="primary"
             @click.stop="installPlugin(plugin)"
           />
@@ -110,9 +108,6 @@ const loading = ref(true)
 const searchName = ref('')
 const category = ref('')
 const categories = ref<string[]>([])
-/** 安装中（前端幂等——防止重复点击） */
-const installing = ref(new Set<string>())
-
 const categoryOptions = computed(() => {
   const opts: Array<{ label: string; value: string }> = [{ label: '全部分类', value: '' }]
   for (const c of categories.value) {
@@ -155,7 +150,7 @@ async function loadMarket() {
 }
 
 async function installPlugin(plugin: MarketPluginItem) {
-  if (plugin.installed || installing.value.has(plugin.name)) return
+  if (plugin.installed) return
   // 跳转分步安装向导（L3 页面——pkg 参数）
   router.push({ path: '/workspace/settings/plugins/install', query: { pkg: plugin.name } })
 }

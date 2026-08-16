@@ -119,9 +119,10 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
   return { items, categories }
 }
 
-/** 插件详情（npm 包元数据 + 官方标记 + 已安装状态） */
+/** 插件详情（npm 包元数据 + 官方标记 + 已安装状态——非市场前缀包按未安装处理） */
 export async function getMarketPluginDetail(name: string, installedIds: string[]): Promise<MarketPluginDetail> {
   const d = await getPackageDetail(name)
+  const inEcosystem = d.name.startsWith(MARKET_PREFIX)
   return {
     name: d.name,
     version: d.version,
@@ -130,7 +131,7 @@ export async function getMarketPluginDetail(name: string, installedIds: string[]
     homepage: d.homepage ?? '',
     categories: (d.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
     official: (d.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
-    installed: installedIds.includes(d.name.slice(MARKET_PREFIX.length)),
+    installed: inEcosystem ? installedIds.includes(d.name.slice(MARKET_PREFIX.length)) : false,
     updated: d.time?.[d.version] ?? d.time?.modified ?? '',
     dependencies: Object.keys(d.dependencies ?? {}),
   }
