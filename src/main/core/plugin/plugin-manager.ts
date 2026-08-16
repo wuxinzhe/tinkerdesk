@@ -19,6 +19,7 @@ import { downloadFile, execFileAsync } from '../../utils/process-utils'
 import { PluginHost } from './plugin-host'
 import { ProviderRegistry } from './plugin-registry'
 import { PluginLoader } from './plugin-loader'
+import { downloadAssets as assetsDownload } from './plugin-assets'
 import { installNpmDeps, locateManifestDir, tarBin, verifyHashes } from './plugin-installer'
 import { persistEnabled, readConfigFile, writeConfigFile } from './plugin-store'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
@@ -37,19 +38,12 @@ import type {
 export class PluginManager {
   private readonly pluginsDir: string
   private readonly registry = new Map<string, PluginRecord>()
-  
-
-  
-
   /** 插件注册的 IPC handler（channel → handler），供应用内部转发（接口转发等） */
   private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
   /** 接口 provider 注册表（独立域——PluginRegistry） */
   private readonly providerRegistry = new ProviderRegistry()
   /** renderer 事件转发目标（由 index.ts 注入 mainWindow.webContents） */
   private emitTarget: Electron.WebContents | null = null
-  /** worker 调用 id → resolver（消息代理的挂起调用） */
-  private workerCalls = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
-  private workerCallSeq = 0
   /** Worker 宿主（spawn/terminate/消息代理——Worker 生命周期归 PluginHost） */
   private readonly host: PluginHost
   /** 加载与注册编排（loadPlugin/autoRegister/ready/fatal——归 PluginLoader）——
@@ -166,14 +160,6 @@ export class PluginManager {
     }
   }
 
-  
-
-  
-
-  
-
-  
-
   /**
    * 查询某系统开放接口的 provider 清单（已注册的插件）
    * 系统设置页（如语音设置）从清单中选择具体调用哪个 provider
@@ -182,14 +168,7 @@ export class PluginManager {
     return this.providerRegistry.getProviders(interfaceId)
   }
 
-  /** 系统开放接口定义（设置页展示用） */
-  getInterfaceDefinitions(): typeof import('./system-interfaces').SYSTEM_INTERFACES {
-    return SYSTEM_INTERFACES
-  }
-
-
-
-
+  
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
@@ -224,16 +203,7 @@ export class PluginManager {
     return (await handler(payload)) as T
   }
 
-  /** 按能力声明查询插件（如 capabilities 含 stt/tts 的 provider）；只返回已注册（started）的 */
-  findByCapability(cap: string): PluginRecord[] {
-    return Array.from(this.registry.values()).filter(
-      (r) => r.manifest.capabilities?.includes(cap) && r.started
-    )
-  }
-
-
-
-
+  
 
   /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
   async installPlugin(srcDir: string): Promise<PluginInfo> {
@@ -460,50 +430,16 @@ export class PluginManager {
     return this.registry.get(id) ?? null
   }
 
-  /**
-   * 主进程资源下载（不依赖插件 Worker——Worker 挂/资源缺失时仍可用）。
-   * 读 manifest.assetDeps → 下载 URL → 解压（tar.bz2/tar.gz/zip）→ 就位到 dest。
-   * 返回每项结果；进度经 callback 回调（下载字节/总字节）。
-   */
+  /** 主进程资源下载（委托 plugin-assets——不依赖 Worker——Worker 挂/资源缺失时仍可用） */
   async downloadAssets(
     id: string,
     onProgress?: (depName: string, received: number, total: number) => void,
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const record = this.registry.get(id)
     if (!record) throw new Error(`插件不存在: ${id}`)
-    const deps = (record.manifest.assetDeps ?? record.manifest.modelDeps) ?? []
-    if (deps.length === 0) throw new Error(`插件 ${id} 未声明资源依赖（assetDeps）`)
-    const dir = join(this.pluginsDir, id)
-    const results: { name: string; ok: boolean; error?: string }[] = []
-    for (const dep of deps) {
-      // 可选依赖不下载（外部引擎自带/用户自管）
-      if (dep.optional) continue
-      try {
-        const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
-        await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
-        const destDir = join(dir, dep.dest)
-        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-        // 按扩展名解压（tar.bz2 / tar.gz / zip / 裸文件）——
-        // 全部异步（execFile await——不阻塞主进程——下载/解压期间 Agent 对话照常）
-        const lower = dep.url.toLowerCase()
-        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
-          await execFileAsync('tar', ['-xjf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
-          await execFileAsync('tar', ['-xzf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.zip')) {
-          await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
-        } else {
-          renameSync(tmp, join(destDir, basename(dep.url)))
-        }
-        // 清理临时文件（解压分支）
-        if (existsSync(tmp)) rmSync(tmp, { force: true })
-        results.push({ name: dep.name, ok: true })
-      } catch (e) {
-        results.push({ name: dep.name, ok: false, error: (e as Error).message })
-      }
-    }
-    return results
+    return assetsDownload(this.pluginsDir, record.manifest, onProgress)
   }
+
 
   /** 配置 Schema（动态——Worker 插件经代理异步获取） */
   async getSchema(id: string): Promise<unknown> {
