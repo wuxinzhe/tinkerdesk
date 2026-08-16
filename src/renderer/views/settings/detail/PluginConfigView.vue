@@ -36,6 +36,14 @@ const statusText = computed(() => {
   return '已注册'
 })
 
+/** 资源依赖列表（degraded 时用后端兼容返回的 assetDeps——否则用 manifest 声明） */
+const assetDepsList = computed(() => {
+  const s = schema.value as { assetDeps?: { name: string; dest: string; sizeMB: number; url: string }[] } | null
+  if (s?.assetDeps?.length) return s.assetDeps
+  const deps = plugin.value?.manifest.assetDeps ?? plugin.value?.manifest.modelDeps ?? []
+  return deps as { name: string; dest: string; sizeMB: number; url: string }[]
+})
+
 async function load(): Promise<void> {
   loading.value = true
   try {
@@ -232,11 +240,14 @@ watch(pluginId, () => {
       </section>
 
       <!-- 模型管理 -->
-      <section v-if="plugin.manifest.assetDeps?.length" class="plugin-config-page__section">
+      <section v-if="assetDepsList.length" class="plugin-config-page__section">
         <div class="plugin-config-page__section-title">
           资源
         </div>
-        <div v-for="dep in plugin.manifest.assetDeps" :key="dep.dest" class="plugin-config-page__model">
+        <div v-if="(schema as unknown as { degraded?: boolean })?.degraded" class="plugin-config-page__muted" style="margin-bottom: 8px">
+          {{ (schema as unknown as { note?: string })?.note }}
+        </div>
+        <div v-for="dep in assetDepsList" :key="dep.dest" class="plugin-config-page__model">
           <div class="plugin-config-page__model-info">
             <div class="plugin-config-page__model-name">
               {{ dep.name }}
