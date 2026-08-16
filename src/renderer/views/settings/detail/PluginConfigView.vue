@@ -195,7 +195,7 @@ onMounted(() => {
     const d = data as { pluginId: string; depName: string; received: number; total: number }
     if (d.pluginId !== pluginId.value) return
     const dep = assetDepsList.value.find((x) => x.name === d.depName)
-    const key = dep ? dep.dest.split('/').pop() ?? '' : d.depName
+    const key = dep ? dep.name : d.depName
     const percent = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
     modelProgress.value = { ...modelProgress.value, [key]: { phase: percent >= 100 ? 'done' : 'download', percent } }
     if (percent >= 100) void refreshModelsStatus()
@@ -307,29 +307,29 @@ watch(pluginId, () => {
             </div>
           </div>
           <div class="plugin-config-page__model-right">
-            <span v-if="modelsStatus?.[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
+            <span v-if="modelsStatus?.[dep.name]" class="plugin-config-page__ready">已就绪</span>
             <span v-else class="plugin-config-page__ready plugin-config-page__ready--no">未就绪</span>
             <div
-              v-if="downloading === dep.name || (modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done')"
+              v-if="downloading === dep.name || (modelProgress[dep.name] && modelProgress[dep.name]?.phase !== 'done')"
               class="plugin-config-page__progress"
             >
               <div
                 class="plugin-config-page__progress-bar"
-                :style="{ width: (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%' }"
+                :style="{ width: (modelProgress[dep.name]?.percent ?? 0) + '%' }"
               ></div>
               <span class="plugin-config-page__progress-text">
                 {{
-                  modelProgress[dep.dest.split('/').pop() ?? '']?.hint
-                    ?? (modelProgress[dep.dest.split('/').pop() ?? '']?.phase === 'extract'
+                  modelProgress[dep.name]?.hint
+                    ?? (modelProgress[dep.name]?.phase === 'extract'
                       ? '解压中…'
-                      : (downloading === dep.name && !modelProgress[dep.dest.split('/').pop() ?? '']?.percent)
+                      : (downloading === dep.name && !modelProgress[dep.name]?.percent)
                         ? '下载中…'
-                        : (modelProgress[dep.dest.split('/').pop() ?? '']?.percent ?? 0) + '%')
+                        : (modelProgress[dep.name]?.percent ?? 0) + '%')
                 }}
               </span>
             </div>
             <button
-              v-if="!modelsStatus?.[dep.dest.split('/').pop() ?? ''] && downloading !== dep.name"
+              v-if="!modelsStatus?.[dep.name] && downloading !== dep.name"
               class="plugin-config-page__download"
               @click="downloadDep(dep.name)"
             >

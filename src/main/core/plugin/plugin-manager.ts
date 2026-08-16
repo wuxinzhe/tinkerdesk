@@ -380,7 +380,7 @@ export class PluginManager {
     this.emitTarget.send('plugin:event', { pluginId, event, data })
   }
 
-  /** 资源就绪状态（主进程文件检查——不依赖 Worker——配置页"已就绪"判定） */
+  /** 资源就绪状态（主进程文件检查——不依赖 Worker——配置页"已就绪"判定——key 用资源名保证唯一） */
   getAssetStatus(id: string): Record<string, boolean> {
     const record = this.registry.get(id)
     if (!record) return {}
@@ -388,7 +388,7 @@ export class PluginManager {
     const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
     const status: Record<string, boolean> = {}
     for (const dep of deps) {
-      const key = dep.dest.split('/').pop() ?? dep.dest
+      const key = dep.name
       const destDir = join(dir, dep.dest)
       status[key] = existsSync(destDir) && readdirSync(destDir).length > 0
     }
