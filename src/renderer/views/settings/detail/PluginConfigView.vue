@@ -98,7 +98,8 @@ async function downloadDep(depName: string): Promise<void> {
     if (failed.length > 0) {
       showInfoToast(`下载失败: ${failed.map((f) => f.name + (f.error ? `（${f.error}）` : '')).join('、')}`)
     }
-    await refreshModelsStatus()
+    // 下载完成：资源状态 + 自检全部刷新
+    await Promise.all([refreshModelsStatus(), rerunCheck().catch(() => undefined)])
     // 完成停留 1.5s 再清除进度（让用户看到 100%）
     setTimeout(() => {
       modelProgress.value = {}
