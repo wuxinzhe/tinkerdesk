@@ -133,6 +133,11 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
   }
 }
 
+/** 打开插件市场（npm 在线安装入口——主按钮） */
+function openMarket(): void {
+  router.push('/workspace/settings/plugins-market')
+}
+
 /** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder */
 async function installPlugin(kind: 'zip' | 'folder' = 'zip'): Promise<void> {
   // 安装前知情同意：完全权限提示
@@ -196,7 +201,7 @@ async function askUninstall(p: PluginInfo): Promise<void> {
     />
     <div class="plugin-settings-page__header">
       <div class="plugin-settings-page__install-group">
-        <button class="plugin-settings-page__install plugin-settings-page__install--main" @click="installPlugin('zip')">
+        <button class="plugin-settings-page__install plugin-settings-page__install--main" @click="openMarket">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
             <polyline points="7 10 12 15 17 10" />

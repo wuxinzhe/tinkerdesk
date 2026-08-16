@@ -1,0 +1,347 @@
+<template>
+  <L3PageLayout class="plugin-market">
+    <!-- 页头 -->
+    <SaPageHero
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/></svg>"
+      gradient="linear-gradient(135deg, #5ac8fa 0%, var(--tk-accent) 100%)"
+      title="插件市场"
+      desc="浏览并安装社区插件（npm registry）"
+    />
+    <!-- 筛选栏 -->
+    <div class="plugin-market__toolbar">
+      <div class="plugin-market__search-wrap">
+        <svg class="plugin-market__search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          v-model="searchName"
+          class="plugin-market__search"
+          placeholder="搜索插件"
+          enterkeyhint="search"
+          @input="onSearchChange"
+        />
+      </div>
+      <span class="plugin-market__count">共 {{ filtered.length }} 个插件</span>
+    </div>
+
+    <div v-if="loading" class="plugin-market__skeleton">
+      <div v-for="i in 6" :key="i" class="plugin-market__skeleton-card">
+        <div class="plugin-market__skeleton-icon">
+          <SaSkeleton variant="rect" width="36px" height="36px" radius="8px" />
+        </div>
+        <div class="plugin-market__skeleton-info">
+          <SaSkeleton variant="text" :text-lines="1" height="14px" last-line-width="65%" />
+          <SaSkeleton variant="text" :text-lines="2" :last-line-width="'45%'" height="11px" line-height="11px" />
+        </div>
+      </div>
+    </div>
+
+    <SaEmpty v-else-if="filtered.length === 0" text="暂未发现插件" />
+
+    <!-- 插件列表 -->
+    <div v-else class="plugin-market__grid">
+      <div
+        v-for="plugin in filtered"
+        :key="plugin.name"
+        class="plugin-card"
+      >
+        <div class="plugin-card__body">
+          <div class="plugin-card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" />
+            </svg>
+          </div>
+          <div class="plugin-card__info">
+            <div class="plugin-card__name">
+              {{ displayName(plugin.name) }}
+              <span v-if="plugin.official" class="plugin-card__official">官方</span>
+              <span class="plugin-card__version">v{{ plugin.version }}</span>
+            </div>
+            <div class="plugin-card__desc">
+              {{ plugin.description || '-' }}
+            </div>
+            <div class="plugin-card__meta">
+              <span class="plugin-card__tag">{{ plugin.name }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="plugin-card__actions">
+          <SaActionBtn
+            :text="'安装'"
+            :done="plugin.installed"
+            :loading="installing.has(plugin.name)"
+            :done-text="'已安装'"
+            :loading-text="'安装中...'"
+            variant="primary"
+            @click="installPlugin(plugin)"
+          />
+        </div>
+      </div>
+    </div>
+  </L3PageLayout>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import type { MarketPluginItem } from '@/renderer/api/types'
+import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
+import { pluginsApi } from '@/renderer/api'
+
+const plugins = ref<MarketPluginItem[]>([])
+const loading = ref(true)
+const searchName = ref('')
+/** 安装中（前端幂等——防止重复点击） */
+const installing = ref(new Set<string>())
+
+const filtered = computed(() => {
+  const q = searchName.value.trim().toLowerCase()
+  if (!q) return plugins.value
+  return plugins.value.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+})
+
+/** 显示名（去掉 tinkerdesk-plugin- 前缀——只留能力名） */
+function displayName(name: string): string {
+  return name.replace(/^tinkerdesk-plugin-/, '')
+}
+
+onMounted(loadMarket)
+
+async function loadMarket() {
+  loading.value = true
+  try {
+    plugins.value = await pluginsApi.marketList()
+  } catch (e) {
+    console.error('Failed to load plugin market', e)
+    plugins.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function onSearchChange() {
+  // 本地过滤（市场列表一次性拉取——npm search 已返回全量）
+}
+
+async function installPlugin(plugin: MarketPluginItem) {
+  if (plugin.installed || installing.value.has(plugin.name)) return
+  installing.value = new Set(installing.value).add(plugin.name)
+  try {
+    await pluginsApi.installNpm(plugin.name)
+    // 安装成功：标记已安装（按钮变"已安装"禁用态）
+    const next = plugins.value.map((p) => (p.name === plugin.name ? { ...p, installed: true } : p))
+    plugins.value = next
+  } catch (e) {
+    console.error('Failed to install plugin', e)
+  } finally {
+    const next = new Set(installing.value)
+    next.delete(plugin.name)
+    installing.value = next
+  }
+}
+</script>
+
+<style scoped>
+.plugin-market {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.plugin-market__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.plugin-market__search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.plugin-market__search-icon {
+  position: absolute;
+  left: 8px;
+  color: var(--tk-text-tertiary);
+  pointer-events: none;
+}
+
+.plugin-market__search {
+  height: 30px;
+  padding: 0 10px 0 26px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-text-primary);
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plugin-market__search:focus {
+  border-color: var(--tk-accent);
+  background: var(--tk-bg-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+.plugin-market__search::placeholder {
+  color: var(--tk-text-tertiary);
+  font-weight: 400;
+}
+
+.plugin-market__count {
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
+  width: 100%;
+  text-align: right;
+}
+
+.plugin-market__grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .plugin-market__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.plugin-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1px solid var(--tk-border);
+  background: var(--tk-bg-primary);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plugin-card:hover {
+  border-color: var(--tk-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.plugin-card__body {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  flex: 1;
+}
+
+.plugin-card__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
+}
+
+.plugin-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.plugin-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plugin-card__official {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--tk-accent);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.plugin-card__version {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+.plugin-card__desc {
+  font-size: 12px;
+  color: var(--tk-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 6px;
+}
+
+.plugin-card__meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.plugin-card__tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--tk-bg-secondary);
+  font-size: 10px;
+  color: var(--tk-text-tertiary);
+}
+
+.plugin-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 10px;
+}
+
+/* ── 骨架屏 ── */
+.plugin-market__skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.plugin-market__skeleton-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--tk-border);
+  border-radius: 10px;
+  background: var(--tk-bg-primary);
+}
+
+.plugin-market__skeleton-icon {
+  flex-shrink: 0;
+}
+
+.plugin-market__skeleton-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+</style>

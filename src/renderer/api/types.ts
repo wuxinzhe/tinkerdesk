@@ -268,6 +268,20 @@ export interface PromptModuleData {
 
 // ── 技能（原 defines/models/skill.ts） ──
 
+// ── 插件市场（与后端 controller VO 对应——service 层 MarketPluginItem） ──
+
+/** 市场插件条目（controller → renderer） */
+export interface MarketPluginItem {
+  name: string
+  version: string
+  description: string
+  updated: string
+  /** 官方维护者标记（前端打"官方"徽章） */
+  official: boolean
+  /** 已安装（按钮禁用） */
+  installed: boolean
+}
+
 /** 技能接口 */
 export interface SkillInfo {
   id: string
@@ -1025,7 +1039,7 @@ export interface WindowApi {
     /** 在线安装（npm 包名——npm pack 下载 → 解压 → 标准安装） */
     installNpm: (pkg: string, registry?: string) => Promise<PluginInfo>
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
-    marketList: () => Promise<{ name: string; version: string; description: string; updated: string; official: boolean; installed?: boolean }[]>
+    marketList: () => Promise<MarketPluginItem[]>
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => Promise<void>
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */

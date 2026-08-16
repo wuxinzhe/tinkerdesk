@@ -276,6 +276,15 @@ const router = createRouter({
           // 真实详情页（非占位）——不加 level3Placeholder：移动端 hasLevel3 才能渲染 L3 详情
         },
         {
+          path: 'settings/plugins-market',
+          components: {
+            default: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
+            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            level3: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
+          },
+          // 插件市场（独立 L3——安装按钮跳转入口）
+        },
+        {
           path: 'settings/plugins/:pluginId',
           components: {
             default: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
