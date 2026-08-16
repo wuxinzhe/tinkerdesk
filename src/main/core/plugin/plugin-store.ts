@@ -4,8 +4,8 @@
  * 无状态静态函数（纯 IO）——PluginManager 调用——config.json 结构：
  * { enabled: boolean, config: Record<string, unknown> }
  */
-import { existsSync, readFileSync, writeFileSync, renameSync } from 'fs'
-import { join } from 'path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'fs'
+import { dirname, join } from 'path'
 import type { PluginConfigFile, PluginRecord } from './types'
 
 /** 读取 config.json（不存在/损坏 → 默认 enabled=true + 空配置） */
@@ -22,8 +22,9 @@ export function readConfigFile(configFile: string): PluginConfigFile {
   }
 }
 
-/** 原子写 config.json（tmp + rename——避免写坏） */
+/** 原子写 config.json（tmp + rename——避免写坏；父目录自动创建） */
 export function writeConfigFile(configFile: string, data: PluginConfigFile): void {
+  mkdirSync(dirname(configFile), { recursive: true })
   const tmp = `${configFile}.tmp`
   writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
   renameSync(tmp, configFile)
