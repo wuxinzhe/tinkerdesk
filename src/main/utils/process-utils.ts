@@ -18,10 +18,22 @@ export function downloadFile(
   url: string,
   dest: string,
   onProgress?: (received: number, total: number) => void,
+  redirects = 5,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? httpsGet : httpGet
     const req = client(url, (res) => {
+      // 跟随重定向（GitHub release 等 301/302 → CDN——最多 5 跳）
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume()
+        if (redirects <= 0) {
+          reject(new Error(`重定向次数过多 (${url})`))
+          return
+        }
+        const next = new URL(res.headers.location, url).toString()
+        downloadFile(next, dest, onProgress, redirects - 1).then(resolve, reject)
+        return
+      }
       if (res.statusCode !== 200) {
         reject(new Error(`下载失败 HTTP ${res.statusCode} (${url})`))
         res.resume()
