@@ -18,14 +18,7 @@
 import { parentPort, workerData } from 'worker_threads'
 import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import type { PluginApi, PluginContext, PluginManifest, TinkerPlugin } from './types'
-
-interface HostData {
-  pluginDir: string
-  entry: string
-  manifest: PluginManifest
-  configFile: string
-}
+import type { HostData, PluginApi, PluginContext, PluginManifest, TinkerPlugin } from './types'
 
 const port = parentPort
 if (!port) throw new Error('plugin-host-worker 必须运行在 worker_threads 中')

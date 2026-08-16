@@ -10,18 +10,7 @@
  * for a given interface from the registry.
  */
 
-export interface SystemInterfaceDef {
-  /** 接口 id（插件 manifest.systemInterfaces[].id 必须精确匹配） */
-  id: string
-  /** 展示名（系统设置页） */
-  name: string
-  /** 描述 */
-  description?: string
-  /** 契约：实现该接口必须注册的插件频道（PluginManager 注册时校验）——空串 = 无契约频道（工具直连 provider） */
-  requiredChannel: string
-  /** 契约：实现该接口必须注册的可选频道（如 models:status 模型管理） */
-  optionalChannels?: string[]
-}
+import type { SystemInterfaceDef } from './types'
 
 /** 应用当前开放的全部接口（新增接口 = 在此追加一行 + 插件侧声明实现） */
 export const SYSTEM_INTERFACES: SystemInterfaceDef[] = [

@@ -60,32 +60,15 @@ import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
   PluginApi,
   PluginCheckResult,
+  PluginConfigFile,
   PluginContext,
   PluginInfo,
   PluginManifest,
+  PluginRecord,
   PluginStatus,
   TinkerPlugin,
   ToggleResult,
 } from './types'
-
-interface PluginRecord {
-  manifest: PluginManifest
-  api: PluginApi | null
-  ctx: PluginContext | null
-  /** 持久化的启用意图（config.json.enabled） */
-  enabled: boolean
-  /** 运行时实际注册状态（自检通过 + start 成功 → 加入 provider 清单） */
-  started: boolean
-  error?: string
-  /** 外部插件宿主 Worker（内置插件为 null——main 直跑） */
-  worker: Worker | null
-}
-
-/** config.json 结构：启停状态 + 插件配置合一个文件 */
-interface PluginConfigFile {
-  enabled: boolean
-  config: Record<string, unknown>
-}
 
 export class PluginManager {
   private readonly pluginsDir: string

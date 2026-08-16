@@ -160,3 +160,47 @@ export interface PluginInfo {
   manifest: PluginManifest
   status: PluginStatus
 }
+
+/* ── 插件运行态（主进程内部——plugin-manager/host-worker 共用） ── */
+
+/** 插件运行记录（注册表项——内置插件 worker 为 null——main 直跑） */
+export interface PluginRecord {
+  manifest: PluginManifest
+  api: PluginApi | null
+  ctx: PluginContext | null
+  /** 持久化的启用意图（config.json.enabled） */
+  enabled: boolean
+  /** 运行时实际注册状态（自检通过 + start 成功 → 加入 provider 清单） */
+  started: boolean
+  error?: string
+  /** 外部插件宿主 Worker（内置插件为 null——main 直跑） */
+  worker: import('worker_threads').Worker | null
+}
+
+/** config.json 结构：启停状态 + 插件配置合一个文件 */
+export interface PluginConfigFile {
+  enabled: boolean
+  config: Record<string, unknown>
+}
+
+/** Worker 宿主启动数据（plugin-host-worker 的 workerData） */
+export interface HostData {
+  pluginDir: string
+  entry: string
+  manifest: PluginManifest
+  configFile: string
+}
+
+/** 系统开放接口定义（插件 manifest.systemInterfaces[].id 必须精确匹配） */
+export interface SystemInterfaceDef {
+  /** 接口 id（插件 manifest.systemInterfaces[].id 必须精确匹配） */
+  id: string
+  /** 展示名（系统设置页） */
+  name: string
+  /** 描述 */
+  description?: string
+  /** 契约：实现该接口必须注册的插件频道（PluginManager 注册时校验）——空串 = 无契约频道（工具直连 provider） */
+  requiredChannel: string
+  /** 契约：实现该接口必须注册的可选频道（如 models:status 模型管理） */
+  optionalChannels?: string[]
+}
