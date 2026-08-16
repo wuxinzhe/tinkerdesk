@@ -131,7 +131,12 @@ export class PluginInstaller {
           break
         case 'assets':
           // 统一走 downloadAssets（唯一实现——跳过 skipAssets 指定项）
-          await this.downloadAssets(session.manifest, onProgress, undefined, session.skipAssets)
+          // 返回结果含失败项——任一失败即抛错（本步 failed——不静默继续）
+          const results = await this.downloadAssets(session.manifest, onProgress, undefined, session.skipAssets)
+          const failed = results.filter((r) => !r.ok)
+          if (failed.length > 0) {
+            throw new Error(`资源下载失败: ${failed.map((f) => `${f.name}（${f.error ?? '未知错误'}）`).join('、')}`)
+          }
           break
         case 'register':
           this.deps.registerPlugin(session.srcDir)
@@ -305,34 +310,38 @@ export class PluginInstaller {
     const dir = join(this.deps.pluginsDir, manifest.id)
     const targets = depName ? deps.filter((d) => d.name === depName) : deps.filter((d) => !skipNames.includes(d.name))
     if (targets.length === 0) throw new Error(`未找到资源: ${depName}`)
-    const results: { name: string; ok: boolean; error?: string }[] = []
-    for (const dep of targets) {
-      // 用户明确指定单个资源下载时（depName）——即使 optional 也下载；全量下载保持跳过 optional
-      if (dep.optional && !depName) continue
-      try {
-        // 已就绪（目标目录非空）跳过——避免重复下载
-        const destDir = join(dir, dep.dest)
-        if (existsSync(destDir) && readdirSync(destDir).length > 0) {
-          results.push({ name: dep.name, ok: true })
-          continue
+    // 并行下载（每 dep 独立——Promise.all——单个失败不影响其他——结果各自记录）
+    const results = await Promise.all(
+      targets.map(async (dep) => {
+        // 用户明确指定单个资源下载时（depName）——即使 optional 也下载；全量下载保持跳过 optional
+        if (dep.optional && !depName) return { name: dep.name, ok: true, skipped: true as unknown as undefined } as { name: string; ok: boolean; error?: string }
+        try {
+          // 已就绪（目标目录非空/文件存在）跳过——避免重复下载
+          const destDir = join(dir, dep.dest)
+          const lowerUrl = dep.url.toLowerCase()
+          const isArchive = lowerUrl.endsWith('.zip') || lowerUrl.endsWith('.tar.bz2') || lowerUrl.endsWith('.tbz2') || lowerUrl.endsWith('.tar.gz') || lowerUrl.endsWith('.tgz')
+          const ready = isArchive
+            ? existsSync(destDir) && readdirSync(destDir).length > 0
+            : existsSync(join(destDir, basename(dep.url)))
+          if (ready) return { name: dep.name, ok: true }
+          const tmp = join(dir, `.download-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${basename(dep.url)}`)
+          await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
+          if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
+          const lower = dep.url.toLowerCase()
+          if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip')) {
+            await extractArchivePromote(tmp, destDir)
+          } else {
+            const target = join(destDir, basename(dep.url))
+            if (existsSync(target)) rmSync(target, { force: true })
+            renameSync(tmp, target)
+          }
+          if (existsSync(tmp)) rmSync(tmp, { force: true })
+          return { name: dep.name, ok: true }
+        } catch (e) {
+          return { name: dep.name, ok: false, error: (e as Error).message }
         }
-        const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
-        await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
-        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-        const lower = dep.url.toLowerCase()
-        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip')) {
-          await extractArchivePromote(tmp, destDir)
-        } else {
-          const target = join(destDir, basename(dep.url))
-          if (existsSync(target)) rmSync(target, { force: true })
-          renameSync(tmp, target)
-        }
-        if (existsSync(tmp)) rmSync(tmp, { force: true })
-        results.push({ name: dep.name, ok: true })
-      } catch (e) {
-        results.push({ name: dep.name, ok: false, error: (e as Error).message })
-      }
-    }
+      }),
+    )
     return results
   }
 

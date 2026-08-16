@@ -26,7 +26,8 @@ const loading = ref(true)
 /** 模型状态/进度 */
 const modelsStatus = ref<Record<string, boolean>>({})
 const modelProgress = ref<Record<string, { phase: string; percent: number; hint?: string }>>({})
-const downloading = ref<string | boolean>(false)
+/** 下载中的资源名集合（支持并行——每个资源独立） */
+const downloading = ref<Set<string>>(new Set())
 
 const statusText = computed(() => {
   const s = plugin.value?.status
@@ -90,10 +91,10 @@ async function refreshModelsStatus(): Promise<void> {
   }
 }
 
-/** 下载单个资源（每个资源独立按钮——depName 指定） */
+/** 下载单个资源（每个资源独立按钮——depName 指定——支持并行） */
 async function downloadDep(depName: string): Promise<void> {
-  if (downloading.value) return
-  downloading.value = depName
+  if (downloading.value.has(depName)) return
+  downloading.value = new Set(downloading.value).add(depName)
   modelProgress.value = { ...modelProgress.value, [depName]: { phase: 'download', percent: 0 } }
   try {
     const results = await window.api.plugins.downloadAssets(pluginId.value, depName)
@@ -105,37 +106,19 @@ async function downloadDep(depName: string): Promise<void> {
     await Promise.all([refreshModelsStatus(), rerunCheck().catch(() => undefined)])
     // 完成停留 1.5s 再清除进度（让用户看到 100%）
     setTimeout(() => {
-      modelProgress.value = {}
+      modelProgress.value = { ...modelProgress.value, [depName]: { phase: 'done', percent: 100 } }
     }, 1500)
   } catch (e) {
     showInfoToast(`下载失败: ${(e as Error).message}`)
   } finally {
-    downloading.value = ''
+    downloading.value = new Set(Array.from(downloading.value).filter((n) => n !== depName))
   }
 }
 
-/** 下载缺失模型（进度经 models:progress 事件更新；完成停留 1.5s 再清除） */
-async function downloadModels(): Promise<void> {
-  if (downloading.value) return
-  downloading.value = true
-  try {
-    // 主进程资源下载（读 manifest.assetDeps——下载/解压/就位——不依赖插件 Worker——
-    // Worker 因缺资源未就绪时仍可下载——解除"缺模型→无法下载"死锁）
-    const results = await window.api.plugins.downloadAssets(pluginId.value)
-    const failed = results.filter((r) => !r.ok)
-    if (failed.length > 0) {
-      showInfoToast(`下载失败: ${failed.map((f) => f.name + (f.error ? `（${f.error}）` : '')).join('、')}`)
-    }
-    await refreshModelsStatus()
-    await rerunCheck()
-    // 完成反馈：进度条停留 1.5s 显示 100%
-    setTimeout(() => {
-      modelProgress.value = {}
-    }, 1500)
-  } finally {
-    downloading.value = false
-  }
-}
+/**
+ * 下载缺失模型已废弃（2026-08：改为每个资源独立按钮——downloadDep）
+ * 旧 downloadModels（全量下载）已删除——全部走 downloadDep
+ */
 
 /** 保存配置后重跑自检 */
 async function saveConfig(patch: Record<string, unknown>): Promise<void> {
@@ -322,7 +305,7 @@ watch(pluginId, () => {
             <span v-if="modelsStatus?.[dep.name]" class="plugin-config-page__ready">已就绪</span>
             <span v-else class="plugin-config-page__ready plugin-config-page__ready--no">未就绪</span>
             <div
-              v-if="downloading === dep.name || (modelProgress[dep.name] && modelProgress[dep.name]?.phase !== 'done')"
+              v-if="downloading.has(dep.name) || (modelProgress[dep.name] && modelProgress[dep.name]?.phase !== 'done')"
               class="plugin-config-page__progress"
             >
               <div
@@ -334,14 +317,14 @@ watch(pluginId, () => {
                   modelProgress[dep.name]?.hint
                     ?? (modelProgress[dep.name]?.phase === 'extract'
                       ? '解压中…'
-                      : (downloading === dep.name && !modelProgress[dep.name]?.percent)
+                      : (downloading.has(dep.name) && !modelProgress[dep.name]?.percent)
                         ? '下载中…'
                         : (modelProgress[dep.name]?.percent ?? 0) + '%')
                 }}
               </span>
             </div>
             <button
-              v-if="!modelsStatus?.[dep.name] && downloading !== dep.name"
+              v-if="!modelsStatus?.[dep.name] && !downloading.has(dep.name)"
               class="plugin-config-page__download"
               @click="downloadDep(dep.name)"
             >
