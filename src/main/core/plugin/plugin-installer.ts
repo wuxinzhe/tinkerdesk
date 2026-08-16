@@ -31,9 +31,16 @@ async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ 
   return { url: out }
 }
 
-/** 解压 zip 到目标目录——若解压后只有单个子目录则提升其内容到根（如 whisper-bin-x64.zip → Release/whisper-cli.exe → dest/whisper-cli.exe） */
-async function extractZipPromote(tmp: string, destDir: string): Promise<void> {
-  await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+/** 解压归档到目标目录——若解压后只有单个子目录则提升其内容到根（whisper-bin-x64.zip → Release/；sherpa tar.bz2 → 模型名/——内容归位 dest 根，插件按根路径检查） */
+async function extractArchivePromote(tmp: string, destDir: string): Promise<void> {
+  const lower = tmp.toLowerCase()
+  if (lower.endsWith('.zip')) {
+    await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+  } else if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
+    await execFileAsync(tarBin(), ['-xjf', tmp, '-C', destDir])
+  } else {
+    await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
+  }
   const entries = readdirSync(destDir).filter((n) => !n.startsWith('.'))
   if (entries.length === 1) {
     const only = join(destDir, entries[0])
@@ -272,12 +279,8 @@ export class PluginInstaller {
         await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
         const lower = dep.url.toLowerCase()
-        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
-          await execFileAsync(tarBin(), ['-xjf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
-          await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.zip')) {
-          await extractZipPromote(tmp, destDir)
+        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip')) {
+          await extractArchivePromote(tmp, destDir)
         } else {
           const target = join(destDir, basename(dep.url))
           if (existsSync(target)) rmSync(target, { force: true })
@@ -385,12 +388,8 @@ export class PluginInstaller {
         await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
         const lower = dep.url.toLowerCase()
-        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
-          await execFileAsync(tarBin(), ['-xjf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
-          await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
-        } else if (lower.endsWith('.zip')) {
-          await extractZipPromote(tmp, destDir)
+        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip')) {
+          await extractArchivePromote(tmp, destDir)
         } else {
           // 普通文件：先删旧目标再移动（避免重下冲突）
           const target = join(destDir, dep.url.split('/').pop() ?? 'asset')
