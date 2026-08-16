@@ -6,7 +6,7 @@
  * 所有 manager 域回调（通道注册/事件转发/ready 处理）经 hooks 注入。
  */
 import { join } from 'path'
-import { readFileSync, existsSync, writeFileSync, renameSync } from 'fs'
+import { writeFileSync, renameSync } from 'fs'
 import { Worker } from 'worker_threads'
 import type { PluginApi, PluginCheckResult, PluginContext, PluginManifest, PluginRecord, PluginStatus, ConfigSchema } from './types'
 

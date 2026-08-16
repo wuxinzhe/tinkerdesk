@@ -135,7 +135,7 @@ export class PluginManager {
     mkdirSync(configDir, { recursive: true })
     const configFile = join(configDir, 'config.json')
     const firstRun = !existsSync(configFile)
-    const { enabled, config } = this.readConfigFile(configFile)
+    const { enabled, config } = readConfigFile(configFile)
 
     const record: PluginRecord = {
       manifest,
@@ -155,7 +155,7 @@ export class PluginManager {
       getConfig: <T>() => config as T,
       setConfig: (patch) => {
         Object.assign(config, patch)
-        this.writeConfigFile(configFile, { enabled: record.enabled, config })
+        writeConfigFile(configFile, { enabled: record.enabled, config })
       },
     }
     record.ctx = ctx
@@ -170,7 +170,7 @@ export class PluginManager {
       }
     }
     this.registry.set(manifest.id, record)
-    if (firstRun) this.persistEnabled(record)
+    if (firstRun) persistEnabled(record)
     console.log(`[plugin] 已加载内置 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
 
     if (record.enabled) {
@@ -201,7 +201,7 @@ export class PluginManager {
     }
 
     const configFile = join(dir, 'config.json')
-    const { enabled, config } = this.readConfigFile(configFile)
+    const { enabled, config } = readConfigFile(configFile)
 
     const record: PluginRecord = {
       manifest,
@@ -310,27 +310,9 @@ export class PluginManager {
     return SYSTEM_INTERFACES
   }
 
-  /** 读取 config.json（兼容旧格式：纯配置对象 → 视为 { enabled: false, config }） */
-  private readConfigFile(configFile: string): PluginConfigFile {
-    if (!existsSync(configFile)) return { enabled: false, config: {} }
-    try {
-      const raw = JSON.parse(readFileSync(configFile, 'utf-8'))
-      if (raw && typeof raw === 'object' && 'config' in raw && 'enabled' in raw) {
-        return { enabled: !!raw.enabled, config: (raw.config as Record<string, unknown>) ?? {} }
-      }
-      // 旧格式：纯配置对象
-      return { enabled: false, config: raw }
-    } catch {
-      return { enabled: false, config: {} }
-    }
-  }
+  
 
-  /** 写 config.json（原子：先写临时文件再改名） */
-  private writeConfigFile(configFile: string, data: PluginConfigFile): void {
-    const tmp = `${configFile}.tmp`
-    writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
-    renameSync(tmp, configFile)
-  }
+  
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
@@ -545,13 +527,13 @@ export class PluginManager {
       record.enabled = true
       record.started = true
       this.registerProviders(record)
-      this.persistEnabled(record)
+      persistEnabled(record)
     } else if (!enabled && record.enabled) {
       await record.api.stop?.()
       record.enabled = false
       record.started = false
       this.unregisterProviders(record)
-      this.persistEnabled(record)
+      persistEnabled(record)
     }
     return { ok: true, enabled: record.enabled, started: record.started }
   }
@@ -578,16 +560,7 @@ export class PluginManager {
     console.log(`[plugin] 已卸载 ${id}`)
   }
 
-  /** 持久化启停状态到 config.json（与配置同文件） */
-  private persistEnabled(record: PluginRecord): void {
-    if (!record.ctx) return
-    // ctx.setConfig 会写入 { enabled: record.enabled, config }——直接复用写文件
-    const configFile = join(record.ctx.configDir, 'config.json')
-    this.writeConfigFile(configFile, {
-      enabled: record.enabled,
-      config: record.ctx.getConfig<Record<string, unknown>>(),
-    })
-  }
+  
 
   /** 插件自检（启用前调用；不改变状态） */
   async check(id: string): Promise<PluginCheckResult> {
