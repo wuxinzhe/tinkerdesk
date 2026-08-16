@@ -22,7 +22,7 @@ import { PluginLoader } from './plugin-loader'
 import { downloadAssets as assetsDownload } from './plugin-assets'
 import { installNpmDeps, locateManifestDir, tarBin, verifyHashes } from './plugin-installer'
 import { persistEnabled, readConfigFile, writeConfigFile } from './plugin-store'
-import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
+import { matchSystemInterfaces } from './system-interfaces'
 
 import type {
   PluginCheckResult,
@@ -167,8 +167,6 @@ export class PluginManager {
   getProviders(interfaceId: string): PluginRecord[] {
     return this.providerRegistry.getProviders(interfaceId)
   }
-
-  
 
   /** 插件 → renderer 事件（preload 监听 plugin:event 转发） */
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
