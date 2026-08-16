@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, renameSync, rmSync } from 'fs'
 import { basename, join } from 'path'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
-import { tarBin } from './plugin-installer-utils'
+import { tarBin } from '../../utils/plugin-installer-utils'
 import type { PluginManifest } from './types'
 
 /** 插件资源下载器（每 manager 一个实例——构造注入插件目录） */

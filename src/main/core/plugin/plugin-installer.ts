@@ -14,7 +14,7 @@ import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
-import { tarBin } from './plugin-installer-utils'
+import { tarBin } from '../../utils/plugin-installer-utils'
 import type { PluginRecord, PluginManifest } from './types'
 
 /** 安装阶段 */
