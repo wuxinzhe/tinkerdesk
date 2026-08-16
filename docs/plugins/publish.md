@@ -2,6 +2,47 @@
 
 TinkerDesk 插件以 **npm 包**形式分发——应用内输入包名即可在线安装。
 
+## 0. 版本管理规范（Git Flow 轻量变体——与主项目一致）
+
+```
+main ────────●──────────────●──────  ← 稳定（只接受合并——不直接 push）
+             \             /
+feat/* ──────●───●────────/          ← 功能开发（从 main 拉出）
+                 \
+fix/* ───────────●                   ← 修复分支
+```
+
+| 分支 | 规则 |
+|------|------|
+| `main` | 稳定分支——**禁止直接 push**——只接受 feat/fix 合并 |
+| `feat/*` | 功能开发——从 main 拉出——完成后合并 main |
+| `fix/*` | 修复分支——从 main 拉出 |
+| `tag vX.Y.Z` | 发版标记——`git tag v0.1.0 && git push --tags` |
+
+**插件发布流程（每次发版）**：
+
+```bash
+# 1. 开发：从 main 拉 feat 分支（禁止直接 main 提交）
+git checkout main && git pull
+git checkout -b feat/xxx
+# ... 编码、提交 ...
+
+# 2. 合并 main（本地 merge——插件仓库轻量——不强制 PR）
+git checkout main
+git merge feat/xxx
+git push origin main
+
+# 3. 发布前校验
+npm install && npm run verify
+
+# 4. tag 发版 + npm 发布
+git tag v0.1.0
+git push origin main --tags
+npm publish
+
+# 5. 修复：fix/* 分支 → main → tag v0.1.1 → npm publish
+```
+
 ## 1. 包结构（npm 包根）
 
 ```

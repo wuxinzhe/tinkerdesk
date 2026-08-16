@@ -14,6 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { PluginManager } from '../core/plugin/plugin-manager'
+import { listMarketPlugins } from '../core/plugin/plugin-market'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -49,6 +50,7 @@ export class PluginController {
     )
     handleTrusted('plugin:install', (_event, payload: { path: string }) => this.install(payload))
     handleTrusted('plugin:install-npm', (_event, payload: { pkg: string; registry?: string }) => this.installFromNpm(payload))
+    handleTrusted('plugin:market-list', () => this.marketList())
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
@@ -126,6 +128,17 @@ export class PluginController {
     try {
       const info = await this.pluginManager.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
       return ok(info)
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
+  private async marketList(): Promise<ApiResult<import('../core/plugin/plugin-market').MarketPlugin[]>> {
+    try {
+      const installed = this.pluginManager.list().map((p) => p.manifest.id)
+      const list = await listMarketPlugins(installed)
+      return ok(list)
     } catch (e) {
       return fail((e as Error).message)
     }
