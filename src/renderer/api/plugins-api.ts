@@ -6,6 +6,7 @@
  */
 import type {
   ConfigSchema,
+  MarketPluginItem,
   PluginCheckResult,
   PluginInfo,
   PluginStatus,
