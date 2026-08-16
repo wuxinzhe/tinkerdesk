@@ -50,6 +50,8 @@ export class PluginController {
     )
     handleTrusted('plugin:install', (_event, payload: { path: string }) => this.install(payload))
     handleTrusted('plugin:install-npm', (_event, payload: { pkg: string; registry?: string }) => this.installFromNpm(payload))
+    handleTrusted('plugin:install-start', (_event, payload: { pkg?: string; path?: string; registry?: string }) => this.installStart(payload))
+    handleTrusted('plugin:install-step', (_event, payload: { sessionId: string; stage: string; skipAssets?: string[] }) => this.installStep(payload))
     handleTrusted('plugin:market-list', (_event, payload: { category?: string; search?: string } = {}) => this.marketList(payload))
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
@@ -128,6 +130,41 @@ export class PluginController {
     try {
       const info = await this.pluginManager.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
       return ok(info)
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 分步安装：开始会话（validate 阶段——npm pack 下载或本地路径——返回 manifest 信息 + 资源清单） */
+  private async installStart(payload: { pkg?: string; path?: string; registry?: string } = {}): Promise<ApiResult<unknown>> {
+    try {
+      const session = payload.pkg
+        ? await this.pluginManager.startInstallNpm(payload.pkg, payload.registry ? { registry: payload.registry } : undefined)
+        : this.pluginManager.startInstallPath(payload.path ?? '')
+      return ok({
+        sessionId: session.sessionId,
+        manifest: session.manifest
+          ? { id: session.manifest.id, name: session.manifest.name, version: session.manifest.version, capabilities: session.manifest.capabilities ?? [] }
+          : null,
+        assetDeps: (session.manifest?.assetDeps ?? session.manifest?.modelDeps ?? []).map((d) => ({ name: d.name, dest: d.dest, sizeMB: d.sizeMB, optional: !!d.optional })),
+        stages: session.stages,
+      })
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 分步安装：执行下一步（copy/deps/assets/register——失败可重试该步） */
+  private async installStep(payload: { sessionId: string; stage: string; skipAssets?: string[] }): Promise<ApiResult<unknown>> {
+    try {
+      const stage = payload?.stage as 'copy' | 'deps' | 'assets' | 'register'
+      const session = this.pluginManager.getInstallSession(payload?.sessionId ?? '')
+      if (!session) return fail('安装会话不存在或已过期')
+      if (stage === 'assets' && payload.skipAssets) {
+        session.skipAssets = payload.skipAssets
+      }
+      const r = await this.pluginManager.stepInstall(payload?.sessionId ?? '', stage)
+      return ok({ ok: r.ok, error: r.error, stages: session.stages })
     } catch (e) {
       return fail((e as Error).message)
     }

@@ -8,6 +8,7 @@ export { default as LockScreen } from './LockScreen.vue'
 
 // — 通用组件 —
 export { default as L3PageLayout } from './workspace/L3PageLayout.vue'
+export { default as InstallWizard } from './workspace/InstallWizard.vue'
 export { default as SaSpinner } from './SaSpinner.vue'
 export { default as SaLoading } from './SaLoading.vue'
 export { default as SaEmpty } from './SaEmpty.vue'

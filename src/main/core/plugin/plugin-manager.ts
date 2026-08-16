@@ -209,6 +209,26 @@ export class PluginManager {
     }
   }
 
+  /** 分步安装：开始会话（npm 包名——pack 下载 + validate） */
+  startInstallNpm(pkg: string, opts?: { registry?: string }): Promise<import('./types').InstallSession> {
+    return this.installer.startNpm(pkg, opts)
+  }
+
+  /** 分步安装：开始会话（本地路径——validate） */
+  startInstallPath(src: string): import('./types').InstallSession {
+    return this.installer.start(src)
+  }
+
+  /** 分步安装：查询会话 */
+  getInstallSession(sessionId: string): import('./types').InstallSession | undefined {
+    return this.installer.getSession(sessionId)
+  }
+
+  /** 分步安装：执行下一步 */
+  stepInstall(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register'): Promise<{ ok: boolean; error?: string }> {
+    return this.installer.step(sessionId, stage)
+  }
+
   /** 在线安装（npm 包名）——委托安装器 */
   async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginInfo> {
     const record = await this.installer.installFromNpm(pkgName, opts)

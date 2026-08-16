@@ -224,6 +224,8 @@ export interface InstallSession {
   skipAssets: string[]
   stages: Record<InstallStage, 'pending' | 'running' | 'done' | 'failed'>
   error?: string
+  /** npm 临时目录（startNpm 创建——copy 完成后清理） */
+  tmpDir?: string
 }
 
 /** 安装器依赖（manager 注入） */

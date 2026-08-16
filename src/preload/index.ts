@@ -438,6 +438,10 @@ const api = {
     install: (path: string) => inv('plugin:install', { path }).then(unwrap),
     /** 在线安装（npm 包名） */
     installNpm: (pkg: string, registry?: string) => inv('plugin:install-npm', { pkg, registry }).then(unwrap),
+    /** 分步安装：开始会话（pkg 或 path——validate——返回 manifest/资源清单） */
+    installStart: (payload: { pkg?: string; path?: string; registry?: string }) => inv('plugin:install-start', payload ?? {}).then(unwrap),
+    /** 分步安装：执行下一步（copy/deps/assets/register） */
+    installStep: (sessionId: string, stage: string, skipAssets?: string[]) => inv('plugin:install-step', { sessionId, stage, skipAssets }).then(unwrap),
     /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
     marketList: (payload?: { category?: string; search?: string }) => inv('plugin:market-list', payload ?? {}).then(unwrap),
     /** 卸载插件（删除插件及下载的模型） */

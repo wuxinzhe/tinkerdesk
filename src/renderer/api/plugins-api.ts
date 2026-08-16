@@ -21,6 +21,10 @@ export interface PluginApi {
   install(path: string): Promise<PluginInfo>
   /** 在线安装（npm 包名） */
   installNpm(pkg: string, registry?: string): Promise<PluginInfo>
+  /** 分步安装：开始会话 */
+  installStart(payload: { pkg?: string; path?: string; registry?: string }): Promise<InstallSessionInfo>
+  /** 分步安装：执行下一步 */
+  installStep(sessionId: string, stage: string, skipAssets?: string[]): Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
   /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
   marketList(payload?: { category?: string; search?: string }): Promise<MarketListResult>
   /** 卸载插件（删除插件及下载的模型） */
@@ -50,6 +54,10 @@ export const pluginsApi: PluginApi = {
   install: (path) => window.api.plugins.install(path),
   /** 在线安装（npm 包名） */
   installNpm: (pkg, registry) => window.api.plugins.installNpm(pkg, registry),
+  /** 分步安装：开始会话 */
+  installStart: (payload) => window.api.plugins.installStart(payload),
+  /** 分步安装：执行下一步 */
+  installStep: (sessionId, stage, skipAssets) => window.api.plugins.installStep(sessionId, stage, skipAssets),
   /** 插件市场列表（npm registry search） */
   marketList: (payload?: { category?: string; search?: string }) => window.api.plugins.marketList(payload),
   uninstall: (id) => window.api.plugins.uninstall(id),

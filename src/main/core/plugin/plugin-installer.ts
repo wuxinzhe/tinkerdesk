@@ -63,6 +63,11 @@ export class PluginInstaller {
       switch (stage) {
         case 'copy':
           this.copyToPluginsDir(session)
+          // npm 临时目录已复制完成——清理
+          if (session.tmpDir) {
+            rmSync(session.tmpDir, { recursive: true, force: true })
+            session.tmpDir = undefined
+          }
           break
         case 'deps':
           await this.installNpmDeps(session.pluginDir)
@@ -104,6 +109,18 @@ export class PluginInstaller {
 
   /** 在线安装（npm 包名——npm pack 下载 tarball → 解压 → 走标准安装流程） */
   async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginRecord> {
+    const session = await this.startNpm(pkgName, opts)
+    for (const stage of ['copy', 'deps', 'register'] as const) {
+      const r = await this.step(session.sessionId, stage)
+      if (!r.ok) throw new Error(r.error)
+    }
+    const plugin = this.deps.registerPlugin(session.srcDir)
+    this.sessions.delete(session.sessionId)
+    return plugin
+  }
+
+  /** 开始 npm 分步安装会话（npm pack 下载 tarball → start（validate）——不自动 step——供向导分步执行） */
+  async startNpm(pkgName: string, opts?: { registry?: string }): Promise<InstallSession> {
     if (!/^(@[a-z0-9-]+\/)?[a-z0-9-]+([@][^/]+)?$/i.test(pkgName.trim())) {
       throw new Error(`npm 包名非法: ${pkgName}`)
     }
@@ -114,19 +131,12 @@ export class PluginInstaller {
       ? ['pack', pkgName.trim(), '--pack-destination', tmpDir]
       : [cli, 'pack', pkgName.trim(), '--pack-destination', tmpDir]
     if (opts?.registry) packArgs.push('--registry', opts.registry)
-    // npm-cli.js 经 node 执行（与 installNpmDeps 一致）
     await execFileAsync(process.execPath, packArgs)
     const tgz = readdirSync(tmpDir).find((f) => f.endsWith('.tgz'))
     if (!tgz) throw new Error('npm pack 未产生 tarball（包不存在或网络失败）')
     const session = this.start(join(tmpDir, tgz))
-    for (const stage of ['copy', 'deps', 'register'] as const) {
-      const r = await this.step(session.sessionId, stage)
-      if (!r.ok) throw new Error(r.error)
-    }
-    const plugin = this.deps.registerPlugin(session.srcDir)
-    this.sessions.delete(session.sessionId)
-    rmSync(tmpDir, { recursive: true, force: true })
-    return plugin
+    session.tmpDir = tmpDir
+    return session
   }
 
   /** 卸载插件（删除目录——Worker 由调用方先释放） */

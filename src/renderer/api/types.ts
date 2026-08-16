@@ -290,6 +290,14 @@ export interface MarketListResult {
   categories: string[]
 }
 
+/** 分步安装会话信息（controller → renderer） */
+export interface InstallSessionInfo {
+  sessionId: string
+  manifest: { id: string; name: string; version: string; capabilities: string[] } | null
+  assetDeps: { name: string; dest: string; sizeMB: number; optional: boolean }[]
+  stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>
+}
+
 /** 技能接口 */
 export interface SkillInfo {
   id: string
@@ -1046,6 +1054,10 @@ export interface WindowApi {
     install: (path: string) => Promise<PluginInfo>
     /** 在线安装（npm 包名——npm pack 下载 → 解压 → 标准安装） */
     installNpm: (pkg: string, registry?: string) => Promise<PluginInfo>
+    /** 分步安装：开始会话（pkg 或 path——validate——返回 manifest/资源清单） */
+    installStart: (payload: { pkg?: string; path?: string; registry?: string }) => Promise<InstallSessionInfo>
+    /** 分步安装：执行下一步（copy/deps/assets/register） */
+    installStep: (sessionId: string, stage: string, skipAssets?: string[]) => Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
     marketList: (payload?: { category?: string; search?: string }) => Promise<MarketListResult>
     /** 卸载插件（删除插件及下载的模型） */
