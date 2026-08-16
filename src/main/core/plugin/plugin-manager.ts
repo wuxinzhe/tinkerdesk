@@ -711,6 +711,11 @@ export class PluginManager {
    *  assetDeps 资源就绪度（dest 目录非空）。通过 = 插件可配置（配置页可开——
    *  含资源下载入口）——不依赖 Worker 存活。 */
   staticCheck(record: PluginRecord): { ok: boolean; reason?: string } {
+    // 内置插件（代码注册——无 plugins/ 文件系统目录——不可用文件检查——
+    // 可用性由 autoRegister 代码自检决定）
+    if (record.manifest.builtin) {
+      return { ok: true }
+    }
     const dir = join(this.pluginsDir, record.manifest.id)
     const entry = join(dir, record.manifest.entry ?? 'index.js')
     if (!existsSync(entry)) {
