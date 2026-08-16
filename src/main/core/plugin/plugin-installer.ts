@@ -14,7 +14,7 @@ import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
-import { tarBin } from '../../utils/plugin-installer-utils'
+import { resolveNpmCli, tarBin } from '../../utils/plugin-installer-utils'
 import type { InstallerDeps, InstallSession, InstallStage, PluginRecord, PluginManifest } from './types'
 
 /** 插件安装器（每 manager 一个实例） */
@@ -98,6 +98,33 @@ export class PluginInstaller {
     return plugin
   }
 
+  /** 在线安装（npm 包名——npm pack 下载 tarball → 解压 → 走标准安装流程） */
+  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginRecord> {
+    if (!/^(@[a-z0-9-]+\/)?[a-z0-9-]+([@][^/]+)?$/i.test(pkgName.trim())) {
+      throw new Error(`npm 包名非法: ${pkgName}`)
+    }
+    const tmpDir = join(app.getPath('temp'), `tinkerdesk-npm-${Date.now()}`)
+    mkdirSync(tmpDir, { recursive: true })
+    const cli = resolveNpmCli()
+    const packArgs = cli === 'npm'
+      ? ['pack', pkgName.trim(), '--pack-destination', tmpDir]
+      : [cli, 'pack', pkgName.trim(), '--pack-destination', tmpDir]
+    if (opts?.registry) packArgs.push('--registry', opts.registry)
+    // npm-cli.js 经 node 执行（与 installNpmDeps 一致）
+    await execFileAsync(process.execPath, packArgs)
+    const tgz = readdirSync(tmpDir).find((f) => f.endsWith('.tgz'))
+    if (!tgz) throw new Error('npm pack 未产生 tarball（包不存在或网络失败）')
+    const session = this.start(join(tmpDir, tgz))
+    for (const stage of ['copy', 'deps', 'register'] as const) {
+      const r = await this.step(session.sessionId, stage)
+      if (!r.ok) throw new Error(r.error)
+    }
+    const plugin = this.deps.registerPlugin(session.srcDir)
+    this.sessions.delete(session.sessionId)
+    rmSync(tmpDir, { recursive: true, force: true })
+    return plugin
+  }
+
   /** 卸载插件（删除目录——Worker 由调用方先释放） */
   uninstall(id: string): void {
     const dir = join(this.deps.pluginsDir, id)
@@ -148,7 +175,7 @@ export class PluginInstaller {
       if (!existsSync(join(src, 'manifest.json'))) throw new Error('所选目录不是有效插件（缺少 manifest.json）')
       return src
     }
-    if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
+    if (stat.isFile() && (src.toLowerCase().endsWith('.zip') || src.toLowerCase().endsWith('.tgz'))) {
       const tmpDir = join(app.getPath('temp'), `tinkerdesk-plugin-install-${Date.now()}`)
       mkdirSync(tmpDir, { recursive: true })
       execFileSync(tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
@@ -202,7 +229,7 @@ export class PluginInstaller {
     const deps = pkg?.dependencies
     if (!deps || Object.keys(deps).length === 0) return
     if (existsSync(join(pluginDir, 'node_modules'))) return
-    const cli = this.resolveNpmCli()
+    const cli = resolveNpmCli()
     const args = cli === 'npm'
       ? ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]
       : [cli, 'install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]

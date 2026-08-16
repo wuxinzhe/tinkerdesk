@@ -208,6 +208,15 @@ export class PluginManager {
     }
   }
 
+  /** 在线安装（npm 包名）——委托安装器 */
+  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginInfo> {
+    const record = await this.installer.installFromNpm(pkgName, opts)
+    return {
+      manifest: record.manifest,
+      status: { loaded: record.api !== null, enabled: record.enabled, started: record.started },
+    }
+  }
+
   /** 主进程资源下载（委托 plugin-assets——不依赖 Worker） */
   async downloadAssets(
     id: string,

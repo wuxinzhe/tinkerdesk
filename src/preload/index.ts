@@ -436,6 +436,8 @@ const api = {
       }).then(unwrap),
     /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
     install: (path: string) => inv('plugin:install', { path }).then(unwrap),
+    /** 在线安装（npm 包名） */
+    installNpm: (pkg: string, registry?: string) => inv('plugin:install-npm', { pkg, registry }).then(unwrap),
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => inv('plugin:uninstall', { id }).then(unwrap),
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */

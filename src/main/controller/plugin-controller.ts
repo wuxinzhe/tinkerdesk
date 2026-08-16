@@ -48,6 +48,7 @@ export class PluginController {
       this.pickFile(payload),
     )
     handleTrusted('plugin:install', (_event, payload: { path: string }) => this.install(payload))
+    handleTrusted('plugin:install-npm', (_event, payload: { pkg: string; registry?: string }) => this.installFromNpm(payload))
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
@@ -114,6 +115,16 @@ export class PluginController {
   private async install(payload: { path: string }): Promise<ApiResult<PluginInfo>> {
     try {
       const info = await this.pluginManager.installFromPath(payload?.path ?? '')
+      return ok(info)
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 在线安装插件（npm 包名——npm pack 下载 → 解压 → 标准安装） */
+  private async installFromNpm(payload: { pkg: string; registry?: string }): Promise<ApiResult<PluginInfo>> {
+    try {
+      const info = await this.pluginManager.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
       return ok(info)
     } catch (e) {
       return fail((e as Error).message)
