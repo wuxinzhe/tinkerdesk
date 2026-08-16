@@ -31,6 +31,21 @@ async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ 
   return { url: out }
 }
 
+/** 解压 zip 到目标目录——若解压后只有单个子目录则提升其内容到根（如 whisper-bin-x64.zip → Release/whisper-cli.exe → dest/whisper-cli.exe） */
+async function extractZipPromote(tmp: string, destDir: string): Promise<void> {
+  await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+  const entries = readdirSync(destDir).filter((n) => !n.startsWith('.'))
+  if (entries.length === 1) {
+    const only = join(destDir, entries[0])
+    if (statSync(only).isDirectory()) {
+      for (const name of readdirSync(only)) {
+        renameSync(join(only, name), join(destDir, name))
+      }
+      rmSync(only, { recursive: true, force: true })
+    }
+  }
+}
+
 /** 国内镜像映射（下载失败回退——GitHub/HF 加速） */
 function mirrorUrl(url: string): string {
   if (url.startsWith('https://github.com/')) {
@@ -248,7 +263,7 @@ export class PluginInstaller {
         } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
           await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
         } else if (lower.endsWith('.zip')) {
-          await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+          await extractZipPromote(tmp, destDir)
         } else {
           renameSync(tmp, join(destDir, basename(dep.url)))
         }
@@ -359,7 +374,7 @@ export class PluginInstaller {
         } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
           await execFileAsync(tarBin(), ['-xzf', tmp, '-C', destDir])
         } else if (lower.endsWith('.zip')) {
-          await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
+          await extractZipPromote(tmp, destDir)
         } else {
           rmSync(tmp, { force: true })
           const target = join(destDir, dep.url.split('/').pop() ?? 'asset')
