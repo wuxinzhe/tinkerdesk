@@ -127,7 +127,7 @@ onMounted(async () => {
    ═══════════════════════════════════════════════════════ */
 
 .cms-page {
-  padding: 0 0 32px;
+  
     width: 100%;
   overflow-y: auto;
 }
@@ -173,7 +173,7 @@ onMounted(async () => {
 /* ── 手机模式：模型列表改卡片 ── */
 @media (max-width: 767px) {
   .cms-page {
-    padding: 0 0 24px;
+    
   }
   .cms-rows {
     gap: 8px;

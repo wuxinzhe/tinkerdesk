@@ -109,7 +109,7 @@ onMounted(load)
 .mcp-settings-page {
   flex: 1;
   overflow-y: auto;
-  padding: 0;
+  
     width: 100%;
 }
 
@@ -254,7 +254,7 @@ onMounted(load)
 /* ── 手机模式 ── */
 @media (max-width: 767px) {
   .mcp-settings-page {
-    padding: 0;
+    
   }
 }
 </style>
