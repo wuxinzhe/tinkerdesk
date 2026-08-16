@@ -161,6 +161,18 @@ async function togglePlugin(): Promise<void> {
   }
 }
 
+/** 拉取后端实时状态（enabled/started——刷新顶部"已注册/未就绪"徽标） */
+async function refreshStatus(): Promise<void> {
+  try {
+    const status = await pluginsApi.getStatus(pluginId.value)
+    if (status && plugin.value) {
+      plugin.value.status = status
+    }
+  } catch {
+    // 忽略——保持现有状态
+  }
+}
+
 async function rerunCheck(): Promise<void> {
   check.value = await pluginsApi.check(pluginId.value)
   if (check.value.ok && plugin.value && plugin.value.status.enabled) {
@@ -171,6 +183,8 @@ async function rerunCheck(): Promise<void> {
       plugin.value.status.started = true
     }
   }
+  // 无论自检结果——同步一次后端实时状态（已注册徽标）
+  await refreshStatus()
 }
 
 // models:progress 事件 → 进度（旧链路——插件 Worker 上报）
