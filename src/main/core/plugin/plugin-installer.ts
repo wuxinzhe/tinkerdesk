@@ -153,11 +153,15 @@ export class PluginInstaller {
   /** 完整安装（validate→copy→deps→register——不含 assets——资源手动） */
   async install(src: string): Promise<PluginRecord> {
     const session = this.start(src)
-    for (const stage of ['copy', 'deps', 'register'] as const) {
+    for (const stage of ['copy', 'deps'] as const) {
       const r = await this.step(session.sessionId, stage)
       if (!r.ok) throw new Error(r.error)
     }
     const plugin = this.deps.registerPlugin(session.srcDir)
+    if (session.tmpDir) {
+      rmSync(session.tmpDir, { recursive: true, force: true })
+      session.tmpDir = undefined
+    }
     this.sessions.delete(session.sessionId)
     return plugin
   }
@@ -166,11 +170,15 @@ export class PluginInstaller {
   async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginRecord> {
     const session = await this.startNpm(pkgName, opts)
     await this.downloadSession(session.sessionId)
-    for (const stage of ['copy', 'deps', 'register'] as const) {
+    for (const stage of ['copy', 'deps'] as const) {
       const r = await this.step(session.sessionId, stage)
       if (!r.ok) throw new Error(r.error)
     }
     const plugin = this.deps.registerPlugin(session.srcDir)
+    if (session.tmpDir) {
+      rmSync(session.tmpDir, { recursive: true, force: true })
+      session.tmpDir = undefined
+    }
     this.sessions.delete(session.sessionId)
     return plugin
   }
@@ -254,9 +262,14 @@ export class PluginInstaller {
       // 用户明确指定单个资源下载时（depName）——即使 optional 也下载；全量下载保持跳过 optional
       if (dep.optional && !depName) continue
       try {
+        // 已就绪（目标目录非空）跳过——避免重复下载
+        const destDir = join(dir, dep.dest)
+        if (existsSync(destDir) && readdirSync(destDir).length > 0) {
+          results.push({ name: dep.name, ok: true })
+          continue
+        }
         const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
         await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
-        const destDir = join(dir, dep.dest)
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
         const lower = dep.url.toLowerCase()
         if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
@@ -266,7 +279,9 @@ export class PluginInstaller {
         } else if (lower.endsWith('.zip')) {
           await extractZipPromote(tmp, destDir)
         } else {
-          renameSync(tmp, join(destDir, basename(dep.url)))
+          const target = join(destDir, basename(dep.url))
+          if (existsSync(target)) rmSync(target, { force: true })
+          renameSync(tmp, target)
         }
         if (existsSync(tmp)) rmSync(tmp, { force: true })
         results.push({ name: dep.name, ok: true })
@@ -357,12 +372,12 @@ export class PluginInstaller {
     return 'npm'
   }
 
-  /** 资源下载到插件目录（安装阶段——勾选的 assetDeps——跳过 skipAssets——可选依赖跳过） */
+  /** 资源下载到插件目录（安装阶段——勾选的 assetDeps——skip 按资源名——可选依赖跳过） */
   private async downloadAssetsTo(manifest: PluginManifest, pluginDir: string, skipAssets: string[], onProgress?: (depName: string, received: number, total: number) => void): Promise<void> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
     for (const dep of deps) {
       if (dep.optional) continue
-      if (skipAssets.includes(dep.dest)) continue
+      if (skipAssets.includes(dep.name)) continue
       const destDir = join(pluginDir, dep.dest)
       if (existsSync(destDir) && readdirSync(destDir).length > 0) continue
       const tmp = join(pluginDir, `.download-${Date.now()}-${dep.url.split('/').pop()}`)
@@ -377,10 +392,10 @@ export class PluginInstaller {
         } else if (lower.endsWith('.zip')) {
           await extractZipPromote(tmp, destDir)
         } else {
-          rmSync(tmp, { force: true })
+          // 普通文件：先删旧目标再移动（避免重下冲突）
           const target = join(destDir, dep.url.split('/').pop() ?? 'asset')
-          cpSync(tmp, target)
-          rmSync(tmp, { force: true })
+          if (existsSync(target)) rmSync(target, { force: true })
+          renameSync(tmp, target)
         }
       } catch (e) {
         throw new Error(`资源下载失败 ${dep.name}: ${(e as Error).message}`)

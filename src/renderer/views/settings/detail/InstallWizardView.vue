@@ -89,7 +89,7 @@
                   <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
                     <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" class="iw-asset__input" />
                     <span class="iw-asset__check">
-                      <svg v-if="selectedAssets.includes(dep.dest)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg v-if="selectedAssets.includes(dep.name)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </span>
                     <span class="iw-asset__body">
                       <span class="iw-asset__name">{{ dep.name }}</span>
@@ -292,7 +292,7 @@ async function doDownload() {
     if (r.manifest) {
       session.value = { ...session.value!, manifest: r.manifest, assetDeps: r.assetDeps ?? [], stages: r.stages }
     }
-    selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.dest)
+    selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.name)
     downloadPercent.value = 100
   } catch (e) {
     startError.value = (e as Error).message
@@ -336,7 +336,7 @@ async function startInstall() {
 }
 
 function skippedAssets(): string[] {
-  return (session.value?.assetDeps ?? []).map((d) => d.dest).filter((d) => !selectedAssets.value.includes(d))
+  return (session.value?.assetDeps ?? []).map((d) => d.name).filter((d) => !selectedAssets.value.includes(d))
 }
 
 async function retryFailed() {
