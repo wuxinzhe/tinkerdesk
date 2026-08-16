@@ -86,7 +86,7 @@ async function refreshModelsStatus(): Promise<void> {
     // 主进程检查失败——回退 Worker invoke（models:status）
   }
   try {
-    const status = await pluginsApi.invokePlugin<Record<string, boolean> | null>(plugin.value.manifest.id, 'models:status')
+    const status = await pluginsApi.invokePlugin<Record<string, boolean> | null>(plugin.value!.manifest.id, 'models:status')
     // invoke 容错（插件未就绪）返回 null——降级为空对象（模板访问安全）
     modelsStatus.value = status ?? {}
   } catch {
