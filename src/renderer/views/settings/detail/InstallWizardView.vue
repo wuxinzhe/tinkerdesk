@@ -1,130 +1,157 @@
 <template>
   <L3PageLayout class="install-wizard-page">
     <div class="install-wizard-page__body">
-      <!-- 极简步骤路径（小圆点序列——安静不喧宾夺主） -->
-      <div class="iw-path" role="tablist" aria-label="安装步骤">
-        <template v-for="(s, i) in steps" :key="s.key">
-          <div class="iw-path__item">
-            <div
-              :class="['iw-path__dot', {
-                'is-active': currentStep === i,
-                'is-done': stepDone(i),
-                'is-failed': stepFailed(i),
-              }]"
-            >
-              <Transition name="iw-pop" mode="out-in">
-                <svg v-if="stepDone(i) && !stepFailed(i)" key="check" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                <svg v-else-if="stepFailed(i)" key="cross" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
-                <span v-else key="dot"></span>
-              </Transition>
-            </div>
-            <span :class="['iw-path__label', { 'is-active': currentStep === i }]">{{ s.label }}</span>
-          </div>
-          <div v-if="i < steps.length - 1" :class="['iw-path__link', { 'is-filled': stepDone(i) }]"></div>
-        </template>
+      <!-- 页面标题区 -->
+      <div class="iw-heading">
+        <h1 class="iw-heading__title">安装插件</h1>
+        <p class="iw-heading__subtitle">分步安装——下载、确认、安装、完成</p>
       </div>
 
-      <!-- 内容区 -->
-      <Transition name="iw-fade" mode="out-in">
-        <div :key="currentStep" class="iw-content">
-          <!-- Step 0（npm）：下载安装包 -->
-          <div v-if="currentStep === 0 && isNpm">
-            <div v-if="downloading" class="iw-download">
-              <div class="iw-download__row">
-                <span class="iw-download__label">正在下载安装包</span>
-                <span class="iw-download__pct">{{ downloadPercent > 0 ? `${downloadPercent}%` : '' }}</span>
-              </div>
-              <div class="iw-download__bar">
-                <div class="iw-download__fill" :style="{ transform: `scaleX(${downloadPercent / 100})` }"></div>
-              </div>
-              <div v-if="downloadPercent > 0" class="iw-download__meta">{{ downloadMeta }}</div>
+      <!-- 主卡片 -->
+      <div class="iw-card">
+        <!-- 节点式步骤进度条（Apple HIG——参考 InitAccountView） -->
+        <ol class="iw-stepper" aria-label="安装步骤">
+          <li
+            v-for="(s, i) in steps"
+            :key="s.key"
+            class="iw-step"
+            :class="{
+              'iw-step--done': stepDone(i),
+              'iw-step--active': currentStep === i,
+              'iw-step--failed': stepFailed(i),
+            }"
+          >
+            <div class="iw-step__node">
+              <svg v-if="stepDone(i) && !stepFailed(i)" class="iw-step__check" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">
+                <path d="M2 6.5L4.5 9L10 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <svg v-else-if="stepFailed(i)" class="iw-step__cross" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+                <path d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+              <span v-else class="iw-step__num">{{ i + 1 }}</span>
             </div>
-            <div v-else-if="startError" class="iw-error">{{ startError }}</div>
-            <div v-else class="iw-ready">✓ 安装包已就绪</div>
-          </div>
-
-          <!-- 确认信息 -->
-          <div v-else-if="(isNpm && currentStep === 1) || (!isNpm && currentStep === 0)">
-            <div v-if="loading" class="iw-muted">校验安装包中...</div>
-            <div v-else-if="session">
-              <div class="iw-title">{{ session.manifest?.name }}<span class="iw-version">v{{ session.manifest?.version }}</span></div>
-              <div v-if="session.manifest?.capabilities?.length" class="iw-caps">
-                <span v-for="c in session.manifest.capabilities" :key="c" class="iw-cap">{{ c }}</span>
-              </div>
-              <p class="iw-note">安装后插件将以完全权限运行（可读写文件、执行命令、访问网络）。仅安装你信任的来源。</p>
+            <div class="iw-step__label">
+              <span class="iw-step__title">{{ s.label }}</span>
             </div>
-            <div v-else class="iw-error">{{ startError }}</div>
-          </div>
+          </li>
+        </ol>
 
-          <!-- 资源勾选 -->
-          <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)">
-            <div v-if="!session?.assetDeps?.length" class="iw-muted">该插件无需下载额外资源</div>
-            <div v-else class="iw-assets">
-              <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
-                <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" class="iw-asset__input" />
-                <span class="iw-asset__check">
-                  <svg v-if="selectedAssets.includes(dep.dest)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                </span>
-                <span class="iw-asset__body">
-                  <span class="iw-asset__name">{{ dep.name }}</span>
-                  <span class="iw-asset__meta">
-                    约 {{ dep.sizeMB }}MB
-                    <span v-if="!dep.optional" class="iw-asset__req">必需</span>
-                    <span v-else class="iw-asset__opt">可选</span>
+        <div class="iw-card__divider"></div>
+
+        <!-- 内容区（步骤切换） -->
+        <div class="iw-body">
+          <transition name="iw-fade" mode="out-in">
+            <div :key="currentStep" class="iw-pane">
+              <!-- Step 0（npm）：下载 -->
+              <div v-if="currentStep === 0 && isNpm">
+                <div v-if="downloading" class="iw-download">
+                  <div class="iw-download__row">
+                    <span class="iw-download__label">正在下载安装包</span>
+                    <span class="iw-download__pct">{{ downloadPercent > 0 ? `${downloadPercent}%` : '' }}</span>
+                  </div>
+                  <div class="iw-download__bar">
+                    <div class="iw-download__fill" :style="{ transform: `scaleX(${downloadPercent / 100})` }"></div>
+                  </div>
+                  <div v-if="downloadPercent > 0" class="iw-download__meta">{{ downloadMeta }}</div>
+                </div>
+                <div v-else-if="startError" class="iw-state is-error">{{ startError }}</div>
+                <div v-else class="iw-state is-ok">安装包已就绪</div>
+              </div>
+
+              <!-- 确认信息 -->
+              <div v-else-if="(isNpm && currentStep === 1) || (!isNpm && currentStep === 0)">
+                <div v-if="loading" class="iw-state">校验安装包中...</div>
+                <div v-else-if="session" class="iw-confirm">
+                  <div class="iw-confirm__icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+                      <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+                    </svg>
+                  </div>
+                  <div class="iw-confirm__info">
+                    <div class="iw-confirm__name">
+                      {{ session.manifest?.name }}
+                      <span class="iw-confirm__version">v{{ session.manifest?.version }}</span>
+                    </div>
+                    <div v-if="session.manifest?.capabilities?.length" class="iw-confirm__caps">
+                      <span v-for="c in session.manifest.capabilities" :key="c" class="iw-confirm__cap">{{ c }}</span>
+                    </div>
+                  </div>
+                  <p class="iw-confirm__note">安装后插件将以完全权限运行（可读写文件、执行命令、访问网络）。仅安装你信任的来源。</p>
+                </div>
+                <div v-else class="iw-state is-error">{{ startError }}</div>
+              </div>
+
+              <!-- 资源勾选 -->
+              <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)">
+                <div v-if="!session?.assetDeps?.length" class="iw-state">该插件无需下载额外资源</div>
+                <div v-else class="iw-assets">
+                  <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
+                    <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" class="iw-asset__input" />
+                    <span class="iw-asset__check">
+                      <svg v-if="selectedAssets.includes(dep.dest)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
+                    <span class="iw-asset__body">
+                      <span class="iw-asset__name">{{ dep.name }}</span>
+                      <span class="iw-asset__meta">
+                        约 {{ dep.sizeMB }}MB
+                        <span v-if="!dep.optional" class="iw-asset__req">必需</span>
+                        <span v-else class="iw-asset__opt">可选</span>
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 安装进度 -->
+              <div v-else-if="(isNpm && currentStep === 3) || (!isNpm && currentStep === 2)" class="iw-stages">
+                <div v-for="stage in installStages" :key="stage" class="iw-stage">
+                  <span :class="['iw-stage__node', `is-${stageStatus(stage)}`]">
+                    <svg v-if="stageStatus(stage) === 'done'" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5L4.5 9L10 3" /></svg>
+                    <svg v-else-if="stageStatus(stage) === 'failed'" width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 2.5L9.5 9.5M9.5 2.5L2.5 9.5" /></svg>
+                    <span v-else class="iw-stage__dot"></span>
                   </span>
-                </span>
-              </label>
-            </div>
-          </div>
+                  <span class="iw-stage__name">{{ stageLabel(stage) }}</span>
+                  <span v-if="stageStatus(stage) === 'failed'" class="iw-stage__err">{{ stageError }}</span>
+                </div>
+                <div v-if="installFailed" class="iw-retry">
+                  <SaActionBtn text="重试该步" variant="primary" @click="retryFailed" />
+                </div>
+              </div>
 
-          <!-- 安装进度 -->
-          <div v-else-if="(isNpm && currentStep === 3) || (!isNpm && currentStep === 2)" class="iw-stages">
-            <div v-for="stage in installStages" :key="stage" class="iw-stage">
-              <span :class="['iw-stage__dot', `is-${stageStatus(stage)}`]">
-                <Transition name="iw-pop" mode="out-in">
-                  <svg v-if="stageStatus(stage) === 'done'" key="check" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                  <svg v-else-if="stageStatus(stage) === 'failed'" key="cross" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
-                  <span v-else key="dot"></span>
-                </Transition>
-              </span>
-              <span class="iw-stage__name">{{ stageLabel(stage) }}</span>
-              <span v-if="stageStatus(stage) === 'failed'" class="iw-stage__err">{{ stageError }}</span>
+              <!-- 完成 -->
+              <div v-else class="iw-done">
+                <div class="iw-done__check">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                </div>
+                <div class="iw-done__text">安装完成</div>
+                <p class="iw-done__sub">插件已注册，可在插件设置中查看</p>
+              </div>
             </div>
-            <div v-if="installFailed" class="iw-retry">
-              <SaActionBtn text="重试该步" variant="primary" @click="retryFailed" />
-            </div>
-          </div>
-
-          <!-- 完成 -->
-          <div v-else class="iw-done">
-            <div class="iw-done__check">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-            </div>
-            <div class="iw-done__text">安装完成</div>
-          </div>
+          </transition>
         </div>
-      </Transition>
 
-      <!-- 底部操作 -->
-      <div class="iw-footer">
-        <template v-if="currentStep === 0 && isNpm">
-          <SaActionBtn text="取消" @click="close" />
-          <SaActionBtn text="下一步" variant="primary" :disabled="downloading || !session" @click="next" />
-        </template>
-        <template v-else-if="currentStep === 0 && !isNpm">
-          <SaActionBtn text="取消" @click="close" />
-          <SaActionBtn text="下一步" variant="primary" :disabled="!session || loading" @click="next" />
-        </template>
-        <template v-else-if="currentStep === 1">
-          <SaActionBtn text="上一步" @click="currentStep = 0" />
-          <SaActionBtn text="开始安装" variant="primary" @click="startInstall" />
-        </template>
-        <template v-else-if="currentStep === 2 || (currentStep === 3 && isNpm)">
-          <SaActionBtn v-if="!installFailed" text="安装中..." :loading="true" disabled />
-        </template>
-        <template v-else>
-          <SaActionBtn text="完成" variant="primary" @click="finish" />
-        </template>
+        <!-- 底部操作 -->
+        <div class="iw-footer">
+          <template v-if="currentStep === 0 && isNpm">
+            <SaActionBtn text="取消" @click="close" />
+            <SaActionBtn text="下一步" variant="primary" :disabled="downloading || !session" @click="next" />
+          </template>
+          <template v-else-if="currentStep === 0 && !isNpm">
+            <SaActionBtn text="取消" @click="close" />
+            <SaActionBtn text="下一步" variant="primary" :disabled="!session || loading" @click="next" />
+          </template>
+          <template v-else-if="currentStep === 1">
+            <SaActionBtn text="上一步" @click="currentStep = 0" />
+            <SaActionBtn text="开始安装" variant="primary" @click="startInstall" />
+          </template>
+          <template v-else-if="currentStep === 2 || (currentStep === 3 && isNpm)">
+            <SaActionBtn v-if="!installFailed" text="安装中..." :loading="true" disabled />
+          </template>
+          <template v-else>
+            <SaActionBtn text="完成" variant="primary" @click="finish" />
+          </template>
+        </div>
       </div>
     </div>
   </L3PageLayout>
@@ -142,7 +169,6 @@ const router = useRouter()
 const pkg = computed(() => (route.query.pkg as string) || '')
 const path = computed(() => (route.query.path as string) || '')
 
-const visible = ref(true)
 const loading = ref(false)
 const startError = ref('')
 const session = ref<InstallSessionInfo | null>(null)
@@ -320,102 +346,192 @@ function close() {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
-/* ── 极简步骤路径：小圆点序列 + 细线 ── */
-.iw-path {
-  display: flex;
-  align-items: center;
+/* ── 页面标题 ── */
+.iw-heading__title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tk-text-primary);
+  margin: 0;
 }
 
-.iw-path__item {
+.iw-heading__subtitle {
+  font-size: 13px;
+  color: var(--tk-text-tertiary);
+  margin: 6px 0 0;
+}
+
+/* ── 主卡片 ── */
+.iw-card {
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* ── 节点式步骤条（Apple HIG——参考 InitAccountView） ── */
+.iw-stepper {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.iw-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 6px;
-  flex-shrink: 0;
+  flex: 1;
 }
 
-.iw-path__dot {
-  width: 8px;
-  height: 8px;
+.iw-step:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: var(--tk-border);
+  z-index: 0;
+  transition: background-color 200ms var(--tk-ease);
+}
+
+.iw-step--done:not(:first-child)::before {
+  background: var(--tk-accent);
+}
+
+.iw-step__node {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: var(--tk-bg-secondary);
-  color: var(--tk-text-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 160ms var(--tk-ease), color 160ms var(--tk-ease), transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+  transition: background-color 200ms var(--tk-ease), border-color 200ms var(--tk-ease), color 200ms var(--tk-ease), box-shadow 200ms var(--tk-ease);
 }
 
-.iw-path__dot.is-active {
+/* 完成：实心蓝 + 白勾 */
+.iw-step--done .iw-step__node {
   background: var(--tk-accent);
   color: #fff;
-  transform: scale(1.15);
 }
 
-.iw-path__dot.is-done {
-  background: transparent;
-  color: var(--tk-accent);
+/* 进行中：实心蓝 + halo 聚焦 */
+.iw-step--active .iw-step__node {
+  background: var(--tk-accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
 }
 
-.iw-path__dot.is-failed {
-  background: transparent;
+/* 失败：红描边 + 红叉 */
+.iw-step--failed .iw-step__node {
+  background: rgba(255, 59, 48, 0.08);
+  border: 1px solid #ff3b30;
   color: #ff3b30;
 }
 
-.iw-path__label {
-  font-size: 11px;
-  color: var(--tk-text-tertiary);
-  transition: color 160ms var(--tk-ease);
-  white-space: nowrap;
+.iw-step__label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.iw-path__label.is-active {
+.iw-step__title {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
   color: var(--tk-text-primary);
+  text-align: center;
+  transition: color 200ms var(--tk-ease);
 }
 
-.iw-path__link {
-  flex: 1;
+.iw-step--active .iw-step__title {
+  font-weight: 600;
+}
+
+/* 未激活的步骤标题灰 */
+.iw-step:not(.iw-step--active):not(.iw-step--done) .iw-step__title {
+  color: var(--tk-text-tertiary);
+}
+
+.iw-card__divider {
   height: 1px;
+  background: var(--tk-border);
+  margin: 20px 0;
+}
+
+/* ── 内容区 ── */
+.iw-body {
+  min-height: 110px;
+}
+
+.iw-state {
+  color: var(--tk-text-tertiary);
+  font-size: 13px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.iw-state.is-error {
+  color: #ff3b30;
+}
+
+.iw-state.is-ok {
+  color: #34c759;
+}
+
+/* 确认信息 */
+.iw-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.iw-confirm__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   background: var(--tk-bg-secondary);
-  margin: 0 8px;
-  min-width: 12px;
+  color: var(--tk-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.iw-path__link.is-filled {
-  background: var(--tk-accent);
-  opacity: 0.45;
-}
-
-/* ── 内容 ── */
-.iw-content {
-  min-height: 100px;
-}
-
-.iw-title {
-  font-size: 17px;
+.iw-confirm__name {
+  font-size: 16px;
   font-weight: 600;
   color: var(--tk-text-primary);
-  letter-spacing: -0.01em;
 }
 
-.iw-version {
+.iw-confirm__version {
   font-size: 12px;
   color: var(--tk-text-tertiary);
   font-family: 'SF Mono', 'Menlo', monospace;
-  margin-left: 8px;
   font-weight: 400;
+  margin-left: 8px;
 }
 
-.iw-caps {
+.iw-confirm__caps {
   display: flex;
   gap: 6px;
-  margin: 12px 0;
   flex-wrap: wrap;
 }
 
-.iw-cap {
+.iw-confirm__cap {
   padding: 2px 8px;
   border-radius: 5px;
   background: var(--tk-bg-secondary);
@@ -423,32 +539,14 @@ function close() {
   color: var(--tk-text-secondary);
 }
 
-.iw-note {
+.iw-confirm__note {
   font-size: 12px;
   line-height: 1.6;
   color: var(--tk-text-tertiary);
-  margin: 0;
+  margin: 4px 0 0;
 }
 
-.iw-muted {
-  color: var(--tk-text-tertiary);
-  font-size: 13px;
-  padding: 12px 0;
-}
-
-.iw-error {
-  color: #ff3b30;
-  font-size: 13px;
-  padding: 12px 0;
-}
-
-.iw-ready {
-  color: #34c759;
-  font-size: 13px;
-  padding: 12px 0;
-}
-
-/* ── 下载 ── */
+/* 下载 */
 .iw-download__row {
   display: flex;
   justify-content: space-between;
@@ -465,7 +563,7 @@ function close() {
 }
 
 .iw-download__bar {
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
   background: var(--tk-bg-secondary);
   overflow: hidden;
@@ -486,7 +584,7 @@ function close() {
   font-family: 'SF Mono', 'Menlo', monospace;
 }
 
-/* ── 资源 ── */
+/* 资源 */
 .iw-assets {
   display: flex;
   flex-direction: column;
@@ -496,16 +594,17 @@ function close() {
 .iw-asset {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--tk-border);
   cursor: pointer;
-  transition: border-color 160ms var(--tk-ease);
+  transition: border-color 160ms var(--tk-ease), background 160ms var(--tk-ease);
 }
 
 .iw-asset:hover {
   border-color: var(--tk-text-tertiary);
+  background: var(--tk-bg-secondary);
 }
 
 .iw-asset__input {
@@ -515,9 +614,9 @@ function close() {
 }
 
 .iw-asset__check {
-  width: 16px;
-  height: 16px;
-  border-radius: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
   border: 1.5px solid var(--tk-border);
   display: flex;
   align-items: center;
@@ -557,15 +656,11 @@ function close() {
   color: var(--tk-accent);
 }
 
-.iw-asset__opt {
-  color: var(--tk-text-tertiary);
-}
-
-/* ── 安装进度 ── */
+/* 安装进度 */
 .iw-stages {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .iw-stage {
@@ -576,9 +671,9 @@ function close() {
   color: var(--tk-text-secondary);
 }
 
-.iw-stage__dot {
-  width: 16px;
-  height: 16px;
+.iw-stage__node {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -588,25 +683,27 @@ function close() {
   transition: color 160ms var(--tk-ease), background 160ms var(--tk-ease);
 }
 
-.iw-stage__dot.is-running {
+.iw-stage__node.is-running {
   color: var(--tk-accent);
 }
 
-.iw-stage__dot.is-running::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--tk-accent);
+.iw-stage__node.is-running .iw-stage__dot {
   animation: iw-pulse 1.2s infinite;
 }
 
-.iw-stage__dot.is-done {
+.iw-stage__node.is-done {
   color: #34c759;
 }
 
-.iw-stage__dot.is-failed {
+.iw-stage__node.is-failed {
   color: #ff3b30;
+}
+
+.iw-stage__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .iw-stage__name {
@@ -623,38 +720,47 @@ function close() {
   text-align: right;
 }
 
-/* ── 完成 ── */
+/* 完成 */
 .iw-done {
   text-align: center;
-  padding: 16px 0;
+  padding: 12px 0;
 }
 
 .iw-done__check {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(52, 199, 89, 0.08);
+  background: rgba(52, 199, 89, 0.1);
   color: #34c759;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 8px;
+  margin: 0 auto 10px;
 }
 
 .iw-done__text {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--tk-text-primary);
 }
 
-/* ── 底部 ── */
+.iw-done__sub {
+  font-size: 12px;
+  color: var(--tk-text-tertiary);
+  margin: 6px 0 0;
+}
+
+/* 底部 */
 .iw-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--tk-border);
 }
 
-/* ── 动画（克制） ── */
+/* 动画（克制） */
 .iw-fade-enter-active {
   transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -668,27 +774,12 @@ function close() {
   opacity: 0;
 }
 
-.iw-pop-enter-active {
-  transition: opacity 140ms var(--tk-ease), transform 140ms var(--tk-ease);
-}
-
-.iw-pop-leave-active {
-  transition: opacity 120ms var(--tk-ease), transform 120ms var(--tk-ease);
-}
-
-.iw-pop-enter-from,
-.iw-pop-leave-to {
-  opacity: 0;
-  transform: scale(0.9);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .iw-path__dot,
+  .iw-step__node,
+  .iw-step:not(:first-child)::before,
   .iw-download__fill,
   .iw-fade-enter-active,
-  .iw-fade-leave-active,
-  .iw-pop-enter-active,
-  .iw-pop-leave-active {
+  .iw-fade-leave-active {
     transition: none;
   }
 }
