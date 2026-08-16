@@ -110,7 +110,6 @@ export class PluginHost {
       stop: () => call('stop') as Promise<void>,
       dispose: () => call('dispose') as Promise<void>,
       getStatus: () => call('getStatus') as Promise<PluginStatus>,
-      getConfigSchema: (() => call('getConfigSchema')) as unknown as () => ConfigSchema,
     }
   }
 

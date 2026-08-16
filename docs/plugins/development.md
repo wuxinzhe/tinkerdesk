@@ -55,24 +55,38 @@ module.exports = {
 ## 4. 外部引擎（插件只做对接——不代管安装）
 
 ```
-IndexTTS / sherpa 等外部引擎：插件用 getConfigSchema 配置引擎路径——
+IndexTTS / sherpa 等外部引擎：插件用 manifest 的 configSchema 声明引擎路径配置——
 用户按 install.md 自行安装——插件只负责调用。
 
 原则：插件 = 粘合层——只做接口对接——不包装外部依赖——
 外部依赖版本用户自管（应用不代装、不代管版本）。
 ```
 
-## 5. 配置 Schema（动态表单）
+## 5. 配置 Schema（静态声明——manifest.json 的 configSchema）
 
-```js
-// 在 init 里或通过 ctx 提供 getConfigSchema
+```jsonc
+// manifest.json —— 配置 schema 必须静态声明（应用主进程直读——
+// 不执行插件代码——Worker 死活不影响配置渲染）
 {
-  fields: [
-    { type: 'string', key: 'enginePath', title: '引擎路径', placeholder: 'C:\\tools\\index-tts' },
-    { type: 'number', key: 'sampleRate', title: '采样率', default: 16000 },
-  ]
+  "id": "my-plugin",
+  "entry": "index.js",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "enginePath": { "type": "string", "title": "引擎路径", "placeholder": "C:\\tools\\index-tts" },
+      "sampleRate": { "type": "number", "title": "采样率", "default": 16000 },
+      "apiKey": { "type": "secret", "title": "API Key" }
+    }
+  }
 }
 ```
+
+**规范（v1 强制）**：
+- `configSchema` 必须写在 manifest.json（静态 JSON——应用直读）
+- `getConfigSchema()` 动态链路已【废弃】——应用侧不再调用——插件不要依赖它
+- 支持字段类型：`string / number / boolean / select / secret / textarea / file`
+- secret 类型：应用读取配置时脱敏（不返回明文）
+- 配置存储：config.json（应用托管——`ctx.getConfig()/setConfig()` 读写）
 
 ## 6. 调试
 

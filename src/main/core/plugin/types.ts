@@ -149,8 +149,6 @@ export interface PluginApi {
   stop?(): void | Promise<void>
   dispose?(): void | Promise<void>
   getStatus?(): PluginStatus | Promise<PluginStatus>
-  /** 配置 Schema（动态——可按运行时状态返回不同选项） */
-  getConfigSchema?(): ConfigSchema
 }
 
 /** 插件入口（index.js 导出的契约） */

@@ -232,25 +232,24 @@ export class PluginManager {
     return (await record.api.getStatus?.()) ?? { loaded: false, enabled: false, started: false }
   }
 
-  /** 配置 Schema（manifest 静态优先——不依赖 Worker；插件动态 schema 兜底补充） */
+  /** 配置 Schema（唯一来源：manifest 静态 configSchema——不依赖 Worker——
+   *  动态 getConfigSchema 链路已废弃——插件配置必须静态声明） */
   async getSchema(id: string): Promise<unknown> {
     const record = this.registry.get(id)
     if (!record) return null
-    // manifest 静态 schema（主进程直读——Worker 死活不影响配置渲染）
-    if (record.manifest.configSchema) return record.manifest.configSchema
-    if (!record?.api) return null
-    return (await record.api.getConfigSchema?.()) ?? null
+    return record.manifest.configSchema ?? null
   }
 
-  /** 读取配置（secret 字段脱敏回显） */
+  /** 读取配置（secret 字段脱敏——依据 manifest 静态 schema） */
   async getConfig(id: string): Promise<Record<string, unknown>> {
     const record = this.registry.get(id)
     const config = record?.ctx?.getConfig<Record<string, unknown>>() ?? {}
-    const schema = (await record?.api?.getConfigSchema?.()) ?? null
+    const schema = record?.manifest.configSchema as { properties?: Record<string, { type?: string }> } | null
     if (!schema) return config
     const redacted: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(config)) {
-      redacted[key] = value
+      // secret 类型不返回明文
+      redacted[key] = schema.properties?.[key]?.type === 'secret' ? '••••••' : value
     }
     return redacted
   }
