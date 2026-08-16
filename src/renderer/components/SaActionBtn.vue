@@ -37,7 +37,7 @@ withDefaults(defineProps<SaActionBtnProps>(), {
   size: 'm',
 })
 
-defineEmits<{ click: [] }>()
+defineEmits<{ click: [event: MouseEvent] }>()
 </script>
 
 <style scoped>
