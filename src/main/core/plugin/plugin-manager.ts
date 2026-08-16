@@ -19,44 +19,10 @@ import { execFileSync } from 'child_process'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { Worker } from 'worker_threads'
-import { get as httpsGet } from 'https'
-import { get as httpGet } from 'http'
-
-/** 异步 execFile（解压等外部命令——不阻塞主进程） */
-const execFileAsync = promisify(execFile)
-
-/** 下载文件（带进度回调——字节数） */
-function downloadFile(
-  url: string,
-  dest: string,
-  onProgress?: (received: number, total: number) => void,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const client = url.startsWith('https:') ? httpsGet : httpGet
-    const req = client(url, (res) => {
-      if (res.statusCode !== 200) {
-        reject(new Error(`下载失败 HTTP ${res.statusCode} (${url})`))
-        res.resume()
-        return
-      }
-      const total = Number(res.headers['content-length'] ?? 0)
-      let received = 0
-      const ws = require('fs').createWriteStream(dest)
-      res.on('data', (chunk) => {
-        received += chunk.length
-        onProgress?.(received, total)
-      })
-      res.pipe(ws)
-      ws.on('finish', () => resolve())
-      ws.on('error', reject)
-    })
-    req.setTimeout(60_000, () => {
-      req.destroy(new Error(`下载超时: ${url}`))
-    })
-    req.on('error', reject)
-  })
-}
+import { downloadFile, execFileAsync } from '../../utils/process-utils'
+import { installNpmDeps, locateManifestDir, resolveNpmCli, tarBin, verifyHashes } from './plugin-installer'
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
+
 import type {
   PluginApi,
   PluginCheckResult,
@@ -501,52 +467,9 @@ export class PluginManager {
     )
   }
 
-  /**
-   * 自动安装插件 npm 依赖（插件 package.json 的 dependencies——Node.js 生态）。
-   * 仅当：插件有 package.json 且声明了 dependencies 且未自带 node_modules。
-   * 执行：优先用打包的 npm-cli（Electron node 执行——用户无需装 Node.js）；
-   * 回退系统 npm。失败抛错（插件不加载——缺依赖跑不起来）。
-   */
-  private async installNpmDeps(pluginDir: string): Promise<void> {
-    const pkgFile = join(pluginDir, 'package.json')
-    if (!existsSync(pkgFile)) return
-    let pkg: { dependencies?: Record<string, string> } | null = null
-    try {
-      pkg = JSON.parse(readFileSync(pkgFile, 'utf-8')) as { dependencies?: Record<string, string> }
-    } catch {
-      return // package.json 损坏——不阻塞安装（依赖缺失由插件自身报错）
-    }
-    const deps = pkg?.dependencies
-    if (!deps || Object.keys(deps).length === 0) return
-    if (existsSync(join(pluginDir, 'node_modules'))) return // 自带依赖——跳过
+  
 
-    console.log(`[plugin] 安装 npm 依赖 ${Object.keys(deps).join(', ')} → ${pluginDir}`)
-    const npmCli = this.resolveNpmCli()
-    const args = ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]
-    await new Promise<void>((resolve, reject) => {
-      // 用 Electron 的 node 执行 npm-cli（打包的 npm）——用户无需安装 Node.js
-      execFile(process.execPath, [npmCli, ...args], { timeout: 300_000 }, (err) => {
-        if (err) {
-          reject(new Error(`npm 依赖安装失败（${(err as Error).message}）——插件未加载`))
-          return
-        }
-        resolve()
-      })
-    })
-    console.log(`[plugin] npm 依赖安装完成 ${pluginDir}`)
-  }
-
-  /** 解析 npm-cli 路径：打包版（resources/npm）→ 项目 node_modules → 系统 npm */
-  private resolveNpmCli(): string {
-    // 生产：electron-builder extraResources 打包的 npm（asar 外——自包含）
-    const bundled = join(process.resourcesPath ?? '', 'npm', 'bin', 'npm-cli.js')
-    if (existsSync(bundled)) return bundled
-    // 开发：项目依赖里的 npm（npm install npm 已装）
-    const local = join(app.getAppPath(), 'node_modules', 'npm', 'bin', 'npm-cli.js')
-    if (existsSync(local)) return local
-    // 回退：系统 npm（npm 命令——Windows 下 npm.cmd）
-    return 'npm'
-  }
+  
 
   /** 安装插件：复制源目录（已解压的插件目录）到 plugins/<id> 并加载；id 冲突 → 抛错 */
   async installPlugin(srcDir: string): Promise<PluginInfo> {
@@ -576,7 +499,7 @@ export class PluginManager {
     }
     cpSync(srcDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
     // 依赖安装：插件 package.json 声明了 npm 依赖且未自带 node_modules → 自动 npm install
-    await this.installNpmDeps(destDir)
+    await installNpmDeps(destDir)
     // 加载（含契约校验）
     this.loadPlugin(destDir)
     const record = this.registry.get(manifest.id)
@@ -613,14 +536,14 @@ export class PluginManager {
         pluginDir = src
       } else if (stat.isFile() && src.toLowerCase().endsWith('.zip')) {
         mkdirSync(tmpDir, { recursive: true })
-        execFileSync(this.tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
-        const located = this.locateManifestDir(tmpDir)
+        execFileSync(tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
+        const located = locateManifestDir(tmpDir)
         if (!located) {
           throw new Error('zip 内未找到 manifest.json（插件包结构无效）')
         }
         pluginDir = located
         // 分发 zip：require 前校验 sha256sums.json 哈希清单（防篡改——不匹配直接拒绝）
-        this.verifyHashes(pluginDir)
+        verifyHashes(pluginDir)
       } else {
         throw new Error('请选择插件文件夹或 .zip 插件包')
       }
@@ -630,68 +553,11 @@ export class PluginManager {
     }
   }
 
-  /** 在解压目录中定位含 manifest.json 的插件目录（根目录或一层子目录） */
-  private locateManifestDir(root: string): string | null {
-    if (existsSync(join(root, 'manifest.json'))) return root
-    try {
-      for (const name of readdirSync(root)) {
-        const sub = join(root, name)
-        if (statSync(sub).isDirectory() && existsSync(join(sub, 'manifest.json'))) {
-          return sub
-        }
-      }
-    } catch {
-      // 忽略不可读子目录
-    }
-    return null
-  }
+  
 
-  /**
-   * 校验插件目录哈希清单（sha256sums.json——分发 zip 必须附带）
-   *
-   * 清单格式：{ "相对路径": "sha256hex", ... }——覆盖包内每个文件（不含清单自身）。
-   * 校验策略：缺失清单 / 清单列出的文件缺失 / 哈希不匹配 → 一律拒绝（防传输损坏与部分篡改）。
-   * 注意：哈希校验防的是「包内文件与清单不一致」——完整防伪需要发布者签名（后续增强）。
-   */
-  private verifyHashes(pluginDir: string): void {
-    const sumsFile = join(pluginDir, 'sha256sums.json')
-    if (!existsSync(sumsFile)) {
-      throw new Error('zip 插件包缺少 sha256sums.json 哈希清单（分发包必须附带——缺失拒绝安装）')
-    }
-    let sums: Record<string, string>
-    try {
-      sums = JSON.parse(readFileSync(sumsFile, 'utf-8')) as Record<string, string>
-    } catch {
-      throw new Error('sha256sums.json 解析失败（哈希清单损坏）')
-    }
-    if (Object.keys(sums).length === 0) {
-      throw new Error('sha256sums.json 为空（哈希清单无效）')
-    }
-    for (const [rel, expected] of Object.entries(sums)) {
-      // 路径安全：清单内路径必须是相对路径且不得逃逸插件目录
-      const normalized = rel.replace(/\\/g, '/')
-      if (normalized.startsWith('/') || normalized.includes('../') || normalized.includes('..\\')) {
-        throw new Error(`sha256sums.json 含非法路径: ${rel}`)
-      }
-      const file = join(pluginDir, rel)
-      if (!existsSync(file)) {
-        throw new Error(`sha256sums.json 列出的文件缺失: ${rel}`)
-      }
-      const actual = createHash('sha256').update(readFileSync(file)).digest('hex')
-      if (actual.toLowerCase() !== String(expected).toLowerCase()) {
-        throw new Error(`插件文件哈希不匹配（可能被篡改或传输损坏）: ${rel}`)
-      }
-    }
-  }
+  
 
-  /** tar 命令：Windows 用 System32 自带 bsdtar（Electron PATH 的 tar 不可用）；Linux/macOS 用系统 tar */
-  private tarBin(): string {
-    if (process.platform === 'win32') {
-      const sysRoot = process.env.SystemRoot ?? 'C:\\Windows'
-      return join(sysRoot, 'System32', 'tar.exe')
-    }
-    return 'tar'
-  }
+  
 
   /** 主进程静态声明式检查（不执行插件代码——文件系统检查）：
    *  manifest 已读（loadPlugin 时校验）；entry 存在；依赖 node_modules 存在；
