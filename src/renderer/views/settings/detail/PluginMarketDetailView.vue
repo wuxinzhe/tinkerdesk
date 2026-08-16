@@ -51,10 +51,10 @@
           </div>
         </div>
 
-        <!-- README -->
+        <!-- README（markdown 渲染） -->
         <div v-if="detail?.readme" class="pd-readme">
           <div class="pd-readme__title">说明</div>
-          <div class="pd-readme__content" v-html="renderedReadme"></div>
+          <MarkdownRender :content="detail.readme" />
         </div>
       </template>
     </div>
@@ -65,7 +65,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { MarketPluginDetail } from '@/renderer/api/types'
-import { SaActionBtn, L3PageLayout } from '@/renderer/components'
+import { SaActionBtn, L3PageLayout, MarkdownRender } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 
 const route = useRoute()
@@ -76,22 +76,6 @@ const loading = ref(true)
 const error = ref('')
 
 const displayName = computed(() => (detail.value?.name ?? '').replace(/^tinkerdesk-plugin-/, ''))
-
-/** README 简单渲染（标题/段落/列表/代码块——转 HTML） */
-const renderedReadme = computed(() => {
-  const md = detail.value?.readme ?? ''
-  return md
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/^### (.*)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-    .replace(/^\s*[-*] (.*)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br/>')
-})
 
 function formatDate(s?: string): string {
   if (!s) return '-'
@@ -268,33 +252,10 @@ function goInstall() {
   overflow-wrap: break-word;
 }
 
-.pd-readme__content :deep(h1),
-.pd-readme__content :deep(h2),
-.pd-readme__content :deep(h3) {
-  color: var(--tk-text-primary);
-  margin: 16px 0 8px;
-  font-size: 14px;
-}
-
-.pd-readme__content :deep(p) {
-  margin: 8px 0;
-}
-
-.pd-readme__content :deep(ul) {
-  padding-left: 20px;
-  margin: 8px 0;
-}
-
-.pd-readme__content :deep(pre) {
-  background: var(--tk-bg-secondary);
-  border-radius: 8px;
-  padding: 12px;
-  overflow-x: auto;
-  font-size: 12px;
-}
-
-.pd-readme__content :deep(code) {
-  font-family: 'SF Mono', 'Menlo', monospace;
+.pd-readme :deep(.markdown-render) {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--tk-text-secondary);
 }
 
 .pd-loading,
