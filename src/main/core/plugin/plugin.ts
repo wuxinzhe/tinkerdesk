@@ -167,7 +167,7 @@ export class Plugin {
   async disable(): Promise<void> {
     this.deps.unregisterProvider(this)
     if (this.worker) {
-      void this.api?.stop?.().catch(() => {})
+      void Promise.resolve(this.api?.stop?.()).catch(() => {})
       this.disposeWorker()
     } else {
       this.api?.dispose?.()
