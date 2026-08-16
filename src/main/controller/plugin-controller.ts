@@ -14,7 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { PluginManager } from '../core/plugin/plugin-manager'
-import { listMarketPlugins } from '../core/plugin/plugin-market'
+import { listMarketPlugins } from '../service/plugin-market-service'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
 type ApiResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -133,11 +133,11 @@ export class PluginController {
     }
   }
 
-  /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
-  private async marketList(): Promise<ApiResult<import('../core/plugin/plugin-market').MarketPlugin[]>> {
+  /** 插件市场列表（service 层——生态开放 + 官方标记 + installed 状态） */
+  private async marketList(): Promise<ApiResult<import('../service/plugin-market-service').MarketPluginItem[]>> {
     try {
-      const installed = this.pluginManager.list().map((p) => p.manifest.id)
-      const list = await listMarketPlugins(installed)
+      const installedIds = this.pluginManager.list().map((p) => p.manifest.id)
+      const list = await listMarketPlugins({ installedIds })
       return ok(list)
     } catch (e) {
       return fail((e as Error).message)
