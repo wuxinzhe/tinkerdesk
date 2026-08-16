@@ -13,22 +13,9 @@ import { ipcMain, type IpcMainInvokeEvent } from 'electron'
  * 其它来源一律拒绝（抛错）。
  */
 
-/** dev 模式 vite dev server 来源（electron-vite 默认 5173——端口被占会漂移——
- *  运行时从 VITE_DEV_SERVER_URL 取实际端口——防端口漂移导致 IPC 全拒） */
-function devOrigins(): Set<string> {
-  const origins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173'])
-  const devUrl = process.env.VITE_DEV_SERVER_URL
-  if (devUrl) {
-    try {
-      origins.add(new URL(devUrl).origin)
-    } catch {
-      // 忽略非法值
-    }
-  }
-  return origins
-}
-
-/** 是否可信 renderer 来源 */
+/** dev 模式 vite dev server 来源（electron-vite 端口可能漂移（5173→5174）——
+ *  dev 模式（无 CSP）放宽为 localhost/127.0.0.1 任意端口——防端口漂移 IPC 全拒；
+ *  prod（file://）校验不受影响） */
 export function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   const senderFrame = event.senderFrame
   if (!senderFrame) return false
@@ -36,9 +23,11 @@ export function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   if (!url) return false
   // 打包后：file:// 本地加载
   if (url.startsWith('file://')) return true
-  // dev：vite dev server（动态端口）
+  // dev：vite dev server（localhost 任意端口）
   try {
-    return devOrigins().has(new URL(url).origin)
+    const u = new URL(url)
+    if (u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1')) return true
+    return false
   } catch {
     return false
   }
