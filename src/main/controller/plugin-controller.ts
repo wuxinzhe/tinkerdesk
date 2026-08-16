@@ -14,6 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { PluginManager } from '../core/plugin/plugin-manager'
+import { PluginInstaller } from '../core/plugin/plugin-installer'
 import { getMarketPluginDetail, listMarketPlugins } from '../service/plugin-market-service'
 import type { PluginCheckResult, PluginInfo, PluginStatus, ToggleResult } from '../core/plugin/types'
 
@@ -29,6 +30,7 @@ function fail(error: string): ApiResult<never> {
 export class PluginController {
   constructor(
     private readonly pluginManager: PluginManager,
+    private readonly installer: PluginInstaller,
     /** 主窗口提供者（文件对话框必须关联窗口，否则不显示） */
     private readonly getWindow: () => BrowserWindow | null,
   ) {}
@@ -75,7 +77,7 @@ export class PluginController {
   private async assetStatus(payload: { id: string }): Promise<ApiResult<Record<string, boolean>>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(this.pluginManager.getAssetStatus(payload.id))
+      return ok(this.installer.getAssetStatus(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -86,7 +88,7 @@ export class PluginController {
     try {
       if (!payload?.id) return fail('id 不能为空')
       const id = payload.id
-      const results = await this.pluginManager.downloadAssets(id, (depName, received, total) => {
+      const results = await this.installer.downloadAssetsById(id, (depName, received, total) => {
         const wc = this.pluginManager.getEmitTarget()
         if (wc && !wc.isDestroyed()) {
           wc.send('plugin:assets-progress', { pluginId: id, depName, received, total })
@@ -138,8 +140,8 @@ export class PluginController {
   /** 安装插件：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
   private async install(payload: { path: string }): Promise<ApiResult<PluginInfo>> {
     try {
-      const info = await this.pluginManager.installFromPath(payload?.path ?? '')
-      return ok(info)
+      const record = await this.installer.install(payload?.path ?? '')
+      return ok({ manifest: record.manifest, status: (record as unknown as { status(): PluginStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -148,8 +150,8 @@ export class PluginController {
   /** 在线安装插件（npm 包名——npm pack 下载 → 解压 → 标准安装） */
   private async installFromNpm(payload: { pkg: string; registry?: string }): Promise<ApiResult<PluginInfo>> {
     try {
-      const info = await this.pluginManager.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
-      return ok(info)
+      const record = await this.installer.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
+      return ok({ manifest: record.manifest, status: (record as unknown as { status(): PluginStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -159,8 +161,8 @@ export class PluginController {
   private async installStart(payload: { pkg?: string; path?: string; registry?: string } = {}): Promise<ApiResult<unknown>> {
     try {
       const session = payload.pkg
-        ? await this.pluginManager.startInstallNpm(payload.pkg, payload.registry ? { registry: payload.registry } : undefined)
-        : this.pluginManager.startInstallPath(payload.path ?? '')
+        ? await this.installer.startNpm(payload.pkg, payload.registry ? { registry: payload.registry } : undefined)
+        : this.installer.start(payload.path ?? '')
       return ok({
         sessionId: session.sessionId,
         sourceType: payload.pkg ? 'npm' : 'local',
@@ -179,13 +181,13 @@ export class PluginController {
   private async installStep(payload: { sessionId: string; stage: string; skipAssets?: string[] }): Promise<ApiResult<unknown>> {
     try {
       const stage = payload?.stage as 'copy' | 'deps' | 'assets' | 'register'
-      const session = this.pluginManager.getInstallSession(payload?.sessionId ?? '')
+      const session = this.installer.getSession(payload?.sessionId ?? '')
       if (!session) return fail('安装会话不存在或已过期')
       if (stage === 'assets' && payload.skipAssets) {
         session.skipAssets = payload.skipAssets
       }
       const sid = payload?.sessionId ?? ''
-      const r = await this.pluginManager.stepInstall(sid, stage, (depName, received, total) => {
+      const r = await this.installer.step(sid, stage, (depName, received, total) => {
         // 资源下载进度（复用 plugin:assets-progress 事件——安装向导监听）
         const wc = this.pluginManager.getEmitTarget()
         if (wc && !wc.isDestroyed()) {
@@ -201,9 +203,9 @@ export class PluginController {
   /** 分步安装：下载 tarball（带进度——经 mainWindow 事件推送 renderer） */
   private async installDownload(payload: { sessionId: string }): Promise<ApiResult<unknown>> {
     try {
-      const session = this.pluginManager.getInstallSession(payload?.sessionId ?? '')
+      const session = this.installer.getSession(payload?.sessionId ?? '')
       if (!session) return fail('安装会话不存在或已过期')
-      await this.pluginManager.downloadInstallSession(payload?.sessionId ?? '', (received, total) => {
+      await this.installer.downloadSession(payload?.sessionId ?? '', (received, total) => {
         // 进度事件推送（renderer 监听 plugin:install-progress）
         const wc = this.pluginManager.getEmitTarget()
         if (wc && !wc.isDestroyed()) {

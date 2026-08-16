@@ -185,6 +185,11 @@ export class PluginManager {
     }
   }
 
+  /** 安装器实例（controller 直连——安装域不经过 manager） */
+  getInstaller(): PluginInstaller {
+    return this.installer
+  }
+
   /** 卸载插件（删除目录——Worker 先释放） */
   uninstallPlugin(id: string): void {
     const record = this.registry.get(id)
@@ -204,70 +209,6 @@ export class PluginManager {
     this.installer.uninstall(id)
     this.registry.delete(id)
     console.log(`[plugin] 已卸载 ${id}`)
-  }
-
-  /** 从路径安装插件（目录或 .zip）——委托安装器 */
-  async installFromPath(src: string): Promise<PluginInfo> {
-    const record = await this.installer.install(src)
-    return {
-      manifest: record.manifest,
-      status: {
-        loaded: record.api !== null,
-        enabled: record.enabled,
-        started: record.started,
-        status: deriveStatus({ loaded: record.api !== null, enabled: record.enabled, started: record.started }),
-      },
-    }
-  }
-
-  /** 分步安装：开始会话（npm 包名——pack 下载 + validate） */
-  startInstallNpm(pkg: string, opts?: { registry?: string }): Promise<import('./types').InstallSession> {
-    return this.installer.startNpm(pkg, opts)
-  }
-
-  /** 分步安装：开始会话（本地路径——validate） */
-  startInstallPath(src: string): import('./types').InstallSession {
-    return this.installer.start(src)
-  }
-
-  /** 分步安装：查询会话 */
-  getInstallSession(sessionId: string): import('./types').InstallSession | undefined {
-    return this.installer.getSession(sessionId)
-  }
-
-  /** 分步安装：执行下一步 */
-  stepInstall(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register', onProgress?: (depName: string, received: number, total: number) => void): Promise<{ ok: boolean; error?: string }> {
-    return this.installer.step(sessionId, stage, onProgress)
-  }
-
-  /** 分步安装：下载 tarball（带进度回调） */
-  downloadInstallSession(sessionId: string, onProgress?: (received: number, total: number) => void): Promise<void> {
-    return this.installer.downloadSession(sessionId, onProgress)
-  }
-
-  /** 在线安装（npm 包名）——委托安装器 */
-  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginInfo> {
-    const record = await this.installer.installFromNpm(pkgName, opts)
-    return {
-      manifest: record.manifest,
-      status: {
-        loaded: record.api !== null,
-        enabled: record.enabled,
-        started: record.started,
-        status: deriveStatus({ loaded: record.api !== null, enabled: record.enabled, started: record.started }),
-      },
-    }
-  }
-
-  /** 主进程资源下载（委托 plugin-assets——不依赖 Worker） */
-  async downloadAssets(
-    id: string,
-    onProgress?: (depName: string, received: number, total: number) => void,
-    depName?: string,
-  ): Promise<{ name: string; ok: boolean; error?: string }[]> {
-    const record = this.registry.get(id)
-    if (!record) throw new Error(`插件不存在: ${id}`)
-    return this.installer.downloadAssets(record.manifest, onProgress, depName)
   }
 
   /** 插件自检（Worker 经消息代理） */
@@ -399,30 +340,6 @@ export class PluginManager {
   private forwardEvent(pluginId: string, event: string, data?: unknown): void {
     if (!this.emitTarget || this.emitTarget.isDestroyed()) return
     this.emitTarget.send('plugin:event', { pluginId, event, data })
-  }
-
-  /** 资源就绪状态（主进程文件检查——不依赖 Worker——key 用资源名保证唯一——
-   *  普通文件资源按具体文件存在判定（同目录多模型不互相误判）；压缩包按目录非空） */
-  getAssetStatus(id: string): Record<string, boolean> {
-    const record = this.registry.get(id)
-    if (!record) return {}
-    const dir = join(this.pluginsDir, record.manifest.id)
-    const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
-    const status: Record<string, boolean> = {}
-    for (const dep of deps) {
-      const destDir = join(dir, dep.dest)
-      const lower = dep.url.toLowerCase()
-      const isArchive = lower.endsWith('.zip') || lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz')
-      if (isArchive) {
-        // 压缩包：目录非空即就绪（内容结构由解压逻辑保证）
-        status[dep.name] = existsSync(destDir) && readdirSync(destDir).length > 0
-      } else {
-        // 普通文件：具体文件存在才就绪（同目录多资源互不影响）
-        const file = basename(dep.url)
-        status[dep.name] = existsSync(join(destDir, file))
-      }
-    }
-    return status
   }
 
   /** 主进程静态声明式检查（不执行插件代码——文件系统检查） */

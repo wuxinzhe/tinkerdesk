@@ -254,6 +254,45 @@ export class PluginInstaller {
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
   }
 
+  /** 读取已装插件 manifest（安装域自包含——配置页下载/就绪检查用——不依赖 manager） */
+  getManifestById(id: string): PluginManifest {
+    const file = join(this.deps.pluginsDir, id, 'manifest.json')
+    if (!existsSync(file)) throw new Error(`插件不存在: ${id}`)
+    return JSON.parse(readFileSync(file, 'utf-8')) as PluginManifest
+  }
+
+  /** 资源下载（按 id——读插件目录 manifest——配置页手动触发——depName 指定单个） */
+  async downloadAssetsById(
+    id: string,
+    onProgress?: (depName: string, received: number, total: number) => void,
+    depName?: string,
+  ): Promise<{ name: string; ok: boolean; error?: string }[]> {
+    return this.downloadAssets(this.getManifestById(id), onProgress, depName)
+  }
+
+  /** 资源就绪状态（主进程文件检查——按 id 读 manifest——key 用资源名保证唯一——
+   *  普通文件资源按具体文件存在判定（同目录多模型不互相误判）；压缩包按目录非空） */
+  getAssetStatus(id: string): Record<string, boolean> {
+    const manifest = this.getManifestById(id)
+    const dir = join(this.deps.pluginsDir, id)
+    const deps = manifest.assetDeps ?? manifest.modelDeps ?? []
+    const status: Record<string, boolean> = {}
+    for (const dep of deps) {
+      const destDir = join(dir, dep.dest)
+      const lower = dep.url.toLowerCase()
+      const isArchive = lower.endsWith('.zip') || lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz')
+      if (isArchive) {
+        // 压缩包：目录非空即就绪（内容结构由解压逻辑保证）
+        status[dep.name] = existsSync(destDir) && readdirSync(destDir).length > 0
+      } else {
+        // 普通文件：具体文件存在才就绪（同目录多资源互不影响）
+        const file = basename(dep.url)
+        status[dep.name] = existsSync(join(destDir, file))
+      }
+    }
+    return status
+  }
+
   /** 资源下载（唯一实现——配置页手动/安装阶段共用——depName 指定单个——skipNames 跳过指定——失败返回 error） */
   async downloadAssets(
     manifest: PluginManifest,

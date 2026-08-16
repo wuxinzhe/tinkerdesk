@@ -83,7 +83,11 @@ export class PluginInstallTool extends BaseTool {
           setTimeout(() => rmSync(tmpDir, { recursive: true, force: true }), 5000)
         }
       }
-      const info = await this.pluginManager.installFromPath(srcPath)
+      const record = await this.pluginManager.getInstaller().install(srcPath)
+      const info = {
+        manifest: record.manifest,
+        status: (record as unknown as { status(): import('../core/plugin/types').PluginStatus }).status(),
+      }
       return ToolResult.sync(JSON.stringify({
         ok: true,
         plugin: { id: info.manifest.id, name: info.manifest.name, version: info.manifest.version },

@@ -186,7 +186,7 @@ app.whenReady().then(() => {
 
   // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
   desk.pluginManager.loadAll()
-  new PluginController(desk.pluginManager, () => mainWindow).register()
+  new PluginController(desk.pluginManager, desk.pluginManager.getInstaller(), () => mainWindow).register()
 
   // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
   const voiceService = new VoiceProviderService(desk.pluginManager)
