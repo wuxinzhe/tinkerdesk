@@ -71,7 +71,8 @@ async function load(): Promise<void> {
   }
 }
 
-/** 查询资源就绪状态（主进程文件检查优先——不依赖 Worker——assetDeps 与 modelDeps 都认——下载完成立即可见"已就绪"） */
+/** 查询资源就绪状态（唯一判定源：主进程 asset-status 文件检查——assetDeps/modelDeps 都认——
+ *  不再回退 Worker 判定——避免多套标准互相矛盾） */
 async function refreshModelsStatus(): Promise<void> {
   const deps = plugin.value?.manifest.assetDeps ?? plugin.value?.manifest.modelDeps
   if (!deps?.length) {
@@ -79,17 +80,9 @@ async function refreshModelsStatus(): Promise<void> {
     return
   }
   try {
-    const status = await window.api.plugins.assetStatus(pluginId.value)
-    modelsStatus.value = status ?? {}
-    return
-  } catch {
-    // 主进程检查失败——回退 Worker invoke（models:status）
-  }
-  try {
-    const status = await pluginsApi.invokePlugin<Record<string, boolean> | null>(plugin.value!.manifest.id, 'models:status')
-    // invoke 容错（插件未就绪）返回 null——降级为空对象（模板访问安全）
-    modelsStatus.value = status ?? {}
-  } catch {
+    modelsStatus.value = (await window.api.plugins.assetStatus(pluginId.value)) ?? {}
+  } catch (e) {
+    console.warn('[plugin-config] asset-status 查询失败', (e as Error).message)
     modelsStatus.value = {}
   }
 }

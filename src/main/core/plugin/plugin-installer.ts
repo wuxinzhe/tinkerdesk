@@ -130,7 +130,8 @@ export class PluginInstaller {
           await this.installNpmDeps(session.pluginDir)
           break
         case 'assets':
-          await this.downloadAssetsTo(session.manifest, session.pluginDir, session.skipAssets, onProgress)
+          // 统一走 downloadAssets（唯一实现——跳过 skipAssets 指定项）
+          await this.downloadAssets(session.manifest, onProgress, undefined, session.skipAssets)
           break
         case 'register':
           this.deps.registerPlugin(session.srcDir)
@@ -253,16 +254,17 @@ export class PluginInstaller {
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
   }
 
-  /** 资源下载（配置页手动触发——读 manifest 的 assetDeps——不依赖 Worker——depName 指定单个资源下载） */
+  /** 资源下载（唯一实现——配置页手动/安装阶段共用——depName 指定单个——skipNames 跳过指定——失败返回 error） */
   async downloadAssets(
     manifest: PluginManifest,
     onProgress?: (depName: string, received: number, total: number) => void,
     depName?: string,
+    skipNames: string[] = [],
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
     if (deps.length === 0) throw new Error(`插件 ${manifest.id} 未声明资源依赖（assetDeps）`)
     const dir = join(this.deps.pluginsDir, manifest.id)
-    const targets = depName ? deps.filter((d) => d.name === depName) : deps
+    const targets = depName ? deps.filter((d) => d.name === depName) : deps.filter((d) => !skipNames.includes(d.name))
     if (targets.length === 0) throw new Error(`未找到资源: ${depName}`)
     const results: { name: string; ok: boolean; error?: string }[] = []
     for (const dep of targets) {
@@ -373,33 +375,6 @@ export class PluginInstaller {
     const devNpm = join(process.cwd(), 'node_modules', 'npm', 'bin', 'npm-cli.js')
     if (existsSync(devNpm)) return devNpm
     return 'npm'
-  }
-
-  /** 资源下载到插件目录（安装阶段——勾选的 assetDeps——skip 按资源名——可选依赖跳过） */
-  private async downloadAssetsTo(manifest: PluginManifest, pluginDir: string, skipAssets: string[], onProgress?: (depName: string, received: number, total: number) => void): Promise<void> {
-    const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
-    for (const dep of deps) {
-      if (dep.optional) continue
-      if (skipAssets.includes(dep.name)) continue
-      const destDir = join(pluginDir, dep.dest)
-      if (existsSync(destDir) && readdirSync(destDir).length > 0) continue
-      const tmp = join(pluginDir, `.download-${Date.now()}-${dep.url.split('/').pop()}`)
-      try {
-        await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
-        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-        const lower = dep.url.toLowerCase()
-        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2') || lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip')) {
-          await extractArchivePromote(tmp, destDir)
-        } else {
-          // 普通文件：先删旧目标再移动（避免重下冲突）
-          const target = join(destDir, dep.url.split('/').pop() ?? 'asset')
-          if (existsSync(target)) rmSync(target, { force: true })
-          renameSync(tmp, target)
-        }
-      } catch (e) {
-        throw new Error(`资源下载失败 ${dep.name}: ${(e as Error).message}`)
-      }
-    }
   }
 
   /** 在解压目录中定位含 manifest.json 的目录（根或一层子目录） */
