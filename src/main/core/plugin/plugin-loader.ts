@@ -6,24 +6,11 @@
  */
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import type { PluginCheckResult, PluginManifest, PluginRecord } from './types'
+import type { PluginCheckResult, PluginManifest, PluginLoaderDeps, PluginRecord } from './types'
 import { matchSystemInterfaces } from './system-interfaces'
 import type { PluginHost } from './plugin-host'
 import type { ProviderRegistry } from './plugin-registry'
 import { readConfigFile } from './plugin-store'
-
-/** PluginLoader 依赖（manager 注入——避免反向依赖） */
-export interface PluginLoaderDeps {
-  registry: Map<string, PluginRecord>
-  host: PluginHost
-  providerRegistry: ProviderRegistry
-  /** 注册插件声明的 IPC 通道（manager 安全接线） */
-  registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
-  /** 查询插件是否已注册某通道（接口契约校验用） */
-  hasChannel: (pluginId: string, channel: string) => boolean
-  /** 插件事件转发 renderer */
-  forwardEvent: (pluginId: string, event: string, data?: unknown) => void
-}
 
 /** 插件加载与注册编排 */
 export class PluginLoader {

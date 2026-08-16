@@ -206,3 +206,16 @@ export interface SystemInterfaceDef {
   /** 契约：实现该接口必须注册的可选频道（如 models:status 模型管理） */
   optionalChannels?: string[]
 }
+
+/** PluginLoader 依赖（manager 注入——避免反向依赖） */
+export interface PluginLoaderDeps {
+  registry: Map<string, PluginRecord>
+  host: import('./plugin-host').PluginHost
+  providerRegistry: import('./plugin-registry').ProviderRegistry
+  /** 注册插件声明的 IPC 通道（manager 安全接线） */
+  registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
+  /** 查询插件是否已注册某通道（接口契约校验用） */
+  hasChannel: (pluginId: string, channel: string) => boolean
+  /** 插件事件转发 renderer */
+  forwardEvent: (pluginId: string, event: string, data?: unknown) => void
+}
