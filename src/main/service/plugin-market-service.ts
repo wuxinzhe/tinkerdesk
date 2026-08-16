@@ -131,7 +131,7 @@ export async function getMarketPluginDetail(name: string, installedIds: string[]
     categories: (d.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
     official: (d.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
     installed: installedIds.includes(d.name.slice(MARKET_PREFIX.length)),
-    updated: d.time?.[d.version] ?? '',
+    updated: d.time?.[d.version] ?? d.time?.modified ?? '',
     dependencies: Object.keys(d.dependencies ?? {}),
   }
 }
