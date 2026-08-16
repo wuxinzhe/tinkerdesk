@@ -71,9 +71,10 @@ async function load(): Promise<void> {
   }
 }
 
-/** 查询资源就绪状态（主进程文件检查优先——不依赖 Worker——下载完成立即可见"已就绪"） */
+/** 查询资源就绪状态（主进程文件检查优先——不依赖 Worker——assetDeps 与 modelDeps 都认——下载完成立即可见"已就绪"） */
 async function refreshModelsStatus(): Promise<void> {
-  if (!plugin.value?.manifest.assetDeps?.length) {
+  const deps = plugin.value?.manifest.assetDeps ?? plugin.value?.manifest.modelDeps
+  if (!deps?.length) {
     modelsStatus.value = {}
     return
   }
