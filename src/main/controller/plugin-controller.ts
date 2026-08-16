@@ -50,7 +50,7 @@ export class PluginController {
     )
     handleTrusted('plugin:install', (_event, payload: { path: string }) => this.install(payload))
     handleTrusted('plugin:install-npm', (_event, payload: { pkg: string; registry?: string }) => this.installFromNpm(payload))
-    handleTrusted('plugin:market-list', () => this.marketList())
+    handleTrusted('plugin:market-list', (_event, payload: { category?: string; search?: string } = {}) => this.marketList(payload))
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
       this.pickInstallPackage(payload ?? {}),
@@ -133,11 +133,11 @@ export class PluginController {
     }
   }
 
-  /** 插件市场列表（service 层——生态开放 + 官方标记 + installed 状态 + 分类） */
-  private async marketList(): Promise<ApiResult<import('../service/plugin-market-service').MarketListResult>> {
+  /** 插件市场列表（service 层——真实 npm 搜索——分类/搜索词透传） */
+  private async marketList(payload: { category?: string; search?: string } = {}): Promise<ApiResult<import('../service/plugin-market-service').MarketListResult>> {
     try {
       const installedIds = this.pluginManager.list().map((p) => p.manifest.id)
-      return ok(await listMarketPlugins({ installedIds }))
+      return ok(await listMarketPlugins({ installedIds, category: payload.category, search: payload.search }))
     } catch (e) {
       return fail((e as Error).message)
     }

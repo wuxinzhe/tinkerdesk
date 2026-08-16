@@ -36,7 +36,44 @@ export interface NpmSearchParams {
   size?: number
 }
 
-const REGISTRY_SEARCH = 'https://registry.npmjs.org/-/v1/search'
+/** npm 包详情（registry API /<pkg>——详情页展示） */
+export interface NpmPackageDetail {
+  name: string
+  version: string
+  description?: string
+  readme?: string
+  homepage?: string
+  repository?: { url?: string }
+  keywords?: string[]
+  maintainers?: { username?: string }[]
+  time?: Record<string, string>
+  dependencies?: Record<string, string>
+}
+
+const REGISTRY_BASE = 'https://registry.npmjs.org'
+const REGISTRY_SEARCH = `${REGISTRY_BASE}/-/v1/search`
+
+function httpsGetJson(url: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    get(url, (res) => {
+      let body = ''
+      res.on('data', (c) => (body += c))
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body))
+        } catch (e) {
+          reject(new Error(`npm registry 响应解析失败: ${(e as Error).message}`))
+        }
+      })
+    }).on('error', (e) => reject(new Error(`npm registry 请求失败: ${e.message}`)))
+  })
+}
+
+/** 查询 npm 包详情（registry API /<pkg>——含 readme/依赖/时间线） */
+export async function getPackageDetail(name: string): Promise<NpmPackageDetail> {
+  const d = (await httpsGetJson(`${REGISTRY_BASE}/${encodeURIComponent(name)}`)) as NpmPackageDetail
+  return d
+}
 
 /** 查询 npm registry search API（原始响应——解析失败抛错） */
 export function searchNpm(params: NpmSearchParams): Promise<NpmSearchResponse> {

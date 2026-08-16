@@ -45,12 +45,12 @@
       </div>
     </div>
 
-    <SaEmpty v-else-if="filtered.length === 0" text="暂未发现插件" />
+    <SaEmpty v-else-if="plugins.length === 0" text="暂未发现插件" />
 
     <!-- 插件列表 -->
     <div v-else class="plugin-market__grid">
       <div
-        v-for="plugin in filtered"
+        v-for="plugin in plugins"
         :key="plugin.name"
         class="plugin-card"
       >
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type { MarketPluginItem } from '@/renderer/api/types'
 import { NSelect } from 'naive-ui'
 import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
@@ -116,15 +116,6 @@ const categoryOptions = computed(() => {
   return opts
 })
 
-const filtered = computed(() => {
-  const q = searchName.value.trim().toLowerCase()
-  return plugins.value.filter((p) => {
-    if (category.value && !p.categories.includes(category.value)) return false
-    if (!q) return true
-    return p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-  })
-})
-
 /** 显示名（去掉 tinkerdesk-plugin- 前缀——只留能力名） */
 function displayName(name: string): string {
   return name.replace(/^tinkerdesk-plugin-/, '')
@@ -132,10 +123,22 @@ function displayName(name: string): string {
 
 onMounted(loadMarket)
 
+// 分类/搜索变化 → 真实 npm 查询（不是本地过滤）
+watch(category, () => loadMarket())
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+function onSearchChange() {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => loadMarket(), 300)
+}
+
 async function loadMarket() {
   loading.value = true
   try {
-    const res = await pluginsApi.marketList()
+    const res = await pluginsApi.marketList({
+      category: category.value || undefined,
+      search: searchName.value.trim() || undefined,
+    })
     plugins.value = res.items ?? []
     categories.value = res.categories ?? []
   } catch (e) {
@@ -144,10 +147,6 @@ async function loadMarket() {
   } finally {
     loading.value = false
   }
-}
-
-function onSearchChange() {
-  // 本地过滤（市场列表一次性拉取——npm search 已返回全量）
 }
 
 async function installPlugin(plugin: MarketPluginItem) {

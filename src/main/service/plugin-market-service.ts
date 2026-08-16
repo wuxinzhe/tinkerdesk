@@ -5,7 +5,7 @@
  * 数据来自 repository（npm-registry-repository）——结果结构定义在本文件——
  * controller 层只做 IPC 转发（DTO 透传）。
  */
-import { searchNpm, type NpmPackage } from '../repository/npm-registry-repository'
+import { getPackageDetail, searchNpm, type NpmPackage } from '../repository/npm-registry-repository'
 
 /* ── service 层类型（业务结构——controller/renderer 消费） ── */
 
@@ -29,10 +29,28 @@ export interface MarketListResult {
   categories: string[]
 }
 
+/** 插件详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
+export interface MarketPluginDetail {
+  name: string
+  version: string
+  description: string
+  readme: string
+  homepage: string
+  categories: string[]
+  official: boolean
+  installed: boolean
+  updated: string
+  dependencies: string[]
+}
+
 /** 市场查询参数 */
 export interface MarketQueryParams {
   /** 本地已安装插件 id 列表（对比标记） */
   installedIds: string[]
+  /** 分类筛选（npm search keywords:<分类>——真实 registry 查询） */
+  category?: string
+  /** 搜索词（npm search text——名称/描述匹配） */
+  search?: string
 }
 
 /* ── 常量 ── */
@@ -45,24 +63,34 @@ export const MARKET_PREFIX = 'tinkerdesk-plugin-'
 
 /* ── 业务实现 ── */
 
-/** 生态开放查询（打了 keywords:tinkerdesk-plugin 的包） */
-async function queryEcosystem(): Promise<NpmPackage[]> {
-  const res = await searchNpm({ text: 'keywords:tinkerdesk-plugin' })
+/** 生态开放查询（keywords:tinkerdesk-plugin + 可选分类/搜索词——真实 registry 查询） */
+async function queryEcosystem(category?: string, search?: string): Promise<NpmPackage[]> {
+  // npm search 语法：空格 = AND——组合条件精确查询
+  const parts = ['keywords:tinkerdesk-plugin']
+  if (category) parts.push(`keywords:${category}`)
+  if (search && search.trim()) parts.push(search.trim())
+  const res = await searchNpm({ text: parts.join(' ') })
   return (res.objects ?? []).map((o) => o.package)
 }
 
-/** 官方账户补充查询（索引延迟兜底——官方插件必现） */
-async function queryOfficial(): Promise<NpmPackage[]> {
-  const res = await searchNpm({ text: `maintainer:${OFFICIAL_MAINTAINER}` })
+/** 官方账户补充查询（索引延迟兜底——官方插件必现——带同样筛选条件） */
+async function queryOfficial(category?: string, search?: string): Promise<NpmPackage[]> {
+  const parts = [`maintainer:${OFFICIAL_MAINTAINER}`]
+  if (category) parts.push(`keywords:${category}`)
+  if (search && search.trim()) parts.push(search.trim())
+  const res = await searchNpm({ text: parts.join(' ') })
   return (res.objects ?? []).map((o) => o.package)
 }
 
 /** 市场分类词（生态标记 tinkerdesk-plugin 之外的能力分类——约定词表） */
 export const MARKET_CATEGORIES = ['voice', 'tts', 'stt', 'vision', 'tool', 'model', 'video', 'image', 'agent']
 
-/** 插件市场列表（生态开放 + 官方标记 + installed 状态 + 分类） */
+/** 插件市场列表（生态开放 + 官方标记 + installed 状态 + 分类——真实 npm 搜索） */
 export async function listMarketPlugins(params: MarketQueryParams): Promise<MarketListResult> {
-  const [eco, official] = await Promise.all([queryEcosystem(), queryOfficial()])
+  const [eco, official] = await Promise.all([
+    queryEcosystem(params.category, params.search),
+    queryOfficial(params.category, params.search),
+  ])
   // 合并去重（keywords 命中优先保留）
   const map = new Map<string, NpmPackage>()
   for (const p of [...eco, ...official]) {
@@ -89,4 +117,21 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
   // 分类聚合（所有插件出现过的分类——去重——排序）
   const categories = Array.from(new Set(items.flatMap((i) => i.categories))).sort()
   return { items, categories }
+}
+
+/** 插件详情（npm 包元数据 + 官方标记 + 已安装状态） */
+export async function getMarketPluginDetail(name: string, installedIds: string[]): Promise<MarketPluginDetail> {
+  const d = await getPackageDetail(name)
+  return {
+    name: d.name,
+    version: d.version,
+    description: d.description ?? '',
+    readme: d.readme ?? '',
+    homepage: d.homepage ?? '',
+    categories: (d.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
+    official: (d.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
+    installed: installedIds.includes(d.name.slice(MARKET_PREFIX.length)),
+    updated: d.time?.[d.version] ?? '',
+    dependencies: Object.keys(d.dependencies ?? {}),
+  }
 }

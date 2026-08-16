@@ -21,8 +21,8 @@ export interface PluginApi {
   install(path: string): Promise<PluginInfo>
   /** 在线安装（npm 包名） */
   installNpm(pkg: string, registry?: string): Promise<PluginInfo>
-  /** 插件市场列表（npm registry search——生态开放 + 官方标记 + 分类） */
-  marketList(): Promise<MarketListResult>
+  /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
+  marketList(payload?: { category?: string; search?: string }): Promise<MarketListResult>
   /** 卸载插件（删除插件及下载的模型） */
   uninstall(id: string): Promise<void>
   getStatus(id: string): Promise<PluginStatus>
@@ -51,7 +51,7 @@ export const pluginsApi: PluginApi = {
   /** 在线安装（npm 包名） */
   installNpm: (pkg, registry) => window.api.plugins.installNpm(pkg, registry),
   /** 插件市场列表（npm registry search） */
-  marketList: () => window.api.plugins.marketList(),
+  marketList: (payload?: { category?: string; search?: string }) => window.api.plugins.marketList(payload),
   uninstall: (id) => window.api.plugins.uninstall(id),
   getStatus: (id) => window.api.plugins.getStatus(id),
   getSchema: (id) => window.api.plugins.getSchema(id),

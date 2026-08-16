@@ -1047,7 +1047,7 @@ export interface WindowApi {
     /** 在线安装（npm 包名——npm pack 下载 → 解压 → 标准安装） */
     installNpm: (pkg: string, registry?: string) => Promise<PluginInfo>
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
-    marketList: () => Promise<MarketListResult>
+    marketList: (payload?: { category?: string; search?: string }) => Promise<MarketListResult>
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => Promise<void>
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
