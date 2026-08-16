@@ -96,19 +96,40 @@
       </button>
     </div>
 
-    <!-- L3 工具栏动作：技能安装（选文件 → 校验 → 安装） -->
+    <!-- L3 工具栏动作：安装组合按钮（大按钮=技能市场 + 箭头=本地安装） -->
     <ToolbarActions>
-      <button
-        class="toolbar-btn"
-        title="安装技能"
-        @click="installSkillFromFile"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-      </button>
+      <div class="skill-install-group">
+        <button
+          class="toolbar-btn skill-install-group__main"
+          title="技能市场"
+          @click="goMarket"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          技能市场
+        </button>
+        <button
+          class="toolbar-btn skill-install-group__arrow"
+          title="本地安装"
+          @click="installMenuOpen = !installMenuOpen"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <div v-if="installMenuOpen" class="skill-install-menu" @click.stop>
+          <button class="skill-install-menu__item" @click="installSkillFromFile">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            本地安装技能
+          </button>
+        </div>
+      </div>
     </ToolbarActions>
   </L3PageLayout>
 </template>
@@ -205,8 +226,18 @@ async function toggleSkill(skill: SkillInfo, enabled: boolean) {
 
 /** 技能安装：跳转 SkillImportView（render 层解析 + 可手动修改 + 结构化写入） */
 async function installSkillFromFile(): Promise<void> {
+  installMenuOpen.value = false
   const profile = route.params.profile as string
   router.push(`/workspace/agents/${profile}/skill/import`)
+}
+
+/** 本地安装菜单开关 */
+const installMenuOpen = ref(false)
+
+/** 跳转技能市场（npm 在线） */
+function goMarket(): void {
+  const profile = route.params.profile as string
+  router.push(`/workspace/agents/${profile}/market`)
 }
 
 /* ── 初始化 ── */
@@ -531,4 +562,85 @@ onMounted(() => {
     box-shadow: var(--tk-shadow-card-hover);
   }
 }
+
+/* ── 安装组合按钮（大按钮=技能市场 + 箭头=本地安装） ── */
+.skill-install-group {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.skill-install-group__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-accent);
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid var(--tk-accent);
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.skill-install-group__main:hover {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+.skill-install-group__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 9px;
+  color: var(--tk-accent);
+  background: rgba(0, 122, 255, 0.06);
+  border: 1px solid var(--tk-accent);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.skill-install-group__arrow:hover {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+.skill-install-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 150px;
+  width: max-content;
+  padding: 4px;
+  background: var(--tk-bg-elevated);
+  border: 1px solid var(--tk-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 40;
+}
+
+.skill-install-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--tk-text-primary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.skill-install-menu__item:hover {
+  background: var(--tk-bg-hover, rgba(0, 0, 0, 0.05));
+}
+
 </style>
