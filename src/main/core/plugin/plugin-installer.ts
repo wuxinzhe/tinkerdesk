@@ -31,6 +31,32 @@ async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ 
   return { url: out }
 }
 
+/** 国内镜像映射（下载失败回退——GitHub/HF 加速） */
+function mirrorUrl(url: string): string {
+  if (url.startsWith('https://github.com/')) {
+    return `https://ghfast.top/${url}`
+  }
+  if (url.startsWith('https://huggingface.co/')) {
+    return url.replace('https://huggingface.co/', 'https://hf-mirror.com/')
+  }
+  if (url.startsWith('https://objects.githubusercontent.com/')) {
+    return `https://ghfast.top/${url}`
+  }
+  return url
+}
+
+/** 下载（直连优先——失败自动回退镜像重试一次） */
+async function downloadWithMirror(url: string, dest: string, onProgress?: (received: number, total: number) => void): Promise<void> {
+  try {
+    await downloadFile(url, dest, onProgress)
+  } catch (e) {
+    const mirror = mirrorUrl(url)
+    if (mirror === url) throw e
+    console.warn(`[plugin] 直连下载失败（${(e as Error).message}）——回退镜像: ${mirror}`)
+    await downloadFile(mirror, dest, onProgress)
+  }
+}
+
 /** 插件安装器（每 manager 一个实例） */
 export class PluginInstaller {
   private readonly sessions = new Map<string, InstallSession>()
@@ -168,7 +194,7 @@ export class PluginInstaller {
     const tmpDir = join(app.getPath('temp'), `tinkerdesk-npm-${Date.now()}`)
     mkdirSync(tmpDir, { recursive: true })
     const tgz = join(tmpDir, 'pkg.tgz')
-    await downloadFile(url, tgz, (recv, total) => onProgress?.(recv, total || (session.tarballSize ?? 0)))
+    await downloadWithMirror(url, tgz, (recv, total) => onProgress?.(recv, total || (session.tarballSize ?? 0)))
     // 解压 → 定位 manifest → validate（复用 start 的校验——直接调用内部逻辑）
     const extracted = join(tmpDir, 'pkg')
     mkdirSync(extracted, { recursive: true })
@@ -210,7 +236,7 @@ export class PluginInstaller {
       if (dep.optional) continue
       try {
         const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
-        await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
+        await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
         const destDir = join(dir, dep.dest)
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
         const lower = dep.url.toLowerCase()
