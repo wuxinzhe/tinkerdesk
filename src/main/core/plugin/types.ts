@@ -103,6 +103,9 @@ export interface PluginStatus {
   enabled: boolean
   /** 运行时实际注册状态（自检通过并 start → 加入 provider 清单） */
   started?: boolean
+  /** 主进程静态声明式检查通过（manifest/入口/依赖/资源存在性——
+   *   不执行插件代码——通过则配置页可开（含资源下载入口）——不依赖 Worker 存活） */
+  configurable?: boolean
   detail?: string
 }
 

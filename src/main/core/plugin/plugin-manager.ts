@@ -13,11 +13,45 @@
 import { app} from 'electron'
 import { handleTrusted } from '../../security/ipc-guard'
 import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, renameSync, rmSync, cpSync, statSync } from 'fs'
-import { join } from 'path'
+import { join, basename } from 'path'
 import { createHash } from 'crypto'
 import { execFileSync } from 'child_process'
 import { execFile } from 'child_process'
 import { Worker } from 'worker_threads'
+import { get as httpsGet } from 'https'
+import { get as httpGet } from 'http'
+
+/** 下载文件（带进度回调——字节数） */
+function downloadFile(
+  url: string,
+  dest: string,
+  onProgress?: (received: number, total: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith('https:') ? httpsGet : httpGet
+    const req = client(url, (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`下载失败 HTTP ${res.statusCode} (${url})`))
+        res.resume()
+        return
+      }
+      const total = Number(res.headers['content-length'] ?? 0)
+      let received = 0
+      const ws = require('fs').createWriteStream(dest)
+      res.on('data', (chunk) => {
+        received += chunk.length
+        onProgress?.(received, total)
+      })
+      res.pipe(ws)
+      ws.on('finish', () => resolve())
+      ws.on('error', reject)
+    })
+    req.setTimeout(60_000, () => {
+      req.destroy(new Error(`下载超时: ${url}`))
+    })
+    req.on('error', reject)
+  })
+}
 import { matchSystemInterfaces, SYSTEM_INTERFACES } from './system-interfaces'
 import type {
   PluginApi,
@@ -672,17 +706,46 @@ export class PluginManager {
     return 'tar'
   }
 
+  /** 主进程静态声明式检查（不执行插件代码——文件系统检查）：
+   *  manifest 已读（loadPlugin 时校验）；entry 存在；依赖 node_modules 存在；
+   *  assetDeps 资源就绪度（dest 目录非空）。通过 = 插件可配置（配置页可开——
+   *  含资源下载入口）——不依赖 Worker 存活。 */
+  staticCheck(record: PluginRecord): { ok: boolean; reason?: string } {
+    const dir = join(this.pluginsDir, record.manifest.id)
+    const entry = join(dir, record.manifest.entry ?? 'index.js')
+    if (!existsSync(entry)) {
+      return { ok: false, reason: `入口文件缺失: ${record.manifest.entry}` }
+    }
+    if (record.manifest.assetDeps && record.manifest.assetDeps.length > 0) {
+      const missing: string[] = []
+      for (const dep of record.manifest.assetDeps) {
+        const destDir = join(dir, dep.dest)
+        if (!existsSync(destDir) || readdirSync(destDir).length === 0) {
+          missing.push(`${dep.name}（约 ${dep.sizeMB}MB——可下载）`)
+        }
+      }
+      if (missing.length > 0) {
+        return { ok: false, reason: `资源未就绪: ${missing.join('、')}` }
+      }
+    }
+    return { ok: true }
+  }
+
   /** 插件列表 */
   list(): PluginInfo[] {
-    return Array.from(this.registry.values()).map((r) => ({
-      manifest: r.manifest,
-      status: {
-        loaded: r.api !== null,
-        enabled: r.enabled,
-        started: r.started,
-        detail: r.error,
-      },
-    }))
+    return Array.from(this.registry.values()).map((r) => {
+      const staticOk = this.staticCheck(r)
+      return {
+        manifest: r.manifest,
+        status: {
+          loaded: r.api !== null,
+          enabled: r.enabled,
+          started: r.started,
+          configurable: staticOk.ok,
+          detail: staticOk.ok ? r.error : staticOk.reason,
+        },
+      }
+    })
   }
 
   /**
@@ -772,6 +835,48 @@ export class PluginManager {
   /** 内部记录访问（Agent 工具等需要直接操作 ctx/配置时用） */
   getRecord(id: string): PluginRecord | null {
     return this.registry.get(id) ?? null
+  }
+
+  /**
+   * 主进程资源下载（不依赖插件 Worker——Worker 挂/资源缺失时仍可用）。
+   * 读 manifest.assetDeps → 下载 URL → 解压（tar.bz2/tar.gz/zip）→ 就位到 dest。
+   * 返回每项结果；进度经 callback 回调（下载字节/总字节）。
+   */
+  async downloadAssets(
+    id: string,
+    onProgress?: (depName: string, received: number, total: number) => void,
+  ): Promise<{ name: string; ok: boolean; error?: string }[]> {
+    const record = this.registry.get(id)
+    if (!record) throw new Error(`插件不存在: ${id}`)
+    const deps = record.manifest.assetDeps ?? []
+    if (deps.length === 0) throw new Error(`插件 ${id} 未声明资源依赖（assetDeps）`)
+    const dir = join(this.pluginsDir, id)
+    const results: { name: string; ok: boolean; error?: string }[] = []
+    for (const dep of deps) {
+      try {
+        const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
+        await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
+        const destDir = join(dir, dep.dest)
+        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
+        // 按扩展名解压（tar.bz2 / tar.gz / zip / 裸文件）
+        const lower = dep.url.toLowerCase()
+        if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
+          execFileSync('tar', ['-xjf', tmp, '-C', destDir], { stdio: 'pipe' })
+        } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
+          execFileSync('tar', ['-xzf', tmp, '-C', destDir], { stdio: 'pipe' })
+        } else if (lower.endsWith('.zip')) {
+          execFileSync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`], { stdio: 'pipe' })
+        } else {
+          renameSync(tmp, join(destDir, basename(dep.url)))
+        }
+        // 清理临时文件（解压分支）
+        if (existsSync(tmp)) rmSync(tmp, { force: true })
+        results.push({ name: dep.name, ok: true })
+      } catch (e) {
+        results.push({ name: dep.name, ok: false, error: (e as Error).message })
+      }
+    }
+    return results
   }
 
   /** 配置 Schema（动态——Worker 插件经代理异步获取） */

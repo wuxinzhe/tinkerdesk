@@ -58,6 +58,19 @@ export class PluginController {
     handleTrusted('plugin:save-config', (_event, payload: { id: string; patch: Record<string, unknown> }) =>
       this.savePluginConfig(payload),
     )
+    handleTrusted('plugin:download-assets', async (_event, payload: { id: string }) =>
+      this.downloadAssets(payload),
+    )
+  }
+
+  /** 主进程资源下载（不依赖 Worker——配置页下载按钮调用） */
+  private async downloadAssets(payload: { id: string }): Promise<ApiResult<{ name: string; ok: boolean; error?: string }[]>> {
+    try {
+      if (!payload?.id) return fail('id 不能为空')
+      return ok(await this.pluginManager.downloadAssets(payload.id))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
   }
 
   /** 插件列表 */
@@ -195,6 +208,20 @@ export class PluginController {
       if (!payload?.id) return fail('id 不能为空')
       return ok(await this.pluginManager.getSchema(payload.id))
     } catch (e) {
+      // Worker 失败（插件未就绪——如资源缺失）——分层自检容错：
+      // 主进程静态检查通过 → 配置页仍可开（返回可配置信息——含资源下载入口）
+      if (payload?.id) {
+        const record = this.pluginManager.getRecord(payload.id)
+        const staticOk = record ? this.pluginManager.staticCheck(record) : { ok: false }
+        if (staticOk.ok || !staticOk.ok && record?.manifest.assetDeps?.length) {
+          return ok({
+            configurable: true,
+            degraded: true,
+            note: (e as Error).message,
+            assetDeps: record?.manifest.assetDeps ?? [],
+          })
+        }
+      }
       return fail((e as Error).message)
     }
   }
