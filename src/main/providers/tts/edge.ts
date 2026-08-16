@@ -8,7 +8,7 @@ import { EdgeTTS } from 'node-edge-tts'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { readFileSync } from 'fs'
-import type { TinkerPlugin } from '../../core/plugin/types'
+import { deriveStatus, type PluginApi, type TinkerPlugin } from '../../core/plugin/types'
 
 /** 默认中文女声（微软 Edge 神经语音） */
 export const DEFAULT_EDGE_VOICE = 'zh-CN-XiaoyiNeural'
@@ -124,7 +124,7 @@ export const edgeTtsPlugin: TinkerPlugin = {
           },
         },
       }),
-      getStatus: () => ({ loaded: true, enabled: true, detail: 'Edge 在线语音（需联网）' }),
+      getStatus: () => ({ loaded: true, enabled: true, started: true, status: deriveStatus({ loaded: true, enabled: true, started: true }), detail: 'Edge 在线语音（需联网）' }),
       start: () => undefined,
       stop: () => undefined,
       dispose: () => undefined,

@@ -17,7 +17,7 @@ import { PluginInstaller } from './plugin-installer'
 import { Plugin } from './plugin'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 import { matchSystemInterfaces } from './system-interfaces'
-import type { PluginApi, PluginCheckResult, PluginConfigFile, PluginContext, PluginManifest, PluginRecord, PluginStatus, PluginInfo, ToggleResult } from './types'
+import { deriveStatus, type PluginApi, type PluginCheckResult, type PluginConfigFile, type PluginContext, type PluginManifest, type PluginRecord, type PluginStatus, type PluginInfo, type ToggleResult } from './types'
 
 /** 插件管理器（纯注册表——维护性工作） */
 export class PluginManager {
@@ -111,6 +111,7 @@ export class PluginManager {
           loaded: r.api !== null,
           enabled: r.enabled,
           started: r.started,
+          status: deriveStatus({ loaded: r.api !== null, enabled: r.enabled, started: r.started }),
           configurable: staticOk.ok,
           detail: staticOk.ok ? r.error : staticOk.reason,
         },
@@ -210,7 +211,12 @@ export class PluginManager {
     const record = await this.installer.install(src)
     return {
       manifest: record.manifest,
-      status: { loaded: record.api !== null, enabled: record.enabled, started: record.started },
+      status: {
+        loaded: record.api !== null,
+        enabled: record.enabled,
+        started: record.started,
+        status: deriveStatus({ loaded: record.api !== null, enabled: record.enabled, started: record.started }),
+      },
     }
   }
 
@@ -244,7 +250,12 @@ export class PluginManager {
     const record = await this.installer.installFromNpm(pkgName, opts)
     return {
       manifest: record.manifest,
-      status: { loaded: record.api !== null, enabled: record.enabled, started: record.started },
+      status: {
+        loaded: record.api !== null,
+        enabled: record.enabled,
+        started: record.started,
+        status: deriveStatus({ loaded: record.api !== null, enabled: record.enabled, started: record.started }),
+      },
     }
   }
 
@@ -273,11 +284,12 @@ export class PluginManager {
     if (!record?.api) throw new Error(`插件不存在或未加载: ${id}`)
     const workerStatus = (await record.api.getStatus?.()) ?? {}
     // Worker 返回仅补充 detail 等信息——运行时事实字段以 manager 记录为准
-    const { loaded: _l, enabled: _e, started: _s, ...rest } = workerStatus as PluginStatus
+    const { loaded: _l, enabled: _e, started: _s, status: _st, ...rest } = workerStatus as PluginStatus
     return {
       loaded: true,
       enabled: record.enabled,
       started: record.started,
+      status: deriveStatus({ loaded: true, enabled: record.enabled, started: record.started }),
       ...rest,
     }
   }

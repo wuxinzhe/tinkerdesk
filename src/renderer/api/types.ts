@@ -793,6 +793,8 @@ export interface PluginStatus {
   enabled: boolean
   /** 运行时实际注册状态（自检通过并 start → 加入 provider 清单） */
   started?: boolean
+  /** 收敛后的单一状态（后端统一计算——UI 直接渲染） */
+  status: 'unloaded' | 'disabled' | 'unready' | 'registered'
   detail?: string
 }
 

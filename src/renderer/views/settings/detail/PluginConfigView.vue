@@ -31,9 +31,12 @@ const downloading = ref<string | boolean>(false)
 const statusText = computed(() => {
   const s = plugin.value?.status
   if (!s) return '未加载'
-  if (!s.enabled) return '已停用'
-  if (!s.started) return '未就绪'
-  return '已注册'
+  return {
+    unloaded: '未加载',
+    disabled: '已停用',
+    unready: '未就绪',
+    registered: '已注册',
+  }[s.status] ?? '未加载'
 })
 
 /** 资源依赖列表（degraded 时用后端兼容返回的 assetDeps——否则用 manifest 声明） */

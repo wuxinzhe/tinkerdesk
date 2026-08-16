@@ -321,7 +321,7 @@ async function askUninstall(p: PluginInfo): Promise<void> {
           </div>
           <div class="plugin-card__status">
             <span :class="['plugin-card__dot', p.status.enabled ? 'on' : 'off']"></span>
-            {{ p.status.enabled ? (p.status.started ? '已注册' : '未就绪') : '已停用' }}
+            {{ { unloaded: '未加载', disabled: '已停用', unready: '未就绪', registered: '已注册' }[p.status.status] ?? '未加载' }}
           </div>
         </div>
 

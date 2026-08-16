@@ -7,7 +7,7 @@
  */
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import type { PluginApi, PluginCheckResult, PluginContext, PluginDeps, PluginManifest, PluginStatus } from './types'
+import { deriveStatus, type PluginApi, type PluginCheckResult, type PluginContext, type PluginDeps, type PluginManifest, type PluginStatus } from './types'
 import { matchSystemInterfaces } from './system-interfaces'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 
@@ -200,10 +200,10 @@ export class Plugin {
 
   /** 状态（列表展示） */
   status(): PluginStatus {
+    const s = { loaded: this.api !== null, enabled: this.enabled, started: this.started }
     return {
-      loaded: this.api !== null,
-      enabled: this.enabled,
-      started: this.started,
+      ...s,
+      status: deriveStatus(s),
       detail: this.error,
     }
   }

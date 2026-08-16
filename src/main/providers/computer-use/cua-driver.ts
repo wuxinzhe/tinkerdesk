@@ -10,7 +10,7 @@
  *   - 插件自身自检（check/getStatus）报告 cua-driver 是否安装——
  *     未安装时插件 ready=false（列表可见不可用），执行抛错提示安装
  */
-import type { PluginApi, TinkerPlugin } from '../../core/plugin/types'
+import { deriveStatus, type PluginApi, type TinkerPlugin } from '../../core/plugin/types'
 import { resolveCuaDriverCmd } from '../../tools/computer-use/cua-driver-client'
 
 /** 内置插件 manifest（id 以 builtin- 前缀标识——前端显示「内置」标记、不可卸载） */
@@ -43,7 +43,8 @@ export const cuaDriverPlugin: TinkerPlugin = {
         }
       },
       getStatus() {
-        return { loaded: true, enabled: true, ready: resolveCuaDriverCmd() !== null }
+        const ready = resolveCuaDriverCmd() !== null
+        return { loaded: true, enabled: true, started: ready, status: deriveStatus({ loaded: true, enabled: true, started: ready }) }
       },
     }
   },

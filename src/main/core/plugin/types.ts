@@ -110,10 +110,21 @@ export interface PluginStatus {
   enabled: boolean
   /** 运行时实际注册状态（自检通过并 start → 加入 provider 清单） */
   started?: boolean
+  /** 收敛后的单一状态（UI 直接渲染——后端统一计算）：
+   *  unloaded=未加载 / disabled=已停用 / unready=未就绪 / registered=已注册 */
+  status: 'unloaded' | 'disabled' | 'unready' | 'registered'
   /** 主进程静态声明式检查通过（manifest/入口/依赖/资源存在性——
    *   不执行插件代码——通过则配置页可开（含资源下载入口）——不依赖 Worker 存活） */
   configurable?: boolean
   detail?: string
+}
+
+/** 由 loaded/enabled/started 推导收敛状态（唯一计算入口——list/getStatus 共用） */
+export function deriveStatus(s: { loaded: boolean; enabled: boolean; started?: boolean }): PluginStatus['status'] {
+  if (!s.loaded) return 'unloaded'
+  if (!s.enabled) return 'disabled'
+  if (!s.started) return 'unready'
+  return 'registered'
 }
 
 /** 自检单项：name 检查项名称；action 引导动作（UI 据此提供"去下载/去配置"按钮） */
