@@ -9,7 +9,7 @@
  * 调用方流程：manager.getPlugin(id) → plugin.check()/start()/invoke()...
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs'
-import { join } from 'path'
+import { basename, join } from 'path'
 import { app } from 'electron'
 import { handleTrusted } from '../../security/ipc-guard'
 import { PluginHost } from './plugin-host'
