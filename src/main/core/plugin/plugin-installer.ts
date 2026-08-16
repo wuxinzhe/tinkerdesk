@@ -313,8 +313,9 @@ export class PluginInstaller {
     // 并行下载（每 dep 独立——Promise.all——单个失败不影响其他——结果各自记录）
     const results = await Promise.all(
       targets.map(async (dep) => {
-        // 用户明确指定单个资源下载时（depName）——即使 optional 也下载；全量下载保持跳过 optional
-        if (dep.optional && !depName) return { name: dep.name, ok: true, skipped: true as unknown as undefined } as { name: string; ok: boolean; error?: string }
+        // 不再按 optional 跳过：安装阶段勾选（skipNames）与配置页单点（depName）都由调用方
+        // 控制选择——可选资源在勾选/指定后必须真实下载（旧逻辑全量时跳过 optional——
+        // 导致安装勾选 small/medium 全被跳过只下引擎）
         try {
           // 已就绪（目标目录非空/文件存在）跳过——避免重复下载
           const destDir = join(dir, dep.dest)
