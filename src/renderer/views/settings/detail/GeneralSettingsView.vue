@@ -214,8 +214,8 @@ function startCapture(item: ShortcutItem): void {
   capturingKey.value = item.key
 }
 
-function onKeyDown(e: KeyboardEvent): void {
-  if (!capturingKey.value) return
+function onKeyDown(e?: KeyboardEvent): void {
+  if (!capturingKey.value || !e) return
   e.preventDefault()
   e.stopPropagation()
   // Esc 取消捕获
