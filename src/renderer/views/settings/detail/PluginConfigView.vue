@@ -78,8 +78,9 @@ async function refreshModelsStatus(): Promise<void> {
     return
   }
   try {
-    const status = await pluginsApi.invokePlugin<Record<string, boolean>>(plugin.value.manifest.id, 'models:status')
-    modelsStatus.value = status
+    const status = await pluginsApi.invokePlugin<Record<string, boolean> | null>(plugin.value.manifest.id, 'models:status')
+    // invoke 容错（插件未就绪）返回 null——降级为空对象（模板访问安全）
+    modelsStatus.value = status ?? {}
   } catch {
     modelsStatus.value = {}
   }
@@ -276,7 +277,7 @@ watch(pluginId, () => {
             </div>
           </div>
           <div class="plugin-config-page__model-right">
-            <span v-if="modelsStatus[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
+            <span v-if="modelsStatus?.[dep.dest.split('/').pop() ?? '']" class="plugin-config-page__ready">已就绪</span>
             <span v-else class="plugin-config-page__ready plugin-config-page__ready--no">未就绪</span>
             <div
               v-if="downloading || (modelProgress[dep.dest.split('/').pop() ?? ''] && modelProgress[dep.dest.split('/').pop() ?? '']?.phase !== 'done')"
