@@ -132,24 +132,24 @@ export class Plugin {
       }
       return
     }
-    // 外部插件（Worker 宿主）：自检经消息代理异步执行
-    void this.deps.host.invokeWorker(this, 'call', { method: 'check' })
-      .then((check) => {
+    // 外部插件（Worker 宿主）：自检经消息代理异步执行（全路径 catch——Worker 不可用不算 fatal）
+    void (async () => {
+      try {
+        const check = await this.deps.host.invokeWorker(this, 'call', { method: 'check' })
         const c = check as PluginCheckResult | boolean | undefined
         const ok = typeof c === 'boolean' ? c : !!c?.ok
         if (!ok) {
           console.warn(`[plugin] ${this.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
           return
         }
-        return this.deps.host.invokeWorker(this, 'call', { method: 'start' }).then(() => {
-          this.started = true
-          this.deps.registerProvider(this)
-          console.log(`[plugin] 自动注册 ${this.manifest.id}（自检通过）`)
-        })
-      })
-      .catch((e) => {
+        await this.deps.host.invokeWorker(this, 'call', { method: 'start' })
+        this.started = true
+        this.deps.registerProvider(this)
+        console.log(`[plugin] 自动注册 ${this.manifest.id}（自检通过）`)
+      } catch (e) {
         console.error(`[plugin] 自动注册失败 ${this.manifest.id}:`, (e as Error).message)
-      })
+      }
+    })()
   }
 
   /** 调用插件注册的 IPC 能力 */

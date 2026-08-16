@@ -425,7 +425,11 @@ export class PluginManager {
 
   /** 自检注册（委托 Plugin 活动对象） */
   private autoRegister(record: PluginRecord): void {
-    ;(record as Plugin).autoRegister()
+    try {
+      ;(record as Plugin).autoRegister()
+    } catch (e) {
+      console.error(`[plugin] autoRegister 调用异常 ${record.manifest.id}:`, (e as Error).message)
+    }
   }
 
   /** 终止 Worker（委托 Plugin） */
