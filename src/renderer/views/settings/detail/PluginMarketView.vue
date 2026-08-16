@@ -30,7 +30,7 @@
           @input="onSearchChange"
         />
       </div>
-      <span class="plugin-market__count">共 {{ filtered.length }} 个插件</span>
+      <span class="plugin-market__count">共 {{ plugins.length }} 个插件</span>
     </div>
 
     <div v-if="loading" class="plugin-market__skeleton">
