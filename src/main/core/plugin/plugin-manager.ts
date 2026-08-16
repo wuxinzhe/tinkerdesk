@@ -17,9 +17,13 @@ import { join, basename } from 'path'
 import { createHash } from 'crypto'
 import { execFileSync } from 'child_process'
 import { execFile } from 'child_process'
+import { promisify } from 'util'
 import { Worker } from 'worker_threads'
 import { get as httpsGet } from 'https'
 import { get as httpGet } from 'http'
+
+/** 异步 execFile（解压等外部命令——不阻塞主进程） */
+const execFileAsync = promisify(execFile)
 
 /** 下载文件（带进度回调——字节数） */
 function downloadFile(
@@ -867,14 +871,15 @@ export class PluginManager {
         await downloadFile(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
         const destDir = join(dir, dep.dest)
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-        // 按扩展名解压（tar.bz2 / tar.gz / zip / 裸文件）
+        // 按扩展名解压（tar.bz2 / tar.gz / zip / 裸文件）——
+        // 全部异步（execFile await——不阻塞主进程——下载/解压期间 Agent 对话照常）
         const lower = dep.url.toLowerCase()
         if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
-          execFileSync('tar', ['-xjf', tmp, '-C', destDir], { stdio: 'pipe' })
+          await execFileAsync('tar', ['-xjf', tmp, '-C', destDir])
         } else if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz')) {
-          execFileSync('tar', ['-xzf', tmp, '-C', destDir], { stdio: 'pipe' })
+          await execFileAsync('tar', ['-xzf', tmp, '-C', destDir])
         } else if (lower.endsWith('.zip')) {
-          execFileSync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`], { stdio: 'pipe' })
+          await execFileAsync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${tmp}' -DestinationPath '${destDir}' -Force`])
         } else {
           renameSync(tmp, join(destDir, basename(dep.url)))
         }
