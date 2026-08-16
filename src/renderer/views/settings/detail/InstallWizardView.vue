@@ -106,7 +106,7 @@
           </template>
         </div>
       </div>
-      </div>
+    </div>
     </div>
   </L3PageLayout>
 </template>
