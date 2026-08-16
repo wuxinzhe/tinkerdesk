@@ -266,11 +266,22 @@ export class PluginManager {
     return (await record.api.check()) as PluginCheckResult
   }
 
-  /** 实时状态 */
+  /** 实时状态（Worker 返回 + 运行时字段合并——started/enabled 以 manager 记录为准——
+   *  插件 Worker 可能不返回 started——保证配置页/列表状态一致） */
   async getStatus(id: string): Promise<PluginStatus> {
     const record = this.registry.get(id)
     if (!record?.api) throw new Error(`插件不存在或未加载: ${id}`)
-    return (await record.api.getStatus?.()) ?? { loaded: false, enabled: false, started: false }
+    const workerStatus = (await record.api.getStatus?.()) ?? {}
+    return {
+      loaded: record.manifest ? true : false,
+      enabled: record.enabled,
+      started: record.started,
+      ...workerStatus,
+      // 运行时事实字段不被 Worker 覆盖（Worker 只提供 detail 等补充信息）
+      loaded: record.loaded,
+      enabled: record.enabled,
+      started: record.started,
+    }
   }
 
   /** 配置 Schema（唯一来源：manifest 静态 configSchema——不依赖 Worker——
