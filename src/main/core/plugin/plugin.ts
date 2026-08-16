@@ -51,6 +51,22 @@ export class Plugin {
 
   // ── 加载（内置 main 直跑 / 外部 Worker 宿主——编排入本对象） ──
 
+  /** 校验并加载外部插件（读 manifest → Worker 宿主——骨架同步返回——后台加载） */
+  load(dir: string): void {
+    if (!this.manifest.id || !this.manifest.entry || !this.manifest.name) {
+      throw new Error('manifest 缺少 id/entry/name')
+    }
+    if (this.manifest.apiVersion !== 1) {
+      throw new Error(`不支持的 apiVersion: ${this.manifest.apiVersion}（当前支持 1）`)
+    }
+    const configFile = join(dir, 'config.json')
+    const { enabled, config } = readConfigFile(configFile)
+    this.enabled = enabled
+    this.config = config
+    // Worker 线程加载执行（外部插件不可信——线程隔离——阻塞只影响 Worker 自己）
+    this.loadWorker(configFile, config)
+  }
+
   /** 内置插件：main 直跑 init——本地上下文 */
   loadBuiltin(configFile: string, plugin: { init: (ctx: PluginContext) => PluginApi }): void {
     const manifest = this.manifest

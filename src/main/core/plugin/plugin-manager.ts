@@ -17,6 +17,7 @@ import { PluginLoader } from './plugin-loader'
 import { ProviderRegistry } from './plugin-registry'
 import { PluginInstaller } from './plugin-installer'
 import { PluginAssets } from './plugin-assets'
+import { Plugin } from './plugin'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 import { matchSystemInterfaces } from './system-interfaces'
 import type { PluginApi, PluginCheckResult, PluginConfigFile, PluginContext, PluginManifest, PluginRecord, PluginStatus, PluginInfo, ToggleResult } from './types'
@@ -24,7 +25,7 @@ import type { PluginApi, PluginCheckResult, PluginConfigFile, PluginContext, Plu
 /** 插件管理器（纯注册表——维护性工作） */
 export class PluginManager {
   private readonly pluginsDir: string
-  private readonly registry = new Map<string, PluginRecord>()
+  private readonly registry = new Map<string, Plugin>()
   /** 插件注册的 IPC handler（channel → handler），供应用内部转发（接口转发等） */
   private readonly ipcHandlers = new Map<string, (payload: unknown) => unknown>()
   /** renderer 事件转发目标（由 index.ts 注入 mainWindow.webContents） */
@@ -37,25 +38,13 @@ export class PluginManager {
   private readonly assets: PluginAssets
   /** 安装器（独立子系统——安装/资源/卸载） */
   private readonly installer: PluginInstaller
-  /** 加载与注册编排（loadPlugin/autoRegister/ready/fatal——归 PluginLoader）——
-   *  host ↔ loader 互相引用（host hooks 延迟调用 loader——闭包安全） */
-  private loader!: PluginLoader
-
   constructor() {
-    this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is PluginRecord => !!r))
+    this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is Plugin => !!r) as unknown as PluginRecord[])
     // host 先建（hooks 闭包延迟调用 loader——loader 随后赋值——消息到来时已就绪）
     this.host = new PluginHost({
-      onReady: (record, channels) => this.loader.onWorkerReady(record, channels),
+      onReady: (record, channels) => (record as Plugin).onWorkerReady(channels),
       onEmit: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
-      onFatal: (record, error) => this.loader.onWorkerFatal(record, error),
-    })
-    this.loader = new PluginLoader({
-      registry: this.registry,
-      host: this.host,
-      providerRegistry: this.providerRegistry,
-      registerIpc: (pluginId, channel, handler) => this.registerPluginIpc(pluginId, channel, handler),
-      hasChannel: (pluginId, channel) => this.ipcHandlers.has(`plugin:${pluginId}:${channel}`),
-      forwardEvent: (pluginId, event, data) => this.forwardEvent(pluginId, event, data),
+      onFatal: (record, error) => (record as Plugin).onWorkerFatal(error),
     })
     this.pluginsDir = join(app.getPath('userData'), 'plugins')
     this.assets = new PluginAssets(this.pluginsDir)
@@ -96,48 +85,22 @@ export class PluginManager {
   /** 注册内置插件（代码注册——main 直跑——不可卸载） */
   registerBuiltinPlugin(opts: { manifest: PluginManifest; plugin: { init: (ctx: PluginContext) => PluginApi } }): void {
     const { manifest, plugin } = opts
-    const configDir = join(this.pluginsDir, manifest.id)
-    const configFile = join(configDir, 'config.json')
+    const pluginObj = new Plugin(manifest, join(this.pluginsDir, manifest.id), this.pluginDeps())
+    const configFile = join(this.pluginsDir, manifest.id, 'config.json')
     const firstRun = !existsSync(configFile)
-    const { enabled, config } = readConfigFile(configFile)
-
-    const record: PluginRecord = {
-      manifest,
-      api: null,
-      ctx: null,
-      enabled: firstRun ? true : enabled,
-      started: false,
-      worker: null,
+    try {
+      pluginObj.loadBuiltin(configFile, plugin)
+    } catch (e) {
+      throw new Error((e as Error).message)
     }
-    const ctx: PluginContext = {
-      pluginId: manifest.id,
-      configDir,
-      getManifest: () => manifest,
-      emit: (event, data) => this.forwardEvent(manifest.id, event, data),
-      registerIpc: (channel, handler) => this.registerPluginIpc(manifest.id, channel, handler),
-      getConfig: <T>() => config as T,
-      setConfig: (patch) => {
-        Object.assign(config, patch)
-        writeConfigFile(configFile, { enabled: record.enabled, config })
-      },
-    }
-    record.ctx = ctx
-    record.api = plugin.init(ctx)
-    if (typeof record.api.check !== 'function') {
-      throw new Error(`${manifest.id} 未实现 check() 自检接口（插件契约 v1 强制）`)
-    }
-    for (const def of matchSystemInterfaces(manifest.systemInterfaces)) {
-      if (def.requiredChannel && !this.ipcHandlers.has(`plugin:${manifest.id}:${def.requiredChannel}`)) {
-        throw new Error(`${manifest.id} 声明了接口 ${def.id} 但未注册契约频道 ${def.requiredChannel}（插件契约 v1）`)
-      }
-    }
-    this.registry.set(manifest.id, record)
-    if (firstRun) persistEnabled(record)
+    if (firstRun) pluginObj.persistEnabled()
+    this.registry.set(manifest.id, pluginObj)
     console.log(`[plugin] 已加载内置 ${manifest.id}@${manifest.version} (${manifest.capabilities?.join(',') ?? '无能力'})`)
-    if (record.enabled) {
-      this.loader.autoRegister(record)
+    if (pluginObj.enabled) {
+      pluginObj.autoRegister()
     }
   }
+
 
   /** 插件列表（renderer 展示——含静态检查状态） */
   list(): PluginInfo[] {
@@ -295,36 +258,33 @@ export class PluginManager {
 
   // ── 私有实现（加载/接线/静态检查） ──
 
-  /** 校验并加载单个插件（读 manifest → 创建 Plugin → Worker 宿主加载） */
+  /** 校验并加载单个插件（创建 Plugin 活动对象 → Worker 宿主加载） */
   private loadPlugin(dir: string): void {
     const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as PluginManifest
-    if (!manifest.id || !manifest.entry || !manifest.name) {
-      throw new Error('manifest 缺少 id/entry/name')
-    }
-    if (manifest.apiVersion !== 1) {
-      throw new Error(`不支持的 apiVersion: ${manifest.apiVersion}（当前支持 1）`)
-    }
     if (this.registry.has(manifest.id)) {
       throw new Error(`插件已存在: ${manifest.id}`)
     }
-    const configFile = join(dir, 'config.json')
-    const { enabled, config } = readConfigFile(configFile)
-    const record: PluginRecord = {
-      manifest,
-      api: null,
-      ctx: null,
-      enabled,
-      started: false,
-      worker: null,
-    }
-    this.registry.set(manifest.id, record)
+    const plugin = new Plugin(manifest, dir, this.pluginDeps())
+    this.registry.set(manifest.id, plugin)
     try {
-      this.host.spawnWorker(record, dir, configFile, config)
+      plugin.load(dir)
     } catch (e) {
-      record.error = (e as Error).message
-      console.error(`[plugin] ${manifest.id} Worker 启动失败:`, record.error)
+      plugin.error = (e as Error).message
+      console.error(`[plugin] ${manifest.id} Worker 启动失败:`, plugin.error)
     }
   }
+
+  /** Plugin 依赖（host/providerRegistry/接线——共享实例） */
+  private pluginDeps() {
+    return {
+      host: this.host,
+      providerRegistry: this.providerRegistry,
+      registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => this.registerPluginIpc(pluginId, channel, handler),
+      hasChannel: (pluginId: string, channel: string) => this.ipcHandlers.has(`plugin:${pluginId}:${channel}`),
+      forwardEvent: (pluginId: string, event: string, data?: unknown) => this.forwardEvent(pluginId, event, data),
+    }
+  }
+
 
   /** 注册插件声明的 IPC 通道（安全接线——handleTrusted） */
   private registerPluginIpc(pluginId: string, channel: string, handler: (payload: unknown) => unknown): void {
@@ -367,12 +327,12 @@ export class PluginManager {
     return { ok: true }
   }
 
-  /** 自检注册（启动时自动注册——持久化 enabled 且自检通过才真正 start） */
+  /** 自检注册（委托 Plugin 活动对象） */
   private autoRegister(record: PluginRecord): void {
-    this.loader.autoRegister(record)
+    ;(record as Plugin).autoRegister()
   }
 
-  /** 终止 Worker */
+  /** 终止 Worker（委托 Plugin） */
   private terminateWorker(record: PluginRecord): void {
     this.host.terminateWorker(record)
   }
