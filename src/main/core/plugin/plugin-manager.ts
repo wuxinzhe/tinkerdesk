@@ -352,7 +352,17 @@ export class PluginManager {
     const full = `plugin:${pluginId}:${channel}`
     if (this.ipcHandlers.has(full)) return
     this.ipcHandlers.set(full, handler)
-    handleTrusted(full, async (_event, payload: unknown) => handler(payload))
+    handleTrusted(full, async (_event, payload: unknown) => {
+      try {
+        return await handler(payload)
+      } catch (e) {
+        // 插件未就绪（Worker 未启动——缺资源/自检未过）——返回 null（前端降级显示——不弹全局错误）
+        if (/(无 Worker 宿主|Worker 已退出|未启动)/.test((e as Error).message)) {
+          return null
+        }
+        throw e
+      }
+    })
   }
 
   /** 调用插件注册的 IPC 能力 */
