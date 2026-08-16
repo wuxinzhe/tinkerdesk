@@ -5,10 +5,10 @@
  * （api/ctx 代理——调用转发 Worker——隔离执行）——与 PluginManager 解耦：
  * 所有 manager 域回调（通道注册/事件转发/ready 处理）经 hooks 注入。
  */
+import { renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { writeFileSync, renameSync } from 'fs'
 import { Worker } from 'worker_threads'
-import type { PluginApi, PluginCheckResult, PluginContext, PluginManifest, PluginRecord, PluginStatus, ConfigSchema } from './types'
+import type { ConfigSchema, PluginApi, PluginCheckResult, PluginContext, PluginRecord, PluginStatus } from './types'
 
 /** PluginHost 需要 manager 提供的回调（避免反向依赖） */
 export interface PluginHostHooks {
@@ -105,7 +105,7 @@ export class PluginHost {
     const callId = ++this.workerCallSeq
     return new Promise((resolve, reject) => {
       this.workerCalls.set(callId, { resolve, reject })
-      ;(this.workerCalls.get(callId) as unknown as { worker?: Worker }).worker = worker
+        ; (this.workerCalls.get(callId) as unknown as { worker?: Worker }).worker = worker
       worker.postMessage({ type, callId, ...body })
     })
   }

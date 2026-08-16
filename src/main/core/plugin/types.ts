@@ -234,6 +234,16 @@ export interface InstallerDeps {
 
 /* ── Plugin 活动对象 ── */
 
+/** PluginHost 需要 manager 提供的回调（避免反向依赖） */
+export interface PluginHostHooks {
+  /** Worker ready：注册插件声明的 IPC 通道（manager 安全接线） */
+  onReady: (record: PluginRecord, channels: string[]) => void
+  /** 插件 ctx.emit 事件转发 renderer */
+  onEmit: (pluginId: string, event: string, data?: unknown) => void
+  /** Worker fatal（插件加载/执行致命错误） */
+  onFatal: (record: PluginRecord, error: string) => void
+}
+
 /** Plugin 依赖（manager 注入——共享实例） */
 export interface PluginDeps {
   host: import('./plugin-host').PluginHost
