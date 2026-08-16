@@ -272,15 +272,13 @@ export class PluginManager {
     const record = this.registry.get(id)
     if (!record?.api) throw new Error(`插件不存在或未加载: ${id}`)
     const workerStatus = (await record.api.getStatus?.()) ?? {}
+    // Worker 返回仅补充 detail 等信息——运行时事实字段以 manager 记录为准
+    const { loaded: _l, enabled: _e, started: _s, ...rest } = workerStatus as PluginStatus
     return {
-      loaded: record.manifest ? true : false,
+      loaded: true,
       enabled: record.enabled,
       started: record.started,
-      ...workerStatus,
-      // 运行时事实字段不被 Worker 覆盖（Worker 只提供 detail 等补充信息）
-      loaded: record.loaded,
-      enabled: record.enabled,
-      started: record.started,
+      ...rest,
     }
   }
 
