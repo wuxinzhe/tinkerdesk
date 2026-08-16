@@ -251,7 +251,8 @@ export class PluginInstaller {
     if (targets.length === 0) throw new Error(`未找到资源: ${depName}`)
     const results: { name: string; ok: boolean; error?: string }[] = []
     for (const dep of targets) {
-      if (dep.optional) continue
+      // 用户明确指定单个资源下载时（depName）——即使 optional 也下载；全量下载保持跳过 optional
+      if (dep.optional && !depName) continue
       try {
         const tmp = join(dir, `.download-${Date.now()}-${basename(dep.url)}`)
         await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
