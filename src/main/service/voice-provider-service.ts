@@ -97,15 +97,13 @@ export class VoiceProviderService {
     return result?.audio ?? ''
   }
 
-  /** 查询 provider 的模型就绪状态（经插件 models:status，失败视为未知） */
+  /** 查询 provider 就绪状态（统一以插件状态为准——registered=自检通过可用的最终状态——
+   *  与插件列表/配置页一致；不再用 Worker models:status 的 allReady（那是"全部模型齐"语义——
+   *  与插件自检的"当前配置就绪"不一致） */
   async providerReady(pluginId: string): Promise<boolean> {
     try {
-      const result = await this.pluginManager.invokePlugin<{ allReady?: boolean }>(
-        pluginId,
-        'models:status',
-        {},
-      )
-      return !!result?.allReady
+      const status = await this.pluginManager.getStatus(pluginId)
+      return status.status === 'registered'
     } catch {
       return false
     }
