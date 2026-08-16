@@ -39,7 +39,6 @@ import { useRoute } from 'vue-router'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
 import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'
-import VoiceSettingsView from '@/renderer/views/settings/detail/VoiceSettingsView.vue'
 import GeneralSettingsView from '@/renderer/views/settings/detail/GeneralSettingsView.vue'
 
 const route = useRoute()
