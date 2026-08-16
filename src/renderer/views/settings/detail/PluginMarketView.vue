@@ -336,9 +336,8 @@ function viewDetail(plugin: MarketPluginItem) {
 /* ── 骨架屏 ── */
 .plugin-market__skeleton {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 12px;
-  padding: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
 }
 
 .plugin-market__skeleton-card {
