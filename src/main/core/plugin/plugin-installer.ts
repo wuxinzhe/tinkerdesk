@@ -15,35 +15,12 @@ import { createHash } from 'crypto'
 import { app } from 'electron'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
 import { tarBin } from '../../utils/plugin-installer-utils'
-import type { PluginRecord, PluginManifest } from './types'
-
-/** 安装阶段 */
-export type InstallStage = 'validate' | 'copy' | 'deps' | 'assets' | 'register'
-
-/** 安装会话（分步状态——内存态——重启丢弃） */
-export interface InstallSession {
-  sessionId: string
-  srcDir: string
-  manifest: PluginManifest | null
-  pluginDir: string
-  /** 用户选择跳过的资源（dest 路径） */
-  skipAssets: string[]
-  stages: Record<InstallStage, 'pending' | 'running' | 'done' | 'failed'>
-  error?: string
-}
-
-/** 安装器依赖（manager 注入） */
-export interface InstallerDeps {
-  pluginsDir: string
-  /** 创建并注册 Plugin（validate 后调用——安装器完成文件操作后交 manager） */
-  registerPlugin: (srcDir: string) => PluginRecord
-}
-
-let sessionSeq = 0
+import type { InstallerDeps, InstallSession, InstallStage, PluginRecord, PluginManifest } from './types'
 
 /** 插件安装器（每 manager 一个实例） */
 export class PluginInstaller {
   private readonly sessions = new Map<string, InstallSession>()
+  private sessionSeq = 0
 
   constructor(private readonly deps: InstallerDeps) { }
 
@@ -52,7 +29,7 @@ export class PluginInstaller {
   /** 开始安装会话：校验安装包 + 读 manifest（第 1 步——validate） */
   start(src: string, skipAssets: string[] = []): InstallSession {
     if (!src || !existsSync(src)) throw new Error('插件包路径不存在')
-    const sessionId = `install-${Date.now()}-${++sessionSeq}`
+    const sessionId = `install-${Date.now()}-${++this.sessionSeq}`
     const session: InstallSession = {
       sessionId,
       srcDir: src,

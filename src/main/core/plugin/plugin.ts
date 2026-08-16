@@ -7,25 +7,13 @@
  */
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import type { PluginApi, PluginCheckResult, PluginConfigFile, PluginContext, PluginManifest, PluginStatus } from './types'
+import type { PluginApi, PluginCheckResult, PluginContext, PluginDeps, PluginManifest, PluginStatus } from './types'
 import { matchSystemInterfaces } from './system-interfaces'
 import type { PluginHost } from './plugin-host'
 import type { ProviderRegistry } from './plugin-registry'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 
-/** Plugin 依赖（manager 注入——共享实例） */
-export interface PluginDeps {
-  host: PluginHost
-  providerRegistry: ProviderRegistry
-  /** 注册插件声明的 IPC 通道（manager 安全接线） */
-  registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
-  /** 查询插件是否已注册某通道（接口契约校验用） */
-  hasChannel: (pluginId: string, channel: string) => boolean
-  /** 插件事件转发 renderer */
-  forwardEvent: (pluginId: string, event: string, data?: unknown) => void
-}
-
-/** 插件活动对象（manager 注册表存本对象——调用方直接操作） */
+/** Plugin 活动对象（manager 注册表存本对象——调用方直接操作） */
 export class Plugin {
   manifest: PluginManifest
   api: PluginApi | null = null

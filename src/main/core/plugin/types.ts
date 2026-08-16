@@ -219,3 +219,41 @@ export interface PluginLoaderDeps {
   /** 插件事件转发 renderer */
   forwardEvent: (pluginId: string, event: string, data?: unknown) => void
 }
+
+/* ── 安装器（PluginInstaller） ── */
+
+/** 安装阶段 */
+export type InstallStage = 'validate' | 'copy' | 'deps' | 'assets' | 'register'
+
+/** 安装会话（分步状态——内存态——重启丢弃） */
+export interface InstallSession {
+  sessionId: string
+  srcDir: string
+  manifest: PluginManifest | null
+  pluginDir: string
+  /** 用户选择跳过的资源（dest 路径） */
+  skipAssets: string[]
+  stages: Record<InstallStage, 'pending' | 'running' | 'done' | 'failed'>
+  error?: string
+}
+
+/** 安装器依赖（manager 注入） */
+export interface InstallerDeps {
+  pluginsDir: string
+  /** 创建并注册 Plugin（validate 后调用——安装器完成文件操作后交 manager） */
+  registerPlugin: (srcDir: string) => PluginRecord
+}
+
+/* ── Plugin 活动对象 ── */
+
+/** Plugin 依赖（manager 注入——共享实例） */
+export interface PluginDeps {
+  host: import('./plugin-host').PluginHost
+  providerRegistry: import('./plugin-registry').ProviderRegistry
+  /** 注册插件声明的 IPC 通道（manager 安全接线） */
+  registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
+  /** 查询插件是否已注册某通道（接口契约校验用） */
+  hasChannel: (pluginId: string, channel: string) => boolean
+  /** 插件事件转发 renderer */
+  forwardEvent: (pluginId: string, event: string, data?: unknown) => void
+}
