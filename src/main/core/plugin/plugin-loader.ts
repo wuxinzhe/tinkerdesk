@@ -8,8 +8,6 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import type { PluginCheckResult, PluginManifest, PluginLoaderDeps, PluginRecord } from './types'
 import { matchSystemInterfaces } from './system-interfaces'
-import type { PluginHost } from './plugin-host'
-import type { ProviderRegistry } from './plugin-registry'
 import { readConfigFile } from './plugin-store'
 
 /** 插件加载与注册编排 */
