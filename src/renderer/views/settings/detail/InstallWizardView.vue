@@ -145,23 +145,28 @@
           </transition>
         </div>
 
-        <!-- 底部操作 -->
+        <!-- 底部操作（按步骤语义——npm/local 偏移自适应） -->
         <div class="iw-footer">
-          <template v-if="currentStep === 0 && isNpm">
+          <!-- Step 0：下载（npm）或确认（local）——下一步 -->
+          <template v-if="currentStep === 0">
             <SaActionBtn text="取消" @click="close" />
-            <SaActionBtn text="下一步" variant="primary" :disabled="downloading || !session" @click="next" />
+            <SaActionBtn text="下一步" variant="primary" :disabled="(isNpm ? downloading || !session : !session || loading)" @click="next" />
           </template>
-          <template v-else-if="currentStep === 0 && !isNpm">
-            <SaActionBtn text="取消" @click="close" />
-            <SaActionBtn text="下一步" variant="primary" :disabled="!session || loading" @click="next" />
-          </template>
-          <template v-else-if="currentStep === 1">
+          <!-- 确认信息（npm 专属——下载后）——上一步 + 去资源 -->
+          <template v-else-if="isNpm && currentStep === 1">
             <SaActionBtn text="上一步" @click="currentStep = 0" />
+            <SaActionBtn text="下一步" variant="primary" @click="currentStep = 2" />
+          </template>
+          <!-- 依赖资源（npm 2 / local 1）——上一步 + 开始安装 -->
+          <template v-else-if="currentStep === assetsStepIndex">
+            <SaActionBtn text="上一步" @click="currentStep = currentStep - 1" />
             <SaActionBtn text="开始安装" variant="primary" @click="startInstall" />
           </template>
-          <template v-else-if="currentStep === 2 || (currentStep === 3 && isNpm)">
+          <!-- 安装中（npm 3 / local 2） -->
+          <template v-else-if="currentStep === installStepIndex">
             <SaActionBtn v-if="!installFailed" text="安装中..." :loading="true" disabled />
           </template>
+          <!-- 完成 -->
           <template v-else>
             <SaActionBtn text="完成" variant="primary" @click="finish" />
           </template>
@@ -224,6 +229,7 @@ const steps = computed(() => {
   return base
 })
 
+const assetsStepIndex = computed(() => (isNpm.value ? 2 : 1))
 const installStepIndex = computed(() => (isNpm.value ? 3 : 2))
 const doneStepIndex = computed(() => (isNpm.value ? 4 : 3))
 
