@@ -75,6 +75,20 @@ export async function getPackageDetail(name: string): Promise<NpmPackageDetail> 
   return d
 }
 
+/** 查询 npm 包 tarball 下载地址（registry API dist.tarball——可带进度下载） */
+export async function getPackageTarball(name: string): Promise<{ url: string; size?: number }> {
+  const d = (await httpsGetJson(`${REGISTRY_BASE}/${encodeURIComponent(name)}`)) as {
+    'dist-tags'?: Record<string, string>
+    versions?: Record<string, { dist?: { tarball?: string; unpackedSize?: number; fileCount?: number } }>
+  }
+  const latest = d['dist-tags']?.latest ?? ''
+  const v = latest ? d.versions?.[latest] : undefined
+  const dist = v && typeof v === 'object' && 'dist' in v ? v.dist : undefined
+  const tarball = dist?.tarball
+  if (!tarball) throw new Error(`npm 包 ${name} 无 tarball 地址`)
+  return { url: tarball, size: dist?.unpackedSize }
+}
+
 /** 查询 npm registry search API（原始响应——解析失败抛错） */
 export function searchNpm(params: NpmSearchParams): Promise<NpmSearchResponse> {
   const { text, size = 50 } = params

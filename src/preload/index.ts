@@ -176,9 +176,15 @@ const api = {
   },
 
   // Auto-update
-  checkForUpdates: (manual = false) => inv('update:check', manual),
-  installUpdate: () => inv('update:install'),
-  getAppVersion: () => inv('app:version'),
+    checkForUpdates: (manual = false) => inv('update:check', manual),
+    installUpdate: () => inv('update:install'),
+    getAppVersion: () => inv('app:version'),
+    /** 通用事件监听（返回取消订阅函数——如 plugin:install-progress） */
+    onEvent: (channel: string, callback: (data: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data)
+      ipcRenderer.on(channel, handler)
+      return () => ipcRenderer.removeListener(channel, handler)
+    },
   onUpdateStatus: (callback: (data: { status: string; message?: string }) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, data: { status: string; message?: string }) => callback(data)
     ipcRenderer.on('update:status', handler)
@@ -442,6 +448,8 @@ const api = {
     installStart: (payload: { pkg?: string; path?: string; registry?: string }) => inv('plugin:install-start', payload ?? {}).then(unwrap),
     /** 分步安装：执行下一步（copy/deps/assets/register） */
     installStep: (sessionId: string, stage: string, skipAssets?: string[]) => inv('plugin:install-step', { sessionId, stage, skipAssets }).then(unwrap),
+    /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
+    installDownload: (sessionId: string) => inv('plugin:install-download', { sessionId }).then(unwrap),
     /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
     marketList: (payload?: { category?: string; search?: string }) => inv('plugin:market-list', payload ?? {}).then(unwrap),
     /** 卸载插件（删除插件及下载的模型） */

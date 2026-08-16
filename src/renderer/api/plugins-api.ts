@@ -26,6 +26,8 @@ export interface PluginApi {
   installStart(payload: { pkg?: string; path?: string; registry?: string }): Promise<InstallSessionInfo>
   /** 分步安装：执行下一步 */
   installStep(sessionId: string, stage: string, skipAssets?: string[]): Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
+  /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
+  installDownload(sessionId: string): Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
   /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
   marketList(payload?: { category?: string; search?: string }): Promise<MarketListResult>
   /** 卸载插件（删除插件及下载的模型） */
@@ -59,6 +61,8 @@ export const pluginsApi: PluginApi = {
   installStart: (payload) => window.api.plugins.installStart(payload),
   /** 分步安装：执行下一步 */
   installStep: (sessionId, stage, skipAssets) => window.api.plugins.installStep(sessionId, stage, skipAssets),
+  /** 分步安装：下载 tarball */
+  installDownload: (sessionId) => window.api.plugins.installDownload(sessionId),
   /** 插件市场列表（npm registry search） */
   marketList: (payload?: { category?: string; search?: string }) => window.api.plugins.marketList(payload),
   uninstall: (id) => window.api.plugins.uninstall(id),

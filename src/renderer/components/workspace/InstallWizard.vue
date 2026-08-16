@@ -23,9 +23,15 @@
         <div class="iw-body">
           <!-- Step 0（npm）：下载安装包 -->
           <div v-if="currentStep === 0 && isNpm" class="iw-download">
-            <div v-if="loading" class="iw-loading">
-              <div class="iw-loading__spinner"></div>
-              正在下载安装包（npm pack）...
+            <div v-if="downloading" class="iw-download__progress">
+              <div class="iw-download__label">
+                正在下载安装包...
+                <span class="iw-download__pct">{{ downloadPercent > 0 ? `${downloadPercent}%` : '' }}</span>
+              </div>
+              <div class="iw-download__bar">
+                <div class="iw-download__fill" :style="{ width: `${downloadPercent}%` }"></div>
+              </div>
+              <div v-if="downloadPercent > 0" class="iw-download__meta">{{ downloadMeta }}</div>
             </div>
             <div v-else-if="startError" class="iw-error">{{ startError }}</div>
             <div v-else class="iw-download__done">✓ 安装包下载完成</div>
@@ -122,6 +128,23 @@ const currentStep = ref(0)
 const selectedAssets = ref<string[]>([])
 const installFailed = ref(false)
 const stageError = ref('')
+/** 下载进度（npm） */
+const downloading = ref(false)
+const downloadPercent = ref(0)
+const downloadReceived = ref(0)
+const downloadTotal = ref(0)
+
+const downloadMeta = computed(() => {
+  const recv = formatSize(downloadReceived.value)
+  const total = downloadTotal.value > 0 ? formatSize(downloadTotal.value) : ''
+  return total ? `${recv} / ${total}` : recv
+})
+
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${bytes} B`
+}
 
 /** npm 来源有下载步骤（local 无） */
 const isNpm = computed(() => session.value?.sourceType === 'npm')
@@ -182,10 +205,44 @@ async function start() {
       path: props.path,
     })
     selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.dest)
+    // npm 来源：自动开始下载（进度条）
+    if (session.value?.sourceType === 'npm' && props.pkg) {
+      await doDownload()
+    }
   } catch (e) {
     startError.value = (e as Error).message
   } finally {
     loading.value = false
+  }
+}
+
+/** npm 下载（带进度——事件监听——完成后用返回的 manifest 刷新会话） */
+async function doDownload() {
+  if (!session.value) return
+  downloading.value = true
+  downloadPercent.value = 0
+  downloadReceived.value = 0
+  downloadTotal.value = 0
+  const unsubscribe = window.api.onEvent('plugin:install-progress', (data) => {
+    const d = data as { sessionId: string; received: number; total: number }
+    if (d.sessionId !== session.value?.sessionId) return
+    downloadReceived.value = d.received
+    downloadTotal.value = d.total
+    downloadPercent.value = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
+  })
+  try {
+    const r = await pluginsApi.installDownload(session.value.sessionId)
+    // 下载完成——manifest/资源清单来自返回（validate 已完成——不重复 start）
+    if (r.manifest) {
+      session.value = { ...session.value!, manifest: r.manifest, assetDeps: r.assetDeps ?? [], stages: r.stages }
+    }
+    selectedAssets.value = (session.value?.assetDeps ?? []).filter((d) => !d.optional).map((d) => d.dest)
+    downloadPercent.value = 100
+  } catch (e) {
+    startError.value = (e as Error).message
+  } finally {
+    unsubscribe()
+    downloading.value = false
   }
 }
 
@@ -334,6 +391,50 @@ function close() {
 .iw-body {
   padding: 16px 20px;
   min-height: 120px;
+}
+
+.iw-download__progress {
+  padding: 8px 0;
+}
+
+.iw-download__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--tk-text-secondary);
+  margin-bottom: 8px;
+}
+
+.iw-download__pct {
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: var(--tk-accent);
+}
+
+.iw-download__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--tk-bg-secondary);
+  overflow: hidden;
+}
+
+.iw-download__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--tk-accent);
+  transition: width 0.2s ease-out;
+}
+
+.iw-download__meta {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  margin-top: 6px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+}
+
+.iw-download__done {
+  color: #34c759;
+  font-size: 13px;
+  padding: 8px 0;
 }
 
 .iw-loading {

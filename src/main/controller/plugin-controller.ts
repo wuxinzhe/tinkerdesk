@@ -52,6 +52,7 @@ export class PluginController {
     handleTrusted('plugin:install-npm', (_event, payload: { pkg: string; registry?: string }) => this.installFromNpm(payload))
     handleTrusted('plugin:install-start', (_event, payload: { pkg?: string; path?: string; registry?: string }) => this.installStart(payload))
     handleTrusted('plugin:install-step', (_event, payload: { sessionId: string; stage: string; skipAssets?: string[] }) => this.installStep(payload))
+    handleTrusted('plugin:install-download', (_event, payload: { sessionId: string }) => this.installDownload(payload))
     handleTrusted('plugin:market-list', (_event, payload: { category?: string; search?: string } = {}) => this.marketList(payload))
     handleTrusted('plugin:uninstall', (_event, payload: { id: string }) => this.uninstall(payload))
     handleTrusted('plugin:pick-install-package', (_event, payload: { kind?: 'zip' | 'folder' }) =>
@@ -166,6 +167,31 @@ export class PluginController {
       }
       const r = await this.pluginManager.stepInstall(payload?.sessionId ?? '', stage)
       return ok({ ok: r.ok, error: r.error, stages: session.stages })
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 分步安装：下载 tarball（带进度——经 mainWindow 事件推送 renderer） */
+  private async installDownload(payload: { sessionId: string }): Promise<ApiResult<unknown>> {
+    try {
+      const session = this.pluginManager.getInstallSession(payload?.sessionId ?? '')
+      if (!session) return fail('安装会话不存在或已过期')
+      await this.pluginManager.downloadInstallSession(payload?.sessionId ?? '', (received, total) => {
+        // 进度事件推送（renderer 监听 plugin:install-progress）
+        const wc = this.pluginManager.getEmitTarget()
+        if (wc && !wc.isDestroyed()) {
+          wc.send('plugin:install-progress', { sessionId: payload?.sessionId, received, total })
+        }
+      })
+      return ok({
+        ok: true,
+        stages: session.stages,
+        manifest: session.manifest
+          ? { id: session.manifest.id, name: session.manifest.name, version: session.manifest.version, capabilities: session.manifest.capabilities ?? [] }
+          : null,
+        assetDeps: (session.manifest?.assetDeps ?? session.manifest?.modelDeps ?? []).map((d) => ({ name: d.name, dest: d.dest, sizeMB: d.sizeMB, optional: !!d.optional })),
+      })
     } catch (e) {
       return fail((e as Error).message)
     }

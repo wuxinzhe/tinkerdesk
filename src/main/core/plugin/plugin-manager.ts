@@ -61,6 +61,11 @@ export class PluginManager {
     this.emitTarget = wc
   }
 
+  /** 事件转发目标（controller 推进度等用） */
+  getEmitTarget(): Electron.WebContents | null {
+    return this.emitTarget
+  }
+
   /** 启动时扫描并加载全部插件（失败不阻塞，错误记录到插件状态） */
   loadAll(): void {
     if (!existsSync(this.pluginsDir)) return
@@ -227,6 +232,11 @@ export class PluginManager {
   /** 分步安装：执行下一步 */
   stepInstall(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register'): Promise<{ ok: boolean; error?: string }> {
     return this.installer.step(sessionId, stage)
+  }
+
+  /** 分步安装：下载 tarball（带进度回调） */
+  downloadInstallSession(sessionId: string, onProgress?: (received: number, total: number) => void): Promise<void> {
+    return this.installer.downloadSession(sessionId, onProgress)
   }
 
   /** 在线安装（npm 包名）——委托安装器 */

@@ -14,8 +14,22 @@ import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
 import { downloadFile, execFileAsync } from '../../utils/process-utils'
-import { resolveNpmCli, tarBin } from '../../utils/plugin-installer-utils'
+import { resolveNpmCli, tarBin, locateManifestDir } from '../../utils/plugin-installer-utils'
+import { getPackageTarball } from '../../repository/npm-registry-repository'
 import type { InstallerDeps, InstallSession, InstallStage, PluginRecord, PluginManifest } from './types'
+
+/** 自定义 registry 的 tarball 查询（npm view 命令——走镜像/代理） */
+async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ url: string; size?: number }> {
+  const cli = resolveNpmCli()
+  const args = cli === 'npm'
+    ? ['view', pkgName, 'dist.tarball', '--registry', registry]
+    : [cli, 'view', pkgName, 'dist.tarball', '--registry', registry]
+  const out = await new Promise<string>((resolve, reject) => {
+    execFileAsync(process.execPath, args).then((r) => resolve(String(r).trim())).catch((e) => reject(new Error(`npm view 失败: ${(e as Error).message}`)))
+  })
+  if (!out) throw new Error(`npm 包 ${pkgName} 无 tarball 地址`)
+  return { url: out }
+}
 
 /** 插件安装器（每 manager 一个实例） */
 export class PluginInstaller {
@@ -119,24 +133,61 @@ export class PluginInstaller {
     return plugin
   }
 
-  /** 开始 npm 分步安装会话（npm pack 下载 tarball → start（validate）——不自动 step——供向导分步执行） */
+  /** 开始 npm 分步安装会话（查询 tarball URL——不下载——下载在独立 download 步骤带进度） */
   async startNpm(pkgName: string, opts?: { registry?: string }): Promise<InstallSession> {
     if (!/^(@[a-z0-9-]+\/)?[a-z0-9-]+([@][^/]+)?$/i.test(pkgName.trim())) {
       throw new Error(`npm 包名非法: ${pkgName}`)
     }
+    // 查 tarball URL（registry API——走配置镜像）
+    const { url, size } = opts?.registry
+      ? await fetchTarballViaNpm(pkgName, opts.registry)
+      : await getPackageTarball(pkgName)
+    const session: InstallSession = {
+      sessionId: `install-${Date.now()}-${++this.sessionSeq}`,
+      srcDir: '',
+      manifest: null,
+      pluginDir: '',
+      skipAssets: [],
+      stages: { validate: 'pending', copy: 'pending', deps: 'pending', assets: 'pending', register: 'pending' },
+      sourceType: 'npm',
+      tarballUrl: url,
+      tarballSize: size,
+    }
+    this.sessions.set(session.sessionId, session)
+    return session
+  }
+
+  /** 下载 tarball 到临时目录（带进度回调）——解压 → validate——完成会话准备 */
+  async downloadSession(sessionId: string, onProgress?: (received: number, total: number) => void): Promise<void> {
+    const session = this.sessions.get(sessionId)
+    if (!session) throw new Error(`安装会话不存在: ${sessionId}`)
+    if (session.stages.validate === 'done') return
+    const url = session.tarballUrl
+    if (!url) throw new Error('会话无 tarball 地址')
     const tmpDir = join(app.getPath('temp'), `tinkerdesk-npm-${Date.now()}`)
     mkdirSync(tmpDir, { recursive: true })
-    const cli = resolveNpmCli()
-    const packArgs = cli === 'npm'
-      ? ['pack', pkgName.trim(), '--pack-destination', tmpDir]
-      : [cli, 'pack', pkgName.trim(), '--pack-destination', tmpDir]
-    if (opts?.registry) packArgs.push('--registry', opts.registry)
-    await execFileAsync(process.execPath, packArgs)
-    const tgz = readdirSync(tmpDir).find((f) => f.endsWith('.tgz'))
-    if (!tgz) throw new Error('npm pack 未产生 tarball（包不存在或网络失败）')
-    const session = this.start(join(tmpDir, tgz))
+    const tgz = join(tmpDir, 'pkg.tgz')
+    await downloadFile(url, tgz, (recv, total) => onProgress?.(recv, total || (session.tarballSize ?? 0)))
+    // 解压 → 定位 manifest → validate（复用 start 的校验——直接调用内部逻辑）
+    const extracted = join(tmpDir, 'pkg')
+    mkdirSync(extracted, { recursive: true })
+    await execFileAsync(tarBin(), ['-xf', tgz, '-C', extracted])
+    const located = locateManifestDir(extracted)
+    if (!located) {
+      rmSync(tmpDir, { recursive: true, force: true })
+      throw new Error('npm 包内未找到 manifest.json（不是有效的 TinkerDesk 插件包）')
+    }
+    const manifest = this.readManifest(located)
+    this.validateManifest(manifest, located)
+    if (this.deps.hasPlugin(manifest.id)) {
+      rmSync(tmpDir, { recursive: true, force: true })
+      throw new Error(`插件已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
+    }
+    session.srcDir = located
+    session.pluginDir = located
+    session.manifest = manifest
+    session.stages.validate = 'done'
     session.tmpDir = tmpDir
-    return session
   }
 
   /** 卸载插件（删除目录——Worker 由调用方先释放） */

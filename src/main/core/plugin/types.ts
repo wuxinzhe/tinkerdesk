@@ -226,6 +226,12 @@ export interface InstallSession {
   error?: string
   /** npm 临时目录（startNpm 创建——copy 完成后清理） */
   tmpDir?: string
+  /** 来源：npm 在线 / local 本地 */
+  sourceType?: 'npm' | 'local'
+  /** npm tarball 下载地址（startNpm 查询——download 步骤下载） */
+  tarballUrl?: string
+  /** tarball 解压后大小（registry 元数据——进度用） */
+  tarballSize?: number
 }
 
 /** 安装器依赖（manager 注入） */
