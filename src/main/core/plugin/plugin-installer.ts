@@ -339,7 +339,7 @@ export class PluginInstaller {
   }
 
   /** 资源下载到插件目录（安装阶段——勾选的 assetDeps——跳过 skipAssets——可选依赖跳过） */
-  private async downloadAssetsTo(manifest: PluginManifest, pluginDir: string, skipAssets: string[]): Promise<void> {
+  private async downloadAssetsTo(manifest: PluginManifest, pluginDir: string, skipAssets: string[], onProgress?: (depName: string, received: number, total: number) => void): Promise<void> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
     for (const dep of deps) {
       if (dep.optional) continue
@@ -348,7 +348,7 @@ export class PluginInstaller {
       if (existsSync(destDir) && readdirSync(destDir).length > 0) continue
       const tmp = join(pluginDir, `.download-${Date.now()}-${dep.url.split('/').pop()}`)
       try {
-        await downloadFile(dep.url, tmp)
+        await downloadWithMirror(dep.url, tmp, (recv, total) => onProgress?.(dep.name, recv, total))
         if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
         const lower = dep.url.toLowerCase()
         if (lower.endsWith('.tar.bz2') || lower.endsWith('.tbz2')) {
