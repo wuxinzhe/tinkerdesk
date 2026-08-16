@@ -838,6 +838,8 @@ export interface WindowApi {
   windowMaximize: () => Promise<void>
   windowClose: () => Promise<void>
   isMaximized: () => Promise<boolean>
+  /** 通用事件监听（返回取消订阅——如 plugin:install-progress） */
+  onEvent: (channel: string, callback: (data: unknown) => void) => () => void
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => Promise<boolean>
 
@@ -1062,8 +1064,6 @@ export interface WindowApi {
     installStep: (sessionId: string, stage: string, skipAssets?: string[]) => Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
     /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
     installDownload: (sessionId: string) => Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>; manifest?: { id: string; name: string; version: string; capabilities: string[] } | null; assetDeps?: { name: string; dest: string; sizeMB: number; optional: boolean }[] }>
-    /** 通用事件监听（返回取消订阅） */
-    onEvent: (channel: string, callback: (data: unknown) => void) => () => void
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
     marketList: (payload?: { category?: string; search?: string }) => Promise<MarketListResult>
     /** 卸载插件（删除插件及下载的模型） */

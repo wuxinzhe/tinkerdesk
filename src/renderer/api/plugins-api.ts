@@ -27,7 +27,7 @@ export interface PluginApi {
   /** 分步安装：执行下一步 */
   installStep(sessionId: string, stage: string, skipAssets?: string[]): Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
   /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
-  installDownload(sessionId: string): Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
+  installDownload(sessionId: string): Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>; manifest?: { id: string; name: string; version: string; capabilities: string[] } | null; assetDeps?: { name: string; dest: string; sizeMB: number; optional: boolean }[] }>
   /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
   marketList(payload?: { category?: string; search?: string }): Promise<MarketListResult>
   /** 卸载插件（删除插件及下载的模型） */
