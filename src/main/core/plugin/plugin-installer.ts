@@ -121,9 +121,10 @@ export class PluginInstaller {
     return plugin
   }
 
-  /** 在线安装（npm 包名——npm pack 下载 tarball → 解压 → 走标准安装流程） */
+  /** 在线安装（npm 包名——下载 tarball → 解压 → 走标准安装流程） */
   async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginRecord> {
     const session = await this.startNpm(pkgName, opts)
+    await this.downloadSession(session.sessionId)
     for (const stage of ['copy', 'deps', 'register'] as const) {
       const r = await this.step(session.sessionId, stage)
       if (!r.ok) throw new Error(r.error)
