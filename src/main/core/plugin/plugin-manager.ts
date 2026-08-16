@@ -13,7 +13,6 @@ import { join } from 'path'
 import { app } from 'electron'
 import { handleTrusted } from '../../security/ipc-guard'
 import { PluginHost } from './plugin-host'
-import { ProviderRegistry } from './plugin-registry'
 import { PluginInstaller } from './plugin-installer'
 import { Plugin } from './plugin'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
@@ -30,12 +29,11 @@ export class PluginManager {
   private emitTarget: Electron.WebContents | null = null
   /** Worker 宿主（通用机制——共享实例） */
   private readonly host: PluginHost
-  /** 接口 provider 注册表（独立域——PluginRegistry） */
-  private readonly providerRegistry = new ProviderRegistry()
+  /** 系统开放接口的 provider 注册表：interfaceId → 已注册（started）插件 id 列表 */
+  private readonly interfaceProviders = new Map<string, string[]>()
   /** 安装器（独立子系统——安装/资源/卸载） */
   private readonly installer: PluginInstaller
   constructor() {
-    this.providerRegistry.setByIdResolver((ids) => ids.map((id) => this.registry.get(id)).filter((r): r is Plugin => !!r) as unknown as PluginRecord[])
     // host 先建（hooks 闭包延迟调用 loader——loader 随后赋值——消息到来时已就绪）
     this.host = new PluginHost({
       onReady: (record, channels) => (record as Plugin).onWorkerReady(channels),
@@ -121,7 +119,32 @@ export class PluginManager {
 
   /** 插件列表（含启用态过滤） */
   getProviders(interfaceId: string): PluginRecord[] {
-    return this.providerRegistry.getProviders(interfaceId)
+    const ids = this.interfaceProviders.get(interfaceId) ?? []
+    return ids.map((id) => this.registry.get(id)).filter((r): r is Plugin => !!r) as unknown as PluginRecord[]
+  }
+
+  /** 插件注册到其声明接口的 provider 清单 */
+  private registerProviders(record: PluginRecord): void {
+    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
+      const list = this.interfaceProviders.get(def.id) ?? []
+      if (!list.includes(record.manifest.id)) {
+        list.push(record.manifest.id)
+        this.interfaceProviders.set(def.id, list)
+        console.log(`[plugin] ${record.manifest.id} → 注册为接口 ${def.id} 的 provider`)
+      }
+    }
+  }
+
+  /** 插件从 provider 清单注销 */
+  private unregisterProviders(record: PluginRecord): void {
+    for (const def of matchSystemInterfaces(record.manifest.systemInterfaces)) {
+      const list = this.interfaceProviders.get(def.id)
+      if (list) {
+        const next = list.filter((id) => id !== record.manifest.id)
+        if (next.length > 0) this.interfaceProviders.set(def.id, next)
+        else this.interfaceProviders.delete(def.id)
+      }
+    }
   }
 
   /** 查询插件（controller 等调用方入口——兼容名） */
@@ -273,7 +296,8 @@ export class PluginManager {
   private pluginDeps() {
     return {
       host: this.host,
-      providerRegistry: this.providerRegistry,
+      registerProvider: (plugin: PluginRecord) => this.registerProviders(plugin),
+      unregisterProvider: (plugin: PluginRecord) => this.unregisterProviders(plugin),
       registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => this.registerPluginIpc(pluginId, channel, handler),
       hasChannel: (pluginId: string, channel: string) => this.ipcHandlers.has(`plugin:${pluginId}:${channel}`),
       forwardEvent: (pluginId: string, event: string, data?: unknown) => this.forwardEvent(pluginId, event, data),
@@ -332,8 +356,5 @@ export class PluginManager {
     this.host.terminateWorker(record)
   }
 
-  /** 注销 provider */
-  private unregisterProviders(record: PluginRecord): void {
-    this.providerRegistry.unregister(record)
-  }
+
 }

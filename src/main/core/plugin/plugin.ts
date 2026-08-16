@@ -9,8 +9,6 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import type { PluginApi, PluginCheckResult, PluginContext, PluginDeps, PluginManifest, PluginStatus } from './types'
 import { matchSystemInterfaces } from './system-interfaces'
-import type { PluginHost } from './plugin-host'
-import type { ProviderRegistry } from './plugin-registry'
 import { readConfigFile, writeConfigFile, persistEnabled } from './plugin-store'
 
 /** Plugin 活动对象（manager 注册表存本对象——调用方直接操作） */
@@ -124,7 +122,7 @@ export class Plugin {
         if (check && check.ok) {
           void this.api.start?.()
           this.started = true
-          this.deps.providerRegistry.register(this)
+          this.deps.registerProvider(this)
           console.log(`[plugin] 自动注册 ${this.manifest.id}（自检通过）`)
         } else {
           console.warn(`[plugin] ${this.manifest.id} 配置为启用但自检未通过，等待配置完成后重新启用`)
@@ -145,7 +143,7 @@ export class Plugin {
         }
         return this.deps.host.invokeWorker(this, 'call', { method: 'start' }).then(() => {
           this.started = true
-          this.deps.providerRegistry.register(this)
+          this.deps.registerProvider(this)
           console.log(`[plugin] 自动注册 ${this.manifest.id}（自检通过）`)
         })
       })
@@ -167,7 +165,7 @@ export class Plugin {
 
   /** 停用（注销 provider + 停止 + Worker 释放） */
   async disable(): Promise<void> {
-    this.deps.providerRegistry.unregister(this)
+    this.deps.unregisterProvider(this)
     if (this.worker) {
       void this.api?.stop?.()
       this.disposeWorker()

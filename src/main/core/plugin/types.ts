@@ -207,18 +207,6 @@ export interface SystemInterfaceDef {
   optionalChannels?: string[]
 }
 
-/** PluginLoader 依赖（manager 注入——避免反向依赖）——已并入 Plugin 类（保留类型引用兼容） */
-export interface PluginLoaderDeps {
-  registry: Map<string, PluginRecord>
-  host: import('./plugin-host').PluginHost
-  providerRegistry: import('./plugin-registry').ProviderRegistry
-  /** 注册插件声明的 IPC 通道（manager 安全接线） */
-  registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
-  /** 查询插件是否已注册某通道（接口契约校验用） */
-  hasChannel: (pluginId: string, channel: string) => boolean
-  /** 插件事件转发 renderer */
-  forwardEvent: (pluginId: string, event: string, data?: unknown) => void
-}
 
 /* ── 安装器（PluginInstaller） ── */
 
@@ -249,7 +237,9 @@ export interface InstallerDeps {
 /** Plugin 依赖（manager 注入——共享实例） */
 export interface PluginDeps {
   host: import('./plugin-host').PluginHost
-  providerRegistry: import('./plugin-registry').ProviderRegistry
+  /** 注册/注销 provider（manager 提供） */
+  registerProvider: (plugin: PluginRecord) => void
+  unregisterProvider: (plugin: PluginRecord) => void
   /** 注册插件声明的 IPC 通道（manager 安全接线） */
   registerIpc: (pluginId: string, channel: string, handler: (payload: unknown) => unknown) => void
   /** 查询插件是否已注册某通道（接口契约校验用） */
