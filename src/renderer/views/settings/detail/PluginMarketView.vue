@@ -91,17 +91,18 @@
       </div>
     </div>
 
-    <!-- 安装向导 -->
-    <InstallWizard v-if="wizardPkg" :pkg="wizardPkg" @close="wizardPkg = ''" @installed="onInstalled" />
   </L3PageLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import type { MarketPluginItem } from '@/renderer/api/types'
 import { NSelect } from 'naive-ui'
-import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero, InstallWizard } from '@/renderer/components'
+import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
+
+const router = useRouter()
 
 const plugins = ref<MarketPluginItem[]>([])
 const loading = ref(true)
@@ -110,8 +111,6 @@ const category = ref('')
 const categories = ref<string[]>([])
 /** 安装中（前端幂等——防止重复点击） */
 const installing = ref(new Set<string>())
-/** 安装向导（打开时传入 pkg） */
-const wizardPkg = ref('')
 
 const categoryOptions = computed(() => {
   const opts: Array<{ label: string; value: string }> = [{ label: '全部分类', value: '' }]
@@ -156,15 +155,8 @@ async function loadMarket() {
 
 async function installPlugin(plugin: MarketPluginItem) {
   if (plugin.installed || installing.value.has(plugin.name)) return
-  // 打开分步安装向导
-  wizardPkg.value = plugin.name
-}
-
-/** 向导安装完成 */
-function onInstalled(id: string) {
-  // 标记已安装（按钮变"已安装"禁用态）
-  const next = plugins.value.map((p) => (p.name === `tinkerdesk-plugin-${id}` ? { ...p, installed: true } : p))
-  plugins.value = next
+  // 跳转分步安装向导（L3 页面——pkg 参数）
+  router.push({ path: '/workspace/settings/plugins/install', query: { pkg: plugin.name } })
 }
 </script>
 

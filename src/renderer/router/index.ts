@@ -285,6 +285,15 @@ const router = createRouter({
           // 插件市场（独立 L3——安装按钮跳转入口）
         },
         {
+          path: 'settings/plugins/install',
+          components: {
+            default: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
+            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            level3: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
+          },
+          // 安装向导（L3 页面——pkg/path 查询参数）
+        },
+        {
           path: 'settings/plugins/:pluginId',
           components: {
             default: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),

@@ -158,6 +158,7 @@ const l3ToolbarTitle = computed(() => {
   if (inConversationDetail.value) return '对话详情'
 
   if (activeTab.value === 'settings') {
+    if (route.path.includes('/settings/plugins/install')) return '安装插件'
     if (route.path.includes('/settings/plugins-market')) return '插件市场'
     if (route.path.includes('/settings/model/create')) return '添加模型'
     if (route.path.includes('/settings/model/') && route.path.endsWith('/edit')) return '编辑模型'

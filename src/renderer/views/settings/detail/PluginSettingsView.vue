@@ -138,27 +138,13 @@ function openMarket(): void {
   router.push('/workspace/settings/plugins-market')
 }
 
-/** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder */
+/** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder——选文件后跳转分步向导 */
 async function installPlugin(kind: 'zip' | 'folder' = 'zip'): Promise<void> {
-  // 安装前知情同意：完全权限提示
-  const ok = await confirm({
-    title: '安装插件',
-    message:
-      kind === 'zip'
-        ? '插件将以完全权限运行（可读写文件、执行命令、访问网络），仅安装你信任的来源。\n\nzip 分发包必须附带 sha256sums.json 哈希清单，校验不通过将被拒绝安装。'
-        : '插件将以完全权限运行（可读写文件、执行命令、访问网络）。\n\n目录安装仅建议用于本地开发调试（不校验哈希清单）。',
-    confirmText: '继续安装',
-    cancelText: '取消',
-    destructive: true,
-  })
-  if (!ok) return
   try {
     const path = await window.api.plugins.pickInstallPackage(kind)
     if (!path) return
-    await pluginsApi.install(path)
-    // 安装成功后自动刷新整个列表（状态可能变化——push 单条不可靠）
-    await loadPlugins()
-    installMenuOpen.value = false
+    // 跳转分步安装向导（L3 页面——path 参数——向导内含知情确认）
+    router.push({ path: '/workspace/settings/plugins/install', query: { path } })
   } catch {
     // 错误提示由 inv 拦截统一派发
   }
