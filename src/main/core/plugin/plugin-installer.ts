@@ -103,11 +103,6 @@ export class PluginInstaller {
       switch (stage) {
         case 'copy':
           this.copyToPluginsDir(session)
-          // npm 临时目录已复制完成——清理
-          if (session.tmpDir) {
-            rmSync(session.tmpDir, { recursive: true, force: true })
-            session.tmpDir = undefined
-          }
           break
         case 'deps':
           await this.installNpmDeps(session.pluginDir)
@@ -117,6 +112,11 @@ export class PluginInstaller {
           break
         case 'register':
           this.deps.registerPlugin(session.srcDir)
+          // 注册完成——npm 临时目录不再需要——清理
+          if (session.tmpDir) {
+            rmSync(session.tmpDir, { recursive: true, force: true })
+            session.tmpDir = undefined
+          }
           break
       }
       session.stages[stage] = 'done'
