@@ -232,9 +232,12 @@ export class PluginManager {
     return (await record.api.getStatus?.()) ?? { loaded: false, enabled: false, started: false }
   }
 
-  /** 配置 Schema（Worker 插件经代理异步获取） */
+  /** 配置 Schema（manifest 静态优先——不依赖 Worker；插件动态 schema 兜底补充） */
   async getSchema(id: string): Promise<unknown> {
     const record = this.registry.get(id)
+    if (!record) return null
+    // manifest 静态 schema（主进程直读——Worker 死活不影响配置渲染）
+    if (record.manifest.configSchema) return record.manifest.configSchema
     if (!record?.api) return null
     return (await record.api.getConfigSchema?.()) ?? null
   }

@@ -42,6 +42,9 @@ export interface PluginManifest {
   assetDeps?: AssetDep[]
   /** 旧字段别名（modelDeps——兼容早期插件——与 assetDeps 同构） */
   modelDeps?: AssetDep[]
+  /** 静态配置 schema（JSON 方言——主进程直读——不依赖插件代码——
+   *   Worker 死活不影响配置渲染；动态 schema（getConfigSchema）作为补充） */
+  configSchema?: ConfigSchema
 }
 
 /** 资源依赖声明（模型/二进制/数据文件等任意资源） */
