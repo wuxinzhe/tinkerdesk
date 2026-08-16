@@ -18,6 +18,10 @@ export interface PluginApi {
   check(id: string): Promise<PluginCheckResult>
   /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
   install(path: string): Promise<PluginInfo>
+  /** 在线安装（npm 包名） */
+  installNpm(pkg: string, registry?: string): Promise<PluginInfo>
+  /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
+  marketList(): Promise<MarketPluginItem[]>
   /** 卸载插件（删除插件及下载的模型） */
   uninstall(id: string): Promise<void>
   getStatus(id: string): Promise<PluginStatus>
