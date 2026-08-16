@@ -1,5 +1,6 @@
 <template>
-  <div class="mcp-settings-page">
+  <L3PageLayout class="mcp-settings-page">
+    <div class="mcp-settings-page__body">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z&quot;/></svg>"
@@ -68,7 +69,8 @@
         </svg>
       </button>
     </ToolbarActions>
-  </div>
+    </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
@@ -108,8 +110,7 @@ onMounted(load)
   flex: 1;
   overflow-y: auto;
   padding: 0;
-  max-width: 680px;
-  width: 100%;
+    width: 100%;
 }
 
 .mcp-settings-page__header {

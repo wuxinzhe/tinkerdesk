@@ -1,5 +1,6 @@
 <template>
-  <div class="cms-page">
+  <L3PageLayout class="cms-page">
+    <div class="cms-page__body">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M4 7V4h16v3&quot;/><path d=&quot;M9 20h6&quot;/><path d=&quot;M12 4v16&quot;/></svg>"
@@ -46,7 +47,8 @@
         </svg>
       </button>
     </ToolbarActions>
-  </div>
+    </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">
@@ -126,8 +128,7 @@ onMounted(async () => {
 
 .cms-page {
   padding: 0 0 32px;
-  max-width: 680px;
-  width: 100%;
+    width: 100%;
   overflow-y: auto;
 }
 

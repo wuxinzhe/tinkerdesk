@@ -7,7 +7,7 @@
  */
 import { ref, onMounted } from 'vue'
 import type { VoiceProviderInfo } from '@/renderer/api/types'
-import { SaPageHero } from '@/renderer/components'
+import { SaPageHero, L3PageLayout } from '@/renderer/components'
 
 /** 进入动画标记（stagger 触发） */
 const mounted = ref(false)
@@ -50,7 +50,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="voice-settings-page" :data-mounted="mounted">
+  <L3PageLayout class="voice-settings-page" :data-mounted="mounted">
+    <div class="voice-settings-page__body">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z&quot;/><path d=&quot;M19 10v2a7 7 0 01-14 0v-2&quot;/><line x1=&quot;12&quot; y1=&quot;19&quot; x2=&quot;12&quot; y2=&quot;23&quot;/><line x1=&quot;8&quot; y1=&quot;23&quot; x2=&quot;16&quot; y2=&quot;23&quot;/></svg>"
@@ -134,7 +135,8 @@ onMounted(() => {
         </div>
       </section>
     </div>
-  </div>
+    </div>
+  </L3PageLayout>
 </template>
 
 <style scoped>
@@ -143,8 +145,7 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--tk-space-5, 20px);
   padding: 0;
-  max-width: 680px;
-  width: 100%;
+    width: 100%;
   height: 100%;
   overflow-y: auto;
 }

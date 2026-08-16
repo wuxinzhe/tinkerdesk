@@ -1,6 +1,7 @@
 <template>
-  <L3PageLayout class="settings-detail">
-    <div class="settings-detail__body">
+  <!-- 设置详情内容分发器（不套 L3——每个子页面自己套 L3PageLayout——
+       统一规范：所有 L3 级页面自套——无父级外壳模式） -->
+  <div class="settings-detail">
       <!-- 模型设置 -->
       <CustomModelSettingsView v-if="section === 'model'" />
 
@@ -30,14 +31,12 @@
           </p>
         </div>
       </div>
-    </div>
-  </L3PageLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { L3PageLayout } from '@/renderer/components'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
 import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'

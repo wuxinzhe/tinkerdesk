@@ -1,6 +1,5 @@
 <template>
-  <!-- 注意：SettingsDetailView 已套 L3PageLayout——此处用普通 div（避免嵌套双重 padding） -->
-  <div class="general-settings">
+    <L3PageLayout class="general-settings">
     <div class="general-settings__body" :data-mounted="mounted">
       <!-- 页头：彩色渐变图标徽章 + 标题（iOS Settings 风格）——在窄列内与其他页对齐 -->
       <SaPageHero
@@ -104,7 +103,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </L3PageLayout>
 </template>
 
 <script setup lang="ts">

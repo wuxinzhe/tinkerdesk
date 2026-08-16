@@ -8,7 +8,7 @@
  */
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { SaPageHero } from '@/renderer/components'
+import { SaPageHero, L3PageLayout } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 import { confirm } from '@/renderer/api/confirm'
 import type { PluginInfo } from '@/renderer/api/types'
@@ -191,7 +191,8 @@ async function askUninstall(p: PluginInfo): Promise<void> {
 </script>
 
 <template>
-  <div class="plugin-settings-page" :data-mounted="mounted">
+  <L3PageLayout class="plugin-settings-page" :data-mounted="mounted">
+    <div class="plugin-settings-page__body">
     <!-- 页头 -->
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z&quot;/></svg>"
@@ -361,7 +362,8 @@ async function askUninstall(p: PluginInfo): Promise<void> {
         </div>
       </section>
     </div>
-  </div>
+    </div>
+  </L3PageLayout>
 </template>
 
 <style scoped>
@@ -370,10 +372,14 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   flex-direction: column;
   gap: var(--tk-space-5, 20px);
   padding: 0;
-  max-width: 680px;
   width: 100%;
   height: 100%;
   overflow-y: auto;
+}
+
+.plugin-settings-page__body {
+  max-width: 680px;
+  width: 100%;
 }
 
 /* 头部：右侧安装按钮（header 仅按钮组——靠右；菜单 right:0 对齐右缘不超出） */
