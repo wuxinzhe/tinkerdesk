@@ -86,8 +86,8 @@
               <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)">
                 <div v-if="!session?.assetDeps?.length" class="iw-state">该插件无需下载额外资源</div>
                 <div v-else class="iw-assets">
-                  <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
-                    <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" class="iw-asset__input" />
+                  <label v-for="dep in session?.assetDeps ?? []" :key="dep.name" class="iw-asset">
+                    <input v-model="selectedAssets" type="checkbox" :value="dep.name" :disabled="!dep.optional" class="iw-asset__input" />
                     <span class="iw-asset__check">
                       <svg v-if="selectedAssets.includes(dep.name)" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </span>
