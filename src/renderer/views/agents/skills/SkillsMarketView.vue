@@ -221,10 +221,16 @@ async function installSkill(skill: SkillInfo) {
 
   installingIds.value = new Set(installingIds.value).add(skill.id)
   try {
-    await skillsApi.install(skill.id, profile.value)
+    // npm 在线安装（市场包名——skill.id 存的是包名 tinkerdesk-skill-xxx）
+    const res = await skillsApi.installFromMarket(skill.id, profile.value)
+    if (!res.ok) {
+      window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:market:install', message: res.error ?? '安装失败' } }))
+      return
+    }
     installedIds.value = new Set(installedIds.value).add(skill.id)
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'success', code: 'skill:market:install', message: `技能 ${res.name ?? skill.name} 安装完成` } }))
   } catch (e) {
-    console.error('Failed to install skill', e)
+    console.error('Failed to install skill from market', e)
   } finally {
     const next = new Set(installingIds.value)
     next.delete(skill.id)

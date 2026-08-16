@@ -13,7 +13,7 @@ import { basename, join } from 'path'
 import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
-import { downloadFile, execFileAsync } from '../../utils/process-utils'
+import { downloadFile, downloadWithMirror, execFileAsync } from '../../utils/process-utils'
 import { resolveNpmCli, tarBin, locateManifestDir } from '../../utils/plugin-installer-utils'
 import { getPackageTarball } from '../../repository/npm-registry-repository'
 import type { InstallerDeps, InstallSession, InstallStage, PluginRecord, PluginManifest } from './types'
@@ -50,32 +50,6 @@ async function extractArchivePromote(tmp: string, destDir: string): Promise<void
       }
       rmSync(only, { recursive: true, force: true })
     }
-  }
-}
-
-/** 国内镜像映射（下载失败回退——GitHub/HF 加速） */
-function mirrorUrl(url: string): string {
-  if (url.startsWith('https://github.com/')) {
-    return `https://ghfast.top/${url}`
-  }
-  if (url.startsWith('https://huggingface.co/')) {
-    return url.replace('https://huggingface.co/', 'https://hf-mirror.com/')
-  }
-  if (url.startsWith('https://objects.githubusercontent.com/')) {
-    return `https://ghfast.top/${url}`
-  }
-  return url
-}
-
-/** 下载（直连优先——失败自动回退镜像重试一次） */
-async function downloadWithMirror(url: string, dest: string, onProgress?: (received: number, total: number) => void): Promise<void> {
-  try {
-    await downloadFile(url, dest, onProgress)
-  } catch (e) {
-    const mirror = mirrorUrl(url)
-    if (mirror === url) throw e
-    console.warn(`[plugin] 直连下载失败（${(e as Error).message}）——回退镜像: ${mirror}`)
-    await downloadFile(mirror, dest, onProgress)
   }
 }
 

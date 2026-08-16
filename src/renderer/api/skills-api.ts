@@ -8,9 +8,25 @@ import type { ApiResponse } from '@/renderer/api/types'
 import '@/renderer/api/types'
 
 export class SkillsApi {
-  /** 本地无官方技能市场 */
-  async listOfficial(_params?: { offset?: number; limit?: number; category?: string; name?: string; profile?: string }): Promise<{ items: SkillInfo[]; total: number; offset: number; limit: number }> {
-    return { items: [], total: 0, offset: 0, limit: 0 }
+  /** 技能市场列表（npm 在线——真实 registry 查询——分类/搜索词透传） */
+  async listOfficial(params?: { offset?: number; limit?: number; category?: string; name?: string; profile?: string }): Promise<{ items: SkillInfo[]; total: number; offset: number; limit: number }> {
+    const res = await window.api.skills.marketList({ category: params?.category, search: params?.name, profile: params?.profile })
+    const items = (res.items ?? []).map((m) => ({
+      id: m.name,
+      name: m.name.slice('tinkerdesk-skill-'.length),
+      displayName: m.name.slice('tinkerdesk-skill-'.length),
+      description: m.description,
+      version: m.version,
+      license: m.official ? '官方' : undefined,
+      tags: m.categories,
+      isInstalled: m.installed,
+    }) as SkillInfo)
+    return { items, total: items.length, offset: params?.offset ?? 0, limit: params?.limit ?? 100 }
+  }
+
+  /** 技能市场安装（npm 在线） */
+  async installFromMarket(name: string, profile?: string): Promise<{ ok: boolean; error?: string; skillId?: string; name?: string }> {
+    return window.api.skills.marketInstall(name, profile)
   }
 
   /** 本地无官方技能 */

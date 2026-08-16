@@ -14,6 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
 import { dirname, join, relative, basename } from 'path'
 import type { PrivateSkillService } from '../service/private-skill-service'
+import { installSkillFromNpm, listSkillMarket, type SkillMarketInstallResult, type SkillMarketItem } from '../service/skill-market-service'
 import type { SkillCategoryService } from '../service/skill-category-service'
 import type { PrivateSkillEntity } from '../repository/types'
 import type { ApiResponse } from './api-response'
@@ -88,6 +89,8 @@ export class SkillController {
     handleTrusted('skill:activate', (_event, payload) => this.activateSkill(payload))
     handleTrusted('skill:categories', () => this.listSkillCategories())
     handleTrusted('skill:install', (_event, payload) => this.installSkill(payload))
+    handleTrusted('skill:market-list', (_event, payload) => this.skillMarketList(payload))
+    handleTrusted('skill:market-install', (_event, payload) => this.skillMarketInstall(payload))
     handleTrusted('skill:pick-install-file', () => this.pickInstallFile())
     handleTrusted('skill:update', (_event, payload) => this.updateSkill(payload))
     handleTrusted('skill:delete', (_event, payload) => this.deleteSkill(payload))
@@ -319,6 +322,33 @@ export class SkillController {
       return fail(`技能已存在: ${name}（同名技能不能重复安装，可改 name 或先删除旧技能）`)
     }
     return ok(toSkillInfoVO(created, true))
+  }
+
+  /** 技能市场列表（真实 npm 查询——分类/搜索词透传——installed 按 name 匹配） */
+  private async skillMarketList(payload: { category?: string; search?: string; profile?: string } = {}): Promise<ApiResponse<{ items: SkillMarketItem[] }>> {
+    try {
+      const profile = payload?.profile ?? 'default'
+      const installed = this.privateSkillService.findFiltered(profile).map((s) => s.name)
+      return ok(await listSkillMarket({ installedNames: installed, category: payload?.category, search: payload?.search }))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 技能市场安装（npm tarball → 解压 → SKILL.md 解析 → 入库事务） */
+  private async skillMarketInstall(payload: { name?: string; profile?: string } = {}): Promise<ApiResponse<SkillMarketInstallResult>> {
+    try {
+      if (!payload?.name) return fail('包名不能为空')
+      const profile = payload?.profile ?? 'default'
+      const result = await installSkillFromNpm(payload.name, (input) => {
+        const created = this.privateSkillService.installSkill(profile, input, input.files ?? [], input.related ?? [])
+        if (!created) return { ok: false, error: '安装失败（可能重名——先删除或改 name）' }
+        return { ok: true, id: created.id }
+      })
+      return ok(result)
+    } catch (e) {
+      return fail((e as Error).message)
+    }
   }
 
   /** 编辑技能（全字段；按 id 定位） */

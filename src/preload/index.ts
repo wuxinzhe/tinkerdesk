@@ -318,6 +318,10 @@ const api = {
     deactivate: (id: string, profile?: string) => inv('skill:deactivate', { id, profile } satisfies SkillOpRequestDTO).then(unwrap),
     activate: (id: string, profile?: string) => inv('skill:activate', { id, profile } satisfies SkillOpRequestDTO).then(unwrap),
     categories: () => inv('skill:categories').then(unwrap),
+    /** 技能市场列表（npm 在线——真实 registry 查询） */
+    marketList: (payload?: { category?: string; search?: string; profile?: string }) => inv('skill:market-list', payload ?? {}).then(unwrap),
+    /** 技能市场安装（npm tarball → 解析 → 入库） */
+    marketInstall: (name: string, profile?: string) => inv('skill:market-install', { name, profile }).then(unwrap),
     /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
     install: (payload: {
       profile?: string; name?: string; displayName?: string; description?: string; category?: string

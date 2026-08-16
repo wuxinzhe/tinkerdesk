@@ -14,6 +14,32 @@ import { createWriteStream } from 'fs'
 export const execFileAsync = promisify(execFile)
 
 /** 下载文件（流式——带进度回调——不阻塞主进程） */
+/** 国内镜像映射（下载失败回退——GitHub/HF 加速） */
+export function mirrorUrl(url: string): string {
+  if (url.startsWith('https://github.com/')) {
+    return `https://ghfast.top/${url}`
+  }
+  if (url.startsWith('https://huggingface.co/')) {
+    return url.replace('https://huggingface.co/', 'https://hf-mirror.com/')
+  }
+  if (url.startsWith('https://objects.githubusercontent.com/')) {
+    return `https://ghfast.top/${url}`
+  }
+  return url
+}
+
+/** 下载（直连优先——失败自动回退镜像重试一次——GitHub/HF 国内源兜底） */
+export async function downloadWithMirror(url: string, dest: string, onProgress?: (received: number, total: number) => void): Promise<void> {
+  try {
+    await downloadFile(url, dest, onProgress)
+  } catch (e) {
+    const mirror = mirrorUrl(url)
+    if (mirror === url) throw e
+    console.warn(`[plugin] 直连下载失败（${(e as Error).message}）——回退镜像: ${mirror}`)
+    await downloadFile(mirror, dest, onProgress)
+  }
+}
+
 export function downloadFile(
   url: string,
   dest: string,

@@ -350,6 +350,17 @@ export interface SkillInfo {
   related?: Array<{ id: string; name: string }>
 }
 
+/** 技能市场条目（npm 在线） */
+export interface SkillMarketItem {
+  name: string
+  version: string
+  description: string
+  updated: string
+  official: boolean
+  installed: boolean
+  categories: string[]
+}
+
 /** 技能分类 */
 /** 技能文件信息（private_skill_files） */
 export interface SkillFileInfo {
@@ -981,6 +992,8 @@ export interface WindowApi {
     deactivate: (id: string, profile?: string) => Promise<void>
     activate: (id: string, profile?: string) => Promise<void>
     categories: () => Promise<SkillCategory[]>
+    marketList: (payload?: { category?: string; search?: string; profile?: string }) => Promise<{ items: SkillMarketItem[] }>
+    marketInstall: (name: string, profile?: string) => Promise<{ ok: boolean; error?: string; skillId?: string; name?: string }>
     /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
     install: (payload: {
       profile?: string; name?: string; displayName?: string; description?: string; category?: string
