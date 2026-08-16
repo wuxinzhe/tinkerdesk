@@ -19,6 +19,14 @@ export interface MarketPluginItem {
   official: boolean
   /** 已安装（对比本地注册表——前端显示"已安装"） */
   installed: boolean
+  /** 分类（package.json keywords——生态标记外的能力分类词） */
+  categories: string[]
+}
+
+/** 市场查询结果（列表 + 可用分类） */
+export interface MarketListResult {
+  items: MarketPluginItem[]
+  categories: string[]
 }
 
 /** 市场查询参数 */
@@ -49,8 +57,11 @@ async function queryOfficial(): Promise<NpmPackage[]> {
   return (res.objects ?? []).map((o) => o.package)
 }
 
-/** 插件市场列表（生态开放 + 官方标记 + installed 状态） */
-export async function listMarketPlugins(params: MarketQueryParams): Promise<MarketPluginItem[]> {
+/** 市场分类词（生态标记 tinkerdesk-plugin 之外的能力分类——约定词表） */
+export const MARKET_CATEGORIES = ['voice', 'tts', 'stt', 'vision', 'tool', 'model', 'video', 'image', 'agent']
+
+/** 插件市场列表（生态开放 + 官方标记 + installed 状态 + 分类） */
+export async function listMarketPlugins(params: MarketQueryParams): Promise<MarketListResult> {
   const [eco, official] = await Promise.all([queryEcosystem(), queryOfficial()])
   // 合并去重（keywords 命中优先保留）
   const map = new Map<string, NpmPackage>()
@@ -66,13 +77,16 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
       if (aOfficial !== bOfficial) return aOfficial ? -1 : 1
       return (b.date ?? '').localeCompare(a.date ?? '')
     })
-    .map((p) => ({
-      name: p.name,
-      version: p.version,
-      description: p.description ?? '',
-      updated: p.date ?? '',
-      official: (p.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
-      installed: params.installedIds.includes(p.name.slice(MARKET_PREFIX.length)),
-    }))
-  return list
+  const items = list.map((p) => ({
+    name: p.name,
+    version: p.version,
+    description: p.description ?? '',
+    updated: p.date ?? '',
+    official: (p.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
+    installed: params.installedIds.includes(p.name.slice(MARKET_PREFIX.length)),
+    categories: (p.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
+  }))
+  // 分类聚合（所有插件出现过的分类——去重——排序）
+  const categories = Array.from(new Set(items.flatMap((i) => i.categories))).sort()
+  return { items, categories }
 }

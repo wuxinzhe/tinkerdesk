@@ -9,6 +9,14 @@
     />
     <!-- 筛选栏 -->
     <div class="plugin-market__toolbar">
+      <n-select
+        v-model:value="category"
+        :options="categoryOptions"
+        placeholder="全部分类"
+        size="small"
+        style="width: 120px"
+        clearable
+      />
       <div class="plugin-market__search-wrap">
         <svg class="plugin-market__search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8" />
@@ -88,19 +96,33 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import type { MarketPluginItem } from '@/renderer/api/types'
+import { NSelect } from 'naive-ui'
 import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 
 const plugins = ref<MarketPluginItem[]>([])
 const loading = ref(true)
 const searchName = ref('')
+const category = ref('')
+const categories = ref<string[]>([])
 /** 安装中（前端幂等——防止重复点击） */
 const installing = ref(new Set<string>())
 
+const categoryOptions = computed(() => {
+  const opts: Array<{ label: string; value: string }> = [{ label: '全部分类', value: '' }]
+  for (const c of categories.value) {
+    opts.push({ label: c, value: c })
+  }
+  return opts
+})
+
 const filtered = computed(() => {
   const q = searchName.value.trim().toLowerCase()
-  if (!q) return plugins.value
-  return plugins.value.filter((p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+  return plugins.value.filter((p) => {
+    if (category.value && !p.categories.includes(category.value)) return false
+    if (!q) return true
+    return p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
+  })
 })
 
 /** 显示名（去掉 tinkerdesk-plugin- 前缀——只留能力名） */
@@ -113,7 +135,9 @@ onMounted(loadMarket)
 async function loadMarket() {
   loading.value = true
   try {
-    plugins.value = await pluginsApi.marketList()
+    const res = await pluginsApi.marketList()
+    plugins.value = res.items ?? []
+    categories.value = res.categories ?? []
   } catch (e) {
     console.error('Failed to load plugin market', e)
     plugins.value = []

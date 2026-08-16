@@ -6,7 +6,7 @@
  */
 import type {
   ConfigSchema,
-  MarketPluginItem,
+  MarketListResult,
   PluginCheckResult,
   PluginInfo,
   PluginStatus,
@@ -21,8 +21,8 @@ export interface PluginApi {
   install(path: string): Promise<PluginInfo>
   /** 在线安装（npm 包名） */
   installNpm(pkg: string, registry?: string): Promise<PluginInfo>
-  /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
-  marketList(): Promise<MarketPluginItem[]>
+  /** 插件市场列表（npm registry search——生态开放 + 官方标记 + 分类） */
+  marketList(): Promise<MarketListResult>
   /** 卸载插件（删除插件及下载的模型） */
   uninstall(id: string): Promise<void>
   getStatus(id: string): Promise<PluginStatus>

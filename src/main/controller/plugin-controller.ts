@@ -133,12 +133,11 @@ export class PluginController {
     }
   }
 
-  /** 插件市场列表（service 层——生态开放 + 官方标记 + installed 状态） */
-  private async marketList(): Promise<ApiResult<import('../service/plugin-market-service').MarketPluginItem[]>> {
+  /** 插件市场列表（service 层——生态开放 + 官方标记 + installed 状态 + 分类） */
+  private async marketList(): Promise<ApiResult<import('../service/plugin-market-service').MarketListResult>> {
     try {
       const installedIds = this.pluginManager.list().map((p) => p.manifest.id)
-      const list = await listMarketPlugins({ installedIds })
-      return ok(list)
+      return ok(await listMarketPlugins({ installedIds }))
     } catch (e) {
       return fail((e as Error).message)
     }

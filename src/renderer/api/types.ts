@@ -280,6 +280,14 @@ export interface MarketPluginItem {
   official: boolean
   /** 已安装（按钮禁用） */
   installed: boolean
+  /** 分类（keywords——能力分类词） */
+  categories: string[]
+}
+
+/** 市场查询结果（列表 + 可用分类） */
+export interface MarketListResult {
+  items: MarketPluginItem[]
+  categories: string[]
 }
 
 /** 技能接口 */
@@ -1039,7 +1047,7 @@ export interface WindowApi {
     /** 在线安装（npm 包名——npm pack 下载 → 解压 → 标准安装） */
     installNpm: (pkg: string, registry?: string) => Promise<PluginInfo>
     /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
-    marketList: () => Promise<MarketPluginItem[]>
+    marketList: () => Promise<MarketListResult>
     /** 卸载插件（删除插件及下载的模型） */
     uninstall: (id: string) => Promise<void>
     /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
