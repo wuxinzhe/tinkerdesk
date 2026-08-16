@@ -206,22 +206,24 @@ export class PluginController {
   private async getPluginSchema(payload: { id: string }): Promise<ApiResult<unknown>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.pluginManager.getSchema(payload.id))
-    } catch (e) {
-      // Worker 失败（插件未就绪——如资源缺失）——分层自检容错：
-      // 主进程静态检查通过 → 配置页仍可开（返回可配置信息——含资源下载入口）
-      if (payload?.id) {
-        const record = this.pluginManager.getRecord(payload.id)
-        const staticOk = record ? this.pluginManager.staticCheck(record) : { ok: false }
-        if (staticOk.ok || !staticOk.ok && record?.manifest.assetDeps?.length) {
+      const schema = await this.pluginManager.getSchema(payload.id)
+      if (schema) return ok(schema)
+      // schema 为 null（Worker 未就绪/插件 api 不可用——如资源缺失）——
+      // 分层自检容错：主进程静态检查（entry/资源就绪度）→ 配置页仍可开（含资源下载入口）
+      const record = this.pluginManager.getRecord(payload.id)
+      if (record) {
+        const staticOk = this.pluginManager.staticCheck(record)
+        if (staticOk.ok || !staticOk.ok && (record.manifest.assetDeps?.length ?? 0) > 0) {
           return ok({
             configurable: true,
             degraded: true,
-            note: (e as Error).message,
-            assetDeps: record?.manifest.assetDeps ?? [],
+            note: staticOk.reason ?? '插件未就绪（Worker 不可用）——资源下载后重启生效',
+            assetDeps: record.manifest.assetDeps ?? [],
           })
         }
       }
+      return ok(null)
+    } catch (e) {
       return fail((e as Error).message)
     }
   }

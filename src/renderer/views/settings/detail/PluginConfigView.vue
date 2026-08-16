@@ -76,7 +76,13 @@ async function downloadModels(): Promise<void> {
   if (downloading.value) return
   downloading.value = true
   try {
-    await pluginsApi.invokePlugin(pluginId.value, 'models:download')
+    // 主进程资源下载（读 manifest.assetDeps——下载/解压/就位——不依赖插件 Worker——
+    // Worker 因缺资源未就绪时仍可下载——解除"缺模型→无法下载"死锁）
+    const results = await window.api.plugins.downloadAssets(pluginId.value)
+    const failed = results.filter((r) => !r.ok)
+    if (failed.length > 0) {
+      showInfoToast(`下载失败: ${failed.map((f) => f.name + (f.error ? `（${f.error}）` : '')).join('、')}`)
+    }
     await refreshModelsStatus()
     await rerunCheck()
     // 完成反馈：进度条停留 1.5s 显示 100%
