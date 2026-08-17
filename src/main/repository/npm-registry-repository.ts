@@ -46,6 +46,7 @@ export interface NpmPackageDetail {
   repository?: { url?: string }
   keywords?: string[]
   maintainers?: { username?: string }[]
+  'dist-tags'?: Record<string, string>
   time?: Record<string, string>
   dependencies?: Record<string, string>
 }

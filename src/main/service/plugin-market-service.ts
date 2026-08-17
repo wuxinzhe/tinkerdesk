@@ -124,9 +124,11 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
 export async function getMarketPluginDetail(name: string, installedIds: string[]): Promise<MarketPluginDetail> {
   const d = await getPackageDetail(name)
   const inEcosystem = d.name.startsWith(MARKET_PREFIX)
+  // 版本号：顶层 version 缺失时用 dist-tags.latest 兜底
+  const version = d.version ?? d['dist-tags']?.latest ?? ''
   return {
     name: d.name,
-    version: d.version,
+    version,
     description: d.description ?? '',
     readme: d.readme ?? '',
     homepage: d.homepage ?? '',

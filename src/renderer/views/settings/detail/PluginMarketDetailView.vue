@@ -24,7 +24,7 @@
           <SaActionBtn
             :text="'安装'"
             :done="detail?.installed"
-            :done-text="'已安装'"
+            :done-text="'已装'"
             variant="primary"
             @click="goInstall"
           />
