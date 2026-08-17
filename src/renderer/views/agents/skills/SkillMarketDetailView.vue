@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import { L3PageLayout } from '@/renderer/components'
@@ -81,6 +81,13 @@ async function install(): Promise<void> {
 }
 
 onMounted(load)
+
+// 路由参数变化（含 keep-alive 复用）时重新加载
+watch(() => route.params.skillName, () => {
+  load()
+})
+// keep-alive 复用（从其他页面切回）时重新拉取最新
+onActivated(load)
 </script>
 
 <style scoped>
