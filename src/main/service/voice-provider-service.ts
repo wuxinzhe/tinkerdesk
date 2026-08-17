@@ -65,10 +65,12 @@ export class VoiceProviderService {
     }
   }
 
-  /** 保存激活配置 */
+  /** 保存激活配置（只更新传入的字段——undefined 不覆盖已有值） */
   setConfig(patch: Partial<VoiceConfig>): VoiceConfig {
     const current = this.readStored()
-    const next = { ...current, ...patch }
+    const next = { ...current }
+    if (patch.sttProvider !== undefined) next.sttProvider = patch.sttProvider
+    if (patch.ttsProvider !== undefined) next.ttsProvider = patch.ttsProvider
     writeFileSync(this.configFile, JSON.stringify(next, null, 2), 'utf-8')
     return this.getConfig()
   }
