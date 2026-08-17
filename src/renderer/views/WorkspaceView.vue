@@ -57,6 +57,8 @@
             </h1>
           </div>
           <router-view name="level2" class="workspace__l2-router" />
+          <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
+          <div class="workspace__l2-fade" />
         </div>
         <!-- 全局设置栏位（L2 底部——任何模块都显示） -->
         <button class="workspace__l2-settings" @click="goSettings">
@@ -511,6 +513,7 @@ html[data-theme='dark'] .workspace {
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
+  position: relative;
   transition: opacity 0.2s ease;
 }
 
@@ -566,6 +569,17 @@ html[data-theme='dark'] .workspace {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* 底部渐变遮罩（DSH 同款：transparent → 侧栏填充色——列表滚到设置栏上方淡出——不拦截点击） */
+.workspace__l2-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, transparent, var(--tk-bg-primary));
+  pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════
