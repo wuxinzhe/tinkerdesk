@@ -838,9 +838,9 @@ html[data-theme='dark'] .workspace {
 }
 
 .workspace__sidebar-col--collapsed {
-  /* 宽度由 grid 轨道控制（--sidebar-w 76px 窄条）——覆盖桌面断点 width:280 */
-  width: auto;
-  min-width: 0;
+  /* 宽度由 grid 轨道控制（--sidebar-w 76px 窄条）——!important 压过桌面断点 width:280 */
+  width: auto !important;
+  min-width: 0 !important;
 }
 
 /* ── Lv3 列 ── */
