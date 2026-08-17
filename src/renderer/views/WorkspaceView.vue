@@ -501,6 +501,7 @@ html[data-theme='dark'] .workspace {
 .workspace__sidebar-col {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
