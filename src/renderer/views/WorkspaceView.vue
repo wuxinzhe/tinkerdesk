@@ -413,13 +413,13 @@ html[data-theme='dark'] .workspace {
   transition: width 0.2s ease;
 }
 
-/* 全局设置栏位（L2 底部——任何模块都显示——折叠时隐藏） */
+/* 全局设置栏位（L2 底部——Emil：低调入口——克制尺寸/按下反馈/hover 门控） */
 .workspace__l2-settings {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
-  padding: 10px 14px;
+  padding: 9px 14px;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -429,12 +429,19 @@ html[data-theme='dark'] .workspace {
   border-top: 1px solid var(--tk-border);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
 }
 
-.workspace__l2-settings:hover {
-  color: var(--tk-text-primary);
-  background: var(--tk-bg-secondary);
+/* Emil：按下反馈 */
+.workspace__l2-settings:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace__l2-settings:hover {
+    color: var(--tk-text-primary);
+    background: var(--tk-bg-secondary);
+  }
 }
 
 .workspace__l2-col--collapsed .workspace__l2-settings {
