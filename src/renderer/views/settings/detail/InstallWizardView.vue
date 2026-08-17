@@ -1,11 +1,13 @@
 <template>
   <L3PageLayout class="install-wizard-page">
     <div class="install-wizard-page__body">
-      <!-- 页面标题区 -->
-      <div class="iw-heading">
-        <h1 class="iw-heading__title">安装插件</h1>
-        <p class="iw-heading__subtitle">分步安装——下载、确认、安装、完成</p>
-      </div>
+      <!-- 页面 hero -->
+      <SaPageHero
+        icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4&quot; /><polyline points=&quot;7 10 12 15 17 10&quot; /><line x1=&quot;12&quot; y1=&quot;15&quot; x2=&quot;12&quot; y2=&quot;3&quot; /></svg>"
+        gradient="linear-gradient(135deg, #34c759 0%, #28a745 100%)"
+        title="安装插件"
+        desc="分步安装——下载、确认、安装、完成"
+      />
 
       <!-- 主卡片 -->
       <div class="iw-card">
@@ -185,7 +187,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { InstallSessionInfo } from '@/renderer/api/types'
-import { SaActionBtn, L3PageLayout } from '@/renderer/components'
+import { SaActionBtn, L3PageLayout, SaPageHero } from '@/renderer/components'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 
 const route = useRoute()

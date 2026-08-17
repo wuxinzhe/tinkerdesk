@@ -1,6 +1,14 @@
 <template>
   <L3PageLayout class="plugin-detail-page">
     <div class="plugin-detail-page__body">
+      <!-- 页面 hero -->
+      <SaPageHero
+        icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /></svg>"
+        gradient="linear-gradient(135deg, #5ac8fa 0%, #0a84ff 100%)"
+        title="插件详情"
+        desc="查看插件说明、环境要求并安装"
+      />
+
       <!-- 头部信息卡 -->
       <div class="pd-hero">
         <div class="pd-hero__icon">
@@ -65,7 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { MarketPluginDetail } from '@/renderer/api/types'
-import { SaActionBtn, L3PageLayout } from '@/renderer/components'
+import { SaActionBtn, L3PageLayout, SaPageHero } from '@/renderer/components'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import { pluginsApi } from '@/renderer/api/plugins-api'
 

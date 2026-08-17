@@ -73,8 +73,7 @@
               {{ plugin.description || '-' }}
             </div>
             <div class="plugin-card__meta">
-              <span class="plugin-card__tag">{{ plugin.name }}</span>
-              <!-- keywords（npm 分类词——已过滤 tinkerdesk-plugin 生态标记） -->
+              <!-- keywords（npm 分类词——已过滤生态标记/包全名——包全名不再展示） -->
               <span v-for="kw in pluginKeywords(plugin)" :key="kw" class="plugin-card__tag">{{ kw }}</span>
             </div>
           </div>
