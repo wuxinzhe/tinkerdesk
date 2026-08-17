@@ -10,7 +10,7 @@
     </WorkspaceToolbar>
 
     <!-- ── 二级 + 三级 ── -->
-    <div class="workspace__main">
+        <div class="workspace__main" :class="{ 'workspace__main--col-collapsed': sidebarCollapsed }">
       <div class="workspace__sidebar-col" :class="{
         'workspace__sidebar-col--full': !hasLevel3,
         'workspace__sidebar-col--collapsed': sidebarCollapsed
@@ -443,16 +443,22 @@ html[data-theme='dark'] .workspace {
 
 .workspace__main {
   display: grid;
-  /* 结构焊死：左列 280 固定 + 右列 minmax(0,1fr)（下限 0——内容永不撑破骨架） */
-  grid-template-columns: 280px minmax(0, 1fr);
+  /* 结构焊死：左列 280 固定 + 右列 minmax(0,1fr)（下限 0——内容永不撑破骨架）
+     --sidebar-w 随折叠类变 0（折叠=左列收起） */
+  grid-template-columns: var(--sidebar-w, 280px) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
   width: 0;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  position: relative;
-}
+    position: relative;
+    transition: grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .workspace__main--col-collapsed {
+    --sidebar-w: 0px;
+  }
 
 /* ── 一级：默认隐藏，只在桌面端显示 ── */
 
