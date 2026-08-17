@@ -388,9 +388,6 @@ function viewDetail(plugin: MarketPluginItem) {
   opacity: 0.55;
   cursor: default;
 }
-  justify-content: flex-end;
-  padding: 0 16px 10px;
-}
 
 /* ── 骨架屏 ── */
 .plugin-market__skeleton {
