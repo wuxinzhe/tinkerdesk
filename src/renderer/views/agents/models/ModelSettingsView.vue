@@ -42,8 +42,18 @@
                 </span>
                 <span class="ms-sub__alias">{{ b.modelAlias }}</span>
                 <span class="ms-sub__name">{{ b.modelName }}</span>
-                <button
-                  class="ms-sub__del"
+                                <!-- 设为主（仅备用模型行——isMain 行不需要） -->
+                                <button
+                                  v-if="!b.isMain"
+                                  class="ms-sub__main"
+                                  title="设为主模型"
+                                  :disabled="settingMain.has(`${s.sceneId}:${b.modelId}`)"
+                                  @click="setAsMain(s.sceneId, b.modelId)"
+                                >
+                                  {{ settingMain.has(`${s.sceneId}:${b.modelId}`) ? '设置中…' : '设为主' }}
+                                </button>
+                                <button
+                                  class="ms-sub__del"
                   title="移除"
                   :disabled="removingBindings.has(`${s.sceneId}:${b.modelId}`)"
                   @click="removeBinding(s.sceneId, b.modelId)"
@@ -116,6 +126,21 @@ const expandedScenes = reactive(new Set<string>())
 const addFallbackModel = reactive<Record<string, string | null>>({})
 const addingFallback = reactive<Record<string, boolean>>({})
 const removingBindings = reactive(new Set<string>())
+const settingMain = reactive(new Set<string>())
+
+/** 设为主模型（updateSceneModel——后端 setMain：目标升主、其余降备） */
+async function setAsMain(sceneId: string, modelId: string): Promise<void> {
+  const key = `${sceneId}:${modelId}`
+  settingMain.add(key)
+  try {
+    await modelsApi.updateSceneModel(profile.value, { sceneId, modelId })
+    await loadScenes()
+  } catch {
+    // 保持现状
+  } finally {
+    settingMain.delete(key)
+  }
+}
 
 function toggleScene(id: string) {
   if (expandedScenes.has(id)) expandedScenes.delete(id)
@@ -341,6 +366,27 @@ watch(profile, async () => {
 
 .ms-sub__del:disabled {
   opacity: 0.2;
+  cursor: not-allowed;
+}
+
+/* 设为主：低调文字按钮（accent——正向操作——与删除对称） */
+.ms-sub__main {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  color: var(--tk-accent);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.ms-sub__main:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+.ms-sub__main:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
