@@ -21,8 +21,15 @@
           </div>
         </div>
       </div>
-      <!-- 默认角标（卡片内部右上角） -->
-      <span v-if="agent.isDefault" class="agent-card__corner-badge" title="默认 Agent">默认</span>
+      <!-- 切换 Agent（原"默认"Tag 位置——右上角） -->
+      <button class="agent-card__corner-switch" title="切换 Agent" @click="$emit('switch-agent')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 1l4 4-4 4" />
+          <path d="M3 11V9a4 4 0 014-4h14" />
+          <path d="M7 23l-4-4 4-4" />
+          <path d="M21 13v2a4 4 0 01-4 4H3" />
+        </svg>
+      </button>
       <!-- 分割线（常显——折叠时也在） -->
       <div class="agent-card__memory-divider"></div>
       <!-- 记忆占用（芯片默认隐藏——记忆按钮展开；点击芯片跳转记忆管理页） -->
@@ -43,13 +50,10 @@
         <div class="agent-card__footer-top">
           <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
           <div class="agent-card__actions">
-            <!-- 常显（主操作）：切换 Agent + 模型（倒数第二）+ 记忆 -->
-            <button class="agent-card__btn" title="切换 Agent" @click="$emit('switch-agent')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 1l4 4-4 4" />
-                <path d="M3 11V9a4 4 0 014-4h14" />
-                <path d="M7 23l-4-4 4-4" />
-                <path d="M21 13v2a4 4 0 01-4 4H3" />
+            <!-- 常显（主操作）：对话 + 模型（倒数第二）+ 记忆 -->
+            <button class="agent-card__btn" title="对话" @click="goChat">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
               </svg>
             </button>
             <button class="agent-card__btn" title="模型" @click="goModels">
@@ -192,6 +196,12 @@ function goModels(): void {
   router.push(`/workspace/agents/${props.agent.profile}/models`)
 }
 
+/** 对话（当前 Agent 的聊天页） */
+function goChat(): void {
+  if (!props.agent) return
+  router.push(`/workspace/agents/${props.agent.profile}/chat`)
+}
+
 function toggleMemory(): void {
   memoryOpen.value = !memoryOpen.value
 }
@@ -268,6 +278,7 @@ onUnmounted(() => {
   border-radius: 4px;
   padding: 1px 6px;
   line-height: 1.4;
+
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   z-index: 1;
 }
