@@ -56,6 +56,14 @@
               {{ lv2Title }}
             </h1>
           </div>
+          <!-- 全局 AgentCard（L2 顶部固定——所有模块显示当前 agent） -->
+          <AgentCard
+            v-if="agent"
+            :agent="agent"
+            :thinking-active="globalThinking"
+            @switch-agent="goAgentList"
+            class="workspace__l2-agent"
+          />
           <router-view name="level2" class="workspace__l2-router" />
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
           <div class="workspace__l2-fade" />
@@ -96,13 +104,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, provide } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WorkspaceToolbar from '@/renderer/components/workspace/WorkspaceToolbar.vue'
 import NavSidebarComponent from '@/renderer/components/workspace/NavSidebarComponent.vue'
 import MobileDrawer from '@/renderer/components/workspace/MobileDrawer.vue'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
+import { useAgentStore } from '@/renderer/stores/agent-store'
+import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
+import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -315,6 +326,23 @@ function goSettings(): void {
   router.push('/workspace/settings')
 }
 
+/** 切换 Agent（AgentCard → Agent 列表） */
+function goAgentList(): void {
+  router.push('/workspace/agents')
+}
+
+/** 全局 AgentCard（当前 agent——agentStore） */
+const agentStore = useAgentStore()
+const agent = computed(() => agentStore.currentAgent)
+const profile = computed(() => route.params.profile as string | undefined)
+watch(
+  () => profile.value ?? 'default',
+  (p: string) => { agentStore.loadCurrentAgent(p, true) },
+  { immediate: true },
+)
+/** 全局 thinking 状态（AgentCard 呼吸指示） */
+const globalThinking = computed(() => false)
+
 function onToggleSidebar(): void {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
@@ -422,7 +450,7 @@ html[data-theme='dark'] .workspace {
   gap: 7px;
   width: 100%;
   padding: 8px 12px;
-  margin: 0 8px 8px;
+  margin: 8px 8px 8px;
   width: calc(100% - 16px);
   font-size: 12px;
   font-weight: 500;

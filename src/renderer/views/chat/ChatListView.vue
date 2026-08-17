@@ -3,12 +3,6 @@
     <!-- 折叠由外层 WorkspaceView 的 lv2-col 统一控制（动画也统一在外层） -->
     <aside class="sidebar">
       <div class="sidebar__inner">
-        <AgentCard
-          :agent="agent"
-          :thinking-active="isThinking"
-          @switch-agent="onSwitchAgent"
-        />
-
         <SessionList
           ref="sessionListRef"
           :active-session-id="sessionStore.sessionId"
