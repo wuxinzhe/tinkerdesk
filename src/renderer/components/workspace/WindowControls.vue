@@ -1,12 +1,32 @@
 <script setup lang="ts">
 /**
- * WindowControls.vue — macOS 风格窗口交通灯（关闭/最小化/最大化）
- * 侧边栏顶部常驻——替代原 TitleBar 的窗口控制。
+ * WindowControls.vue — 侧边栏顶部工具行：
+ * 左 = macOS 风格窗口交通灯（关闭/最小化/最大化）
+ * 右 = 专注模式 + 锁屏（靠右对齐）
  */
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSessionStore } from '@/renderer/stores/session-store'
 
 const api = window.api
 const maximized = ref(false)
+const sessionStore = useSessionStore()
+const router = useRouter()
+
+/** 锁屏（原 TitleBar 逻辑） */
+function handleLock() {
+  sessionStore.setLocked(true)
+}
+
+/** 专注模式：窗口收窄到 375×812（临时突破 minWidth 768——再点恢复桌面） */
+function togglePhoneMode() {
+  void window.api.setPhoneMode().then(() => {
+    // 路由重置：清空历史栈 + 直接定位对话页 lv2 session-list（/workspace/chat）
+    const target = '#/workspace/chat'
+    history.replaceState(null, '', location.pathname + location.search + target)
+    void router.replace('/workspace/chat')
+  })
+}
 
 async function handleMinimize() {
   await api?.windowMinimize()
@@ -37,26 +57,45 @@ onUnmounted(() => {
 
 <template>
   <div class="window-controls">
-    <button class="tl-btn tl-btn--close" title="关闭" @click="handleClose">
-      <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#4d0000" stroke-width="1" stroke-linecap="round">
-        <path d="M2.6 2.6l2.8 2.8M5.4 2.6L2.6 5.4" />
-      </svg>
-    </button>
-    <button class="tl-btn tl-btn--minimize" title="最小化" @click="handleMinimize">
-      <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#90591d" stroke-width="1" stroke-linecap="round">
-        <path d="M2.4 4h3.2" />
-      </svg>
-    </button>
-    <button class="tl-btn tl-btn--maximize" :title="maximized ? '还原' : '最大化'" @click="handleMaximize">
-      <svg v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.3 4.3L2.2 2.2M2.2 2.2l1.1-.15M2.2 2.2l.15 1.1" />
-        <path d="M3.7 3.7l2.1 2.1M5.8 5.8l-1.1.15M5.8 5.8l-.15-1.1" />
-      </svg>
-      <svg v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4.3 3.7L5.8 2.2M5.8 2.2l-.15-1.1M5.8 2.2l-1.1-.15" />
-        <path d="M3.7 4.3L2.2 5.8M2.2 5.8l.15 1.1M2.2 5.8l1.1.15" />
-      </svg>
-    </button>
+    <div class="window-controls__lights">
+      <button class="tl-btn tl-btn--close" title="关闭" @click="handleClose">
+        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#4d0000" stroke-width="1" stroke-linecap="round">
+          <path d="M2.6 2.6l2.8 2.8M5.4 2.6L2.6 5.4" />
+        </svg>
+      </button>
+      <button class="tl-btn tl-btn--minimize" title="最小化" @click="handleMinimize">
+        <svg width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#90591d" stroke-width="1" stroke-linecap="round">
+          <path d="M2.4 4h3.2" />
+        </svg>
+      </button>
+      <button class="tl-btn tl-btn--maximize" :title="maximized ? '还原' : '最大化'" @click="handleMaximize">
+        <svg v-if="!maximized" width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.3 4.3L2.2 2.2M2.2 2.2l1.1-.15M2.2 2.2l.15 1.1" />
+          <path d="M3.7 3.7l2.1 2.1M5.8 5.8l-1.1.15M5.8 5.8l-.15-1.1" />
+        </svg>
+        <svg v-else width="8" height="8" viewBox="0 0 8 8" class="tl-icon" fill="none" stroke="#0a5a00" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.3 3.7L5.8 2.2M5.8 2.2l-.15-1.1M5.8 2.2l-1.1-.15" />
+          <path d="M3.7 4.3L2.2 5.8M2.2 5.8l.15 1.1M2.2 5.8l1.1.15" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- 专注 + 锁屏（靠右对齐） -->
+    <div class="window-controls__utils">
+      <button class="wc-util" title="专注模式" @click="togglePhoneMode">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <rect x="9" y="7" width="6" height="10" rx="1" />
+        </svg>
+      </button>
+      <button class="wc-util" title="锁屏 (Ctrl+Shift+L)" @click="handleLock">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="11" width="16" height="9" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -64,9 +103,21 @@ onUnmounted(() => {
 .window-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   padding: 10px 12px 4px;
   flex-shrink: 0;
+}
+
+.window-controls__lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.window-controls__utils {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .tl-btn {
@@ -101,5 +152,31 @@ onUnmounted(() => {
 
 .tl-btn--maximize {
   background: #28c840;
+}
+
+/* 专注/锁屏工具按钮 */
+.wc-util {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--tk-text-tertiary);
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.wc-util:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wc-util:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-text-primary);
+  }
 }
 </style>
