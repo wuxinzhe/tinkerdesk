@@ -79,13 +79,25 @@
           </div>
         </div>
         <div class="plugin-card__actions">
-          <SaActionBtn
-            :text="'安装'"
-            :done="plugin.installed"
-            :done-text="'已安装'"
-            variant="primary"
-            @click.stop="installPlugin(plugin)"
-          />
+          <!-- 组合按钮：左=详情 + 右=安装（参照插件设置页组合按钮） -->
+          <div class="plugin-card__btn-group">
+            <button class="plugin-card__btn plugin-card__btn--detail" title="查看详情" @click.stop="viewDetail(plugin)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              详情
+            </button>
+            <button
+              class="plugin-card__btn plugin-card__btn--install"
+              :disabled="plugin.installed"
+              @click.stop="installPlugin(plugin)"
+            >
+              <svg v-if="plugin.installed" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+              {{ plugin.installed ? '已安装' : '安装' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -329,6 +341,53 @@ function viewDetail(plugin: MarketPluginItem) {
 
 .plugin-card__actions {
   display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  border-top: 1px solid var(--tk-border);
+}
+
+/* 组合按钮：左=详情 + 右=安装 */
+.plugin-card__btn-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--tk-accent);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.plugin-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: rgba(0, 122, 255, 0.06);
+  color: var(--tk-accent);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.plugin-card__btn:hover {
+  background: rgba(0, 122, 255, 0.14);
+}
+
+.plugin-card__btn--install {
+  background: var(--tk-accent);
+  color: #fff;
+  border-left: 1px solid var(--tk-accent);
+}
+
+.plugin-card__btn--install:hover {
+  background: rgba(0, 122, 255, 0.85);
+}
+
+.plugin-card__btn--install:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
   justify-content: flex-end;
   padding: 0 16px 10px;
 }
