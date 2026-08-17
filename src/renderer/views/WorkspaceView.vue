@@ -1,15 +1,9 @@
 <template>
   <div class="workspace">
     <!-- ── 移动端顶栏 ── -->
-    <WorkspaceToolbar
-      class="workspace__mobile-bar"
-      variant="mobile"
-      :title="topbarTitle"
-      :show-back="inDetail"
+    <WorkspaceToolbar class="workspace__mobile-bar" variant="mobile" :title="topbarTitle" :show-back="inDetail"
       :tool-calls="mobileToolCalls"
-      :is-processing="chatStore.isProcessingBySession[sessionStore.sessionId ?? ''] ?? false"
-      @back="goBack"
-    >
+      :is-processing="chatStore.isProcessingBySession[sessionStore.sessionId ?? ''] ?? false" @back="goBack">
       <template #actions>
         <div id="mobile-toolbar-actions" />
       </template>
@@ -17,13 +11,10 @@
 
     <!-- ── 二级 + 三级 ── -->
     <div class="workspace__main">
-      <div
-        class="workspace__sidebar-col"
-        :class="{
-          'workspace__sidebar-col--full': !hasLevel3,
-          'workspace__sidebar-col--collapsed': sidebarCollapsed
-        }"
-      >
+      <div class="workspace__sidebar-col" :class="{
+        'workspace__sidebar-col--full': !hasLevel3,
+        'workspace__sidebar-col--collapsed': sidebarCollapsed
+      }">
         <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
         <div class="workspace__sidebar-inner">
           <!-- 平板端 Lv2 顶部工具栏 -->
@@ -33,84 +24,65 @@
             </h1>
           </div>
           <!-- 全局 AgentCard（L2 顶部固定——所有模块显示当前 agent） -->
-          <AgentCard
-            v-if="agent"
-            :agent="agent"
-            :thinking-active="globalThinking"
-            @switch-agent="goAgentList"
-            @go-sidebar="switchSidebar"
-            class="workspace__sidebar-agent"
-          />
+          <AgentCard v-if="agent" :agent="agent" :thinking-active="globalThinking" @switch-agent="goAgentList"
+            @go-sidebar="switchSidebar" class="workspace__sidebar-agent" />
           <router-view name="sidebar" class="workspace__sidebar-router" v-if="false" />
           <!-- 侧边栏（功能驱动动态组件——与工作区解耦：切换功能只换侧边栏列表） -->
-          <component
-            :is="sidebarComponent"
-            class="workspace__sidebar-router"
-            :active-session-id="sessionStore.sessionId"
-            :profile="sessionStore.profile"
-            @select="onSidebarSessionSelect"
-            @new-session="onSidebarNewSession"
-          />
+          <component :is="sidebarComponent" class="workspace__sidebar-router"
+            :active-session-id="sessionStore.sessionId" :profile="sessionStore.profile" @select="onSidebarSessionSelect"
+            @new-session="onSidebarNewSession" />
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
           <div class="workspace__sidebar-fade" />
         </div>
         <!-- 全局设置（侧边栏底部——点击向上展开手风琴设置项——非浮层） -->
-                <div class="workspace__settings-wrap">
-                  <Transition name="settings-up">
-                    <div v-if="settingsOpen" class="workspace__settings-panel">
-                      <button
-                        v-for="item in settingsItems"
-                        :key="item.key"
-                        class="workspace__settings-item"
-                        @click="selectSetting(item)"
-                      >
-                        <span class="workspace__settings-item-icon" v-html="item.icon" />
-                        <span class="workspace__settings-item-text">
-                          <span class="workspace__settings-item-label">{{ item.label }}</span>
-                          <span class="workspace__settings-item-desc">{{ item.desc }}</span>
-                        </span>
-                        <svg class="workspace__settings-item-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="9 6 15 12 9 18" />
-                        </svg>
-                      </button>
-                    </div>
-                  </Transition>
-                  <button class="workspace__sidebar-settings" @click="toggleSettings">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-                    </svg>
-                    系统设置
-                    <svg class="workspace__sidebar-settings-chev" :class="{ open: settingsOpen }" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-      </div>
-
-      <!-- ── 三级操作区 ── -->
-      <div v-if="hasLevel3" class="workspace__area">
-        <!-- 工坊页不渲染全局 toolbar（工坊 UI 自带导航，避免双头部） -->
-        <WorkspaceToolbar
-          v-if="activeTab !== 'workshop'"
-          class="workspace__area-bar"
-          variant="l3"
-          :title="l3ToolbarTitle"
-          :show-back="true"
-          @back="goBack"
-        >
-          <template #actions>
-            <div id="l3-toolbar-actions" />
-          </template>
-        </WorkspaceToolbar>
-        <!-- L3 页面：key=fullPath——切换 agent（profile 参数变）强制重建，避免组件复用不刷新 -->
-        <router-view
-          :key="$route.fullPath"
-          name="workspace"
-          class="workspace__area-col"
-        />
+        <div class="workspace__settings-wrap">
+          <Transition name="settings-up">
+            <div v-if="settingsOpen" class="workspace__settings-panel">
+              <button v-for="item in settingsItems" :key="item.key" class="workspace__settings-item"
+                @click="selectSetting(item)">
+                <span class="workspace__settings-item-icon" v-html="item.icon" />
+                <span class="workspace__settings-item-text">
+                  <span class="workspace__settings-item-label">{{ item.label }}</span>
+                  <span class="workspace__settings-item-desc">{{ item.desc }}</span>
+                </span>
+                <svg class="workspace__settings-item-chev" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 6 15 12 9 18" />
+                </svg>
+              </button>
+            </div>
+          </Transition>
+          <button class="workspace__sidebar-settings" @click="toggleSettings">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+            系统设置
+            <svg class="workspace__sidebar-settings-chev" :class="{ open: settingsOpen }" width="10" height="10"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- ── 三级操作区 ── -->
+    <div v-if="hasLevel3" class="workspace__area">
+      <!-- 工坊页不渲染全局 toolbar（工坊 UI 自带导航，避免双头部） -->
+      <WorkspaceToolbar v-if="activeTab !== 'workshop'" class="workspace__area-bar" variant="l3" :title="l3ToolbarTitle"
+        :show-back="true" @back="goBack">
+        <template #actions>
+          <div id="l3-toolbar-actions" />
+        </template>
+      </WorkspaceToolbar>
+      <!-- L3 页面：key=fullPath——切换 agent（profile 参数变）强制重建，避免组件复用不刷新 -->
+      <router-view :key="$route.fullPath" name="workspace" class="workspace__area-col" />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -473,7 +445,9 @@ html[data-theme='dark'] .workspace {
   flex: 1;
   display: flex;
   min-height: 0;
+  width: 0;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   position: relative;
 }
@@ -736,7 +710,7 @@ html[data-theme='dark'] .workspace {
 
 /* 内容保持自然宽度：列折叠收缩时内容宽度不随容器重排（min-width 固定），
    只被 inner 边界裁剪 + 淡出——避免 AgentList/Settings 等列表被挤压 */
-.workspace__sidebar-inner > * {
+.workspace__sidebar-inner>* {
   flex-shrink: 0;
   min-width: 280px;
 }
@@ -816,6 +790,7 @@ html[data-theme='dark'] .workspace {
 
   .workspace__main {
     flex: 1;
+    width: auto;
     position: relative;
   }
 
@@ -827,6 +802,7 @@ html[data-theme='dark'] .workspace {
     border-bottom: 1px solid var(--tk-border);
     background: var(--tk-bg-primary);
   }
+
   .workspace__sidebar-col--full {
     display: flex;
   }
