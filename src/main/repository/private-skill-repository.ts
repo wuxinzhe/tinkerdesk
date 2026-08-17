@@ -128,7 +128,7 @@ export class PrivateSkillRepository {
            fallback_for_toolsets, fallback_for_tools, triggers, trigger_conditions,
            config, env_vars, commands, compatibility, allowed_tools, metadata, envs, api_key, body, is_deleted, deleted_at,
            profile, official_skill_id
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (profile, name) DO UPDATE SET
            display_name = excluded.display_name,
            description = excluded.description,
@@ -180,6 +180,9 @@ export class PrivateSkillRepository {
         entity.config ?? '[]',
         entity.envVars ?? '',
         entity.commands ?? '',
+        entity.compatibility ?? '',
+        entity.allowedTools ?? '',
+        entity.metadata ?? '',
         entity.envs,
         entity.apiKey,
         entity.body ?? '',
