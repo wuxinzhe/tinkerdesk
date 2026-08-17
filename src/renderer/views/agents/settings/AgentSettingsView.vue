@@ -30,43 +30,53 @@
         </h3>
         <div class="settings-group__card">
           <div class="settings-field">
-            <div class="settings-field__label">
-              <label>名称</label>
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>名称</label>
+              </div>
+              <input v-model="agentForm.displayName" class="settings-field__input" placeholder="Agent 名称" />
             </div>
-            <input v-model="agentForm.displayName" class="settings-field__input" placeholder="Agent 名称" />
           </div>
           <div class="settings-field">
-            <div class="settings-field__label">
-              <label>描述</label>
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>描述</label>
+              </div>
+              <input v-model="agentForm.description" class="settings-field__input" placeholder="Agent 描述" />
             </div>
-            <input v-model="agentForm.description" class="settings-field__input" placeholder="Agent 描述" />
           </div>
           <div class="settings-field">
-            <div class="settings-field__label">
-              <label>头像</label>
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>头像</label>
+              </div>
+              <input v-model="agentForm.avatar" class="settings-field__input" placeholder="头像 URL 或本地路径" />
             </div>
-            <input v-model="agentForm.avatar" class="settings-field__input" placeholder="头像 URL 或本地路径" />
           </div>
           <div class="settings-field__pair">
             <div class="settings-field">
-              <div class="settings-field__label">
-                <label>模式</label>
-              </div>
-              <div class="settings-field__select-wrap">
-                <select v-model="agentForm.agentModeId" class="settings-field__select">
-                  <option value="" disabled>选择模式</option>
-                  <option v-for="m in modeOptions" :key="m.id" :value="m.id">{{ m.id }}</option>
-                </select>
+              <div class="settings-field__row">
+                <div class="settings-field__label">
+                  <label>模式</label>
+                </div>
+                <div class="settings-field__select-wrap">
+                  <select v-model="agentForm.agentModeId" class="settings-field__select">
+                    <option value="" disabled>选择模式</option>
+                    <option v-for="m in modeOptions" :key="m.id" :value="m.id">{{ m.id }}</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div class="settings-field">
-              <div class="settings-field__label">
-                <label>版本</label>
-              </div>
-              <div class="settings-field__select-wrap">
-                <select v-model="agentForm.agentModeVersion" class="settings-field__select">
-                  <option v-for="v in currentModeVersions" :key="v" :value="v">{{ v }}</option>
-                </select>
+              <div class="settings-field__row">
+                <div class="settings-field__label">
+                  <label>版本</label>
+                </div>
+                <div class="settings-field__select-wrap">
+                  <select v-model="agentForm.agentModeVersion" class="settings-field__select">
+                    <option v-for="v in currentModeVersions" :key="v" :value="v">{{ v }}</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -80,12 +90,17 @@
         </h3>
         <div class="settings-group__card">
           <div class="settings-field">
-            <textarea v-model="config.agentSoulPrompt" class="settings-field__textarea" rows="7"
-              placeholder="定义 Agent 的个性、行为准则、擅长领域与上下文…" spellcheck="false"></textarea>
-            <div class="settings-field__save-row">
-              <button type="button" class="settings-save-btn" :disabled="savingPrompt" @click="savePrompt">
-                {{ savingPrompt ? '保存中…' : '保存提示词' }}
-              </button>
+            <div class="settings-field__row settings-field__row--textarea">
+              <div class="settings-field__label">
+                <label>灵魂提示词</label>
+              </div>
+              <textarea v-model="config.agentSoulPrompt" class="settings-field__textarea" rows="7"
+                placeholder="定义 Agent 的个性、行为准则、擅长领域与上下文…" spellcheck="false"></textarea>
+              <div class="settings-field__save-row">
+                <button type="button" class="settings-save-btn" :disabled="savingPrompt" @click="savePrompt">
+                  {{ savingPrompt ? '保存中…' : '保存提示词' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
