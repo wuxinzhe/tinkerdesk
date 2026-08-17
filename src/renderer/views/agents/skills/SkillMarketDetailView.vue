@@ -4,8 +4,8 @@
     <SaPageHero
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><polygon points=&quot;12 2 2 7 12 12 22 7 12 2&quot;/><polyline points=&quot;2 17 12 22 22 17&quot;/><polyline points=&quot;2 12 12 17 22 12&quot;/></svg>"
       gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
-      :title="detail?.name || skillName"
-      :desc="detail?.description || '技能包说明'"
+      title="技能说明"
+      desc="查看技能说明并安装"
     />
     <!-- 信息卡（参照插件详情 pd-hero） -->
     <div class="pd-hero">
