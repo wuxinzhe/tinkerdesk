@@ -43,6 +43,14 @@
       </div>
     </div>
 
+    <!-- 正文 -->
+    <div class="sfp__section">
+      <div class="sfp__label">
+        正文 *
+      </div>
+      <textarea :value="model.body" class="sfp__body" rows="14" spellcheck="false" placeholder="技能正文（Markdown）" @input="set('body', ($event.target as HTMLTextAreaElement).value)"></textarea>
+    </div>
+
     <!-- 高级属性（折叠） -->
     <div class="advanced-section">
       <button class="advanced-toggle" @click="advancedOpen = !advancedOpen">
@@ -177,15 +185,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 正文 -->
-    <div class="sfp__section">
-      <div class="sfp__label">
-        正文 *
-      </div>
-      <textarea :value="model.body" class="sfp__body" rows="14" spellcheck="false" placeholder="技能正文（Markdown）" @input="set('body', ($event.target as HTMLTextAreaElement).value)"></textarea>
-    </div>
-  </div>
 </div>
 </template>
 

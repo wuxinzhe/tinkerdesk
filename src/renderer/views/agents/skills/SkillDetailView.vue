@@ -42,24 +42,12 @@
         </div>
       </div>
 
-      <!-- 元信息行（参考插件详情 pd-meta） -->
+      <!-- 元信息（胶囊 chips——非表格/列表） -->
       <div class="skill-detail__meta">
-        <div class="skill-detail__meta-item">
-          <span class="skill-detail__meta-label">ID</span>
-          <span class="skill-detail__meta-value">{{ skill.id }}</span>
-        </div>
-        <div v-if="skill.author" class="skill-detail__meta-item">
-          <span class="skill-detail__meta-label">作者</span>
-          <span class="skill-detail__meta-value">{{ skill.author }}</span>
-        </div>
-        <div v-if="skill.license" class="skill-detail__meta-item">
-          <span class="skill-detail__meta-label">许可</span>
-          <span class="skill-detail__meta-value">{{ skill.license }}</span>
-        </div>
-        <div v-if="skill.platforms?.length" class="skill-detail__meta-item">
-          <span class="skill-detail__meta-label">平台</span>
-          <span class="skill-detail__meta-value">{{ skill.platforms.join(', ') }}</span>
-        </div>
+        <span class="skill-detail__chip"><b>ID</b>{{ skill.id }}</span>
+        <span v-if="skill.author" class="skill-detail__chip"><b>作者</b>{{ skill.author }}</span>
+        <span v-if="skill.license" class="skill-detail__chip"><b>许可</b>{{ skill.license }}</span>
+        <span v-if="skill.platforms?.length" class="skill-detail__chip"><b>平台</b>{{ skill.platforms.join(', ') }}</span>
       </div>
 
       <!-- 编辑模式：公共技能表单面板（基本信息 + 高级折叠 + 正文） -->
@@ -529,33 +517,32 @@ async function handleDelete() {
   color: var(--tk-text-secondary);
 }
 
-/* 元信息行（参考插件详情 pd-meta） */
+/* 元信息（胶囊 chips——非表格/列表） */
 .skill-detail__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 8px;
   padding: 12px 0;
   margin: 12px 0 4px;
   border-top: 1px solid var(--tk-border);
   border-bottom: 1px solid var(--tk-border);
 }
 
-.skill-detail__meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.skill-detail__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
+  padding: 4px 10px;
+  border-radius: 999px;
 }
 
-.skill-detail__meta-label {
+.skill-detail__chip b {
+  font-weight: 600;
   font-size: 11px;
   color: var(--tk-text-tertiary);
-}
-
-.skill-detail__meta-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--tk-text-primary);
-  word-break: break-all;
 }
 
 .skill-detail__badges {
