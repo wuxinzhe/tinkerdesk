@@ -414,6 +414,12 @@ watch(
 /** 全局 thinking 状态（AgentCard 呼吸指示） */
 const globalThinking = computed(() => false)
 
+// Agent 切换（profile 变化）→ 侧边栏自动切回会话列表（对话上下文）
+watch(
+  () => sessionStore.profile,
+  () => { switchSidebar('session') },
+)
+
 function onToggleSidebar(): void {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
