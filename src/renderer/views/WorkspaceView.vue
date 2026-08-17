@@ -405,7 +405,9 @@ const agentStore = useAgentStore()
 const agent = computed(() => agentStore.currentAgent)
 const profile = computed(() => route.params.profile as string | undefined)
 watch(
-  () => profile.value ?? 'default',
+  // 路由无 profile 参数（/workspace/chat 等）时回退 sessionStore.profile——
+  // 使 Agent 列表点击切换（只改 sessionStore）也能驱动 agentStore 重载
+  () => profile.value ?? sessionStore.profile,
   (p: string) => { agentStore.loadCurrentAgent(p, true) },
   { immediate: true },
 )

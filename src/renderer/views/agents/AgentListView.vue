@@ -162,6 +162,8 @@ function selectAgent(a: AgentInfo) {
   selectedProfile.value = a.profile
   sessionStore.setSessionId(null)
   sessionStore.setProfile(a.profile)
+  // 直接切换 agentStore（不依赖路由 watch——同路径 replace 不触发导航）
+  void agentStore.loadCurrentAgent(a.profile, true)
   chatStore.resetLocalState?.()
   router.replace({ path: '/workspace/chat' })
 }
