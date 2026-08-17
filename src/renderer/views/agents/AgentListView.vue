@@ -109,6 +109,11 @@ const sessionStore = useSessionStore()
 const chatStore = useChatStore()
 const agentStore = useAgentStore()
 
+const emit = defineEmits<{
+  /** Agent 切换完成（通知外层：侧边栏切回会话列表） */
+  'agent-switched': []
+}>()
+
 const agents = ref<AgentInfo[]>([])
 const loading = ref(true)
 /** 进入动画标记（stagger 触发） */
@@ -167,6 +172,7 @@ function selectAgent(a: AgentInfo) {
   // 直接切换 agentStore（不依赖路由 watch——同路径 replace 不触发导航）
   void agentStore.loadCurrentAgent(a.profile, true)
   chatStore.resetLocalState?.()
+  emit('agent-switched')
   router.replace({ path: '/workspace/chat' })
 }
 

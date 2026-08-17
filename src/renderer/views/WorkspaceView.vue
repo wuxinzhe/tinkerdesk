@@ -46,8 +46,8 @@
           <router-view name="sidebar" class="workspace__sidebar-router" v-if="false" />
           <!-- 侧边栏（功能驱动动态组件——与工作区解耦：切换功能只换侧边栏列表） -->
           <component :is="sidebarComponent" class="workspace__sidebar-router"
-            :active-session-id="sessionStore.sessionId" :profile="sessionStore.profile" @select="onSidebarSessionSelect"
-            @new-session="onSidebarNewSession" />
+                      :active-session-id="sessionStore.sessionId" :profile="sessionStore.profile" @select="onSidebarSessionSelect"
+                      @new-session="onSidebarNewSession" @agent-switched="switchSidebar('session')" />
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
           <div class="workspace__sidebar-fade" />
         </div>
