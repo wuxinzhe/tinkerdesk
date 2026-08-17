@@ -7,14 +7,8 @@
       :title="detail?.name || skillName"
       :desc="detail?.description || '技能包说明'"
     />
-    <!-- 操作行：返回 + 版本 + 安装 -->
+    <!-- 操作行：版本 + 安装 -->
     <div class="smd__header">
-      <button class="smd__back" @click="goBack">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-        返回市场
-      </button>
       <div class="smd__title-row">
         <span v-if="detail?.version" class="smd__version">v{{ detail.version }}</span>
         <button v-if="detail && !installed" class="smd__install" :disabled="installing" @click="install">
@@ -98,25 +92,8 @@ onActivated(load)
 <style scoped>
 .smd__header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 16px;
-}
-
-.smd__back {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--tk-text-secondary);
-  background: transparent;
-  border: none;
-  padding: 4px 0;
-  cursor: pointer;
-  transition: color 160ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .smd__back:hover { color: var(--tk-text-primary); }
 }
 
 .smd__title-row {
