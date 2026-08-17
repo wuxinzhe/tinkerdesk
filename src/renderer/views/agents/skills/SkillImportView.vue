@@ -333,7 +333,8 @@ function goBack() {
   padding: 7px 10px;
   border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--tk-bg-secondary);
+  /* 略深于页面背景——便于辨别 */
+  background: rgba(0, 0, 0, 0.04);
   color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
@@ -341,6 +342,12 @@ function goBack() {
 
 .si__input:focus {
   border-color: var(--tk-accent);
+}
+
+html[data-theme='dark'] .si__input,
+html[data-theme='dark'] .si__textarea,
+html[data-theme='dark'] .si__body {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .si__textarea,
@@ -351,7 +358,7 @@ function goBack() {
   padding: 8px 10px;
   border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--tk-bg-secondary);
+  background: rgba(0, 0, 0, 0.04);
   color: var(--tk-text-primary);
   outline: none;
   resize: vertical;

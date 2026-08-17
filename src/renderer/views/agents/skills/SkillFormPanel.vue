@@ -9,7 +9,7 @@
       <div class="sfp-row">
         <div class="sfp__field">
           <div class="sfp__field-label">
-            名称 name *
+            名称 *
           </div>
           <input :value="model.name" class="sfp__input" placeholder="小写字母/数字/连字符，如: github-auth" @input="set('name', ($event.target as HTMLInputElement).value)" />
         </div>
@@ -271,7 +271,8 @@ function set(field: keyof SkillFormModel, value: string): void {
   padding: 7px 10px;
   border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--tk-bg-secondary);
+  /* 输入框背景略深于页面/卡片背景——便于辨别边界 */
+  background: rgba(0, 0, 0, 0.04);
   color: var(--tk-text-primary);
   outline: none;
   box-sizing: border-box;
@@ -279,6 +280,13 @@ function set(field: keyof SkillFormModel, value: string): void {
 
 .sfp__input:focus {
   border-color: var(--tk-accent);
+}
+
+/* 深色主题：输入框改用白色半透明叠加（黑半透明在深背景上不可见） */
+html[data-theme='dark'] .sfp__input,
+html[data-theme='dark'] .sfp__textarea,
+html[data-theme='dark'] .sfp__body {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .sfp__textarea,
@@ -289,7 +297,8 @@ function set(field: keyof SkillFormModel, value: string): void {
   padding: 8px 10px;
   border: 1px solid var(--tk-border);
   border-radius: 7px;
-  background: var(--tk-bg-secondary);
+  /* 与输入框一致：略深于页面背景 */
+  background: rgba(0, 0, 0, 0.04);
   color: var(--tk-text-primary);
   outline: none;
   resize: vertical;
