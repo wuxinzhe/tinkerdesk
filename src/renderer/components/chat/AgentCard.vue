@@ -53,7 +53,8 @@
             <!-- 常显（主操作）：对话 + 模型（倒数第二）+ 记忆 -->
             <button class="agent-card__btn" title="对话" @click="goChat">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                <rect x="3" y="5" width="18" height="14" rx="3.5" />
+                <path d="M7 19l-3 3v-3" />
               </svg>
             </button>
             <button class="agent-card__btn" title="模型" @click="goModels">
