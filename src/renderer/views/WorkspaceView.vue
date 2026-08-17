@@ -261,8 +261,9 @@ const topbarTitle = computed(() => {
     if (route.path.endsWith('/agents/create')) return '创建 Agent'
   }
   const map: Record<string, string> = {
-    // chat：有选中会话显示会话标题（缺省'对话'）——无会话（新会话/欢迎态）显示'新会话'
-    'agent-chat': sessionStore.sessionId ? (sessionTitle.value || '对话') : '新会话',
+    // chat：以路由为准——/workspace/chat（无 :sessionId 参数=新会话态）显示'新会话'；
+    // 有 :sessionId 显示会话标题（缺省'对话'）
+    'agent-chat': route.params.sessionId ? (sessionTitle.value || '对话') : '新会话',
     agents: 'Agents', settings: '系统设置', workshop: '工坊',
   }
   return map[activeTab.value] || ''
