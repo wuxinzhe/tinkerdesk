@@ -413,20 +413,22 @@ html[data-theme='dark'] .workspace {
   transition: width 0.2s ease;
 }
 
-/* 全局设置栏位（L2 底部——Emil：低调入口——克制尺寸/按下反馈/hover 门控） */
+/* 全局设置栏位（L2 底部——无边框按钮——hover 显示背景 + 圆角） */
 .workspace__l2-settings {
   display: flex;
   align-items: center;
   gap: 7px;
   width: 100%;
-  padding: 9px 14px;
+  padding: 8px 12px;
+  margin: 0 8px 8px;
+  width: calc(100% - 16px);
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
   color: var(--tk-text-secondary);
   background: transparent;
   border: none;
-  border-top: 1px solid var(--tk-border);
+  border-radius: 8px;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
