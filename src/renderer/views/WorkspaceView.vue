@@ -838,7 +838,7 @@ html[data-theme='dark'] .workspace {
 }
 
 .workspace__sidebar-col--collapsed {
-  width: 0 !important;
+  /* 宽度由 grid 轨道控制（--sidebar-w 76px 窄条）——不再强制 0 */
 }
 
 /* ── Lv3 列 ── */
