@@ -40,7 +40,10 @@ export const useSessionStore = defineStore('session', () => {
 
   // ── API：创建会话 ──
   async function create(params: { profile?: string }): Promise<Session> {
-    return sessionsApi.create({ profile: params.profile ?? profile.value })
+    const s = await sessionsApi.create({ profile: params.profile ?? profile.value })
+    // 派发"会话已新建"事件——会话列表监听后刷新（新增 item 立即可见）
+    if (s) window.dispatchEvent(new CustomEvent('session-created', { detail: s }))
+    return s
   }
 
   return {

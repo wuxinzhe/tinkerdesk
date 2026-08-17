@@ -192,6 +192,18 @@ watch(() => props.profile, () => {
   loadSessions()
 })
 
+// 新建会话后刷新列表（sessionStore.create 派发 session-created 事件）
+function onSessionCreated(): void {
+  void loadSessions()
+}
+
+onMounted(() => {
+  window.addEventListener('session-created', onSessionCreated)
+})
+onUnmounted(() => {
+  window.removeEventListener('session-created', onSessionCreated)
+})
+
 /* ── 完成提醒（localStorage 阶段——切到该会话清除 completed） ── */
 // 切到某会话 → 清除它的完成提醒（用户已在看——completed → idle）
 watch(() => props.activeSessionId, (sid) => {
