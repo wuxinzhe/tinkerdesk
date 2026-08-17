@@ -287,9 +287,7 @@ defineExpose({
   background: linear-gradient(to bottom, transparent, var(--tk-workspace-fade-end, var(--tk-bg-primary)));
   pointer-events: none;
   z-index: 5;
-  /* 与消息行同宽（1200 居中） */
-  max-width: 1200px;
-  margin: 0 auto;
+  /* 全宽——跨整个消息列表宽度（避免与消息行窄宽错位） */
   width: 100%;
 }
 
