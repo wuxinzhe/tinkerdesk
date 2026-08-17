@@ -99,6 +99,7 @@ import { useRouter, useRoute } from 'vue-router'
 import type { AgentInfo } from '@/renderer/api/types'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
+import { useAgentStore } from '@/renderer/stores/agent-store'
 import { agentsApi } from '@/renderer/api/agents-api'
 import { SaSkeleton, SaSpinner } from '@/renderer/components'
 
@@ -106,6 +107,7 @@ const router = useRouter()
 const route = useRoute()
 const sessionStore = useSessionStore()
 const chatStore = useChatStore()
+const agentStore = useAgentStore()
 
 const agents = ref<AgentInfo[]>([])
 const loading = ref(true)
