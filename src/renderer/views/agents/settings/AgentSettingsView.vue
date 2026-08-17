@@ -55,7 +55,8 @@
       </div>
 
       <!-- ── 基本信息 + 配置（原编辑页设置项——agentsApi 自动保存——紧接灵魂提示词后） ── -->
-      <div class="settings-group">
+            <!-- stack：组内文本输入为主——竖排（label 上/控件下）；其余设置组横排 -->
+            <div class="settings-group settings-group--stack">
         <h3 class="settings-group__title">
           基本信息与配置
         </h3>
@@ -824,6 +825,26 @@ onBeforeUnmount(() => {
 
 .settings-field__row--checkbox {
   padding: 8px 16px;
+}
+
+/* ── 基本信息与配置组：竖排（文本输入为主——label 上/控件下）；开关行保持横排 ── */
+
+.settings-group--stack .settings-field__row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.settings-group--stack .settings-field__row--checkbox {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.settings-group--stack .settings-field__label {
+  flex: none;
+}
+.settings-group--stack .settings-field__input {
+  width: 100%;
 }
 
 .settings-field__row--textarea {
