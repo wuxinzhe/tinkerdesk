@@ -212,8 +212,9 @@ function goPage(p: number) {
 }
 
 function viewSkill(skill: SkillInfo) {
-  // 市场项 name = npm 包名——跳市场说明页（README）
-  router.push({ path: `/workspace/agents/${profile.value}/market/${skill.name}` })
+  // 市场包名：listOfficial 把 name 剥 tinkerdesk-skill- 前缀成短名（显示用）；
+  // 完整包名存在 skill.id——registry 详情必须用完整包名
+  router.push({ path: `/workspace/agents/${profile.value}/market/${skill.id}` })
 }
 
 async function installSkill(skill: SkillInfo) {
