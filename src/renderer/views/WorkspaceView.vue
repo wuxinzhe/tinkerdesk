@@ -432,6 +432,13 @@ html[data-theme='dark'] .workspace {
   transition: width 0.2s ease;
 }
 
+/* 全局 AgentCard（L2 顶部固定——覆盖 l2-inner 子元素 280px min-width——自适应列宽） */
+.workspace__l2-agent {
+  min-width: 0 !important;
+  width: auto !important;
+  margin: 8px 12px 0;
+}
+
 /* 全局设置栏位（L2 底部——无边框按钮——hover 显示背景 + 圆角） */
 .workspace__l2-settings {
   display: flex;
