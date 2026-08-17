@@ -21,3 +21,6 @@ screenshots/
 # 构建产物：npm-cli 打包（electron-builder afterPack 生成）
 resources/npm/
 resources/*.tgz
+
+# 调试临时脚本（无用——本地保留不上传）
+scripts/probe-width.cjs
