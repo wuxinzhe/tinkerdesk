@@ -186,7 +186,10 @@ export class MemoryStore {
 
   /** 文件路径：{dir}/{target}-{profile}.json */
   private filePath(target: string, profile: string): string {
-    return join(this.dir, `${target}-${profile}.json`)
+    // user 记忆 = per-user 全局（跨 profile 共享——用户本人的信息与 agent 无关）
+    // memory 记忆 = per-agent（按 profile 分区）
+    const key = target === MemoryStore.TARGET_USER ? 'user' : `${target}-${profile}`
+    return join(this.dir, `${key}.json`)
   }
 
   /** 原子写：写 tmp 再 rename（崩溃安全） */
