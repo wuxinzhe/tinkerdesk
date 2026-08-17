@@ -1,40 +1,23 @@
 <template>
   <div class="chat-area">
-    <MessageListComponent
-      :messages="messages"
-      :streaming-content="streamingContent"
-      :streaming-reasoning="streamingReasoning"
-      :is-streaming="isStreaming"
-      :session-id="sessionId"
-      :has-more="hasMore"
-      :loading-more="loadingMore"
-      :switching-session="switchingSession"
-      :pending-buffer="pendingBuffer"
-      @load-more="$emit('load-more')"
-      @approve="(id: string) => $emit('approve', id)"
-      @reject="(id: string) => $emit('reject', id)"
-      @auto-approve="(id: string) => $emit('auto-approve', id)"
-      @deleted="$emit('deleted')"
-    />
+    <MessageListComponent :messages="messages" :streaming-content="streamingContent"
+      :streaming-reasoning="streamingReasoning" :is-streaming="isStreaming" :session-id="sessionId" :has-more="hasMore"
+      :loading-more="loadingMore" :switching-session="switchingSession" :pending-buffer="pendingBuffer"
+      @load-more="$emit('load-more')" @approve="(id: string) => $emit('approve', id)"
+      @reject="(id: string) => $emit('reject', id)" @auto-approve="(id: string) => $emit('auto-approve', id)"
+      @deleted="$emit('deleted')" />
 
-    <ChatInputComponent
-      :model-value="inputText"
-      :session-id="sessionId"
-      :profile="profile"
-      :yolo="yoloEnabled"
-      @send="onSend"
-      @update:model-value="inputText = $event"
-      @update:yolo="yoloEnabled = $event"
-      @history-preview="$emit('history-preview')"
-    />
+    <ChatInputComponent :model-value="inputText" :session-id="sessionId" :profile="profile" :yolo="yoloEnabled"
+      @send="onSend" @update:model-value="inputText = $event" @update:yolo="yoloEnabled = $event"
+      @history-preview="$emit('history-preview')" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Message } from '@/renderer/api/types'
-import MessageListComponent from './MessageListComponent.vue'
-import ChatInputComponent from './ChatInputComponent.vue'
+import type { Message } from '@/renderer/api/types';
+import { ref } from 'vue';
+import ChatInputComponent from './ChatInputComponent.vue';
+import MessageListComponent from './MessageListComponent.vue';
 
 defineProps<{
   messages: Message[]
@@ -76,5 +59,7 @@ function onSend(content: string) {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  max-width: 1200px;
+  margin: auto;
 }
 </style>

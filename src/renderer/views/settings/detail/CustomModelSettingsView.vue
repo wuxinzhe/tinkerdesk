@@ -8,6 +8,15 @@
       title="模型设置"
       desc="管理 AI 模型提供商和默认模型"
     />
+    <!-- 页头动作：添加模型（参考插件设置按钮位置——页头右侧） -->
+    <div class="cms-page__header">
+      <button class="page-action-btn" title="添加模型" @click="router.push('/workspace/settings/model/create')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        添加模型
+      </button>
+    </div>
     <!-- 自定义模型 -->
     <SaSection title="自定义模型">
       <SaLoading v-if="loading" />
@@ -38,15 +47,6 @@
         </SaCardRow>
       </div>
     </SaSection>
-
-    <!-- L3 工具栏动作 -->
-    <ToolbarActions>
-      <button class="toolbar-btn" title="添加模型" @click="router.push('/workspace/settings/model/create')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
-    </ToolbarActions>
     </div>
   </L3PageLayout>
 </template>
@@ -56,7 +56,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { CustomModelInfo, SystemProvider } from '@/renderer/api/types'
 import { SaSection, SaLoading, SaEmpty, SaCardRow, SaPageHero , L3PageLayout } from '@/renderer/components'
-import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { modelsApi } from '@/renderer/api/models-api'
 
 const router = useRouter()
@@ -126,11 +125,33 @@ onMounted(async () => {
    macOS Settings 风格 — 自定义模型管理
    ═══════════════════════════════════════════════════════ */
 
-.cms-page {
-  
-    width: 100%;
-  overflow-y: auto;
+.cms-page__header {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 4px;
 }
+
+/* 页头动作按钮（参考插件设置安装按钮——accent 风格） */
+.page-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--tk-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.page-action-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .page-action-btn:hover { background: rgba(0, 122, 255, 0.88); }
+}
+
 
 .cms-page {
   /* 滚动条全局统一 */

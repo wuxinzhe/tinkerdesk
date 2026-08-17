@@ -30,6 +30,34 @@
         />
       </div>
       <span class="skill-manage__count">共 {{ skillsTotal }} 个技能</span>
+
+      <!-- 页头动作：安装组合按钮（参考插件设置——大按钮=技能市场 + 箭头=本地安装） -->
+      <div class="skill-install-group skill-install-group--header">
+        <button class="skill-install-group__main" title="技能市场" @click="goMarket">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          安装技能
+        </button>
+        <button class="skill-install-group__arrow" title="本地安装" @click="toggleInstallMenu">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        <Teleport to="body">
+          <div v-if="installMenuOpen" class="skill-install-menu" :style="installMenuStyle" @click.stop>
+            <button class="skill-install-menu__item" @click="installSkillFromFile">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              本地安装技能
+            </button>
+          </div>
+        </Teleport>
+      </div>
     </div>
 
     <!-- 安装确认面板已废弃——安装走 SkillImportView（render 解析 + 可修改 + 结构化写入） -->
@@ -95,44 +123,6 @@
         </svg>
       </button>
     </div>
-
-    <!-- L3 工具栏动作：安装组合按钮（大按钮=技能市场 + 箭头=本地安装） -->
-    <ToolbarActions>
-      <div class="skill-install-group">
-        <button
-          class="skill-install-group__main"
-          title="技能市场"
-          @click="goMarket"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          技能市场
-        </button>
-        <button
-          class="skill-install-group__arrow"
-          title="本地安装"
-          @click="toggleInstallMenu"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        <Teleport to="body">
-          <div v-if="installMenuOpen" class="skill-install-menu" :style="installMenuStyle" @click.stop>
-            <button class="skill-install-menu__item" @click="installSkillFromFile">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              本地安装技能
-            </button>
-          </div>
-        </Teleport>
-      </div>
-    </ToolbarActions>
   </L3PageLayout>
 </template>
 
@@ -141,7 +131,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NSelect, NSwitch } from 'naive-ui'
 import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
-import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
 
@@ -449,8 +438,10 @@ onUnmounted(() => {
 
 .skill-manage__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 自适应排列：卡片最小 200px——一行最多 5 个（max-width 限制） */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
+  max-width: 1100px;
 }
 
 @media (max-width: 900px) {
@@ -599,6 +590,11 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: stretch;
   gap: 0;
+}
+
+/* 页头位置（筛选行右侧靠右——参考插件设置按钮位置） */
+.skill-install-group--header {
+  margin-left: auto;
 }
 
 .skill-install-group__main {

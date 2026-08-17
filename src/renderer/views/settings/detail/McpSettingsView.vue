@@ -9,6 +9,16 @@
       desc="管理通过 MCP 协议接入的第三方工具"
     />
 
+    <!-- 页头动作：添加 MCP 服务器（参考插件设置按钮位置——页头右侧） -->
+    <div class="mcp-settings-page__header">
+      <button class="page-action-btn" title="添加 MCP 服务器" @click="router.push('/workspace/settings/mcp/create')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        添加 MCP 工具
+      </button>
+    </div>
+
     <!-- 服务器列表 -->
     <div class="mcp-settings-page__list">
       <SaLoading v-if="loading" size="small" />
@@ -60,15 +70,6 @@
         </div>
       </div>
     </div>
-
-    <!-- L3 工具栏动作 -->
-    <ToolbarActions>
-      <button class="toolbar-btn" title="添加 MCP 服务器" @click="router.push('/workspace/settings/mcp/create')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </button>
-    </ToolbarActions>
     </div>
   </L3PageLayout>
 </template>
@@ -78,7 +79,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getToolCenterApi, type McpServerState } from '@/renderer/api/tool-center-api'
 import { SaLoading, SaEmpty, SaPageHero , L3PageLayout } from '@/renderer/components'
-import ToolbarActions from '@/renderer/components/workspace/ToolbarActions.vue'
 
 const router = useRouter()
 const mcpApi = getToolCenterApi()
@@ -114,7 +114,30 @@ onMounted(load)
 }
 
 .mcp-settings-page__header {
-  margin-bottom: 24px;
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 4px;
+}
+
+/* 页头动作按钮（参考插件设置安装按钮——accent 风格） */
+.page-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--tk-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.page-action-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .page-action-btn:hover { background: rgba(0, 122, 255, 0.88); }
 }
 
 .mcp-settings-page__title {
