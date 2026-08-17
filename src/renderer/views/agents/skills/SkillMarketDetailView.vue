@@ -1,6 +1,13 @@
 <template>
   <L3PageLayout class="skill-market-detail" wide>
-    <!-- 头部：返回 + 技能名/版本 + 安装 -->
+    <!-- 页头 -->
+    <SaPageHero
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M4 19.5A2.5 2.5 0 0 1 6.5 17H20&quot;/><path d=&quot;M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z&quot;/></svg>"
+      gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)"
+      :title="detail?.name || skillName"
+      :desc="detail?.description || '技能包说明'"
+    />
+    <!-- 操作行：返回 + 版本 + 安装 -->
     <div class="smd__header">
       <button class="smd__back" @click="goBack">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9,14 +16,12 @@
         返回市场
       </button>
       <div class="smd__title-row">
-        <h2 class="smd__name">{{ detail?.name || skillName }}</h2>
         <span v-if="detail?.version" class="smd__version">v{{ detail.version }}</span>
         <button v-if="detail && !installed" class="smd__install" :disabled="installing" @click="install">
           {{ installing ? '安装中…' : '安装' }}
         </button>
         <span v-else-if="installed" class="smd__installed">已安装</span>
       </div>
-      <p v-if="detail?.description" class="smd__desc">{{ detail.description }}</p>
     </div>
 
     <!-- README 内容（Markdown 渲染） -->
@@ -32,7 +37,7 @@
 import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
-import { L3PageLayout } from '@/renderer/components'
+import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
 import type { SkillMarketDetailItem } from '@/renderer/api/types'
 import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
@@ -92,6 +97,9 @@ onActivated(load)
 
 <style scoped>
 .smd__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
 }
 
@@ -115,14 +123,6 @@ onActivated(load)
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
-}
-
-.smd__name {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--tk-text-primary);
-  margin: 0;
 }
 
 .smd__version {
@@ -157,13 +157,6 @@ onActivated(load)
   font-size: 12px;
   font-weight: 500;
   color: var(--tk-success);
-}
-
-.smd__desc {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--tk-text-secondary);
-  line-height: 1.6;
 }
 
 .smd__readme {
