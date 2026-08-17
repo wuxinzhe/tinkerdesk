@@ -7,10 +7,19 @@
       :title="detail?.name || skillName"
       :desc="detail?.description || '技能包说明'"
     />
-    <!-- 操作行：版本 + 安装 -->
-    <div class="smd__header">
-      <div class="smd__title-row">
-        <span v-if="detail?.version" class="smd__version">v{{ detail.version }}</span>
+    <!-- 信息卡（参照插件详情 pd-hero） -->
+    <div class="pd-hero">
+      <div class="pd-hero__icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+      </div>
+      <div class="pd-hero__info">
+        <div class="pd-hero__name">
+          {{ detail?.name || skillName }}
+          <span class="pd-hero__version">v{{ detail?.version }}</span>
+        </div>
+        <div class="pd-hero__desc">{{ detail?.description || '-' }}</div>
+      </div>
+      <div class="pd-hero__action">
         <button v-if="detail && !installed" class="smd__install" :disabled="installing" @click="install">
           {{ installing ? '安装中…' : '安装' }}
         </button>
@@ -21,6 +30,7 @@
     <!-- README 内容（Markdown 渲染） -->
     <div v-if="loading" class="smd__state">加载中…</div>
     <div v-else-if="detail?.readme" class="smd__readme">
+      <div class="smd__readme-title">说明</div>
       <MarkdownRender :content="detail.readme" />
     </div>
     <div v-else class="smd__state">该技能包暂无 README 说明</div>
@@ -85,22 +95,61 @@ onActivated(load)
 </script>
 
 <style scoped>
-.smd__header {
+/* 信息卡（参照插件详情 pd-hero） */
+.pd-hero {
   display: flex;
-  justify-content: flex-end;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid var(--tk-border);
+  border-radius: 12px;
+  background: var(--tk-bg-primary);
   margin-bottom: 16px;
 }
 
-.smd__title-row {
+.pd-hero__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--tk-bg-secondary);
+  color: var(--tk-accent);
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.smd__version {
+.pd-hero__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-hero__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pd-hero__version {
   font-size: 12px;
-  color: var(--tk-text-tertiary);
   font-weight: 500;
+  color: var(--tk-text-tertiary);
+}
+
+.pd-hero__desc {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--tk-text-secondary);
+  line-height: 1.6;
+}
+
+.pd-hero__action {
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .smd__install {
@@ -136,6 +185,13 @@ onActivated(load)
   border: 1px solid var(--tk-border);
   border-radius: 12px;
   padding: 24px;
+}
+
+.smd__readme-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tk-text-primary);
+  margin-bottom: 12px;
 }
 
 .smd__state {
