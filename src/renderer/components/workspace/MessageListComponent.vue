@@ -276,16 +276,21 @@ defineExpose({
   flex-direction: column;
 }
 
-/* 底部渐变遮罩（透明→背景色——消息滚到底部淡出衔接输入区——不拦截点击） */
+/* 底部渐变遮罩（透明→工作区背景终点色——消息滚到底部淡出衔接输入区——不拦截点击） */
 .message-list__fade {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: 24px;
-  background: linear-gradient(to bottom, transparent, var(--tk-bg-primary));
+  /* 取工作区实际透出的背景（渐变终点色）——不硬编码白色 */
+  background: linear-gradient(to bottom, transparent, var(--tk-workspace-fade-end, var(--tk-bg-primary)));
   pointer-events: none;
   z-index: 5;
+  /* 与消息行同宽（1200 居中） */
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .message-list {

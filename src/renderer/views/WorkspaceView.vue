@@ -462,6 +462,8 @@ onUnmounted(() => {
   overflow: hidden;
   /* 浅色渐变——为毛玻璃 blur 提供可穿透内容 */
   background: linear-gradient(180deg, var(--tk-bg-secondary) 0%, #e9e9ef 100%);
+  /* 对话区渐变终点色（message-list fade 遮罩取此色——与透出背景一致） */
+  --tk-workspace-fade-end: #e9e9ef;
   border-top: 1px solid var(--tk-border);
   transition: grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -479,6 +481,7 @@ onUnmounted(() => {
 /* 深色：带蓝紫调的渐变（玻璃背后有色彩层次，blur 才可见） */
 html[data-theme='dark'] .workspace {
   background: linear-gradient(180deg, #1d1d26 0%, #26262f 100%);
+  --tk-workspace-fade-end: #26262f;
 }
 
 .workspace__main {
