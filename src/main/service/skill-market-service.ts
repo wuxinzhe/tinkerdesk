@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { execFileAsync, downloadWithMirror } from '../utils/process-utils'
-import { getPackageDetail, searchNpm, type NpmPackage } from '../repository/npm-registry-repository'
+import { getPackageDetail, getPackageTarball, searchNpm, type NpmPackage } from '../repository/npm-registry-repository'
 
 /** 技能包前缀（市场生态限定） */
 export const SKILL_MARKET_PREFIX = 'tinkerdesk-skill-'
@@ -135,8 +135,15 @@ export async function installSkillFromNpm(
   const tmpDir = join(app.getPath('temp'), `tinkerdesk-skill-${Date.now()}`)
   try {
     const detail = await getPackageDetail(pkgName)
-    const tarball = (detail as { dist?: { tarball?: string } }).dist?.tarball
-    if (!tarball) return { ok: false, error: 'npm 包无 tarball 地址' }
+    // tarball 位于 versions.<latest>.dist.tarball（registry 顶层无 dist 字段）——
+    // 用 getPackageTarball 按 dist-tags.latest 正确解析（否则顶层 detail.dist 恒空报"无 tarball"）
+    let tarball = ''
+    try {
+      const tb = await getPackageTarball(pkgName)
+      tarball = tb.url
+    } catch {
+      return { ok: false, error: 'npm 包无 tarball 地址' }
+    }
     mkdirSync(tmpDir, { recursive: true })
     const tgz = join(tmpDir, 'pkg.tgz')
     await downloadWithMirror(tarball, tgz)
