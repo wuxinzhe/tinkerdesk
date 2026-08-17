@@ -175,6 +175,9 @@ onUnmounted(() => window.removeEventListener('global-tip', onGlobalTip))
   top: 16px;
   right: 16px;
   z-index: 3000;
+  /* 顶栏是窗口拖拽区（app-region: drag）——toast 落在其内——
+     必须 no-drag 否则关闭按钮点击被拖拽捕获 */
+  -webkit-app-region: no-drag;
   display: flex;
   align-items: flex-start;
   gap: var(--tk-space-3, 12px);
