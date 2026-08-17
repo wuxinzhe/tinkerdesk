@@ -60,7 +60,6 @@ export class DefaultAgentMode implements IAgentMode {
       toolExecutionTimeout: 120,
       maxConversations: 5,
       memoryMaxChars: 2200,
-      userMaxChars: 1375,
       thresholdPercent: 0.8,
       tailRatio: 0.2,
       warningsEnabled: true,

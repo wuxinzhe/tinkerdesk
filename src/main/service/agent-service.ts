@@ -23,7 +23,7 @@ function toConfigEntity(profile: string, c: AgentConfig): AgentConfigEntity {
     toolExecutionTimeout: c.toolExecutionTimeout,
     maxConversations: c.maxConversations,
     memoryMaxChars: c.memoryMaxChars,
-    userMaxChars: c.userMaxChars,
+
     agentSoulPrompt: c.agentSoulPrompt ?? null,
     warningsEnabled: c.warningsEnabled ? 1 : 0,
     hardStopEnabled: c.hardStopEnabled ? 1 : 0,

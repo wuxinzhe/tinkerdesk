@@ -118,7 +118,7 @@ export interface AgentInfo {
   memoryPercent?: number
   userChars?: number
   userEntries?: number
-  userMaxChars?: number
+
   userPercent?: number
 }
 

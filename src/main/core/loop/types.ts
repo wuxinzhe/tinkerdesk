@@ -75,8 +75,6 @@ export interface AgentConfig {
   maxConversations: number
   /** 记忆最大字符数 */
   memoryMaxChars: number
-  /** 用户消息最大字符数 */
-  userMaxChars: number
   /** 是否启用警告 */
   warningsEnabled: boolean
   /** 是否启用硬停止 */

@@ -250,7 +250,6 @@ const step2Fields: Array<{ key: string; label: string; type: 'number' | 'boolean
   { key: 'toolExecutionTimeout', label: '工具执行超时（秒）', type: 'number', placeholder: '120' },
   { key: 'maxConversations', label: '最大会话数', type: 'number', placeholder: '5' },
   { key: 'memoryMaxChars', label: '记忆容量（字符）', type: 'number', placeholder: '2200' },
-  { key: 'userMaxChars', label: '用户输入上限（字符）', type: 'number', placeholder: '1375' },
   { key: 'thresholdPercent', label: '压缩阈值', type: 'number', placeholder: '0.5', step: 0.1 },
   { key: 'tailRatio', label: '尾部保留比例', type: 'number', placeholder: '0.2', step: 0.1 },
   { key: 'warningsEnabled', label: '开启预警', type: 'boolean' },

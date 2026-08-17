@@ -11,7 +11,7 @@ import { BUSY_MODE_QUEUE } from '../core/loop/types'
 
 /** Agent 配置实体（对应 AgentConfigEntity，NULL = 使用全局默认值） */
 
-const COLS = 'profile, max_iterations, tool_execution_timeout, max_conversations, memory_max_chars, user_max_chars, threshold_percent, tail_ratio, agent_soul_prompt, warnings_enabled, hard_stop_enabled, exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after, exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after, message_busy_mode, created_at, updated_at'
+const COLS = 'profile, max_iterations, tool_execution_timeout, max_conversations, memory_max_chars, threshold_percent, tail_ratio, agent_soul_prompt, warnings_enabled, hard_stop_enabled, exact_failure_warn_after, same_tool_failure_warn_after, no_progress_warn_after, exact_failure_block_after, same_tool_failure_halt_after, no_progress_block_after, message_busy_mode, created_at, updated_at'
 
 function toEntity(row: Record<string, unknown>): AgentConfigEntity {
   return {
@@ -20,7 +20,6 @@ function toEntity(row: Record<string, unknown>): AgentConfigEntity {
     toolExecutionTimeout: row.tool_execution_timeout as number,
     maxConversations: row.max_conversations as number,
     memoryMaxChars: row.memory_max_chars as number,
-    userMaxChars: row.user_max_chars as number,
     thresholdPercent: row.threshold_percent as number,
     tailRatio: row.tail_ratio as number,
     agentSoulPrompt: row.agent_soul_prompt as string | null,
@@ -56,7 +55,7 @@ export class AgentConfigRepository {
       `INSERT INTO agent_configs (
           profile,
           max_iterations, tool_execution_timeout,
-          max_conversations, memory_max_chars, user_max_chars,
+          max_conversations, memory_max_chars,
           threshold_percent, tail_ratio,
           agent_soul_prompt,
           warnings_enabled, hard_stop_enabled,
@@ -71,7 +70,6 @@ export class AgentConfigRepository {
          tool_execution_timeout = excluded.tool_execution_timeout,
          max_conversations = excluded.max_conversations,
          memory_max_chars = excluded.memory_max_chars,
-         user_max_chars = excluded.user_max_chars,
          threshold_percent = excluded.threshold_percent,
          tail_ratio = excluded.tail_ratio,
          agent_soul_prompt = excluded.agent_soul_prompt,
@@ -90,7 +88,6 @@ export class AgentConfigRepository {
       entity.toolExecutionTimeout,
       entity.maxConversations,
       entity.memoryMaxChars,
-      entity.userMaxChars,
       entity.thresholdPercent,
       entity.tailRatio,
       entity.agentSoulPrompt,

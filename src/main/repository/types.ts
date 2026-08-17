@@ -137,7 +137,6 @@ export interface AgentConfigEntity {
   toolExecutionTimeout: number
   maxConversations: number
   memoryMaxChars: number
-  userMaxChars: number
   /** Agent 灵魂提示词（agent_soul_prompt） */
   agentSoulPrompt: string | null
   warningsEnabled: number

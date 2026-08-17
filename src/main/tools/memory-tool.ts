@@ -5,6 +5,7 @@
  * reads/adds/replaces/removes/batches persistent memory (file-system MemoryStore).
  * Always returns JSON strings — 7 semantic response kinds.
  */
+import { getAppSettings } from '../service/general-settings-service'
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { MemoryOperation } from '../service/memory-store'
 import { MemoryStore } from '../service/memory-store'
@@ -40,7 +41,7 @@ export class MemoryTool extends BaseTool {
 
     // 记忆上限：优先 AgentConfig 动态配置
     const memoryMaxChars = ctx.agentConfig?.memoryMaxChars ?? this.maxMemory
-    const userMaxChars = ctx.agentConfig?.userMaxChars ?? this.maxUser
+    const userMaxChars = Number(getAppSettings().settings['userMaxChars']) || this.maxUser
 
     const target = (args.target as string) || 'memory'
     const action = (args.action as string) || ''

@@ -10,6 +10,7 @@
  * named methods with fully typed params/returns.
  */
 
+import { getAppSettings } from '../service/general-settings-service'
 import { handleTrusted } from '../security/ipc-guard'
 import type { AgentService } from '../service/agent-service'
 import { MemoryStore } from '../service/memory-store'
@@ -42,7 +43,7 @@ export class AgentCrudController {
       const usrChars = usrEntries.reduce((sum, e) => sum + e.length, 0)
       const cfg = this.agentConfigService.get(profile)
       const memMax = cfg.memoryMaxChars ?? 0
-      const usrMax = cfg.userMaxChars ?? 0
+      const usrMax = Number(getAppSettings().settings['userMaxChars']) || 0
       return {
         ...agent,
         memoryChars: memChars,

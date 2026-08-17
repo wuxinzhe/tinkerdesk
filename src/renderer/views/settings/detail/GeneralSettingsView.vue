@@ -43,6 +43,28 @@
         <VoiceSettingsPanel />
       </div>
 
+      <!-- ── 用户记忆组（per-user 全局——跨 Agent 共享） ── -->
+      <div class="general-settings__group">
+        <div class="general-settings__group-header">
+          <span class="general-settings__group-title">用户记忆</span>
+          <span class="general-settings__group-desc">用户记忆是全局的（跨 Agent 共享）——设置其字符上限</span>
+        </div>
+        <div class="user-memory-row">
+          <div class="user-memory-row__info">
+            <span class="user-memory-row__label">用户记忆上限（字符）</span>
+            <span class="user-memory-row__hint">超出后新的用户记忆条目将被拒绝</span>
+          </div>
+          <input
+            v-model.number="userMaxChars"
+            type="number"
+            min="100"
+            max="10000"
+            class="user-memory-row__input"
+            @change="saveUserMaxChars"
+          />
+        </div>
+      </div>
+
       <!-- ── 快捷键配置组 ── -->
       <div class="general-settings__group">
         <div class="general-settings__group-header">
@@ -146,6 +168,22 @@ const eventsEnabled = ref(true)
 /** 当前事件条数（agent_events） */
 const eventCount = ref(0)
 
+/* ── 用户记忆（per-user 全局——跨 Agent 共享） ── */
+
+/** 用户记忆上限（appSettings.userMaxChars——默认 1375） */
+const userMaxChars = ref(1375)
+
+async function saveUserMaxChars(): Promise<void> {
+  const v = Math.max(100, Math.min(10000, Math.round(userMaxChars.value || 1375)))
+  userMaxChars.value = v
+  try {
+    await window.api.generalSettings.set('userMaxChars', String(v))
+    showInfoToast(`用户记忆上限已更新为 ${v}`)
+  } catch {
+    showErrorToast({ code: 'userMaxChars:save:error', message: '保存失败' })
+  }
+}
+
 async function toggleEvents(): Promise<void> {
   eventsEnabled.value = !eventsEnabled.value
   try {
@@ -212,6 +250,9 @@ async function load(): Promise<void> {
     }
     // 事件记录开关（默认开——未设置时走默认 true）
     eventsEnabled.value = settings['agentEvents.enabled'] !== 'false'
+    // 用户记忆上限（全局——默认 1375）
+    const umc = Number(settings['userMaxChars'])
+    if (umc > 0) userMaxChars.value = umc
     // 当前事件条数
     eventCount.value = await window.api.events.count()
   } catch {
@@ -476,6 +517,52 @@ onUnmounted(() => {
   transition: background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+
+/* ── 用户记忆设置行 ── */
+
+.user-memory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--tk-border);
+}
+
+.user-memory-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-memory-row__label {
+  font-size: 13px;
+  color: var(--tk-text-primary);
+}
+
+.user-memory-row__hint {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+}
+
+.user-memory-row__input {
+  width: 100px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
+  border-radius: 6px;
+  outline: none;
+  text-align: right;
+  transition: border-color 0.15s;
+}
+
+.user-memory-row__input:focus {
+  border-color: var(--tk-accent);
+}
+
 
 @media (hover: hover) and (pointer: fine) {
   .shortcut-row:hover {

@@ -149,6 +149,7 @@ export interface AgentInfoDTO {
   memoryPercent?: number
   userChars?: number
   userEntries?: number
+  /** 用户记忆上限（per-user 全局——来自 appSettings） */
   userMaxChars?: number
   userPercent?: number
 }

@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   theme: 'light', // 应用主题：light | dark | system
   'agentEvents.enabled': 'true', // 事件埋点总开关（默认开——总是有证据）
   'agentEvents.maxRows': '50000', // 事件表环形上限（超了删最旧）
+  'userMaxChars': '1375', // 用户记忆（per-user 全局）上限字符
 }
 
 const DEFAULT_SHORTCUTS: Array<{ key: string; label: string; description: string; value: string }> = [

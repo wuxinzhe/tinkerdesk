@@ -10,6 +10,7 @@
  * named methods with fully typed params/returns.
  */
 
+import { getAppSettings } from '../service/general-settings-service'
 import { handleTrusted } from '../security/ipc-guard'
 import type { SessionService } from '../service/session-service'
 import { MemoryStore } from '../service/memory-store'
@@ -244,7 +245,7 @@ export class SessionController {
         try {
           const cfg = this.agentConfigService.get(profile)
           memoryMaxChars = cfg.memoryMaxChars ?? 0
-          userMaxChars = cfg.userMaxChars ?? 0
+          userMaxChars = Number(getAppSettings().settings['userMaxChars']) || 0
         } catch {
           memoryMaxChars = 0
           userMaxChars = 0
