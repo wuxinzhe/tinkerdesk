@@ -49,6 +49,22 @@
     </div>
 
     <div class="workspace-toolbar__actions">
+      <!-- 专注模式 + 锁屏（桌面端 l3 顶栏——替代 TitleBar） -->
+      <template v-if="variant === 'l3'">
+        <button class="workspace-toolbar__util" title="专注模式" @click="togglePhoneMode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <rect x="9" y="7" width="6" height="10" rx="1" />
+          </svg>
+        </button>
+        <button class="workspace-toolbar__util" title="锁屏 (Ctrl+Shift+L)" @click="handleLock">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="11" width="16" height="9" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+          </svg>
+        </button>
+      </template>
       <slot name="actions" />
     </div>
   </header>
@@ -56,7 +72,27 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useSessionStore } from '@/renderer/stores/session-store'
 import { getToolDisplayName } from '@/renderer/utils/tool-display'
+
+const router = useRouter()
+const sessionStore = useSessionStore()
+
+/** 锁屏（与 TitleBar 原逻辑一致） */
+function handleLock() {
+  sessionStore.setLocked(true)
+}
+
+/** 专注模式：窗口收窄到 375×812（临时突破 minWidth 768——再点恢复桌面） */
+function togglePhoneMode() {
+  void window.api.setPhoneMode().then(() => {
+    // 路由重置：清空历史栈 + 直接定位对话页 lv2 session-list（/workspace/chat）
+    const target = '#/workspace/chat'
+    history.replaceState(null, '', location.pathname + location.search + target)
+    void router.replace('/workspace/chat')
+  })
+}
 
 const props = withDefaults(defineProps<{
   title: string
@@ -231,6 +267,32 @@ watch(() => props.isProcessing, (processing) => {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+}
+
+/* 专注/锁屏工具按钮（替代 TitleBar） */
+.workspace-toolbar__util {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--tk-text-secondary);
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.workspace-toolbar__util:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace-toolbar__util:hover {
+    background: var(--tk-bg-secondary);
+    color: var(--tk-text-primary);
+  }
 }
 
 /* Teleport 目标 div（#l3-toolbar-actions / #mobile-toolbar-actions）本身必须是 flex 容器，

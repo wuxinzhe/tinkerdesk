@@ -17,8 +17,10 @@
       }">
         <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
         <div class="workspace__sidebar-inner">
-          <!-- 平板端 Lv2 顶部工具栏 -->
-          <div class="workspace__lv2-toolbar">
+                  <!-- 窗口控制（关闭/最小化/最大化——替代 TitleBar 三灯） -->
+                  <WindowControls />
+                  <!-- 平板端 Lv2 顶部工具栏 -->
+                  <div class="workspace__lv2-toolbar">
             <h1 class="workspace__lv2-title">
               {{ lv2Title }}
             </h1>
@@ -94,6 +96,7 @@ import { useChatStore } from '@/renderer/stores/chat-store'
 import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
+import WindowControls from '@/renderer/components/workspace/WindowControls.vue'
 import SessionList from '@/renderer/components/chat/SessionList.vue'
 import AgentListView from '@/renderer/views/agents/AgentListView.vue'
 

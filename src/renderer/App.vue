@@ -1,8 +1,5 @@
 <template>
   <div id="sa-app" class="app-shell">
-    <!-- 自定义标题栏（仅 Electron 桌面端） -->
-    <TitleBar v-if="isDesktop" />
-
     <!-- Page transitions with route-based animation names -->
     <router-view v-slot="{ Component, route }">
       <transition
@@ -52,7 +49,6 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import LockScreen from '@/renderer/components/LockScreen.vue'
-import TitleBar from '@/renderer/components/workspace/TitleBar.vue'
 import GlobalTipToast from '@/renderer/components/GlobalTipToast.vue'
 import ConfirmModal from '@/renderer/components/ConfirmModal.vue'
 import { setupAppHost, needsConsent, consentErrorSummary, resolveConsent } from '@/renderer/utils/app-init'
@@ -77,7 +73,6 @@ void (async () => {
 
 // ── 桌面端检测 ──
 
-const isDesktop = computed(() => typeof window !== 'undefined' && 'api' in window)
 
 // ── Consent 弹窗 ──
 
