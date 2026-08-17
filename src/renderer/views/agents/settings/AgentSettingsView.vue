@@ -85,36 +85,39 @@
               <input v-model="agentForm.avatar" class="settings-field__input" placeholder="可选，图片 URL" />
             </div>
           </div>
-          <div class="settings-field">
-            <div class="settings-field__row">
-              <div class="settings-field__label">
-                <label>模式</label>
-              </div>
-              <div class="settings-field__select-wrap">
-                <select v-model="agentForm.agentModeId" class="settings-field__select">
-                  <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">
-                    {{ opt.id }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="settings-field">
-            <div class="settings-field__row">
-              <div class="settings-field__label">
-                <label>版本</label>
-              </div>
-              <div class="settings-field__select-wrap">
-                <select v-model="agentForm.agentModeVersion" class="settings-field__select">
-                  <option v-for="v in currentModeVersions" :key="v" :value="v">
-                    {{ v }}
-                  </option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+          <!-- 模式 + 版本：同一行（pair 双列）——手机模式自动换行为单列 -->
+                    <div class="settings-field__pair">
+                      <div class="settings-field__pair-col">
+                        <div class="settings-field__row">
+                          <div class="settings-field__label">
+                            <label>模式</label>
+                          </div>
+                          <div class="settings-field__select-wrap">
+                            <select v-model="agentForm.agentModeId" class="settings-field__select">
+                              <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">
+                                {{ opt.id }}
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="settings-field__pair-col">
+                        <div class="settings-field__row">
+                          <div class="settings-field__label">
+                            <label>版本</label>
+                          </div>
+                          <div class="settings-field__select-wrap">
+                            <select v-model="agentForm.agentModeVersion" class="settings-field__select">
+                              <option v-for="v in currentModeVersions" :key="v" :value="v">
+                                {{ v }}
+                              </option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
       <!-- ── 迭代与超时 ── -->
       <div class="settings-group">
@@ -845,6 +848,37 @@ onBeforeUnmount(() => {
 }
 .settings-group--stack .settings-field__input {
   width: 100%;
+}
+
+/* ── 模式/版本 pair：同行双列（grid）——手机(<768px)自动换行单列 ── */
+
+.settings-field__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+  padding: 4px 16px 0;
+  border-top: 1px solid var(--tk-border-light);
+}
+.settings-field__pair .settings-field__row {
+  padding: 8px 0 12px;
+  min-height: 0;
+}
+.settings-field__pair .settings-field__label {
+  flex: none;
+}
+.settings-field__pair .settings-field__select-wrap {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+@media (max-width: 767px) {
+  .settings-field__pair {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .settings-field__pair .settings-field__row + .settings-field__row {
+    border-top: 1px solid var(--tk-border-light);
+  }
 }
 
 .settings-field__row--textarea {
