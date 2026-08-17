@@ -18,14 +18,14 @@
     <!-- ── 二级 + 三级 ── -->
     <div class="workspace__main">
       <div
-        class="workspace__l2-col"
+        class="workspace__sidebar-col"
         :class="{
-          'workspace__l2-col--full': !hasLevel3,
-          'workspace__l2-col--collapsed': sidebarCollapsed
+          'workspace__sidebar-col--full': !hasLevel3,
+          'workspace__sidebar-col--collapsed': sidebarCollapsed
         }"
       >
         <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
-        <div class="workspace__l2-inner">
+        <div class="workspace__sidebar-inner">
           <!-- 平板端 Lv2 顶部工具栏 -->
           <div class="workspace__lv2-toolbar">
             <h1 class="workspace__lv2-title">
@@ -38,14 +38,14 @@
             :agent="agent"
             :thinking-active="globalThinking"
             @switch-agent="goAgentList"
-            class="workspace__l2-agent"
+            class="workspace__sidebar-agent"
           />
-          <router-view name="level2" class="workspace__l2-router" />
+          <router-view name="sidebar" class="workspace__sidebar-router" />
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
-          <div class="workspace__l2-fade" />
+          <div class="workspace__sidebar-fade" />
         </div>
         <!-- 全局设置栏位（L2 底部——任何模块都显示） -->
-        <button class="workspace__l2-settings" @click="goSettings">
+        <button class="workspace__sidebar-settings" @click="goSettings">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
           </svg>
@@ -54,11 +54,11 @@
       </div>
 
       <!-- ── 三级操作区 ── -->
-      <div v-if="hasLevel3" class="workspace__l3-container">
+      <div v-if="hasLevel3" class="workspace__area">
         <!-- 工坊页不渲染全局 toolbar（工坊 UI 自带导航，避免双头部） -->
         <WorkspaceToolbar
           v-if="activeTab !== 'workshop'"
-          class="workspace__l3-bar"
+          class="workspace__area-bar"
           variant="l3"
           :title="l3ToolbarTitle"
           :show-back="true"
@@ -71,8 +71,8 @@
         <!-- L3 页面：key=fullPath——切换 agent（profile 参数变）强制重建，避免组件复用不刷新 -->
         <router-view
           :key="$route.fullPath"
-          name="level3"
-          class="workspace__l3-col"
+          name="workspace"
+          class="workspace__area-col"
         />
       </div>
     </div>
@@ -110,10 +110,10 @@ const hasLevel3 = computed(() => {
   for (let i = matched.length - 1; i >= 0; i--) {
     const record = matched[i]
     const comps = record.components
-    if (comps && typeof comps === 'object' && 'level3' in comps) {
+    if (comps && typeof comps === 'object' && 'workspace' in comps) {
       // 手机上占位 L3 不算，避免列表页被隐藏
       const isMobile = window.innerWidth < 768
-      if (isMobile && record.meta?.level3Placeholder) return false
+      if (isMobile && record.meta?.workspacePlaceholder) return false
       return true
     }
   }
@@ -393,7 +393,7 @@ html[data-theme='dark'] .workspace {
   box-shadow: var(--tk-shadow-hairline);
 }
 
-.workspace__l3-bar {
+.workspace__area-bar {
   display: none;
   /* Liquid Glass（功能层——l3 工具条：玻璃 + 顶部高光边缘 + hairline） */
   background: var(--tk-bg-glass);
@@ -405,7 +405,7 @@ html[data-theme='dark'] .workspace {
 
 /* ── Lv2 列 ── */
 
-.workspace__l2-col {
+.workspace__sidebar-col {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -415,14 +415,14 @@ html[data-theme='dark'] .workspace {
 }
 
 /* 全局 AgentCard（L2 顶部固定——覆盖 l2-inner 子元素 280px min-width——自适应列宽） */
-.workspace__l2-agent {
+.workspace__sidebar-agent {
   min-width: 0 !important;
   width: auto !important;
   margin: 8px 12px 0;
 }
 
 /* 全局设置栏位（L2 底部——无边框按钮——hover 显示背景 + 圆角） */
-.workspace__l2-settings {
+.workspace__sidebar-settings {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -443,18 +443,18 @@ html[data-theme='dark'] .workspace {
 }
 
 /* Emil：按下反馈 */
-.workspace__l2-settings:active {
+.workspace__sidebar-settings:active {
   transform: scale(0.98);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .workspace__l2-settings:hover {
+  .workspace__sidebar-settings:hover {
     color: var(--tk-text-primary);
     background: var(--tk-bg-secondary);
   }
 }
 
-.workspace__l2-col--collapsed .workspace__l2-settings {
+.workspace__sidebar-col--collapsed .workspace__sidebar-settings {
   display: none;
 }
 
@@ -513,7 +513,7 @@ html[data-theme='dark'] .workspace {
 }
 
 /* 内容层：flex 布局 + overflow 裁剪（折叠时内容裁掉）；自身淡出动画 */
-.workspace__l2-inner {
+.workspace__sidebar-inner {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -525,30 +525,30 @@ html[data-theme='dark'] .workspace {
 
 /* 内容保持自然宽度：列折叠收缩时内容宽度不随容器重排（min-width 固定），
    只被 inner 边界裁剪 + 淡出——避免 AgentList/Settings 等列表被挤压 */
-.workspace__l2-inner > * {
+.workspace__sidebar-inner > * {
   flex-shrink: 0;
   min-width: 280px;
 }
 
-.workspace__l2-col--collapsed .workspace__l2-inner {
+.workspace__sidebar-col--collapsed .workspace__sidebar-inner {
   opacity: 0;
   pointer-events: none;
 }
 
-.workspace__l2-col--full {
+.workspace__sidebar-col--full {
   flex: 1;
   min-width: 0;
   display: flex;
   background: var(--tk-bg-primary);
 }
 
-.workspace__l2-col--collapsed {
+.workspace__sidebar-col--collapsed {
   width: 0 !important;
 }
 
 /* ── Lv3 列 ── */
 
-.workspace__l3-container {
+.workspace__area {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -556,7 +556,7 @@ html[data-theme='dark'] .workspace {
   min-width: 0;
 }
 
-.workspace__l3-col {
+.workspace__area-col {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -570,7 +570,7 @@ html[data-theme='dark'] .workspace {
 
 /* ── Lv2 内容路由区 ── */
 
-.workspace__l2-router {
+.workspace__sidebar-router {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -578,7 +578,7 @@ html[data-theme='dark'] .workspace {
 }
 
 /* 底部渐变遮罩（DSH 同款：transparent → 侧栏填充色——列表滚到设置栏上方淡出——不拦截点击） */
-.workspace__l2-fade {
+.workspace__sidebar-fade {
   position: absolute;
   left: 0;
   right: 0;
@@ -608,7 +608,7 @@ html[data-theme='dark'] .workspace {
     position: relative;
   }
 
-  .workspace__l2-col:not(.workspace__l2-col--full) {
+  .workspace__sidebar-col:not(.workspace__sidebar-col--full) {
     display: flex;
     width: 100%;
     flex: none;
@@ -616,11 +616,11 @@ html[data-theme='dark'] .workspace {
     border-bottom: 1px solid var(--tk-border);
     background: var(--tk-bg-primary);
   }
-  .workspace__l2-col--full {
+  .workspace__sidebar-col--full {
     display: flex;
   }
 
-  .workspace__l3-col {
+  .workspace__area-col {
     display: flex;
     flex: 1;
   }
@@ -632,18 +632,18 @@ html[data-theme='dark'] .workspace {
 
 /* ── 平板 768–1023px ── */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .workspace__l2-col {
+  .workspace__sidebar-col {
     width: 280px;
     flex-shrink: 0;
     border-right: 1px solid var(--tk-border);
     background: var(--tk-bg-primary);
   }
 
-  .workspace__l3-col {
+  .workspace__area-col {
     display: flex;
   }
 
-  .workspace__l3-bar {
+  .workspace__area-bar {
     display: flex;
   }
 
@@ -666,18 +666,18 @@ html[data-theme='dark'] .workspace {
     display: flex;
   }
 
-  .workspace__l2-col {
+  .workspace__sidebar-col {
     width: 280px;
     flex-shrink: 0;
     border-right: 1px solid var(--tk-border);
     background: var(--tk-bg-primary);
   }
 
-  .workspace__l3-col {
+  .workspace__area-col {
     display: flex;
   }
 
-  .workspace__l3-bar {
+  .workspace__area-bar {
     display: flex;
   }
 

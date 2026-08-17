@@ -87,7 +87,7 @@ const profile = computed(() => route.params.profile as string)
 const modules = ref<PromptModuleData[]>([])
 const loading = ref(true)
 
-/** 模块级去重：同一 profile 只发一次请求（default+level3 双 slot 共用同一组件） */
+/** 模块级去重：同一 profile 只发一次请求（default+workspace 双 slot 共用同一组件） */
 const loadedProfile = ref('')
 
 async function loadModules() {

@@ -11,14 +11,14 @@
  *
  * Workspace 路由结构（三级导航）：
  *   一级：NavSidebar（桌面端）/ 抽屉（移动端）
- *   二级：列表页（level2 router-view）
- *   三级：详情/操作页（level3 router-view）
+ *   侧边栏：列表页（sidebar router-view）
+ *   工作区：详情/操作页（workspace router-view）
  *   桌面端同时显示二+三级，移动端每次只显示一级（default slot）
  *
  * 路由命名规范：
- *   列表路由： default=DetailView, level2=ListView, 无 level3
- *   详情路由： default=DetailView, level2=ListView, level3=DetailView
- *   （default 在移动端全屏渲染，level2 在桌面端中列，level3 在桌面端右列）
+ *   列表路由： default=DetailView, sidebar=ListView, 无 workspace
+ *   详情路由： default=DetailView, sidebar=ListView, workspace=DetailView
+ *   （default 在移动端全屏渲染，sidebar 在桌面端左列，workspace 在桌面端右列）
  */
 import { createRouter, createWebHashHistory } from 'vue-router'
 
@@ -62,17 +62,17 @@ const router = createRouter({
           path: 'chat',
           components: {
             default: () => import('@/renderer/views/chat/ChatListView.vue'),
-            level2: () => import('@/renderer/views/chat/ChatListView.vue'),
-            level3: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
+            sidebar: () => import('@/renderer/views/chat/ChatListView.vue'),
+            workspace: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
           },
-          meta: { level3Placeholder: true },
+          meta: { workspacePlaceholder: true },
         },
         {
           path: 'chat/:sessionId',
           components: {
             default: () => import('@/renderer/views/chat/detail/ChatDetailView.vue'),
-            level2: () => import('@/renderer/views/chat/ChatListView.vue'),
-            level3: () => import('@/renderer/views/chat/detail/ChatDetailView.vue'),
+            sidebar: () => import('@/renderer/views/chat/ChatListView.vue'),
+            workspace: () => import('@/renderer/views/chat/detail/ChatDetailView.vue'),
           },
         },
         {
@@ -80,16 +80,16 @@ const router = createRouter({
           path: 'chat/:sessionId/history',
           components: {
             default: () => import('@/renderer/views/chat/detail/HistoryPreviewView.vue'),
-            level2: () => import('@/renderer/views/chat/ChatListView.vue'),
-            level3: () => import('@/renderer/views/chat/detail/HistoryPreviewView.vue'),
+            sidebar: () => import('@/renderer/views/chat/ChatListView.vue'),
+            workspace: () => import('@/renderer/views/chat/detail/HistoryPreviewView.vue'),
           },
         },
         {
           path: 'chat/:sessionId/conversation/:conversationId',
           components: {
             default: () => import('@/renderer/views/chat/detail/ConversationDetailView.vue'),
-            level2: () => import('@/renderer/views/chat/ChatListView.vue'),
-            level3: () => import('@/renderer/views/chat/detail/ConversationDetailView.vue'),
+            sidebar: () => import('@/renderer/views/chat/ChatListView.vue'),
+            workspace: () => import('@/renderer/views/chat/detail/ConversationDetailView.vue'),
           },
         },
 
@@ -98,129 +98,129 @@ const router = createRouter({
           path: 'agents',
           components: {
             default: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
           },
-          meta: { level3Placeholder: true },
+          meta: { workspacePlaceholder: true },
         },
         {
           path: 'agents/create',
           components: {
             default: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
           },
         },
         {
           path: 'agents/:profile/edit',
           components: {
             default: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/edit/AgentEditView.vue'),
           },
         },
         {
           path: 'agents/:profile/skills',
           components: {
             default: () => import('@/renderer/views/agents/skills/AgentSkillsView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/skills/AgentSkillsView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/AgentSkillsView.vue'),
           },
         },
         {
           path: 'agents/:profile/tools',
           components: {
             default: () => import('@/renderer/views/agents/tools/AgentToolsView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/tools/AgentToolsView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/tools/AgentToolsView.vue'),
           },
         },
         {
           path: 'agents/:profile/tools/:toolName/provider',
           components: {
             default: () => import('@/renderer/views/agents/tools/ToolProviderSettingsView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/tools/ToolProviderSettingsView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/tools/ToolProviderSettingsView.vue'),
           },
         },
         {
           path: 'agents/:profile/memory',
           components: {
             default: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/memory/MemoryManageView.vue'),
           },
         },
         {
           path: 'agents/:profile/models',
           components: {
             default: () => import('@/renderer/views/agents/models/ModelSettingsView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/models/ModelSettingsView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/models/ModelSettingsView.vue'),
           },
         },
         {
           path: 'agents/:profile/prompt-modules',
           components: {
             default: () => import('@/renderer/views/agents/prompt-modules/PromptModuleListView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/prompt-modules/PromptModuleListView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/prompt-modules/PromptModuleListView.vue'),
           },
         },
         {
           path: 'agents/:profile/prompt-modules/create',
           components: {
             default: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
           },
         },
         {
           path: 'agents/:profile/prompt-modules/:moduleId/edit',
           components: {
             default: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/prompt-modules/PromptModuleFormView.vue'),
           },
         },
         {
           path: 'agents/:profile/settings',
           components: {
             default: () => import('@/renderer/views/agents/settings/AgentSettingsView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/settings/AgentSettingsView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/settings/AgentSettingsView.vue'),
           },
         },
         {
           path: 'agents/:profile/market',
           components: {
             default: () => import('@/renderer/views/agents/skills/SkillsMarketView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/skills/SkillsMarketView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/SkillsMarketView.vue'),
           },
         },
         {
           path: 'agents/:profile/skill/:skillId',
           components: {
             default: () => import('@/renderer/views/agents/skills/SkillDetailView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/skills/SkillDetailView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/SkillDetailView.vue'),
           },
         },
         {
           path: 'agents/:profile/skill/:skillId/file/:fileId',
           components: {
             default: () => import('@/renderer/views/agents/skills/SkillFileEditView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/skills/SkillFileEditView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/SkillFileEditView.vue'),
           },
         },
         {
           path: 'agents/:profile/skill/import',
           components: {
             default: () => import('@/renderer/views/agents/skills/SkillImportView.vue'),
-            level2: () => import('@/renderer/views/agents/AgentListView.vue'),
-            level3: () => import('@/renderer/views/agents/skills/SkillImportView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/SkillImportView.vue'),
           },
         },
 
@@ -229,58 +229,58 @@ const router = createRouter({
           path: 'settings/model/create',
           components: {
             default: () => import('@/renderer/views/settings/detail/AddModelView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/AddModelView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/AddModelView.vue'),
           },
         },
         {
           path: 'settings/model/:modelId/edit',
           components: {
             default: () => import('@/renderer/views/settings/detail/EditModelView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/EditModelView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/EditModelView.vue'),
           },
         },
         {
           path: 'settings/mcp/create',
           components: {
             default: () => import('@/renderer/views/settings/detail/AddMcpView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/AddMcpView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/AddMcpView.vue'),
           },
         },
         {
           path: 'settings/mcp/:name/edit',
           components: {
             default: () => import('@/renderer/views/settings/detail/EditMcpView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/EditMcpView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/EditMcpView.vue'),
           },
         },
         {
           path: 'settings',
           components: {
             default: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
           },
-          meta: { level3Placeholder: true },
+          meta: { workspacePlaceholder: true },
         },
         {
           path: 'settings/:section(model|mcp|plugins|voice|general)',
           components: {
             default: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
           },
-          // 真实详情页（非占位）——不加 level3Placeholder：移动端 hasLevel3 才能渲染 L3 详情
+          // 真实详情页（非占位）——不加 workspacePlaceholder：移动端 hasLevel3 才能渲染 L3 详情
         },
         {
           path: 'settings/plugins-market',
           components: {
             default: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
           },
           // 插件市场（独立 L3——安装按钮跳转入口）
         },
@@ -288,8 +288,8 @@ const router = createRouter({
           path: 'settings/plugins-market/:pkg',
           components: {
             default: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
           },
           // 插件市场详情（readme 展示）
         },
@@ -297,8 +297,8 @@ const router = createRouter({
           path: 'settings/plugins/install',
           components: {
             default: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
           },
           // 安装向导（L3 页面——pkg/path 查询参数）
         },
@@ -306,10 +306,10 @@ const router = createRouter({
           path: 'settings/plugins/:pluginId',
           components: {
             default: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
-            level2: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            level3: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
           },
-          // 真实详情页（非占位）——不加 level3Placeholder
+          // 真实详情页（非占位）——不加 workspacePlaceholder
         },
 
         // ── 工坊 ──
@@ -317,17 +317,17 @@ const router = createRouter({
           path: 'workshop',
           components: {
             default: () => import('@/renderer/views/workshop/WorkshopListView.vue'),
-            level2: () => import('@/renderer/views/workshop/WorkshopListView.vue'),
-            level3: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
+            sidebar: () => import('@/renderer/views/workshop/WorkshopListView.vue'),
+            workspace: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
           },
-          meta: { level3Placeholder: true },
+          meta: { workspacePlaceholder: true },
         },
         {
           path: 'workshop/:memberId',
           components: {
             default: () => import('@/renderer/views/workshop/detail/WorkshopDetailView.vue'),
-            level2: () => import('@/renderer/views/workshop/WorkshopListView.vue'),
-            level3: () => import('@/renderer/views/workshop/detail/WorkshopDetailView.vue'),
+            sidebar: () => import('@/renderer/views/workshop/WorkshopListView.vue'),
+            workspace: () => import('@/renderer/views/workshop/detail/WorkshopDetailView.vue'),
           },
         },
       ],

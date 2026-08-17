@@ -618,8 +618,8 @@ onMounted(() => {
   document.addEventListener('click', closeTipOnOutside)
 })
 
-// 切换 agent-item 时重新加载配置（含模块级去重，防 default+level3 双实例）
-/** 模块级去重：同一 profile 只发一次请求（default+level3 双 slot 共用同一组件） */
+// 切换 agent-item 时重新加载配置（含模块级去重，防 default+workspace 双实例）
+/** 模块级去重：同一 profile 只发一次请求（default+workspace 双 slot 共用同一组件） */
 const loadedProfile = ref('')
 
 // 切换 agent-item 时重新加载配置
