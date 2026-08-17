@@ -54,13 +54,38 @@
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
           <div class="workspace__sidebar-fade" />
         </div>
-        <!-- 全局设置栏位（L2 底部——任何模块都显示） -->
-        <button class="workspace__sidebar-settings" @click="goSettings">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-          </svg>
-          系统设置
-        </button>
+        <!-- 全局设置（侧边栏底部——点击向上展开手风琴设置项——非浮层） -->
+                <div class="workspace__settings-wrap">
+                  <Transition name="settings-up">
+                    <div v-if="settingsOpen" class="workspace__settings-panel">
+                      <button
+                        v-for="item in settingsItems"
+                        :key="item.key"
+                        class="workspace__settings-item"
+                        @click="selectSetting(item)"
+                      >
+                        <span class="workspace__settings-item-icon" v-html="item.icon" />
+                        <span class="workspace__settings-item-text">
+                          <span class="workspace__settings-item-label">{{ item.label }}</span>
+                          <span class="workspace__settings-item-desc">{{ item.desc }}</span>
+                        </span>
+                        <svg class="workspace__settings-item-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="9 6 15 12 9 18" />
+                        </svg>
+                      </button>
+                    </div>
+                  </Transition>
+                  <button class="workspace__sidebar-settings" @click="toggleSettings">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+                    </svg>
+                    系统设置
+                    <svg class="workspace__sidebar-settings-chev" :class="{ open: settingsOpen }" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
       </div>
 
       <!-- ── 三级操作区 ── -->
@@ -86,7 +111,6 @@
         />
       </div>
     </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -329,10 +353,57 @@ async function onSidebarNewSession(): Promise<void> {
   if (s) router.push(`/workspace/chat/${s.id}`)
 }
 
-/** 跳转系统设置（L2 底部全局设置栏） */
-function goSettings(): void {
-  router.push('/workspace/settings')
+/** 系统设置：底部按钮点击向上展开手风琴（设置项——参考 SettingsListView） */
+const settingsOpen = ref(false)
+
+interface SettingsItem {
+  key: string
+  label: string
+  desc: string
+  icon: string
 }
+
+const settingsItems: SettingsItem[] = [
+  {
+    key: 'model',
+    label: '模型设置',
+    desc: '管理 AI 模型提供商和默认模型',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>',
+  },
+  {
+    key: 'mcp',
+    label: 'MCP 工具',
+    desc: '管理 MCP 服务器和外部工具',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+  },
+  {
+    key: 'plugins',
+    label: '插件设置',
+    desc: '管理客户端插件和扩展能力',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+  },
+  {
+    key: 'general',
+    label: '通用设置',
+    desc: '快捷键等全局偏好配置',
+    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="7" y2="9"/><line x1="12" y1="9" x2="12" y2="9"/><line x1="17" y1="9" x2="17" y2="9"/><line x1="7" y1="15" x2="17" y2="15"/></svg>',
+  },
+]
+
+function toggleSettings(): void {
+  settingsOpen.value = !settingsOpen.value
+}
+
+function selectSetting(item: SettingsItem): void {
+  settingsOpen.value = false
+  router.push(`/workspace/settings/${item.key}`)
+}
+
+/** 路由变化时收起设置面板 */
+watch(
+  () => route.fullPath,
+  () => { settingsOpen.value = false }
+)
 
 /** 切换 Agent（切侧边栏为 Agent 列表——工作区不变） */
 function goAgentList(): void {
@@ -493,6 +564,109 @@ html[data-theme='dark'] .workspace {
 
 .workspace__sidebar-col--collapsed .workspace__sidebar-settings {
   display: none;
+}
+
+/* ── 系统设置手风琴（向上展开——非浮层——面板在按钮上方撑开） ── */
+
+.workspace__settings-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace__sidebar-settings-chev {
+  margin-left: auto;
+  color: var(--tk-text-tertiary);
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.workspace__sidebar-settings-chev.open {
+  transform: rotate(180deg);
+}
+
+.workspace__settings-panel {
+  display: flex;
+  flex-direction: column;
+  margin: 0 8px;
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.workspace__settings-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--tk-border-light);
+  background: transparent;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.workspace__settings-item:last-child {
+  border-bottom: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace__settings-item:hover {
+    background: var(--tk-bg-secondary);
+  }
+}
+
+.workspace__settings-item-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--tk-text-secondary);
+  flex-shrink: 0;
+}
+
+.workspace__settings-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.workspace__settings-item-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+}
+
+.workspace__settings-item-desc {
+  font-size: 10px;
+  color: var(--tk-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspace__settings-item-chev {
+  color: var(--tk-text-tertiary);
+  flex-shrink: 0;
+}
+
+/* 展开动画：面板从按钮位置向上（translateY 负向——进入时向上展开） */
+.settings-up-enter-active,
+.settings-up-leave-active {
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.settings-up-enter-from,
+.settings-up-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 
 /* ── Lv2 工具栏（仅平板端可见） ── */
