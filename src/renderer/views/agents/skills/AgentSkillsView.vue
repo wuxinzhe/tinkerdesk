@@ -119,16 +119,18 @@
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
-        <div v-if="installMenuOpen" class="skill-install-menu" :style="installMenuStyle" @click.stop>
-          <button class="skill-install-menu__item" @click="installSkillFromFile">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            本地安装技能
-          </button>
-        </div>
+        <Teleport to="body">
+          <div v-if="installMenuOpen" class="skill-install-menu" :style="installMenuStyle" @click.stop>
+            <button class="skill-install-menu__item" @click="installSkillFromFile">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              本地安装技能
+            </button>
+          </div>
+        </Teleport>
       </div>
     </ToolbarActions>
   </L3PageLayout>
