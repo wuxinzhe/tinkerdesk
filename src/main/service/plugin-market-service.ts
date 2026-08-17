@@ -113,6 +113,7 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
     official: (p.maintainers ?? []).some((m) => m.username === OFFICIAL_MAINTAINER),
     installed: params.installedIds.includes(p.name.slice(MARKET_PREFIX.length)),
     categories: (p.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
+    keywords: (p.keywords ?? []).filter((k) => k !== MARKET_PREFIX),
   }))
   // 分类聚合（所有插件出现过的分类——去重——排序）
   const categories = Array.from(new Set(items.flatMap((i) => i.categories))).sort()

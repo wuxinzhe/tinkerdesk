@@ -74,6 +74,8 @@
             </div>
             <div class="plugin-card__meta">
               <span class="plugin-card__tag">{{ plugin.name }}</span>
+              <!-- keywords（npm 分类词——已过滤 tinkerdesk-plugin 生态标记） -->
+              <span v-for="kw in pluginKeywords(plugin)" :key="kw" class="plugin-card__tag">{{ kw }}</span>
             </div>
           </div>
         </div>
@@ -130,6 +132,11 @@ const categoryOptions = computed(() => {
 /** 显示名（去掉 tinkerdesk-plugin- 前缀——只留能力名） */
 function displayName(name: string): string {
   return name.replace(/^tinkerdesk-plugin-/, '')
+}
+
+/** keywords 展示（过滤生态标记 tinkerdesk-plugin 与包全名——只留分类词） */
+function pluginKeywords(plugin: MarketPluginItem): string[] {
+  return (plugin.keywords ?? []).filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-plugin'))
 }
 
 onMounted(loadMarket)

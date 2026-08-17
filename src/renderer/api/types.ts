@@ -282,6 +282,8 @@ export interface MarketPluginItem {
   installed: boolean
   /** 分类（keywords——能力分类词） */
   categories: string[]
+  /** 完整 keywords（npm 包声明——展示用） */
+  keywords: string[]
 }
 
 /** 市场查询结果（列表 + 可用分类） */
