@@ -815,17 +815,14 @@ onBeforeUnmount(() => {
 
 .settings-field__row {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
   padding: 12px 16px;
-  gap: 6px;
+  min-height: 40px;
+  gap: 12px;
 }
 
 .settings-field__row--checkbox {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   padding: 8px 16px;
 }
 
@@ -839,6 +836,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex: 1;
   min-width: 0;
   position: relative;
 }
@@ -848,10 +846,10 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-/* ── 文本输入（名称/描述/头像——统一表单风格） ── */
+/* ── 文本输入（名称/描述/头像——统一表单风格；横排右侧固定宽与 select 一致） ── */
 
 .settings-field__input {
-  width: 100%;
+  width: 320px;
   padding: 7px 10px;
   font-size: 13px;
   font-family: inherit;
