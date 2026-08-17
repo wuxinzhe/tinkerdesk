@@ -5,25 +5,15 @@
       class="workspace__mobile-bar"
       variant="mobile"
       :title="topbarTitle"
-      :show-menu="!inDetail"
       :show-back="inDetail"
       :tool-calls="mobileToolCalls"
       :is-processing="chatStore.isProcessingBySession[sessionStore.sessionId ?? ''] ?? false"
       @back="goBack"
-      @menu="drawerOpen = true"
     >
       <template #actions>
         <div id="mobile-toolbar-actions" />
       </template>
     </WorkspaceToolbar>
-
-    <!-- ── 抽屉（移动端 + 平板端 Lv1） ── -->
-    <MobileDrawer
-      :open="drawerOpen"
-      :active-tab="activeTab"
-      @close="drawerOpen = false"
-      @select="onNavSelect"
-    />
 
     <!-- ── 二级 + 三级 ── -->
     <div class="workspace__main">
@@ -38,11 +28,6 @@
         <div class="workspace__l2-inner">
           <!-- 平板端 Lv2 顶部工具栏 -->
           <div class="workspace__lv2-toolbar">
-            <button class="workspace__lv2-hamburger" @click="drawerOpen = true">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 5h14M3 10h14M3 15h14" />
-              </svg>
-            </button>
             <h1 class="workspace__lv2-title">
               {{ lv2Title }}
             </h1>
@@ -98,7 +83,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WorkspaceToolbar from '@/renderer/components/workspace/WorkspaceToolbar.vue'
-import MobileDrawer from '@/renderer/components/workspace/MobileDrawer.vue'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
 import { useAgentStore } from '@/renderer/stores/agent-store'
@@ -137,7 +121,6 @@ const hasLevel3 = computed(() => {
 })
 
 /* ── 状态 ── */
-const drawerOpen = ref(false)
 const sidebarCollapsed = ref(false)
 provide('sidebar-collapsed', sidebarCollapsed)
 
@@ -281,7 +264,6 @@ const drawerNavItems = [
 ]
 
 function onNavSelect(id: string) {
-  drawerOpen.value = false
   const pathMap: Record<string, string> = {
     'agent-chat': '/workspace/chat', agents: '/workspace/agents',
     settings: '/workspace/settings', workshop: '/workspace/workshop',
@@ -627,7 +609,12 @@ html[data-theme='dark'] .workspace {
   }
 
   .workspace__l2-col:not(.workspace__l2-col--full) {
-    display: none;
+    display: flex;
+    width: 100%;
+    flex: none;
+    max-height: 40%;
+    border-bottom: 1px solid var(--tk-border);
+    background: var(--tk-bg-primary);
   }
   .workspace__l2-col--full {
     display: flex;
@@ -635,10 +622,11 @@ html[data-theme='dark'] .workspace {
 
   .workspace__l3-col {
     display: flex;
+    flex: 1;
   }
 
   .workspace__lv2-toolbar {
-    display: none;
+    display: flex;
   }
 }
 
