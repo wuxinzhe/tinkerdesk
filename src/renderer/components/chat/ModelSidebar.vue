@@ -2,8 +2,9 @@
 /**
  * ModelSidebar.vue — 侧边栏模型列表（原模型设置页功能移植——与工作区解耦）
  *
- * Emil 设计哲学：克制列表——展开过渡 150ms ease-out——按钮按下反馈——
- * hover 触屏门控——破坏性操作渐进变色。
+ * Emil 设计哲学：不对称时序（enter 200ms / leave 120ms）——
+ * grid-template-rows 高度展开（空间真实生长）——
+ * prefers-reduced-motion 门控——hover 触屏门控——focus-visible 可达性。
  * 数据/操作走 modelsApi（listSceneModels/listCustomModels/bindSceneModel/unbindSceneModel）。
  */
 import { ref, reactive, computed, onMounted, watch } from 'vue'
@@ -149,43 +150,45 @@ onMounted(() => {
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
-        <!-- Emil：展开过渡（淡入 + 轻微位移——150ms ease-out） -->
+        <!-- 展开：grid-template-rows 高度动画（空间真实生长）——enter 200ms / leave 120ms -->
         <Transition name="ms-expand">
           <div v-if="expandedScenes.has(s.sceneId)" class="model-sidebar__body">
-            <div v-if="s.bindings.length > 0" class="model-sidebar__subs">
-              <div v-for="b in s.bindings" :key="b.modelId" class="model-sidebar__sub">
-                <span class="model-sidebar__tag" :class="b.isMain ? 'model-sidebar__tag--main' : 'model-sidebar__tag--alt'">
-                  {{ b.isMain ? '主' : '备' }}
-                </span>
-                <span class="model-sidebar__alias">{{ b.modelAlias }}</span>
-                <span class="model-sidebar__name">{{ b.modelName }}</span>
+            <div class="model-sidebar__body-inner">
+              <div v-if="s.bindings.length > 0" class="model-sidebar__subs">
+                <div v-for="b in s.bindings" :key="b.modelId" class="model-sidebar__sub">
+                  <span class="model-sidebar__tag" :class="b.isMain ? 'model-sidebar__tag--main' : 'model-sidebar__tag--alt'">
+                    {{ b.isMain ? '主' : '备' }}
+                  </span>
+                  <span class="model-sidebar__alias">{{ b.modelAlias }}</span>
+                  <span class="model-sidebar__name">{{ b.modelName }}</span>
+                  <button
+                    class="model-sidebar__del"
+                    title="移除"
+                    :disabled="removingBindings.has(`${s.sceneId}:${b.modelId}`)"
+                    @click="removeBinding(s.sceneId, b.modelId)"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div v-else class="model-sidebar__empty-inline">未配置模型</div>
+              <div class="model-sidebar__add">
+                <select v-model="addFallbackModel[s.sceneId]" class="model-sidebar__select">
+                  <option :value="null" disabled>添加备用模型…</option>
+                  <option v-for="m in availableModels(s)" :key="m.id" :value="m.id">
+                    {{ m.alias }}（{{ m.modelName }}）
+                  </option>
+                </select>
                 <button
-                  class="model-sidebar__del"
-                  title="移除"
-                  :disabled="removingBindings.has(`${s.sceneId}:${b.modelId}`)"
-                  @click="removeBinding(s.sceneId, b.modelId)"
+                  class="model-sidebar__add-btn"
+                  :disabled="!addFallbackModel[s.sceneId] || addingFallback.has(s.sceneId)"
+                  @click="addFallback(s.sceneId)"
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  {{ addingFallback.has(s.sceneId) ? '添加中…' : '添加' }}
                 </button>
               </div>
-            </div>
-            <div v-else class="model-sidebar__empty-inline">未配置模型</div>
-            <div class="model-sidebar__add">
-              <select v-model="addFallbackModel[s.sceneId]" class="model-sidebar__select">
-                <option :value="null" disabled>添加备用模型…</option>
-                <option v-for="m in availableModels(s)" :key="m.id" :value="m.id">
-                  {{ m.alias }}（{{ m.modelName }}）
-                </option>
-              </select>
-              <button
-                class="model-sidebar__add-btn"
-                :disabled="!addFallbackModel[s.sceneId] || addingFallback.has(s.sceneId)"
-                @click="addFallback(s.sceneId)"
-              >
-                {{ addingFallback.has(s.sceneId) ? '添加中…' : '添加' }}
-              </button>
             </div>
           </div>
         </Transition>
@@ -195,7 +198,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Emil：统一 easing 曲线（强 ease-out） */
+/* Emil：统一强 ease-out 曲线；transition 只列精确属性 */
 .model-sidebar {
   display: flex;
   flex-direction: column;
@@ -222,7 +225,7 @@ onMounted(() => {
   border-bottom: 1px solid var(--tk-border);
 }
 
-/* 场景头：整行可点——按下反馈（Emil） */
+/* 场景头：整行可点——按下反馈 */
 .model-sidebar__disc {
   display: flex;
   align-items: center;
@@ -236,11 +239,17 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   text-align: left;
-  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  border-radius: 6px;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .model-sidebar__disc:active {
   transform: scale(0.98);
+}
+
+.model-sidebar__disc:focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: -2px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -266,27 +275,43 @@ onMounted(() => {
 
 .model-sidebar__chev {
   color: var(--tk-text-tertiary);
-  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .model-sidebar__chev.open {
   transform: rotate(180deg);
 }
 
-/* 展开过渡（Emil：150ms ease-out——淡入 + 4px 位移） */
+/* 展开过渡：grid 行高动画（空间真实生长）——不对称时序（enter 200 / leave 120） */
 .ms-expand-enter-active,
 .ms-expand-leave-active {
-  transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1), transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: grid-template-rows 200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.ms-expand-leave-active {
+  transition-duration: 120ms;
 }
 
 .ms-expand-enter-from,
 .ms-expand-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
 }
 
+/* grid 展开容器：外网格 0fr→1fr——内层 overflow hidden 防文字溢出 */
 .model-sidebar__body {
-  padding: 4px 12px 10px;
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.ms-expand-enter-from .model-sidebar__body,
+.ms-expand-leave-to .model-sidebar__body {
+  grid-template-rows: 0fr;
+}
+
+.model-sidebar__body-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 12px 10px;
 }
 
 .model-sidebar__sub {
@@ -296,6 +321,7 @@ onMounted(() => {
   padding: 4px 0;
 }
 
+/* 主 = 实心（语义强）；备 = 边框式（低调区分） */
 .model-sidebar__tag {
   font-size: 10px;
   font-weight: 600;
@@ -311,7 +337,8 @@ onMounted(() => {
 
 .model-sidebar__tag--alt {
   color: var(--tk-text-secondary);
-  background: var(--tk-bg-secondary);
+  background: transparent;
+  border: 1px solid var(--tk-border);
 }
 
 .model-sidebar__alias {
@@ -330,7 +357,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-/* 删除：渐进变色（Emil——破坏性操作不闪变——先灰后红） */
+/* 删除：渐进变色（先灰后红——不闪变） */
 .model-sidebar__del {
   display: inline-flex;
   align-items: center;
@@ -347,6 +374,11 @@ onMounted(() => {
 
 .model-sidebar__del:active {
   transform: scale(0.94);
+}
+
+.model-sidebar__del:focus-visible {
+  outline: 2px solid var(--tk-danger, #ff3b30);
+  outline-offset: -2px;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -385,6 +417,12 @@ onMounted(() => {
   background: var(--tk-bg-secondary);
   border: 1px solid var(--tk-border);
   border-radius: 6px;
+  transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.model-sidebar__select:focus-visible {
+  outline: none;
+  border-color: var(--tk-accent);
 }
 
 .model-sidebar__add-btn {
@@ -403,6 +441,11 @@ onMounted(() => {
   transform: scale(0.97);
 }
 
+.model-sidebar__add-btn:focus-visible {
+  outline: 2px solid var(--tk-accent);
+  outline-offset: -2px;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .model-sidebar__add-btn:hover {
     background: rgba(0, 122, 255, 0.14);
@@ -413,5 +456,16 @@ onMounted(() => {
   opacity: 0.45;
   cursor: default;
   transform: none;
+}
+
+/* Emil：prefers-reduced-motion——去位移/高度动画——保留 opacity 渐变（辅助理解） */
+@media (prefers-reduced-motion: reduce) {
+  .model-sidebar__chev {
+    transition: none;
+  }
+  .ms-expand-enter-active,
+  .ms-expand-leave-active {
+    transition: opacity 120ms ease;
+  }
 }
 </style>
