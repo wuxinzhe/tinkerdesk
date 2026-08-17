@@ -113,13 +113,13 @@
         <button
           class="skill-install-group__arrow"
           title="本地安装"
-          @click="installMenuOpen = !installMenuOpen"
+          @click="toggleInstallMenu"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
-        <div v-if="installMenuOpen" class="skill-install-menu" @click.stop>
+        <div v-if="installMenuOpen" class="skill-install-menu" :style="installMenuStyle" @click.stop>
           <button class="skill-install-menu__item" @click="installSkillFromFile">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NSelect, NSwitch } from 'naive-ui'
 import type { SkillInfo, SkillCategory } from '@/renderer/api/types'
@@ -233,6 +233,29 @@ async function installSkillFromFile(): Promise<void> {
 
 /** 本地安装菜单开关 */
 const installMenuOpen = ref(false)
+const installMenuStyle = ref({ top: '0px', right: '0px' })
+
+/** 展开/收起本地安装菜单（fixed 定位——toolbar overflow hidden 会裁剪 absolute 菜单） */
+function toggleInstallMenu(): void {
+  installMenuOpen.value = !installMenuOpen.value
+  if (installMenuOpen.value) {
+    const el = document.querySelector('.skill-install-group__arrow')
+    if (el) {
+      const r = el.getBoundingClientRect()
+      installMenuStyle.value = {
+        top: `${r.bottom + 6}px`,
+        right: `${window.innerWidth - r.right}px`,
+      }
+    }
+  }
+}
+
+/** 外点关闭菜单 */
+function onGlobalClick(e: MouseEvent): void {
+  if (installMenuOpen.value && !(e.target as HTMLElement).closest?.('.skill-install-group')) {
+    installMenuOpen.value = false
+  }
+}
 
 /** 跳转技能市场（npm 在线） */
 function goMarket(): void {
@@ -257,6 +280,11 @@ onMounted(() => {
     skillCategories.value = res ?? []
   }).catch(() => { skillCategories.value = [] })
   loadSkills(0)
+  window.addEventListener('click', onGlobalClick)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('click', onGlobalClick)
 })
 </script>
 
@@ -610,9 +638,7 @@ onMounted(() => {
 }
 
 .skill-install-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
+  position: fixed;
   min-width: 150px;
   width: max-content;
   padding: 4px;
@@ -620,7 +646,7 @@ onMounted(() => {
   border: 1px solid var(--tk-border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 40;
+  z-index: 1000;
 }
 
 .skill-install-menu__item {
