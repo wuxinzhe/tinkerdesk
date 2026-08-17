@@ -1,5 +1,7 @@
 <template>
   <div class="chat-input-wrap">
+    <!-- 定位基准层：1200 居中——chat-input 与 drawer 共用此 relative 锚点（一致定位） -->
+    <div class="chat-input-inner">
     <div class="chat-input" :class="{ 'chat-input--disabled': disabled }">
       <!-- 文件待发区（选文件不自动发送——回车时随文字一起发送——emil 设计） -->
       <div v-if="pendingFiles.length" class="chat-input__pending">
@@ -258,10 +260,11 @@
       </Transition>
     </div>
 
-    <!-- 设置抽屉（与 chat-input 同级——wrap 内；bottom: calc(100% + 6px) 锚定
-         wrap 顶部 = 输入行顶部——panel 撑高的是 wrap 底部，锚定不变） -->
+    <!-- 设置抽屉（与 chat-input 同级——inner 内；bottom: calc(100% + 6px) 锚定
+         inner 顶部 = 输入行顶部——panel 撑高的是 inner 底部，锚定不变） -->
     <ChatSettingsDrawer :session-id="sessionId" :profile="profile" :yolo="yolo"
       @update:yolo="$emit('update:yolo', $event)" />
+    </div>
   </div>
 </template>
 
@@ -1232,14 +1235,22 @@ defineExpose({ focus })
 <style scoped>
 /* ── 容器 ── */
 
-/* chat-input-wrap：包裹输入框 + 设置抽屉（drawer absolute 定位基准） */
+/* chat-input-wrap：全宽容器（包裹输入框 + 设置抽屉） */
 .chat-input-wrap {
   position: relative;
   flex-shrink: 0;
   margin-bottom: 32px;
   margin-top: 8px;
   padding: 0 16px;
-  /* 全宽容器——卡片本身限宽居中 */
+  /* 全宽容器——inner 限宽居中 */
+}
+
+/* 定位基准层：1200 居中——chat-input 与抽屉共用 relative 锚点（一致水平定位） */
+.chat-input-inner {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* ── 输入框主体（贴边结构——顶部描边 + 向上投射阴影） ── */
@@ -1255,9 +1266,7 @@ defineExpose({ focus })
   /* emil：浮起于消息列表之上——向上投射阴影（hairline 分隔 + 极淡大阴影） */
   box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02), 0 -6px 24px rgba(0, 0, 0, 0.06);
   border-radius: 16px;
-  /* 宽度自适应——最宽 1200 居中 */
-  max-width: 1200px;
-  margin: 0 auto;
+  /* 宽度自适应——由 chat-input-inner（1200 居中）约束 */
 }
 
 .chat-input--disabled {
