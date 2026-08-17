@@ -63,7 +63,7 @@ const router = createRouter({
           components: {
             default: () => import('@/renderer/views/chat/ChatListView.vue'),
             sidebar: () => import('@/renderer/views/chat/ChatListView.vue'),
-            workspace: () => import('@/renderer/components/workspace/ListPlaceholderView.vue'),
+            workspace: () => import('@/renderer/views/chat/ChatWelcomeView.vue'),
           },
           meta: { workspacePlaceholder: true },
         },
