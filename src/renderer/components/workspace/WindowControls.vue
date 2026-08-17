@@ -132,6 +132,12 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 10px 12px 4px;
   flex-shrink: 0;
+  /* 窗口拖拽区（按住拖动——按钮 no-drag） */
+  -webkit-app-region: drag;
+}
+
+.window-controls button {
+  -webkit-app-region: no-drag;
 }
 
 .window-controls__lights {

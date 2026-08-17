@@ -307,6 +307,14 @@ watch(() => props.isProcessing, (processing) => {
   position: relative;
   z-index: 10;
   box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.06);
+  /* 窗口拖拽区（按住拖动——内部按钮 no-drag） */
+  -webkit-app-region: drag;
+}
+
+/* l3 顶栏内所有可点元素不参与拖拽 */
+.workspace-toolbar--l3 button,
+.workspace-toolbar--l3 :deep(.workspace-toolbar__actions) {
+  -webkit-app-region: no-drag;
 }
 
 :root[data-theme="dark"] .workspace-toolbar--l3,
