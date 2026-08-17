@@ -4,7 +4,8 @@
  * 左 = macOS 风格窗口交通灯（关闭/最小化/最大化）
  * 右 = 专注模式 + 锁屏（靠右对齐）
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, inject, onMounted, onUnmounted } from 'vue'
+import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/renderer/stores/session-store'
 
@@ -12,6 +13,18 @@ const api = window.api
 const maximized = ref(false)
 const sessionStore = useSessionStore()
 const router = useRouter()
+
+/** 侧边栏折叠状态（WorkspaceView provide） */
+const sidebarCollapsed = inject<Ref<boolean>>('sidebar-collapsed', ref(false))
+
+const emit = defineEmits<{
+  'toggle-sidebar': []
+}>()
+
+/** 收起/展开侧边栏 */
+function toggleSidebar() {
+  emit('toggle-sidebar')
+}
 
 /** 锁屏（原 TitleBar 逻辑） */
 function handleLock() {
@@ -80,7 +93,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <!-- 专注 + 锁屏（靠右对齐） -->
+    <!-- 专注 + 锁屏 + 收起侧边栏（靠右对齐） -->
     <div class="window-controls__utils">
       <button class="wc-util" title="专注模式" @click="togglePhoneMode">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -93,6 +106,19 @@ onUnmounted(() => {
           <rect x="4" y="11" width="16" height="9" rx="2" />
           <path d="M8 11V7a4 4 0 0 1 8 0v4" />
           <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      </button>
+      <!-- 收起/展开侧边栏（最右） -->
+      <button class="wc-util" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'" @click="toggleSidebar">
+        <svg v-if="!sidebarCollapsed" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M14 4v16" />
+          <polyline points="9 9 6 12 9 15" />
+        </svg>
+        <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M10 4v16" />
+          <polyline points="15 9 18 12 15 15" />
         </svg>
       </button>
     </div>

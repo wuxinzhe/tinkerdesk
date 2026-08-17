@@ -17,8 +17,8 @@
       }">
         <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
         <div class="workspace__sidebar-inner">
-                  <!-- 窗口控制（关闭/最小化/最大化——替代 TitleBar 三灯） -->
-                  <WindowControls />
+                  <!-- 窗口控制（关闭/最小化/最大化 + 专注/锁屏/收起侧边栏——替代 TitleBar） -->
+                            <WindowControls @toggle-sidebar="onToggleSidebar" />
                   <!-- 平板端 Lv2 顶部工具栏 -->
                   <div class="workspace__lv2-toolbar">
             <h1 class="workspace__lv2-title">
