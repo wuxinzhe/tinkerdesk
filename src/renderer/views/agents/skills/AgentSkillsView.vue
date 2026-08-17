@@ -100,7 +100,7 @@
     <ToolbarActions>
       <div class="skill-install-group">
         <button
-          class="toolbar-btn skill-install-group__main"
+          class="skill-install-group__main"
           title="技能市场"
           @click="goMarket"
         >
@@ -111,7 +111,7 @@
           技能市场
         </button>
         <button
-          class="toolbar-btn skill-install-group__arrow"
+          class="skill-install-group__arrow"
           title="本地安装"
           @click="installMenuOpen = !installMenuOpen"
         >
