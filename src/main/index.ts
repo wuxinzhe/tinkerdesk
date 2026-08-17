@@ -6,6 +6,11 @@ import { resolveResource } from './utils/resources-path'
 import { initDatabase, closeDatabase } from './repository/database'
 import { bootstrap } from './bootstrap'
 import { AgentController } from './controller/agent-controller'
+
+// 允许外部 CDP 客户端（python/node/浏览器自动化）连接 Remote Debugging —— 本地开发调试用
+if (process.env.NODE_ENV !== 'production') {
+  app.commandLine.appendSwitch('remote-allow-origins', '*')
+}
 import { AgentModeController } from './controller/agent-mode-controller'
 import { SessionController } from './controller/session-controller'
 import { MediaController } from './controller/media-controller'
@@ -40,6 +45,22 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
+
+// ── 单实例锁：同时只允许一个应用实例（防止开发残留/多开互踩 DB 与调试端口） ──
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+  main()
+}
+
+function main(): void {
 
 // ── 全局异常兜底（不静默：日志 + 推送前端 global-tip 中文提示）──
 // 覆盖漏网的 uncaughtException / unhandledRejection——保证任何异常都有记录 + 用户可见
@@ -151,94 +172,95 @@ function createWindow() {
   })
 }
 
-app.whenReady().then(() => {
-  // app-media:// 协议（聊天媒体附件渲染——只读 media 目录）
-  registerMediaProtocol()
+  app.whenReady().then(() => {
+    // app-media:// 协议（聊天媒体附件渲染——只读 media 目录）
+    registerMediaProtocol()
 
-  // 日志文件系统最先初始化（后续所有 console 输出落盘）
-  initLogger()
-  // 初始化本地数据库（SQLite，custom_models 等表）
-  initDatabase()
+    // 日志文件系统最先初始化（后续所有 console 输出落盘）
+    initLogger()
+    // 初始化本地数据库（SQLite，custom_models 等表）
+    initDatabase()
 
-  // ── Agent 会话（本地 TinkerAgent）：组装依赖 + 注册 IPC ──
-  const desk = bootstrap([], [])
-  // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
-  usageRecorder.init()
-  new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
-  new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService, desk.compactionService).register()
-  new MessageController(desk.messageService).register()
-  new MediaController().register()
-  new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
-  new AgentConfigController(desk.agentConfigService).register()
-  new ToolController(desk.toolManager).register()
-  new WebProviderController(desk.webProviderService).register()
-  new AudioToolProviderController(desk.audioToolProvider).register()
-  new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
-  new PromptModuleController(desk.promptService, desk.promptModuleBuilder).register()
-  new SandboxController(desk.sandboxWhitelistService).register()
+    // ── Agent 会话（本地 TinkerAgent）：组装依赖 + 注册 IPC ──
+    const desk = bootstrap([], [])
+    // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
+    usageRecorder.init()
+    new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
+    new SessionController(desk.sessionService, desk.memoryStore, desk.agentConfigService, desk.modelConfigService, desk.compactionService).register()
+    new MessageController(desk.messageService).register()
+    new MediaController().register()
+    new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
+    new AgentConfigController(desk.agentConfigService).register()
+    new ToolController(desk.toolManager).register()
+    new WebProviderController(desk.webProviderService).register()
+    new AudioToolProviderController(desk.audioToolProvider).register()
+    new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
+    new PromptModuleController(desk.promptService, desk.promptModuleBuilder).register()
+    new SandboxController(desk.sandboxWhitelistService).register()
 
-  // 注册 IPC handlers
-  new McpController(desk.mcpToolCenter).register()
-  new ModelController(desk.customModelService, desk.sceneModelService, desk.systemProviderService).register()
-  new AgentModeController(desk.agentModeService).register()
-  new AccountController(desk.accountService).register()
-  new MemoryController(desk.memoryStore).register()
+    // 注册 IPC handlers
+    new McpController(desk.mcpToolCenter).register()
+    new ModelController(desk.customModelService, desk.sceneModelService, desk.systemProviderService).register()
+    new AgentModeController(desk.agentModeService).register()
+    new AccountController(desk.accountService).register()
+    new MemoryController(desk.memoryStore).register()
 
-  // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
-  desk.pluginManager.loadAll()
-  new PluginController(desk.pluginManager, desk.pluginManager.getInstaller(), () => mainWindow).register()
+    // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
+    desk.pluginManager.loadAll()
+    new PluginController(desk.pluginManager, desk.pluginManager.getInstaller(), () => mainWindow).register()
 
-  // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
-  const voiceService = new VoiceProviderService(desk.pluginManager)
-  new VoiceController(voiceService).register()
+    // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
+    const voiceService = new VoiceProviderService(desk.pluginManager)
+    new VoiceController(voiceService).register()
 
-  // ── 通用设置（快捷键等全局键值配置） ──
-  new GeneralSettingsController().register()
+    // ── 通用设置（快捷键等全局键值配置） ──
+    new GeneralSettingsController().register()
 
-  // ── 窗口控制 IPC ──
-  handleTrusted('window:minimize', () => { mainWindow?.minimize() })
-  handleTrusted('window:maximize', () => {
-    if (mainWindow?.isMaximized()) { mainWindow.unmaximize() } else { mainWindow?.maximize() }
+    // ── 窗口控制 IPC ──
+    handleTrusted('window:minimize', () => { mainWindow?.minimize() })
+    handleTrusted('window:maximize', () => {
+      if (mainWindow?.isMaximized()) { mainWindow.unmaximize() } else { mainWindow?.maximize() }
+    })
+    handleTrusted('window:close', () => { mainWindow?.close() })
+    handleTrusted('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
+
+    // ── 专注模式（TitleBar 切换——临时突破 minWidth 768） ──
+    // 点击进入：最小宽 375 + 窗口 375×812（窄窗聚焦）；再点恢复：minWidth 768 + 1200×800
+    let phoneModeActive = false
+    handleTrusted('window:phoneMode', () => {
+      phoneModeActive = !phoneModeActive
+      if (phoneModeActive) {
+        mainWindow?.setMinimumSize(375, 600)
+        mainWindow?.setSize(375, 812)
+      } else {
+        mainWindow?.setMinimumSize(768, 720)
+        mainWindow?.setSize(1200, 800)
+      }
+      return phoneModeActive
+    })
+
+    // 自动更新初始化
+    initUpdater()
+    registerUpdaterHandlers()
+
+    createWindow()
+    // 插件事件转发目标（窗口就绪后注入）
+    desk.pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
+    checkForUpdatesOnStartup()
   })
-  handleTrusted('window:close', () => { mainWindow?.close() })
-  handleTrusted('window:isMaximized', () => mainWindow?.isMaximized() ?? false)
 
-  // ── 专注模式（TitleBar 切换——临时突破 minWidth 768） ──
-  // 点击进入：最小宽 375 + 窗口 375×812（窄窗聚焦）；再点恢复：minWidth 768 + 1200×800
-  let phoneModeActive = false
-  handleTrusted('window:phoneMode', () => {
-    phoneModeActive = !phoneModeActive
-    if (phoneModeActive) {
-      mainWindow?.setMinimumSize(375, 600)
-      mainWindow?.setSize(375, 812)
-    } else {
-      mainWindow?.setMinimumSize(768, 720)
-      mainWindow?.setSize(1200, 800)
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      // 事件埋点：正常退出前同步落库剩余队列（不丢——dispose drain）
+      try {
+        eventRecorder.flushSync()
+      } catch {
+        // 落库失败不阻塞退出
+      }
+      // usage 统计先清空（需要 DB）——再关库
+      usageRecorder.shutdown()
+      closeDatabase()
+      app.quit()
     }
-    return phoneModeActive
   })
-
-  // 自动更新初始化
-  initUpdater()
-  registerUpdaterHandlers()
-
-  createWindow()
-  // 插件事件转发目标（窗口就绪后注入）
-  desk.pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
-  checkForUpdatesOnStartup()
-})
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    // 事件埋点：正常退出前同步落库剩余队列（不丢——dispose drain）
-    try {
-      eventRecorder.flushSync()
-    } catch {
-      // 落库失败不阻塞退出
-    }
-    // usage 统计先清空（需要 DB）——再关库
-    usageRecorder.shutdown()
-    closeDatabase()
-    app.quit()
   }
-})
