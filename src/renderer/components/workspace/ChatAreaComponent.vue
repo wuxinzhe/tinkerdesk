@@ -59,7 +59,6 @@ function onSend(content: string) {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  max-width: 1200px;
-  margin: auto;
+  /* 页面全宽——内部 message-list / chat-input 各自限宽居中 */
 }
 </style>

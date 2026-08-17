@@ -285,6 +285,13 @@ defineExpose({
   scroll-margin-top: 16px;
 }
 
+/* 消息行内容限宽 1200 居中（列表容器全宽） */
+.message-row {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 /* ── 切换 session 加载覆盖层 ── */
 .message-list__loading {
   position: absolute;
