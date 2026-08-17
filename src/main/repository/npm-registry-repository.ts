@@ -57,11 +57,12 @@ const REGISTRY_SEARCH = `${REGISTRY_BASE}/-/v1/search`
 function httpsGetJson(url: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     get(url, (res) => {
-      let body = ''
-      res.on('data', (c) => (body += c))
+      // Buffer 拼接后整体 utf-8 decode——避免逐 chunk 解码把跨边界的多字节字符截断成 U+FFFD（乱码）
+      const chunks: Buffer[] = []
+      res.on('data', (c) => chunks.push(c))
       res.on('end', () => {
         try {
-          resolve(JSON.parse(body))
+          resolve(JSON.parse(Buffer.concat(chunks).toString('utf-8')))
         } catch (e) {
           reject(new Error(`npm registry 响应解析失败: ${(e as Error).message}`))
         }
@@ -96,11 +97,12 @@ export function searchNpm(params: NpmSearchParams): Promise<NpmSearchResponse> {
   return new Promise((resolve, reject) => {
     const url = `${REGISTRY_SEARCH}?text=${encodeURIComponent(text)}&size=${size}`
     get(url, (res) => {
-      let body = ''
-      res.on('data', (c) => (body += c))
+      // Buffer 拼接后整体 utf-8 decode（同 httpsGetJson——避免跨 chunk 多字节字符截断乱码）
+      const chunks: Buffer[] = []
+      res.on('data', (c) => chunks.push(c))
       res.on('end', () => {
         try {
-          resolve(JSON.parse(body) as NpmSearchResponse)
+          resolve(JSON.parse(Buffer.concat(chunks).toString('utf-8')) as NpmSearchResponse)
         } catch (e) {
           reject(new Error(`npm search 响应解析失败: ${(e as Error).message}`))
         }
