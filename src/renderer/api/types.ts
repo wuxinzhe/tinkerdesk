@@ -771,6 +771,8 @@ export interface ToolCenterState {
 export interface PluginManifest {
   id: string
   name: string
+  /** npm 分类词（package.json keywords——已过滤生态标记/包全名） */
+  keywords?: string[]
   version: string
   apiVersion: number
   entry: string
