@@ -15,12 +15,27 @@
         'workspace__sidebar-col--full': !hasLevel3,
         'workspace__sidebar-col--collapsed': sidebarCollapsed
       }">
+        <!-- 窗口控制（col 顶部常显——折叠时三灯保留） -->
+        <WindowControls @toggle-sidebar="onToggleSidebar" />
+
+        <!-- 折叠态窄条：Agent 头像（hover 变展开图标——点击还原）+ 新建会话 -->
+        <div v-if="sidebarCollapsed" class="sidebar-collapsed-bar">
+          <button class="scb-avatar" title="展开侧边栏" @click="onToggleSidebar">
+            <img v-if="agent?.avatar" :src="agent.avatar" alt="" class="scb-avatar__img" />
+            <img v-else src="/default_avatar.png" alt="" class="scb-avatar__img" />
+          </button>
+          <button class="scb-new" title="新建对话" @click="onSidebarNewSession">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+
         <!-- 内容层：独立 overflow:hidden 裁剪（折叠时内容裁掉） -->
         <div class="workspace__sidebar-inner">
-                  <!-- 窗口控制（关闭/最小化/最大化 + 专注/锁屏/收起侧边栏——替代 TitleBar） -->
-                            <WindowControls @toggle-sidebar="onToggleSidebar" />
-                  <!-- 平板端 Lv2 顶部工具栏 -->
-                  <div class="workspace__lv2-toolbar">
+          <!-- 平板端 Lv2 顶部工具栏 -->
+          <div class="workspace__lv2-toolbar">
             <h1 class="workspace__lv2-title">
               {{ lv2Title }}
             </h1>
@@ -444,7 +459,8 @@ onUnmounted(() => {
 }
 
 .workspace--col-collapsed {
-  --sidebar-w: 0px;
+  /* 收起后侧边栏 = 窄条（三灯宽 76px——不是完全消失） */
+  --sidebar-w: 76px;
 }
 
 /* 无工作区内容（hasLevel3=false）：侧边栏独占整行 */
@@ -555,6 +571,83 @@ html[data-theme='dark'] .workspace {
 
 .workspace__sidebar-col--collapsed .workspace__sidebar-settings {
   display: none;
+}
+
+/* ── 折叠态窄条（三灯下——Agent 头像 hover 变展开图标 + 新建会话） ── */
+
+.sidebar-collapsed-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.scb-avatar {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.scb-avatar:active {
+  transform: scale(0.94);
+}
+
+.scb-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+/* hover：头像 → 展开侧边栏图标（淡入切换） */
+.scb-avatar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--tk-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2'/%3E%3Cpath d='M10 4v16'/%3E%3Cpolyline points='15 9 18 12 15 15'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  opacity: 0;
+  transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scb-avatar:hover::after {
+    opacity: 1;
+  }
+}
+
+.scb-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: var(--tk-accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.scb-new:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scb-new:hover {
+    background: rgba(0, 122, 255, 0.85);
+  }
 }
 
 /* ── 系统设置手风琴（向上展开——非浮层——面板在按钮上方撑开） ── */

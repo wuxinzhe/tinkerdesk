@@ -93,8 +93,8 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <!-- 专注 + 锁屏 + 收起侧边栏（靠右对齐） -->
-    <div class="window-controls__utils">
+    <!-- 专注 + 锁屏 + 收起侧边栏（靠右对齐——折叠态隐藏，窄条只留三灯） -->
+    <div v-if="!sidebarCollapsed" class="window-controls__utils">
       <button class="wc-util" title="专注模式" @click="togglePhoneMode">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="16" rx="2" />
