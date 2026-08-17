@@ -53,7 +53,6 @@
         v-for="plugin in plugins"
         :key="plugin.name"
         class="plugin-card"
-        @click="viewDetail(plugin)"
       >
         <div class="plugin-card__body">
           <div class="plugin-card__icon">
@@ -256,13 +255,14 @@ function viewDetail(plugin: MarketPluginItem) {
   border: 1px solid var(--tk-border);
   background: var(--tk-bg-primary);
   overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
-.plugin-card:hover {
-  border-color: var(--tk-accent);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+/* Emil：hover 只在支持 hover 的设备生效（触屏不误触发） */
+@media (hover: hover) and (pointer: fine) {
+  .plugin-card:hover {
+    border-color: var(--tk-text-tertiary);
+  }
 }
 
 .plugin-card__body {
@@ -346,7 +346,7 @@ function viewDetail(plugin: MarketPluginItem) {
   border-top: 1px solid var(--tk-border);
 }
 
-/* 组合按钮：左=详情 + 右=安装 */
+/* 组合按钮：左=详情 + 右=安装（Emil——按下反馈/精确 transition/hover 门控） */
 .plugin-card__btn-group {
   display: inline-flex;
   align-items: stretch;
@@ -367,11 +367,18 @@ function viewDetail(plugin: MarketPluginItem) {
   color: var(--tk-accent);
   border: none;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background 160ms ease;
 }
 
-.plugin-card__btn:hover {
-  background: rgba(0, 122, 255, 0.14);
+/* Emil：按下反馈（按钮必须对按压有响应） */
+.plugin-card__btn:active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .plugin-card__btn:hover {
+    background: rgba(0, 122, 255, 0.14);
+  }
 }
 
 .plugin-card__btn--install {
@@ -380,13 +387,16 @@ function viewDetail(plugin: MarketPluginItem) {
   border-left: 1px solid var(--tk-accent);
 }
 
-.plugin-card__btn--install:hover {
-  background: rgba(0, 122, 255, 0.85);
+@media (hover: hover) and (pointer: fine) {
+  .plugin-card__btn--install:hover {
+    background: rgba(0, 122, 255, 0.85);
+  }
 }
 
 .plugin-card__btn--install:disabled {
   opacity: 0.55;
   cursor: default;
+  transform: none;
 }
 
 /* ── 骨架屏 ── */
