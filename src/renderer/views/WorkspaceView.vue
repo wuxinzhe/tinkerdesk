@@ -664,6 +664,7 @@ html[data-theme='dark'] .workspace {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  margin-top:8px;
 }
 
 .workspace__sidebar-settings-chev {
@@ -682,8 +683,7 @@ html[data-theme='dark'] .workspace {
   margin: 0 8px;
   background: var(--tk-bg-primary);
   border: 1px solid var(--tk-border);
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: 8px;
   overflow: hidden;
 }
 

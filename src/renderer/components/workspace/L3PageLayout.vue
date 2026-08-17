@@ -1,8 +1,8 @@
 <template>
   <div class="l3-page-layout" :data-mounted="mounted">
-    <!-- 内容包装：宽度统一由布局组件管理（680 靠左）——
-         滚动容器（l3-page-layout）全宽——滚动条在窗口最右 -->
-    <div class="l3-page-layout__body">
+    <!-- 内容包装：宽度统一由布局组件管理——默认窄列 680 靠左（非全宽）；
+         wide 模式撑满工作区全宽（适合聊天/数据面板等宽内容页面） -->
+    <div class="l3-page-layout__body" :class="{ 'l3-page-layout__body--wide': wide }">
       <slot />
     </div>
   </div>
@@ -10,6 +10,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+
+/** 宽模式：true = 内容撑满工作区全宽；false（默认）= 窄列 680 靠左 */
+withDefaults(defineProps<{ wide?: boolean }>(), { wide: false })
 
 /** 进入动画标记（挂载后下一帧置 true——触发淡入；emil：设置页低频访问可有一点动画） */
 const mounted = ref(false)
@@ -36,10 +39,15 @@ onMounted(() => {
     transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* 内容窄列（680 靠左）——滚动条跟随全宽滚动容器（窗口最右） */
+/* 内容窄列（680 靠左——默认非全宽）——滚动条跟随全宽滚动容器（窗口最右） */
 .l3-page-layout__body {
   max-width: 680px;
   width: 100%;
+}
+
+/* 宽模式：内容撑满工作区全宽（适合宽内容页面——聊天/数据面板等） */
+.l3-page-layout__body--wide {
+  max-width: none;
 }
 
 .l3-page-layout[data-mounted='true'] {
