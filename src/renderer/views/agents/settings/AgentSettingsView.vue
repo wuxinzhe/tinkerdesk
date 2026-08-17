@@ -106,6 +106,30 @@
         </div>
       </div>
 
+      <!-- ── 记忆（per-agent——该 Agent 的 memory 记忆上限；user 上限在通用设置全局） ── -->
+      <div class="settings-group">
+        <h3 class="settings-group__title">
+          记忆
+        </h3>
+        <div class="settings-group__card">
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>记忆上限（字符）</label>
+                <span class="settings-tip" @click.stop="toggleTip('memoryMaxChars')" @mouseenter="hoverTip('memoryMaxChars')" @mouseleave="deferHideTip">?</span>
+                <div v-if="tipField === 'memoryMaxChars'" class="settings-tip__bubble" @click.stop="tipField = null" @mouseenter="cancelHideTip" @mouseleave="deferHideTip">
+                  <p>该 Agent 的记忆（memory）最大字符数——跨会话保留。</p>
+                  <p class="settings-tip__rec">默认 2200 · 超出后新记忆条目被拒绝</p>
+                </div>
+              </div>
+              <div class="settings-field__input-wrap">
+                <input v-model.number="config.memoryMaxChars" type="number" min="100" max="10000" class="settings-field__input" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 上下文阈值 ── -->
       <div class="settings-group">
         <h3 class="settings-group__title">
