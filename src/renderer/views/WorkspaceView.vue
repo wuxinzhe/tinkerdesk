@@ -58,6 +58,13 @@
           </div>
           <router-view name="level2" class="workspace__l2-router" />
         </div>
+        <!-- 全局设置栏位（L2 底部——任何模块都显示） -->
+        <button class="workspace__l2-settings" @click="goSettings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+          系统设置
+        </button>
       </div>
 
       <!-- ── 三级操作区 ── -->
@@ -301,6 +308,11 @@ function goBack() {
 
 /* ── Lifecycle ── */
 /** 顶部 TitleBar 折叠按钮 → 切换 lv2 列（原 sidebar-toggle 控制移到这里） */
+/** 跳转系统设置（L2 底部全局设置栏） */
+function goSettings(): void {
+  router.push('/workspace/settings')
+}
+
 function onToggleSidebar(): void {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
@@ -399,6 +411,34 @@ html[data-theme='dark'] .workspace {
   position: relative;
   /* 折叠动画统一在外层容器实现（子组件不再自实现） */
   transition: width 0.2s ease;
+}
+
+/* 全局设置栏位（L2 底部——任何模块都显示——折叠时隐藏） */
+.workspace__l2-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--tk-text-secondary);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--tk-border);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.workspace__l2-settings:hover {
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
+}
+
+.workspace__l2-col--collapsed .workspace__l2-settings {
+  display: none;
 }
 
 /* ── Lv2 工具栏（仅平板端可见） ── */
