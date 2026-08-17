@@ -45,25 +45,6 @@ defineEmits<{
 
 const navItems = [
   {
-    id: 'agent-chat',
-    label: '对话',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-    </svg>`
-  },
-  {
-    id: 'agents',
-    label: 'Agents',
-    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="4" y="8" width="16" height="12" rx="3"/>
-      <circle cx="9" cy="14" r="1.2"/>
-      <circle cx="15" cy="14" r="1.2"/>
-      <path d="M9 17.5h6"/>
-      <path d="M12 8V4"/>
-      <circle cx="12" cy="3" r="1.2"/>
-    </svg>`
-  },
-  {
     id: 'workshop',
     label: '工坊',
     icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
