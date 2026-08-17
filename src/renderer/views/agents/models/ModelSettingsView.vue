@@ -28,8 +28,9 @@
             </svg>
           </button>
 
-          <!-- Expanded body -->
-          <div v-if="expandedScenes.has(s.sceneId)" class="ms-disc-body">
+          <!-- Expanded body（fade 过渡——不突兀） -->
+                    <Transition name="ms-expand">
+                      <div v-if="expandedScenes.has(s.sceneId)" class="ms-disc-body">
             <div v-if="s.bindings.length > 0" class="ms-subs">
               <div
                 v-for="(b, bi) in s.bindings"
@@ -70,16 +71,17 @@
                 </select>
               </div>
               <SaActionBtn
-                variant="primary"
-                text="添加"
-                :loading="!!addingFallback[s.sceneId]"
-                loading-text="添加中…"
-                :disabled="!addFallbackModel[s.sceneId]"
-                @click="addFallback(s.sceneId)"
-              />
-            </div>
-          </div>
-        </template>
+                              variant="primary"
+                              text="添加"
+                              :loading="!!addingFallback[s.sceneId]"
+                              loading-text="添加中…"
+                              :disabled="!addFallbackModel[s.sceneId]"
+                              @click="addFallback(s.sceneId)"
+                            />
+                          </div>
+                        </div>
+                        </Transition>
+                      </template>
       </template>
     </SaSection>
   </L3PageLayout>
@@ -207,7 +209,7 @@ watch(profile, async () => {
   -webkit-appearance: none;
 }
 .ms-disc:active {
-  transform: scale(0.99);
+  /* 行头不做缩放——避免展开/收缩时 hover 背景视觉收缩 */
 }
 @media (hover: hover) and (pointer: fine) {
   .ms-disc:hover {
@@ -216,7 +218,7 @@ watch(profile, async () => {
 }
 
 .ms-disc--exp {
-  border-bottom: none;
+  /* 展开时保持底边——hover 背景底部边界稳定不收缩 */
 }
 
 .ms-disc--last {
@@ -250,8 +252,17 @@ watch(profile, async () => {
 
 /* ── Expanded body ── */
 
+.ms-expand-enter-active,
+.ms-expand-leave-active {
+  transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.ms-expand-enter-from,
+.ms-expand-leave-to {
+  opacity: 0;
+}
+
 .ms-disc-body {
-  border-top: 1px solid var(--tk-border-light);
+  /* 顶边由 disc 底边提供——避免双线 */
   border-bottom: 1px solid var(--tk-border-light);
 }
 
