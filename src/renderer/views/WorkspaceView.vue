@@ -25,15 +25,6 @@
       @select="onNavSelect"
     />
 
-    <!-- ── 一级：功能导航栏（桌面端 ≥1024px） ── -->
-    <div class="workspace__sidebar">
-      <NavSidebarComponent
-        v-model:collapsed="navCollapsed"
-        :active="activeTab"
-        @select="onNavSelect"
-      />
-    </div>
-
     <!-- ── 二级 + 三级 ── -->
     <div class="workspace__main">
       <div
@@ -107,7 +98,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WorkspaceToolbar from '@/renderer/components/workspace/WorkspaceToolbar.vue'
-import NavSidebarComponent from '@/renderer/components/workspace/NavSidebarComponent.vue'
 import MobileDrawer from '@/renderer/components/workspace/MobileDrawer.vue'
 import { useSessionStore } from '@/renderer/stores/session-store'
 import { useChatStore } from '@/renderer/stores/chat-store'
@@ -147,7 +137,6 @@ const hasLevel3 = computed(() => {
 })
 
 /* ── 状态 ── */
-const navCollapsed = ref(true)
 const drawerOpen = ref(false)
 const sidebarCollapsed = ref(false)
 provide('sidebar-collapsed', sidebarCollapsed)
