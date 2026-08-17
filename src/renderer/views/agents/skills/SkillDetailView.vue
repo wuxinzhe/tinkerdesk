@@ -23,57 +23,55 @@
       </button>
     </ToolbarActions>
     <div v-if="skill" class="skill-detail__body">
-      <!-- 头部 -->
+      <!-- 头部信息卡（参考插件详情 pd-hero 风格） -->
       <div class="skill-detail__header">
         <div class="skill-detail__icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="12 2 2 7 12 12 22 7 12 2" />
             <polyline points="2 17 12 22 22 17" />
             <polyline points="2 12 12 17 22 12" />
           </svg>
         </div>
         <div class="skill-detail__heading">
-          <h3>{{ skill.displayName || skill.name }}</h3>
-          <div class="skill-detail__badges">
-            <span class="badge">id: {{ skill.id }}</span>
-            <span v-if="skill.author" class="badge">作者: {{ skill.author }}</span>
-            <span v-if="skill.category" class="badge">{{ skill.category }}</span>
-            <span v-if="skill.version" class="badge">v{{ skill.version }}</span>
-            <span v-if="skill.license" class="badge">{{ skill.license }}</span>
+          <div class="skill-detail__name-row">
+            <h3>{{ skill.displayName || skill.name }}</h3>
+            <span v-if="skill.category" class="skill-detail__cat">{{ skill.category }}</span>
+            <span v-if="skill.version" class="skill-detail__version">v{{ skill.version }}</span>
           </div>
+          <div v-if="skill.description" class="skill-detail__desc">{{ skill.description }}</div>
+        </div>
+      </div>
+
+      <!-- 元信息行（参考插件详情 pd-meta） -->
+      <div class="skill-detail__meta">
+        <div class="skill-detail__meta-item">
+          <span class="skill-detail__meta-label">ID</span>
+          <span class="skill-detail__meta-value">{{ skill.id }}</span>
+        </div>
+        <div v-if="skill.author" class="skill-detail__meta-item">
+          <span class="skill-detail__meta-label">作者</span>
+          <span class="skill-detail__meta-value">{{ skill.author }}</span>
+        </div>
+        <div v-if="skill.license" class="skill-detail__meta-item">
+          <span class="skill-detail__meta-label">许可</span>
+          <span class="skill-detail__meta-value">{{ skill.license }}</span>
+        </div>
+        <div v-if="skill.platforms?.length" class="skill-detail__meta-item">
+          <span class="skill-detail__meta-label">平台</span>
+          <span class="skill-detail__meta-value">{{ skill.platforms.join(', ') }}</span>
         </div>
       </div>
 
       <!-- 编辑模式：公共技能表单面板（基本信息 + 高级折叠 + 正文） -->
       <SkillFormPanel v-if="editing" v-model:model="drafts" :categories="categories" style="margin-bottom: 16px" />
 
-      <!-- 描述（编辑时隐藏——面板已含） -->
-      <div v-if="!editing" class="detail-section">
+      <!-- Tags（编辑时隐藏——面板已含） -->
+      <div v-if="!editing && skill.tags?.length" class="detail-section">
         <div class="detail-section__label">
-          描述
+          标签
         </div>
-        <div class="detail-section__value">
-          {{ skill.description || '-' }}
-        </div>
-      </div>
-
-      <!-- Tags + 平台（编辑时隐藏——面板已含） -->
-      <div v-if="!editing && (skill.tags?.length || skill.platforms?.length)" class="detail-section">
-        <div v-if="skill.tags?.length" class="detail-section">
-          <div class="detail-section__label">
-            标签
-          </div>
-          <div class="detail-section__tags">
-            <span v-for="tag in skill.tags" :key="tag" class="tag">{{ tag }}</span>
-          </div>
-        </div>
-        <div v-if="skill.platforms?.length" class="detail-section">
-          <div class="detail-section__label">
-            支持平台
-          </div>
-          <div class="detail-section__tags">
-            <span v-for="p in skill.platforms" :key="p" class="tag">{{ p }}</span>
-          </div>
+        <div class="detail-section__tags">
+          <span v-for="tag in skill.tags" :key="tag" class="tag">{{ tag }}</span>
         </div>
       </div>
 
@@ -473,15 +471,16 @@ async function handleDelete() {
 
 .skill-detail__header {
   display: flex;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 0;
 }
 
 .skill-detail__icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   background: var(--tk-accent-light);
   color: var(--tk-accent);
   display: flex;
@@ -494,11 +493,69 @@ async function handleDelete() {
   min-width: 0;
 }
 
-.skill-detail__heading h3 {
+.skill-detail__name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.skill-detail__name-row h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--tk-text-primary);
+}
+
+.skill-detail__cat {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tk-accent-light);
+  color: var(--tk-accent);
+}
+
+.skill-detail__version {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tk-text-tertiary);
+}
+
+.skill-detail__desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--tk-text-secondary);
+}
+
+/* 元信息行（参考插件详情 pd-meta） */
+.skill-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 12px 0;
+  margin: 12px 0 4px;
+  border-top: 1px solid var(--tk-border);
+  border-bottom: 1px solid var(--tk-border);
+}
+
+.skill-detail__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.skill-detail__meta-label {
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+}
+
+.skill-detail__meta-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tk-text-primary);
+  word-break: break-all;
 }
 
 .skill-detail__badges {
