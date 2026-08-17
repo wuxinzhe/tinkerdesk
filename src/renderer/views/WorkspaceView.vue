@@ -38,9 +38,19 @@
             :agent="agent"
             :thinking-active="globalThinking"
             @switch-agent="goAgentList"
+            @go-sidebar="switchSidebar"
             class="workspace__sidebar-agent"
           />
-          <router-view name="sidebar" class="workspace__sidebar-router" />
+          <router-view name="sidebar" class="workspace__sidebar-router" v-if="false" />
+          <!-- 侧边栏（功能驱动动态组件——与工作区解耦：切换功能只换侧边栏列表） -->
+          <component
+            :is="sidebarComponent"
+            class="workspace__sidebar-router"
+            :active-session-id="sessionStore.sessionId"
+            :profile="sessionStore.profile"
+            @select="onSidebarSessionSelect"
+            @new-session="onSidebarNewSession"
+          />
           <!-- 底部渐变遮罩（DSH 同款——列表滚到设置栏上方时淡出——视觉衔接） -->
           <div class="workspace__sidebar-fade" />
         </div>
@@ -88,6 +98,8 @@ import { useChatStore } from '@/renderer/stores/chat-store'
 import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
+import SessionList from '@/renderer/components/chat/SessionList.vue'
+import ModelSidebar from '@/renderer/components/chat/ModelSidebar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -292,6 +304,31 @@ function goBack() {
 
 /* ── Lifecycle ── */
 /** 顶部 TitleBar 折叠按钮 → 切换 lv2 列（原 sidebar-toggle 控制移到这里） */
+/** 侧边栏功能注册表（功能 → 列表组件——与工作区解耦） */
+const sidebarRegistry = {
+  session: SessionList,
+  model: ModelSidebar,
+}
+/** 当前侧边栏功能（默认对话——session list） */
+const currentSidebar = ref<keyof typeof sidebarRegistry>('session')
+const sidebarComponent = computed(() => sidebarRegistry[currentSidebar.value])
+
+/** 切换侧边栏功能（AgentCard 按钮——只换侧边栏列表——工作区不变） */
+function switchSidebar(feature: keyof typeof sidebarRegistry): void {
+  currentSidebar.value = feature
+}
+
+/** 侧边栏会话选择：点具体 session → 工作区切 chat 页面 */
+function onSidebarSessionSelect(sessionId: string): void {
+  router.push(`/workspace/chat/${sessionId}`)
+}
+
+/** 侧边栏新建会话 */
+async function onSidebarNewSession(): Promise<void> {
+  const s = await sessionStore.create({ profile: sessionStore.profile })
+  if (s) router.push(`/workspace/chat/${s.id}`)
+}
+
 /** 跳转系统设置（L2 底部全局设置栏） */
 function goSettings(): void {
   router.push('/workspace/settings')

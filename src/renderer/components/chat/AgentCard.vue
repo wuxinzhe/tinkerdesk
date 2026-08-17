@@ -177,8 +177,10 @@ const props = defineProps<{
   thinkingActive: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'switch-agent': []
+  /** 切换侧边栏功能（'session'=会话列表 / 'model'=模型列表——工作区不变） */
+  'go-sidebar': [feature: 'session' | 'model']
 }>()
 
 /* ── 思考动画状态机 ── */
@@ -192,14 +194,15 @@ const thoughtBodyRef = ref<HTMLElement | null>(null)
 
 // ── 记忆芯片折叠（默认收起——记忆按钮展开/收起） ──
 const memoryOpen = ref(false)
+
+/** 模型（切换侧边栏为模型列表——工作区不变） */
 function goModels(): void {
-  if (!props.agent) return
-  router.push(`/workspace/agents/${props.agent.profile}/models`)
+  emit('go-sidebar', 'model')
 }
 
-/** 对话（聊天页面——对话列表） */
+/** 对话（切换侧边栏为 session list——工作区不变） */
 function goChat(): void {
-  router.push('/workspace/chat')
+  emit('go-sidebar', 'session')
 }
 
 function toggleMemory(): void {
