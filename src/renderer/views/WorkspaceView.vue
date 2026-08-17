@@ -99,7 +99,6 @@ import { useAgentStore } from '@/renderer/stores/agent-store'
 import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-agent-thinking'
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import SessionList from '@/renderer/components/chat/SessionList.vue'
-import ModelSidebar from '@/renderer/components/chat/ModelSidebar.vue'
 import AgentListView from '@/renderer/views/agents/AgentListView.vue'
 
 const route = useRoute()
@@ -308,7 +307,6 @@ function goBack() {
 /** 侧边栏功能注册表（功能 → 列表组件——与工作区解耦） */
 const sidebarRegistry = {
   session: SessionList,
-  model: ModelSidebar,
   agent: AgentListView,
 }
 /** 当前侧边栏功能（默认对话——session list） */

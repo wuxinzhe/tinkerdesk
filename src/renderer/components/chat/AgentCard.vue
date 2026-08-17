@@ -195,9 +195,10 @@ const thoughtBodyRef = ref<HTMLElement | null>(null)
 // ── 记忆芯片折叠（默认收起——记忆按钮展开/收起） ──
 const memoryOpen = ref(false)
 
-/** 模型（切换侧边栏为模型列表——工作区不变） */
+/** 模型（跳转模型设置页——工作区） */
 function goModels(): void {
-  emit('go-sidebar', 'model')
+  if (!props.agent) return
+  router.push(`/workspace/agents/${props.agent.profile}/models`)
 }
 
 /** 对话（切换侧边栏为 session list——工作区不变） */
