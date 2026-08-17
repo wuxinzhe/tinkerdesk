@@ -186,6 +186,7 @@
       <textarea :value="model.body" class="sfp__body" rows="14" spellcheck="false" placeholder="技能正文（Markdown）" @input="set('body', ($event.target as HTMLTextAreaElement).value)"></textarea>
     </div>
   </div>
+</div>
 </template>
 
 <script setup lang="ts">
