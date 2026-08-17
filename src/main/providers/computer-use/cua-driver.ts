@@ -16,7 +16,7 @@ import { resolveCuaDriverCmd } from '../../tools/computer-use/cua-driver-client'
 /** 内置插件 manifest（id 以 builtin- 前缀标识——前端显示「内置」标记、不可卸载） */
 export const CUA_DRIVER_MANIFEST = {
   id: 'builtin-cua-driver',
-  name: 'CUA Driver（内置）',
+  name: 'CUA Driver',
   version: '1.0.0',
   apiVersion: 1,
   entry: '',

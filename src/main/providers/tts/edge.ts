@@ -51,7 +51,7 @@ export async function edgeTtsSpeak(
 /** 内置插件 manifest（id 以 builtin- 前缀标识——前端显示「内置」标记、不可卸载） */
 export const EDGE_TTS_MANIFEST = {
   id: 'builtin-edge-tts',
-  name: 'Edge 在线语音（内置）',
+  name: 'Edge 在线语音',
   version: '1.0.0',
   apiVersion: 1,
   entry: '',
