@@ -179,8 +179,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'switch-agent': []
-  /** 切换侧边栏功能（'session'=会话列表 / 'model'=模型列表——工作区不变） */
-  'go-sidebar': [feature: 'session' | 'model']
+  /** 切换侧边栏功能（'session'=会话列表——工作区不变） */
+  'go-sidebar': [feature: 'session']
 }>()
 
 /* ── 思考动画状态机 ── */
