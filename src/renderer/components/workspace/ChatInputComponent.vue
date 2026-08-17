@@ -1336,6 +1336,7 @@ defineExpose({ focus })
 .chat-input-wrap {
   position: relative;
   flex-shrink: 0;
+  margin-bottom: 32px;
 }
 
 /* ── 输入框主体（贴边结构——顶部描边 + 向上投射阴影） ── */
@@ -1347,6 +1348,7 @@ defineExpose({ focus })
   background: var(--tk-bg-primary);
   /* emil：浮起于消息列表之上——向上投射阴影（hairline 分隔 + 极淡大阴影） */
   box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02), 0 -6px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
 }
 
 .chat-input--disabled {

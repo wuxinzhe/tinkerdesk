@@ -438,10 +438,10 @@ onUnmounted(() => {
 
 .skill-manage__grid {
   display: grid;
-  /* 自适应排列：卡片最小 200px——一行最多 5 个（max-width 限制） */
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  /* 自适应排列：卡片最小 300px（原 200 的 1.5 倍）——一行最多 5 个（max-width 限制） */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 10px;
-  max-width: 1100px;
+  max-width: 1540px;
 }
 
 @media (max-width: 900px) {
