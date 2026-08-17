@@ -93,10 +93,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 与 GeneralSettingsView 其他设置组（快捷键/用户记忆）统一：
+   padding 行 + border-top 分隔 + label 主色 */
 .voice-panel__rows {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .voice-panel__row {
@@ -104,17 +105,21 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--tk-border);
 }
 
 .voice-panel__label {
   font-size: 13px;
-  color: var(--tk-text-secondary);
+  color: var(--tk-text-primary);
   flex-shrink: 0;
 }
 
 .voice-panel__hint {
   font-size: 11px;
   color: var(--tk-text-tertiary);
+  padding: 10px 16px;
+  border-top: 1px solid var(--tk-border);
 }
 
 .voice-panel__empty {
