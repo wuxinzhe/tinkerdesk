@@ -23,13 +23,71 @@
     </div>
 
     <form v-else class="agent-settings__form" @submit.prevent>
+      <!-- ── 基本信息 + 配置（原编辑页迁移——agentsApi 字段级自动保存） ── -->
+      <div class="settings-group settings-group--stack">
+        <h3 class="settings-group__title">
+          基本信息与配置
+        </h3>
+        <div class="settings-group__card">
+          <div class="settings-field">
+            <div class="settings-field__label">
+              <label>名称</label>
+            </div>
+            <input v-model="agentForm.displayName" class="settings-field__input" placeholder="Agent 名称" />
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__label">
+              <label>描述</label>
+            </div>
+            <input v-model="agentForm.description" class="settings-field__input" placeholder="Agent 描述" />
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__label">
+              <label>头像</label>
+            </div>
+            <input v-model="agentForm.avatar" class="settings-field__input" placeholder="头像 URL 或本地路径" />
+          </div>
+          <div class="settings-field__pair">
+            <div class="settings-field">
+              <div class="settings-field__label">
+                <label>模式</label>
+              </div>
+              <div class="settings-field__select-wrap">
+                <select v-model="agentForm.agentModeId" class="settings-field__select">
+                  <option value="" disabled>选择模式</option>
+                  <option v-for="m in modeOptions" :key="m.id" :value="m.id">{{ m.id }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-field">
+              <div class="settings-field__label">
+                <label>版本</label>
+              </div>
+              <div class="settings-field__select-wrap">
+                <select v-model="agentForm.agentModeVersion" class="settings-field__select">
+                  <option v-for="v in currentModeVersions" :key="v" :value="v">{{ v }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 灵魂提示词 ── -->
-      <div class="settings-group">
+      <div class="settings-group settings-group--stack">
         <h3 class="settings-group__title">
           灵魂提示词
         </h3>
         <div class="settings-group__card">
-          
+          <div class="settings-field">
+            <textarea v-model="config.agentSoulPrompt" class="settings-field__textarea" rows="7"
+              placeholder="定义 Agent 的个性、行为准则、擅长领域与上下文…" spellcheck="false"></textarea>
+            <div class="settings-field__save-row">
+              <button type="button" class="settings-save-btn" :disabled="savingPrompt" @click="savePrompt">
+                {{ savingPrompt ? '保存中…' : '保存提示词' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -751,6 +809,34 @@ onBeforeUnmount(() => {
 }
 .settings-field__textarea:focus {
   border-color: var(--tk-accent);
+}
+
+/* 提示词保存按钮行 */
+.settings-field__save-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.settings-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--tk-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.settings-save-btn:active { transform: scale(0.97); }
+.settings-save-btn:disabled { opacity: 0.6; cursor: default; }
+@media (hover: hover) and (pointer: fine) {
+  .settings-save-btn:hover { background: rgba(0, 122, 255, 0.88); }
 }
 
 /* 模式/版本 select（基本信息与配置组——与 input 同风格） */
