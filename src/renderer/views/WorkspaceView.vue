@@ -100,6 +100,7 @@ import { useSetupThinking, useThinkingState } from '@/renderer/composables/use-a
 import AgentCard from '@/renderer/components/chat/AgentCard.vue'
 import SessionList from '@/renderer/components/chat/SessionList.vue'
 import ModelSidebar from '@/renderer/components/chat/ModelSidebar.vue'
+import AgentListView from '@/renderer/views/agents/AgentListView.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -308,6 +309,7 @@ function goBack() {
 const sidebarRegistry = {
   session: SessionList,
   model: ModelSidebar,
+  agent: AgentListView,
 }
 /** 当前侧边栏功能（默认对话——session list） */
 const currentSidebar = ref<keyof typeof sidebarRegistry>('session')
@@ -334,9 +336,9 @@ function goSettings(): void {
   router.push('/workspace/settings')
 }
 
-/** 切换 Agent（AgentCard → Agent 列表） */
+/** 切换 Agent（切侧边栏为 Agent 列表——工作区不变） */
 function goAgentList(): void {
-  router.push('/workspace/agents')
+  switchSidebar('agent')
 }
 
 /** 全局 AgentCard（当前 agent——agentStore） */
