@@ -62,9 +62,17 @@ async function load(): Promise<void> {
     detail.value = await skillsApi.getMarketDetail(skillName.value)
   } catch {
     detail.value = null
-  } finally {
-    loading.value = false
   }
+  // 判断是否已安装：已装技能 name = 包短名（strip tinkerdesk-skill- 前缀比对）
+  installed.value = false
+  try {
+    const short = skillName.value.replace(/^tinkerdesk-skill-/, '')
+    const res = await skillsApi.installed({ profile: profile.value, limit: 500 })
+    installed.value = res.items.some((s) => s.name === short)
+  } catch {
+    /* 忽略——保持未安装态 */
+  }
+  loading.value = false
 }
 
 async function install(): Promise<void> {

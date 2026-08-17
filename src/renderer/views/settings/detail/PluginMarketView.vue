@@ -53,6 +53,7 @@
         v-for="plugin in plugins"
         :key="plugin.name"
         class="plugin-card"
+        @click="viewDetail(plugin)"
       >
         <div class="plugin-card__body">
           <div class="plugin-card__icon">
@@ -79,25 +80,13 @@
           </div>
         </div>
         <div class="plugin-card__actions">
-          <!-- 组合按钮：左=详情 + 右=安装（参照插件设置页组合按钮） -->
-          <div class="plugin-card__btn-group">
-            <button class="plugin-card__btn plugin-card__btn--detail" title="查看详情" @click.stop="viewDetail(plugin)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              详情
-            </button>
-            <button
-              class="plugin-card__btn plugin-card__btn--install"
-              :disabled="plugin.installed"
-              @click.stop="installPlugin(plugin)"
-            >
-              <svg v-if="plugin.installed" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-              <svg v-else width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-              {{ plugin.installed ? '已装' : '安装' }}
-            </button>
-          </div>
+          <!-- 独立安装按钮（对齐技能市场卡片）——详情由点击卡片进入 -->
+          <SaActionBtn
+            :text="'安装'"
+            :done="plugin.installed"
+            :done-text="'已安装'"
+            @click.stop="installPlugin(plugin)"
+          />
         </div>
       </div>
     </div>
@@ -261,13 +250,16 @@ function viewDetail(plugin: MarketPluginItem) {
   border: 1px solid var(--tk-border);
   background: var(--tk-bg-primary);
   overflow: hidden;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  /* 整卡可点击进详情（对齐技能市场卡片） */
+  cursor: pointer;
 }
 
 /* Emil：hover 只在支持 hover 的设备生效（触屏不误触发） */
 @media (hover: hover) and (pointer: fine) {
   .plugin-card:hover {
-    border-color: var(--tk-text-tertiary);
+    border-color: var(--tk-accent);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   }
 }
 
