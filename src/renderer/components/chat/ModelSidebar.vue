@@ -206,7 +206,9 @@ onMounted(() => {
 }
 
 .model-sidebar__header {
-  padding: 10px 12px 6px;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px 8px;
 }
 
 .model-sidebar__title {
@@ -230,8 +232,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  padding: 8px 12px;
+  width: calc(100% - 16px);
+  margin: 2px 8px;
+  padding: 10px 12px;
   font-size: 12px;
   font-family: inherit;
   color: var(--tk-text-primary);
@@ -239,7 +242,7 @@ onMounted(() => {
   border: none;
   cursor: pointer;
   text-align: left;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -311,7 +314,7 @@ onMounted(() => {
 .model-sidebar__body-inner {
   min-height: 0;
   overflow: hidden;
-  padding: 0 12px 10px;
+  padding: 2px 12px 10px;
 }
 
 .model-sidebar__sub {
@@ -362,10 +365,10 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: var(--tk-text-tertiary);
   cursor: pointer;
@@ -410,11 +413,12 @@ onMounted(() => {
 .model-sidebar__select {
   flex: 1;
   min-width: 0;
-  padding: 5px 6px;
+  padding: 5px 22px 5px 8px;
   font-size: 11px;
   font-family: inherit;
   color: var(--tk-text-primary);
-  background: var(--tk-bg-secondary);
+  background: var(--tk-bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 8px center;
+  appearance: none;
   border: 1px solid var(--tk-border);
   border-radius: 6px;
   transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -426,12 +430,12 @@ onMounted(() => {
 }
 
 .model-sidebar__add-btn {
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 11px;
   font-family: inherit;
   color: var(--tk-accent);
-  background: rgba(0, 122, 255, 0.08);
-  border: 1px solid var(--tk-accent);
+  background: transparent;
+  border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
@@ -448,7 +452,7 @@ onMounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .model-sidebar__add-btn:hover {
-    background: rgba(0, 122, 255, 0.14);
+    background: rgba(0, 122, 255, 0.1);
   }
 }
 

@@ -298,10 +298,10 @@ onUnmounted(() => {
   height: 22px;
   border: none;
   border-radius: 6px;
-  background: var(--tk-bg-secondary);
-  color: var(--tk-text-secondary);
+  background: transparent;
+  color: var(--tk-text-tertiary);
   cursor: pointer;
-  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: background 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .agent-card__corner-switch:active {
@@ -310,8 +310,8 @@ onUnmounted(() => {
 
 @media (hover: hover) and (pointer: fine) {
   .agent-card__corner-switch:hover {
-    background: var(--tk-accent);
-    color: #fff;
+    background: var(--tk-bg-secondary);
+    color: var(--tk-text-primary);
   }
 }
 
