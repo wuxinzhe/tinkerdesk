@@ -43,7 +43,13 @@
         <div class="agent-card__footer-top">
           <span v-if="agent.mainModelName" class="agent-card__model-name">{{ agent.mainModelName }}</span>
           <div class="agent-card__actions">
-            <!-- 常显（主操作）：切换 Agent + 记忆 -->
+            <!-- 常显（主操作）：模型 + 切换 Agent + 记忆 -->
+            <button class="agent-card__btn" title="模型" @click="goModels">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" />
+                <rect x="8" y="8" width="8" height="8" rx="1" />
+              </svg>
+            </button>
             <button class="agent-card__btn" title="切换 Agent" @click="$emit('switch-agent')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 1l4 4-4 4" />
@@ -181,7 +187,12 @@ const thoughtBodyRef = ref<HTMLElement | null>(null)
 
 // ── 记忆芯片折叠（默认收起——记忆按钮展开/收起） ──
 const memoryOpen = ref(false)
-function toggleMemory() {
+function goModels(): void {
+  if (!props.agent) return
+  router.push(`/workspace/agents/${props.agent.profile}/models`)
+}
+
+function toggleMemory(): void {
   memoryOpen.value = !memoryOpen.value
 }
 
