@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onActivated, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
 import { L3PageLayout, SaPageHero } from '@/renderer/components'
 import { skillsApi } from '@/renderer/api/skills-api'
@@ -37,7 +37,6 @@ import type { SkillMarketDetailItem } from '@/renderer/api/types'
 import { showErrorToast, showInfoToast } from '@/renderer/utils/notification-utils'
 
 const route = useRoute()
-const router = useRouter()
 
 const skillName = computed(() => route.params.skillName as string)
 const profile = computed(() => (route.params.profile as string) || 'default')
@@ -46,10 +45,6 @@ const detail = ref<SkillMarketDetailItem | null>(null)
 const loading = ref(true)
 const installing = ref(false)
 const installed = ref(false)
-
-function goBack(): void {
-  router.push({ path: `/workspace/agents/${profile.value}/market` })
-}
 
 async function load(): Promise<void> {
   loading.value = true
