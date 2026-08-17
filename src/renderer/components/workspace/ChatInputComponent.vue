@@ -5,36 +5,23 @@
       <div v-if="pendingFiles.length" class="chat-input__pending">
         <div class="chat-input__pending-inner">
           <TransitionGroup name="pending-file" tag="div" class="chat-input__pending-list">
-            <div
-              v-for="(f, i) in pendingFiles"
-              :key="f.relPath"
-              class="pending-file"
-              :title="f.name"
-              :style="{ transitionDelay: `${i * 30}ms` }"
-            >
+            <div v-for="(f, i) in pendingFiles" :key="f.relPath" class="pending-file" :title="f.name"
+              :style="{ transitionDelay: `${i * 30}ms` }">
               <!-- 图片：缩略图（thumb 优先——onerror 回退原图） -->
-              <img
-                v-if="f.kind === 'image'"
-                class="pending-file__img"
-                :src="pendingThumbUrl(f.relPath)"
-                :data-original="pendingMediaUrl(f.relPath)"
-                alt=""
-                @error="onPendingImgError"
-              />
+              <img v-if="f.kind === 'image'" class="pending-file__img" :src="pendingThumbUrl(f.relPath)"
+                :data-original="pendingMediaUrl(f.relPath)" alt="" @error="onPendingImgError" />
               <!-- 音频：音符图标 + 悬浮播放按钮 -->
               <div v-else-if="f.kind === 'audio'" class="pending-file__icon pending-file__icon--audio">
-                <svg class="pending-file__note" :class="{ playing: playingAudio === f.relPath }" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="pending-file__note" :class="{ playing: playingAudio === f.relPath }" width="26" height="26"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                  stroke-linejoin="round">
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
                   <circle cx="18" cy="16" r="3" />
                 </svg>
                 <!-- 悬浮播放/暂停按钮（点击直接播放） -->
-                <button
-                  class="pending-file__play"
-                  :class="{ playing: playingAudio === f.relPath }"
-                  :title="playingAudio === f.relPath ? '暂停' : '播放'"
-                  @click.stop="togglePendingAudio(f.relPath)"
-                >
+                <button class="pending-file__play" :class="{ playing: playingAudio === f.relPath }"
+                  :title="playingAudio === f.relPath ? '暂停' : '播放'" @click.stop="togglePendingAudio(f.relPath)">
                   <svg v-if="playingAudio !== f.relPath" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <polygon points="7,4 20,12 7,20" />
                   </svg>
@@ -49,12 +36,9 @@
                 <span class="pending-file__ext">{{ (f.ext || '?').replace('.', '').toUpperCase().slice(0, 5) }}</span>
               </div>
               <!-- 删除（悬浮显示——右上角） -->
-              <button
-                class="pending-file__remove"
-                title="移除"
-                @click.stop="removePendingFile(f.relPath)"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <button class="pending-file__remove" title="移除" @click.stop="removePendingFile(f.relPath)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                  stroke-linecap="round">
                   <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -65,28 +49,25 @@
       <div class="chat-input__row">
         <!-- 输入方式选择（点击展开抽屉：按住说话 / VAD 监听 / 文字输入——选中排最左——选中即应用并关闭） -->
         <div class="chat-input__mode-picker">
-          <button
-            v-if="sttAvailable"
-            class="chat-input__voice"
-            :class="{
-              'chat-input__voice--armed': voiceMode && !recording,
-              'chat-input__voice--recording': recording,
-              'chat-input__voice--countdown': countdown > 0
-            }"
-            :title="'输入方式：' + inputModeLabel"
-            @click="toggleDrawer"
-          >
-            <svg v-if="inputMode === 'vad' && !recording" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <button v-if="sttAvailable" class="chat-input__voice" :class="{
+            'chat-input__voice--armed': voiceMode && !recording,
+            'chat-input__voice--recording': recording,
+            'chat-input__voice--countdown': countdown > 0
+          }" :title="'输入方式：' + inputModeLabel" @click="toggleDrawer">
+            <svg v-if="inputMode === 'vad' && !recording" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <!-- 耳朵（VAD 监听） -->
               <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
               <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
             </svg>
-            <svg v-else-if="inputMode === 'text' && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-else-if="inputMode === 'text' && countdown === 0" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <!-- 键盘（文字输入） -->
               <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
               <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h12" />
             </svg>
-            <svg v-else-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg v-else-if="!recording && countdown === 0" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <!-- 麦克风（按住说话） -->
               <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
               <path d="M19 10v2a7 7 0 01-14 0v-2" />
@@ -100,24 +81,22 @@
           <!-- 抽屉（3 选 1——选中的排最左——选中即应用并关闭） -->
           <Transition name="mode-drawer">
             <div v-if="drawerOpen" class="chat-input__mode-drawer">
-              <button
-                v-for="m in modeButtons"
-                :key="m.id"
-                class="chat-input__mode-item"
-                :class="{ 'chat-input__mode-item--active': m.id === inputMode }"
-                @click="switchMode(m.id)"
-              >
-                <svg v-if="m.id === 'pushToTalk'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <button v-for="m in modeButtons" :key="m.id" class="chat-input__mode-item"
+                :class="{ 'chat-input__mode-item--active': m.id === inputMode }" @click="switchMode(m.id)">
+                <svg v-if="m.id === 'pushToTalk'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
                   <path d="M19 10v2a7 7 0 01-14 0v-2" />
                   <line x1="12" y1="19" x2="12" y2="23" />
                   <line x1="8" y1="23" x2="16" y2="23" />
                 </svg>
-                <svg v-else-if="m.id === 'vad'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else-if="m.id === 'vad'" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0" />
                   <path d="M15 8.5a3 3 0 1 0-6 0" opacity="0.6" />
                 </svg>
-                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
                   <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M18 12h.01M6 16h12" />
                 </svg>
@@ -129,18 +108,10 @@
 
         <!-- 音波框（武装/录音中替换输入框：均线时间轴 + 秒刻度 + 实时波形；按住开始/继续录音——VAD 模式常驻监听） -->
         <Transition name="input-swap" mode="out-in">
-          <div
-            v-if="voiceMode || vadActive"
-            key="wavebox"
-            class="chat-input__wavebox"
-            :class="{
-              'chat-input__wavebox--recording': recording,
-              'chat-input__wavebox--vad': vadActive
-            }"
-            @pointerdown="onWaveboxDown"
-            @pointerup="onWaveboxUp"
-            @pointerleave="onWaveboxLeave"
-          >
+          <div v-if="voiceMode || vadActive" key="wavebox" class="chat-input__wavebox" :class="{
+            'chat-input__wavebox--recording': recording,
+            'chat-input__wavebox--vad': vadActive
+          }" @pointerdown="onWaveboxDown" @pointerup="onWaveboxUp" @pointerleave="onWaveboxLeave">
             <canvas ref="waveCanvasRef" class="chat-input__wave-canvas" />
             <div v-if="!recording" class="chat-input__wave-hint">
               <template v-if="vadActive">
@@ -152,35 +123,15 @@
             </div>
           </div>
 
-          <textarea
-            v-else
-            key="textarea"
-            ref="textareaRef"
-            class="chat-input__textarea"
-            :placeholder="'Enter 发送，Ctrl+Enter 换行'"
-            :disabled="disabled"
-            :value="modelValue"
-            rows="1"
-            enterkeyhint="send"
-            @input="onInput"
-            @keydown="onKeydown"
-          />
+          <textarea v-else key="textarea" ref="textareaRef" class="chat-input__textarea"
+            :placeholder="'Enter 发送，Ctrl+Enter 换行'" :disabled="disabled" :value="modelValue" rows="1"
+            enterkeyhint="send" @input="onInput" @keydown="onKeydown" />
         </Transition>
         <div class="chat-input__btn-group">
-          <button
-            class="chat-input__function"
-            :class="{ 'chat-input__function--open': panelOpen }"
-            @click="togglePanel"
-          >
-            <svg
-              class="chat-input__function-icon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-            >
+          <button class="chat-input__function" :class="{ 'chat-input__function--open': panelOpen }"
+            @click="togglePanel">
+            <svg class="chat-input__function-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.2">
               <line x1="5" y1="12" x2="19" y2="12" />
               <line x1="12" y1="5" x2="12" y2="19" />
             </svg>
@@ -189,24 +140,14 @@
       </div>
 
       <!-- 功能面板（手风琴高度动画——同配置展开方案） -->
-      <Transition
-        name="accordion"
-        @before-enter="accordionBeforeEnter"
-        @enter="accordionEnter"
-        @after-enter="accordionAfterEnter"
-        @before-leave="accordionBeforeLeave"
-        @leave="accordionLeave"
-        @after-leave="accordionAfterLeave"
-      >
+      <Transition name="accordion" @before-enter="accordionBeforeEnter" @enter="accordionEnter"
+        @after-enter="accordionAfterEnter" @before-leave="accordionBeforeLeave" @leave="accordionLeave"
+        @after-leave="accordionAfterLeave">
         <div v-if="panelOpen" class="chat-input__panel">
           <div class="chat-input__panel-inner">
             <div class="chat-input__panel-icons">
               <!-- 图片附件：多选（最多 5 张）→ 加入待发区（回车随消息发送） -->
-              <button
-                class="chat-input__panel-icon"
-                :title="'添加图片（最多 5 张）'"
-                @click="pickAndQueueImages"
-              >
+              <button class="chat-input__panel-icon" :title="'添加图片（最多 5 张）'" @click="pickAndQueueImages">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <circle cx="8.5" cy="8.5" r="1.5" />
@@ -215,11 +156,7 @@
                 <span>图片</span>
               </button>
               <!-- 音频附件：选择 → 加入待发区 -->
-              <button
-                class="chat-input__panel-icon"
-                :title="'添加音频'"
-                @click="pickAndQueueAudio"
-              >
+              <button class="chat-input__panel-icon" :title="'添加音频'" @click="pickAndQueueAudio">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M9 18V5l12-2v13" />
                   <circle cx="6" cy="18" r="3" />
@@ -228,11 +165,7 @@
                 <span>音频</span>
               </button>
               <!-- 视频附件：视频类型选择 → 加入待发区（显示归 other——后缀） -->
-              <button
-                class="chat-input__panel-icon"
-                :title="'添加视频'"
-                @click="pickAndQueueVideo"
-              >
+              <button class="chat-input__panel-icon" :title="'添加视频'" @click="pickAndQueueVideo">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="5" width="13" height="14" rx="2" />
                   <polygon points="16,10 21,7 21,17 16,14" />
@@ -240,12 +173,9 @@
                 <span>视频</span>
               </button>
               <!-- 文件附件：通用选择（文档/压缩包等——归 other——后缀显示） -->
-              <button
-                class="chat-input__panel-icon"
-                :title="'添加文件'"
-                @click="pickAndQueueFile"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <button class="chat-input__panel-icon" :title="'添加文件'" @click="pickAndQueueFile">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
                   <path d="M14 2v6h6" />
                   <path d="M8 13h8M8 17h5" />
@@ -253,11 +183,7 @@
                 <span>文件</span>
               </button>
               <!-- 历史预览：入栈独立路由页（/workspace/chat/:sessionId/history） -->
-              <button
-                class="chat-input__panel-icon"
-                :title="'历史预览'"
-                @click="$emit('history-preview')"
-              >
+              <button class="chat-input__panel-icon" :title="'历史预览'" @click="$emit('history-preview')">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                   <rect x="3" y="3" width="7" height="9" rx="1.5" />
                   <rect x="14" y="3" width="7" height="5" rx="1.5" />
@@ -267,13 +193,8 @@
                 <span>历史预览</span>
               </button>
               <!-- 回复提醒：点击展开下方配置（Switch——per-session）——互斥展开（单一 activePanelKey） -->
-              <ChatInputPanelFeature
-                id="notify"
-                label="回复提醒"
-                title="回复提醒"
-                :active="activePanelKey === 'notify'"
-                @toggle="togglePanelFeature"
-              >
+              <ChatInputPanelFeature id="notify" label="回复提醒" title="回复提醒" :active="activePanelKey === 'notify'"
+                @toggle="togglePanelFeature">
                 <template #icon>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
                     <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -282,16 +203,12 @@
                 </template>
               </ChatInputPanelFeature>
               <!-- 上下文压缩：点击展开容量显示 + 手动压缩——互斥展开（单一 activePanelKey） -->
-              <ChatInputPanelFeature
-                id="compact"
-                label="压缩"
-                title="上下文压缩"
-                :active="activePanelKey === 'compact'"
-                @toggle="togglePanelFeature"
-              >
+              <ChatInputPanelFeature id="compact" label="压缩" title="上下文压缩" :active="activePanelKey === 'compact'"
+                @toggle="togglePanelFeature">
                 <template #icon>
                   <!-- 档案柜（三抽屉）——压缩=内容归档——线条化与面板图标一致 -->
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M3 9h18M3 15h18" />
                     <path d="M9 6h6M9 12h6M9 18h6" />
@@ -302,27 +219,16 @@
             <!-- 展开配置区：单一 activePanelKey 决定渲染哪个（互斥由结构保证）——
                  手风琴高度动画（JS 测量 scrollHeight + transition height——最可靠丝滑——
                  不依赖 grid 插值）——mode="out-in"：先折叠旧的，再展开新的 -->
-            <Transition
-              name="accordion"
-              mode="out-in"
-              @before-enter="accordionBeforeEnter"
-              @enter="accordionEnter"
-              @after-enter="accordionAfterEnter"
-              @before-leave="accordionBeforeLeave"
-              @leave="accordionLeave"
-              @after-leave="accordionAfterLeave"
-            >
+            <Transition name="accordion" mode="out-in" @before-enter="accordionBeforeEnter" @enter="accordionEnter"
+              @after-enter="accordionAfterEnter" @before-leave="accordionBeforeLeave" @leave="accordionLeave"
+              @after-leave="accordionAfterLeave">
               <!-- 回复提醒配置（展开行：Switch 开关） -->
               <div v-if="activePanelKey === 'notify'" key="notify" class="chat-input__panel-config-wrap">
                 <div class="chat-input__panel-config">
                   <span class="chat-input__panel-config-label">对话完成时播放提醒音效</span>
                   <label class="chat-input__switch">
-                    <input
-                      type="checkbox"
-                      :checked="notifyEnabled"
-                      :disabled="!sessionId"
-                      @change="toggleNotifyComplete"
-                    />
+                    <input type="checkbox" :checked="notifyEnabled" :disabled="!sessionId"
+                      @change="toggleNotifyComplete" />
                     <span class="chat-input__switch-slider" />
                   </label>
                 </div>
@@ -333,16 +239,14 @@
                   <div class="chat-input__compact">
                     <div class="chat-input__compact-header">
                       <span class="chat-input__compact-label">上下文容量</span>
-                      <span class="chat-input__compact-nums">{{ fmtTokens(compactStats.currentTokens) }} / {{ fmtTokens(compactStats.maxTokens) }}</span>
+                      <span class="chat-input__compact-nums">{{ fmtTokens(compactStats.currentTokens) }} / {{
+                        fmtTokens(compactStats.maxTokens) }}</span>
                     </div>
                     <div class="chat-input__compact-bar">
                       <div class="chat-input__compact-fill" :style="{ width: compactPercent }" />
                     </div>
-                    <button
-                      class="chat-input__compact-btn"
-                      :disabled="compactLoading || compactStats.currentTokens === 0"
-                      @click="doCompact"
-                    >
+                    <button class="chat-input__compact-btn"
+                      :disabled="compactLoading || compactStats.currentTokens === 0" @click="doCompact">
                       {{ compactLoading ? '压缩中…' : '压缩上下文' }}
                     </button>
                   </div>
@@ -356,12 +260,8 @@
 
     <!-- 设置抽屉（与 chat-input 同级——wrap 内；bottom: calc(100% + 6px) 锚定
          wrap 顶部 = 输入行顶部——panel 撑高的是 wrap 底部，锚定不变） -->
-    <ChatSettingsDrawer
-      :session-id="sessionId"
-      :profile="profile"
-      :yolo="yolo"
-      @update:yolo="$emit('update:yolo', $event)"
-    />
+    <ChatSettingsDrawer :session-id="sessionId" :profile="profile" :yolo="yolo"
+      @update:yolo="$emit('update:yolo', $event)" />
   </div>
 </template>
 
@@ -764,7 +664,7 @@ function vadTick(): void {
     if (!vadBargeFired && performance.now() - vadSpeechStartAt >= VAD_BARGE_CONFIRM_MS) {
       vadBargeFired = true
       if (props.sessionId) {
-        window.api.agent.interruptNoPending(props.sessionId).catch(() => {})
+        window.api.agent.interruptNoPending(props.sessionId).catch(() => { })
       }
       console.log('[voice] VAD 确认说话 → 打断 + 录音')
     }
@@ -832,7 +732,7 @@ function stopVad(): void {
   vadProcessor = null
   vadSourceNode = null
   vadAnalyser = null
-  vadAudioContext?.close().catch(() => {})
+  vadAudioContext?.close().catch(() => { })
   vadAudioContext = null
   vadPcmChunks = []
   if (voiceMode.value === false) clearWaveCanvas()
@@ -1337,14 +1237,19 @@ defineExpose({ focus })
   position: relative;
   flex-shrink: 0;
   margin-bottom: 32px;
+  margin-top: 8px;
+  padding: 0 16px;
   /* 全宽容器——卡片本身限宽居中 */
 }
 
 /* ── 输入框主体（贴边结构——顶部描边 + 向上投射阴影） ── */
 .chat-input {
-  position: relative;   /* 设置抽屉定位基准 */
-  z-index: 10;          /* 上层——抽屉（z 下层）从输入框背后拉出 */
-  padding: 8px 16px 0;  /* 底部 0——间距由 row 的 margin-bottom 承担 */
+  position: relative;
+  /* 设置抽屉定位基准 */
+  z-index: 10;
+  /* 上层——抽屉（z 下层）从输入框背后拉出 */
+  padding: 8px 16px 0;
+  /* 底部 0——间距由 row 的 margin-bottom 承担 */
   border-top: 1px solid var(--tk-border);
   background: var(--tk-bg-primary);
   /* emil：浮起于消息列表之上——向上投射阴影（hairline 分隔 + 极淡大阴影） */
@@ -1534,6 +1439,7 @@ defineExpose({ focus })
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .pending-file,
   .pending-file__remove,
   .pending-file__play,
@@ -1542,6 +1448,7 @@ defineExpose({ focus })
   .pending-file-leave-active {
     transition: none;
   }
+
   .pending-file-enter-from,
   .pending-file-leave-to {
     transform: none;
@@ -1550,10 +1457,12 @@ defineExpose({ focus })
 }
 
 .chat-input__row {
-  position: relative;  /* ChatSettingsDrawer 锚定基准（bottom: 100% 在输入行上方） */
+  position: relative;
+  /* ChatSettingsDrawer 锚定基准（bottom: 100% 在输入行上方） */
   display: flex;
   align-items: center;
-  padding-bottom: 8px;  /* 与面板之间的间距（panel 自身无 margin——动画元素不残留间距） */
+  padding-bottom: 8px;
+  /* 与面板之间的间距（panel 自身无 margin——动画元素不残留间距） */
   gap: 8px;
 }
 
@@ -1624,10 +1533,12 @@ defineExpose({ focus })
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .mode-drawer-enter-active,
   .mode-drawer-leave-active {
     transition: opacity 120ms ease;
   }
+
   .mode-drawer-enter-from,
   .mode-drawer-leave-to {
     transform: translateY(-50%);
@@ -1657,9 +1568,11 @@ defineExpose({ focus })
     transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
   user-select: none;
 }
+
 .chat-input__voice:active {
   transform: scale(0.94);
 }
+
 @media (hover: hover) and (pointer: fine) {
   .chat-input__voice:hover {
     border-color: var(--tk-accent);
@@ -1702,8 +1615,17 @@ defineExpose({ focus })
 }
 
 @keyframes voice-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(0.75); opacity: 0.7; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.75);
+    opacity: 0.7;
+  }
 }
 
 /* ── 音波框（武装/录音中替换输入框）── Apple HIG：白底细边框、内容 16px 渐隐、刻度顶部短刻度 */
@@ -1716,7 +1638,8 @@ defineExpose({ focus })
   border: 1px solid var(--tk-border);
   border-radius: 10px;
   background: var(--tk-bg-primary);
-  overflow: hidden; /* 无滚动条：canvas 内部绘制左滚，禁止拖拽滚动 */
+  overflow: hidden;
+  /* 无滚动条：canvas 内部绘制左滚，禁止拖拽滚动 */
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -1734,7 +1657,8 @@ defineExpose({ focus })
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* 不允许拖拽/交互（纯展示） */
+  pointer-events: none;
+  /* 不允许拖拽/交互（纯展示） */
   /* 时间轴/波形左右渐隐（等效 16px 内边距——内容不贴边） */
   -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
   mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent);
@@ -1757,6 +1681,7 @@ defineExpose({ focus })
 .input-swap-leave-active {
   transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+
 .input-swap-enter-from,
 .input-swap-leave-to {
   opacity: 0;
@@ -1796,9 +1721,11 @@ defineExpose({ focus })
   .chat-input__textarea {
     font-size: 16px;
   }
+
   /* 手机模式：输入框字号放大（键盘 Enter 发送） */
   .chat-input__textarea::placeholder {
-    font-size: 13px;   /* placeholder 缩小——与输入字号拉开层级 */
+    font-size: 13px;
+    /* placeholder 缩小——与输入字号拉开层级 */
   }
 }
 
@@ -1841,9 +1768,11 @@ defineExpose({ focus })
     background-color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+
 .chat-input__function:active {
   transform: scale(0.94);
 }
+
 @media (hover: hover) and (pointer: fine) {
   .chat-input__function:hover {
     border-color: var(--tk-accent);
@@ -1886,6 +1815,7 @@ defineExpose({ focus })
   border-top: 1px solid var(--tk-border);
   overflow: hidden;
 }
+
 .chat-input__panel-icons {
   display: flex;
   flex-wrap: wrap;
@@ -1914,9 +1844,11 @@ defineExpose({ focus })
     color 160ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
+
 .chat-input__panel-icon:active {
   transform: scale(0.96);
 }
+
 @media (hover: hover) and (pointer: fine) {
   .chat-input__panel-icon:hover {
     background: color-mix(in srgb, var(--tk-text-secondary) 10%, transparent);
@@ -2020,14 +1952,18 @@ defineExpose({ focus })
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .chat-input__compact-fill,
   .chat-input__compact-btn {
     transition: none;
   }
-}.chat-input__panel-config-label {
+}
+
+.chat-input__panel-config-label {
   font-size: 13px;
   color: var(--tk-text-primary);
 }
+
 /* Switch（CSS 绘制：轨道 + 滑块——ChatSettingsDrawer 同款语义） */
 .chat-input__switch {
   position: relative;
@@ -2035,12 +1971,14 @@ defineExpose({ focus })
   flex-shrink: 0;
   cursor: pointer;
 }
+
 .chat-input__switch input {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
+
 .chat-input__switch-slider {
   width: 40px;
   height: 22px;
@@ -2049,6 +1987,7 @@ defineExpose({ focus })
   transition: background 200ms cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
 }
+
 .chat-input__switch-slider::before {
   content: '';
   position: absolute;
@@ -2060,13 +1999,16 @@ defineExpose({ focus })
   background: #fff;
   transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-.chat-input__switch input:checked + .chat-input__switch-slider {
+
+.chat-input__switch input:checked+.chat-input__switch-slider {
   background: var(--tk-accent, #3b82f6);
 }
-.chat-input__switch input:checked + .chat-input__switch-slider::before {
+
+.chat-input__switch input:checked+.chat-input__switch-slider::before {
   transform: translateX(18px);
 }
-.chat-input__switch input:disabled + .chat-input__switch-slider {
+
+.chat-input__switch input:disabled+.chat-input__switch-slider {
   opacity: 0.5;
   cursor: not-allowed;
 }

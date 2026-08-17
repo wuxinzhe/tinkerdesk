@@ -1,9 +1,8 @@
 <template>
-  <div
-    ref="listRef"
-    class="message-list"
-    @scroll="onScroll"
-  >
+  <div class="message-list-wrap">
+    <div class="message-list"
+      ref="listRef"
+      @scroll.passive="onScroll">
     <!-- 加载更多按钮 -->
     <div v-if="hasMore && messages.length > 0" class="message-list__load-more">
       <button
@@ -63,6 +62,10 @@
 
     <!-- 底部锚点用于自动滚动 -->
     <div ref="bottomRef" />
+    </div>
+
+    <!-- 底部渐变遮罩（同 sidebar-fade：透明→背景色——消息滚到底部淡出衔接输入区——不拦截点击） -->
+    <div class="message-list__fade" />
   </div>
 </template>
 
@@ -264,6 +267,27 @@ defineExpose({
 </script>
 
 <style scoped>
+.message-list-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 底部渐变遮罩（透明→背景色——消息滚到底部淡出衔接输入区——不拦截点击） */
+.message-list__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, transparent, var(--tk-bg-primary));
+  pointer-events: none;
+  z-index: 5;
+}
+
 .message-list {
   position: relative;
   flex: 1;
