@@ -986,6 +986,15 @@ async function handleDelete() {
   -ms-overflow-style: none;
 }
 
+/* 内容主体：白卡——与页面背景区分（透明 workspace 渐变 vs 卡片） */
+.skill-detail__body {
+  background: var(--tk-bg-primary);
+  border: 1px solid var(--tk-border);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
 .skill-detail {
   /* 滚动条全局统一（variables.css 3px 圆角） */
 }
