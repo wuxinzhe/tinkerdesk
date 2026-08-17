@@ -205,3 +205,26 @@ export async function installSkillFromNpm(
     rmSync(tmpDir, { recursive: true, force: true })
   }
 }
+
+
+/** 技能市场详情（README markdown——registry /<pkg> readme 字段） */
+export interface SkillMarketDetailItem {
+  name: string
+  version: string
+  description: string
+  readme: string
+}
+
+export async function getSkillMarketDetail(name: string): Promise<SkillMarketDetailItem | null> {
+  try {
+    const d = await getPackageDetail(name)
+    return {
+      name: d.name,
+      version: d['dist-tags']?.latest ?? d.version ?? '',
+      description: d.description ?? '',
+      readme: d.readme ?? '',
+    }
+  } catch {
+    return null
+  }
+}

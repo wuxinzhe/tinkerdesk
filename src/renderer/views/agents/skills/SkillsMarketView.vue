@@ -212,7 +212,8 @@ function goPage(p: number) {
 }
 
 function viewSkill(skill: SkillInfo) {
-  router.push({ path: `/workspace/agents/${profile.value}/skill/${skill.id}`, state: { skill } as unknown as HistoryState })
+  // 市场项 name = npm 包名——跳市场说明页（README）
+  router.push({ path: `/workspace/agents/${profile.value}/market/${skill.name}` })
 }
 
 async function installSkill(skill: SkillInfo) {

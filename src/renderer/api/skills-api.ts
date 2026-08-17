@@ -28,6 +28,10 @@ export class SkillsApi {
   async installFromMarket(name: string, profile?: string): Promise<{ ok: boolean; error?: string; skillId?: string; name?: string }> {
     return window.api.skills.marketInstall(name, profile)
   }
+  /** 技能市场详情（README markdown） */
+  async getMarketDetail(name: string): Promise<import('./types').SkillMarketDetailItem | null> {
+    return window.api.skills.marketDetail(name)
+  }
 
   /** 本地无官方技能 */
   async get(_id: string): Promise<SkillInfo> {

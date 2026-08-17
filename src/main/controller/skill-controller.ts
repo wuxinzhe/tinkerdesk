@@ -14,7 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
 import { dirname, join, relative, basename } from 'path'
 import type { PrivateSkillService } from '../service/private-skill-service'
-import { installSkillFromNpm, listSkillMarket, type SkillMarketInstallResult, type SkillMarketItem } from '../service/skill-market-service'
+import { installSkillFromNpm, listSkillMarket, getSkillMarketDetail, type SkillMarketInstallResult, type SkillMarketItem, type SkillMarketDetailItem } from '../service/skill-market-service'
 import type { SkillCategoryService } from '../service/skill-category-service'
 import type { PrivateSkillEntity } from '../repository/types'
 import type { ApiResponse } from './api-response'
@@ -91,6 +91,7 @@ export class SkillController {
     handleTrusted('skill:install', (_event, payload) => this.installSkill(payload))
     handleTrusted('skill:market-list', (_event, payload) => this.skillMarketList(payload))
     handleTrusted('skill:market-install', (_event, payload) => this.skillMarketInstall(payload))
+    handleTrusted('skill:market-detail', (_event, payload) => this.skillMarketDetail(payload))
     handleTrusted('skill:pick-install-file', () => this.pickInstallFile())
     handleTrusted('skill:update', (_event, payload) => this.updateSkill(payload))
     handleTrusted('skill:delete', (_event, payload) => this.deleteSkill(payload))
@@ -330,6 +331,16 @@ export class SkillController {
       const profile = payload?.profile ?? 'default'
       const installed = this.privateSkillService.findFiltered(profile).map((s) => s.name)
       return ok(await listSkillMarket({ installedNames: installed, category: payload?.category, search: payload?.search }))
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
+  /** 技能市场详情（README markdown） */
+  private async skillMarketDetail(payload: { name?: string } = {}): Promise<ApiResponse<SkillMarketDetailItem | null>> {
+    try {
+      if (!payload?.name) return fail('包名不能为空')
+      return ok(await getSkillMarketDetail(payload.name))
     } catch (e) {
       return fail((e as Error).message)
     }

@@ -322,6 +322,8 @@ const api = {
     marketList: (payload?: { category?: string; search?: string; profile?: string }) => inv('skill:market-list', payload ?? {}).then(unwrap),
     /** 技能市场安装（npm tarball → 解析 → 入库） */
     marketInstall: (name: string, profile?: string) => inv('skill:market-install', { name, profile }).then(unwrap),
+    /** 技能市场详情（README markdown） */
+    marketDetail: (name: string) => inv('skill:market-detail', { name }).then(unwrap),
     /** 安装/创建技能（结构化写入——render 层已解析；name/body 必填） */
     install: (payload: {
       profile?: string; name?: string; displayName?: string; description?: string; category?: string

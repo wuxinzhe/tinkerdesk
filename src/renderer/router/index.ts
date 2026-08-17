@@ -200,6 +200,15 @@ const router = createRouter({
           },
         },
         {
+          /* 技能市场说明页（README Markdown 渲染） */
+          path: 'agents/:profile/market/:skillName',
+          components: {
+            default: () => import('@/renderer/views/agents/skills/SkillMarketDetailView.vue'),
+            sidebar: () => import('@/renderer/views/agents/AgentListView.vue'),
+            workspace: () => import('@/renderer/views/agents/skills/SkillMarketDetailView.vue'),
+          },
+        },
+        {
           path: 'agents/:profile/skill/:skillId',
           components: {
             default: () => import('@/renderer/views/agents/skills/SkillDetailView.vue'),
