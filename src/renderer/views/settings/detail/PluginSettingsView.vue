@@ -318,6 +318,10 @@ async function askUninstall(p: PluginInfo): Promise<void> {
               </span>
               <span v-if="!p.manifest.capabilities?.length" class="plugin-card__cap">无能力声明</span>
             </div>
+            <!-- keywords（npm 分类词——已过滤 tinkerdesk-plugin 生态标记） -->
+            <div v-if="p.manifest.keywords?.length" class="plugin-card__tags">
+              <span v-for="kw in p.manifest.keywords" :key="kw" class="plugin-card__tag">{{ kw }}</span>
+            </div>
           </div>
           <div class="plugin-card__status">
             <span :class="['plugin-card__dot', p.status.enabled ? 'on' : 'off']"></span>

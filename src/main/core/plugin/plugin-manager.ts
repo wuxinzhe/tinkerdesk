@@ -106,7 +106,11 @@ export class PluginManager {
     return Array.from(this.registry.values()).map((r) => {
       const staticOk = this.staticCheck(r)
       return {
-        manifest: r.manifest,
+        manifest: {
+          ...r.manifest,
+          // keywords 来自 package.json（npm 发布词——过滤 tinkerdesk-plugin 生态标记）
+          keywords: this.readPluginKeywords(r.manifest.id),
+        },
         status: {
           loaded: r.api !== null,
           enabled: r.enabled,
@@ -117,6 +121,20 @@ export class PluginManager {
         },
       }
     })
+  }
+
+/** 读取插件 package.json 的 keywords（npm 分类词——过滤生态前缀/空串） */
+  private readPluginKeywords(id: string): string[] {
+    try {
+      const pkgFile = join(this.pluginsDir, id, 'package.json')
+      if (!existsSync(pkgFile)) return []
+      const pkg = JSON.parse(readFileSync(pkgFile, 'utf-8')) as { keywords?: unknown }
+      const kws = Array.isArray(pkg.keywords) ? pkg.keywords.map(String) : []
+      // 过滤：生态标记（tinkerdesk-plugin）与包全名（tinkerdesk-plugin-xxx）——都是前缀/身份词不是分类
+      return kws.filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-plugin'))
+    } catch {
+      return []
+    }
   }
 
   /** 查询单个插件（调用方入口——返回 Plugin 活动对象） */

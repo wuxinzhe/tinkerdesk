@@ -12,6 +12,8 @@ export interface PluginManifest {
   id: string
   /** 展示名 */
   name: string
+  /** npm 分类词（package.json keywords——市场分类用——过滤 tinkerdesk-plugin 后） */
+  keywords?: string[]
   version: string
   /** 协议版本（当前 1） */
   apiVersion: number
