@@ -72,6 +72,8 @@
               <span v-if="a.isDefault" class="agent-card-item__tag tag-default">默认</span>
               <span v-else-if="!a.isActive" class="agent-card-item__tag tag-frozen">冻结</span>
             </div>
+            <!-- 描述（名字下方——超出单行省略——纯 CSS，不改文本） -->
+            <div v-if="a.description" class="agent-card-item__desc">{{ a.description }}</div>
             <div class="agent-card-item__footer">
               <!-- 操作按钮已移除（2026-08：布局重构——功能入口收敛到 AgentCard/设置页） -->
             </div>
@@ -155,11 +157,9 @@ function onScroll(e: Event) {
   }
 }
 
+/** 点击 Agent 卡片 → 直接切换为该 Agent（工作区进其对话页） */
 function selectAgent(a: AgentInfo) {
   selectedProfile.value = a.profile
-}
-
-function startConversation(a: AgentInfo) {
   sessionStore.setSessionId(null)
   sessionStore.setProfile(a.profile)
   chatStore.resetLocalState?.()
@@ -493,6 +493,16 @@ onMounted(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 90px;
+}
+
+/* 描述：名字下方——单行省略（纯 CSS——不改文本） */
+.agent-card-item__desc {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .agent-card-item__name-spacer {
