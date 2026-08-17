@@ -54,6 +54,67 @@
         </div>
       </div>
 
+      <!-- ── 基本信息 + 配置（原编辑页设置项——agentsApi 自动保存——紧接灵魂提示词后） ── -->
+      <div class="settings-group">
+        <h3 class="settings-group__title">
+          基本信息与配置
+        </h3>
+        <div class="settings-group__card">
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>名称</label>
+              </div>
+              <input v-model="agentForm.displayName" class="settings-field__input" placeholder="Agent 名称" />
+            </div>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>简介</label>
+              </div>
+              <input v-model="agentForm.description" class="settings-field__input" placeholder="简短描述" />
+            </div>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>头像 URL</label>
+              </div>
+              <input v-model="agentForm.avatar" class="settings-field__input" placeholder="可选，图片 URL" />
+            </div>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>模式</label>
+              </div>
+              <div class="settings-field__select-wrap">
+                <select v-model="agentForm.agentModeId" class="settings-field__select">
+                  <option v-for="opt in modeOptions" :key="opt.id" :value="opt.id">
+                    {{ opt.id }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="settings-field">
+            <div class="settings-field__row">
+              <div class="settings-field__label">
+                <label>版本</label>
+              </div>
+              <div class="settings-field__select-wrap">
+                <select v-model="agentForm.agentModeVersion" class="settings-field__select">
+                  <option v-for="v in currentModeVersions" :key="v" :value="v">
+                    {{ v }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── 迭代与超时 ── -->
       <div class="settings-group">
         <h3 class="settings-group__title">
@@ -392,6 +453,7 @@ import { useRoute } from 'vue-router'
 import SaPageHero from '@/renderer/components/SaPageHero.vue'
 import L3PageLayout from '@/renderer/components/workspace/L3PageLayout.vue'
 import { agentConfigApi } from '@/renderer/api/agent-config-api'
+import { agentsApi } from '@/renderer/api/agents-api'
 import { BUSY_MODE_QUEUE, BUSY_MODE_REDIRECT, BUSY_MODE_INTERRUPT } from '@/renderer/api/types'
 import type { AgentConfigData } from '@/renderer/api/types'
 import { showInfoToast } from '@/renderer/utils/notification-utils'
@@ -459,6 +521,50 @@ async function savePrompt() {
     savingPrompt.value = false
   }
 }
+
+/* ── 基本信息 + 配置（原编辑页设置项——agentsApi 自动保存——字段级 diff） ── */
+const agentForm = reactive({
+  displayName: '',
+  description: '',
+  avatar: '',
+  agentModeId: '',
+  agentModeVersion: '',
+})
+
+/** 模式选项（agentsApi.listModes——含版本列表） */
+const modeOptions = ref<Array<{ id: string; versions?: string[] }>>([])
+const currentModeVersions = computed(() => {
+  const id = agentForm.agentModeId
+  const opt = modeOptions.value.find((o) => o.id === id)
+  return opt?.versions?.length ? opt.versions : ['default']
+})
+
+/** agentsApi 字段快照（自动保存 diff 基准——与 config 分开） */
+const agentSaved = ref('')
+
+function agentSnapshot(): string {
+  return JSON.stringify(agentForm)
+}
+
+watch(
+  agentForm,
+  async () => {
+    if (loading.value || !agentSaved.value) return
+    const prev = JSON.parse(agentSaved.value) as Record<string, string>
+    const changed: Record<string, string> = {}
+    for (const [k, v] of Object.entries(agentForm)) {
+      if (prev[k] !== v) changed[k] = v
+    }
+    if (Object.keys(changed).length === 0) return
+    try {
+      await agentsApi.update(profile.value, changed)
+      agentSaved.value = agentSnapshot()
+    } catch (e) {
+      error.value = (e as Error).message ?? 'Agent 信息保存失败'
+    }
+  },
+  { deep: true },
+)
 
 const tipField = ref<string | null>(null)
 let tipTimer: ReturnType<typeof setTimeout> | null = null
@@ -541,6 +647,25 @@ async function loadConfig() {
     // 使用默认值
   } finally {
     loading.value = false
+  }
+  // Agent 基本信息 + 模式选项（agentsApi——与 config 接口不同）
+  try {
+    const agent = await agentsApi.get(p)
+    Object.assign(agentForm, {
+      displayName: agent?.displayName ?? '',
+      description: agent?.description ?? '',
+      avatar: agent?.avatar ?? '',
+      agentModeId: agent?.agentModeId ?? '',
+      agentModeVersion: agent?.agentModeVersion ?? '',
+    })
+    agentSaved.value = agentSnapshot()
+  } catch {
+    // 忽略
+  }
+  try {
+    modeOptions.value = (await agentsApi.listModes(true)) as Array<{ id: string; versions?: string[] }>
+  } catch {
+    modeOptions.value = []
   }
 }
 
@@ -781,6 +906,26 @@ onBeforeUnmount(() => {
 .settings-field__textarea:focus {
   border-color: var(--tk-accent);
 }
+
+/* 模式/版本 select（基本信息与配置组——与 input 同风格） */
+.settings-field__select-wrap {
+  position: relative;
+  width: 320px;
+}
+
+.settings-field__select {
+  width: 100%;
+  padding: 7px 30px 7px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--tk-text-primary);
+  background: var(--tk-bg-secondary);
+  border: 1px solid var(--tk-border);
+  border-radius: 6px;
+  appearance: none;
+  cursor: pointer;
+}
+
 
 /* ── 问号图标 ── */
 
