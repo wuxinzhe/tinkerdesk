@@ -18,7 +18,7 @@ export const SKILL_MARKET_PREFIX = 'tinkerdesk-skill-'
 /** 官方维护者 */
 export const OFFICIAL_MAINTAINER = 'wuxinzhe'
 /** 技能分类词（keywords 承载——与插件市场同款约定） */
-export const SKILL_MARKET_CATEGORIES = ['agent', 'productivity', 'voice', 'video', 'game', 'code', 'creative', 'research']
+export const SKILL_MARKET_CATEGORIES = ['agent', 'productivity', 'voice', 'video', 'game', 'code', 'creative', 'research', 'apple']
 
 /** 技能市场条目（controller → renderer） */
 export interface SkillMarketItem {
