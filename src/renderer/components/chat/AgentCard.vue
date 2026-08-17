@@ -197,10 +197,9 @@ function goModels(): void {
   router.push(`/workspace/agents/${props.agent.profile}/models`)
 }
 
-/** 对话（当前 Agent 的聊天页） */
+/** 对话（聊天页面——对话列表） */
 function goChat(): void {
-  if (!props.agent) return
-  router.push(`/workspace/agents/${props.agent.profile}/chat`)
+  router.push('/workspace/chat')
 }
 
 function toggleMemory(): void {
