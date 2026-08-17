@@ -320,7 +320,7 @@ async function askUninstall(p: PluginInfo): Promise<void> {
             </div>
           </div>
           <div class="plugin-card__status">
-            <span :class="['plugin-card__dot', p.status.enabled ? 'on' : 'off']"></span>
+            <span :class="['plugin-card__dot', `is-${p.status.status}`]"></span>
             {{ { unloaded: '未加载', disabled: '已停用', unready: '未就绪', registered: '已注册' }[p.status.status] ?? '未加载' }}
           </div>
         </div>
@@ -705,11 +705,17 @@ async function askUninstall(p: PluginInfo): Promise<void> {
   border-radius: 50%;
 }
 
-.plugin-card__dot.on {
-  background: var(--tk-success);
+/* 状态指示灯三态（registered=绿 / unready=橙 / disabled+unloaded=灰） */
+.plugin-card__dot.is-registered {
+  background: var(--tk-success, #34c759);
 }
 
-.plugin-card__dot.off {
+.plugin-card__dot.is-unready {
+  background: var(--tk-warning, #ff9f0a);
+}
+
+.plugin-card__dot.is-disabled,
+.plugin-card__dot.is-unloaded {
   background: var(--tk-text-tertiary);
 }
 
