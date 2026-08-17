@@ -2,7 +2,7 @@
   <L3PageLayout class="skills-market" wide>
     <!-- 页头 -->
     <SaPageHero
-      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><circle cx=&quot;11&quot; cy=&quot;11&quot; r=&quot;8&quot;/><line x1=&quot;21&quot; y1=&quot;21&quot; x2=&quot;16.65&quot; y2=&quot;16.65&quot;/></svg>"
+      icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><polygon points=&quot;12 2 2 7 12 12 22 7 12 2&quot;/><polyline points=&quot;2 17 12 22 22 17&quot;/><polyline points=&quot;2 12 12 17 22 12&quot;/></svg>"
       gradient="linear-gradient(135deg, #ffb340 0%, var(--tk-warning) 100%)"
       title="技能市场"
       desc="浏览并安装社区技能"
