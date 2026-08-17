@@ -1,5 +1,5 @@
 <template>
-  <div class="workspace">
+  <div class="workspace" :class="{ 'workspace--col-collapsed': sidebarCollapsed, 'workspace--single': !hasLevel3 }">
     <!-- ── 移动端顶栏 ── -->
     <WorkspaceToolbar class="workspace__mobile-bar" variant="mobile" :title="topbarTitle" :show-back="inDetail"
       :tool-calls="mobileToolCalls"
@@ -10,7 +10,7 @@
     </WorkspaceToolbar>
 
     <!-- ── 二级 + 三级 ── -->
-        <div class="workspace__main" :class="{ 'workspace__main--col-collapsed': sidebarCollapsed }">
+      <div class="workspace__main">
       <div class="workspace__sidebar-col" :class="{
         'workspace__sidebar-col--full': !hasLevel3,
         'workspace__sidebar-col--collapsed': sidebarCollapsed
@@ -427,13 +427,26 @@ onUnmounted(() => {
    ═══════════════════════════════════════════════════════ */
 
 .workspace {
-  display: flex;
+  display: grid;
+  /* 结构焊死：左列=侧边栏（280） + 右列=工作区 minmax(0,1fr)（内容永不撑破骨架） */
+  grid-template-columns: var(--sidebar-w, 280px) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   /* 浅色渐变——为毛玻璃 blur 提供可穿透内容 */
   background: linear-gradient(180deg, var(--tk-bg-secondary) 0%, #e9e9ef 100%);
   border-top: 1px solid var(--tk-border);
+  transition: grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.workspace--col-collapsed {
+  --sidebar-w: 0px;
+}
+
+/* 无工作区内容（hasLevel3=false）：侧边栏独占整行 */
+.workspace--single {
+  grid-template-columns: 1fr;
 }
 
 /* 深色：带蓝紫调的渐变（玻璃背后有色彩层次，blur 才可见） */
@@ -442,23 +455,13 @@ html[data-theme='dark'] .workspace {
 }
 
 .workspace__main {
-  display: grid;
-  /* 结构焊死：左列 280 固定 + 右列 minmax(0,1fr)（下限 0——内容永不撑破骨架）
-     --sidebar-w 随折叠类变 0（折叠=左列收起） */
-  grid-template-columns: var(--sidebar-w, 280px) minmax(0, 1fr);
-  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  width: 0;
   min-width: 0;
-  max-width: 100%;
   overflow: hidden;
-    position: relative;
-    transition: grid-template-columns 200ms cubic-bezier(0.23, 1, 0.32, 1);
-  }
-
-  .workspace__main--col-collapsed {
-    --sidebar-w: 0px;
-  }
+  position: relative;
+}
 
 /* ── 一级：默认隐藏，只在桌面端显示 ── */
 
@@ -792,7 +795,9 @@ html[data-theme='dark'] .workspace {
 /* ── 移动端 <768px ── */
 @media (max-width: 767px) {
   .workspace {
+    display: flex;
     flex-direction: column;
+    grid-template-columns: none;
     border-top: none;
   }
 
