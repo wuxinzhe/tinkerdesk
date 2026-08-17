@@ -442,8 +442,10 @@ html[data-theme='dark'] .workspace {
 }
 
 .workspace__main {
+  display: grid;
+  /* 结构焊死：左列 280 固定 + 右列 minmax(0,1fr)（下限 0——内容永不撑破骨架） */
+  grid-template-columns: 280px minmax(0, 1fr);
   flex: 1;
-  display: flex;
   min-height: 0;
   width: 0;
   min-width: 0;
@@ -491,6 +493,8 @@ html[data-theme='dark'] .workspace {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   position: relative;
   /* 折叠动画统一在外层容器实现（子组件不再自实现） */
   transition: width 0.2s ease;
@@ -739,6 +743,8 @@ html[data-theme='dark'] .workspace {
   flex: 1;
   min-height: 0;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .workspace__area-col {
@@ -789,6 +795,9 @@ html[data-theme='dark'] .workspace {
   }
 
   .workspace__main {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
     flex: 1;
     width: auto;
     position: relative;
