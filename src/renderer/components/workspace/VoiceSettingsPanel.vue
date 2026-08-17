@@ -38,14 +38,15 @@ async function load(): Promise<void> {
 
 async function selectStt(pluginId: string | null): Promise<void> {
   if (!pluginId) return
-  await window.api.voice.setProvider({ sttProvider: pluginId })
-  config.value = await window.api.voice.getConfig()
+  // 保存返回完整配置——merge 只更新 stt（绝不覆盖 tts）
+  const saved = await window.api.voice.setProvider({ sttProvider: pluginId })
+  config.value = { ...config.value, ...saved }
 }
 
 async function selectTts(pluginId: string | null): Promise<void> {
   if (!pluginId) return
-  await window.api.voice.setProvider({ ttsProvider: pluginId })
-  config.value = await window.api.voice.getConfig()
+  const saved = await window.api.voice.setProvider({ ttsProvider: pluginId })
+  config.value = { ...config.value, ...saved }
 }
 
 onMounted(() => {
