@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import type { Installer } from '../provider/installer'
+import type { Installer } from '../installer/installer'
 import type { ToolManager } from './tool-manager'
 import type { ToolSchema } from './tool-schema'
 import type { ICenter } from '../center/types'

@@ -224,38 +224,6 @@ export interface SystemInterfaceDef {
 }
 
 
-/* ── 安装器（Installer） ── */
-
-/** 安装阶段 */
-export type InstallStage = 'validate' | 'copy' | 'deps' | 'assets' | 'register'
-
-/** 安装会话（分步状态——内存态——重启丢弃） */
-export interface InstallSession {
-  sessionId: string
-  srcDir: string
-  manifest: ProviderManifest | null
-  providerDir: string
-  /** 用户选择跳过的资源（dest 路径） */
-  skipAssets: string[]
-  stages: Record<InstallStage, 'pending' | 'running' | 'done' | 'failed'>
-  error?: string
-  /** npm 临时目录（startNpm 创建——copy 完成后清理） */
-  tmpDir?: string
-  /** 来源：npm 在线 / local 本地 */
-  sourceType?: 'npm' | 'local'
-  /** npm tarball 下载地址（startNpm 查询——download 步骤下载） */
-  tarballUrl?: string
-  /** tarball 解压后大小（registry 元数据——进度用） */
-  tarballSize?: number
-}
-
-/** 安装器依赖（纯品类无关基建——路径配置；注册/已装检查由各 center 自己做） */
-export interface InstallerDeps {
-  providersDir: string
-  /** 工具包复制目标（kind:tool 分流——不装进扩展目录） */
-  toolsDir?: string
-}
-
 /* ── Provider 活动对象 ── */
 
 /** ProviderHost 需要 manager 提供的回调（避免反向依赖） */

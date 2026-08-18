@@ -14,7 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { ProviderManager } from '../core/provider/provider-manager'
-import { Installer } from '../core/provider/installer'
+import { Installer } from '../core/installer/installer'
 import { getMarketProviderDetail, listMarketProviders } from '../service/provider-market-service'
 import type { ProviderCheckResult, ProviderInfo, ProviderStatus, ToggleResult } from '../core/provider/types'
 

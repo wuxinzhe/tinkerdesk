@@ -16,7 +16,7 @@ import { basename, join } from 'path'
 import { getPackageTarball } from '../../repository/npm-registry-repository'
 import { locateManifestDir, resolveNpmCli, tarBin } from '../../utils/installer-utils'
 import { downloadWithMirror, execFileAsync } from '../../utils/process-utils'
-import type { InstallerDeps, InstallSession, ProviderManifest } from './types'
+import type { InstallAssetDep, InstallerDeps, InstallManifest, InstallSession } from './types'
 
 /** 自定义 registry 的 tarball 查询（npm view 命令——走镜像/代理） */
 async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ url: string; size?: number }> {
@@ -64,22 +64,22 @@ export class Installer {
 
   /** 开始安装会话：校验安装包 + 读 manifest（第 1 步——validate） */
   start(src: string, skipAssets: string[] = []): InstallSession {
-    if (!src || !existsSync(src)) throw new Error('扩展包路径不存在')
+    if (!src || !existsSync(src)) throw new Error('安装包路径不存在')
     const sessionId = `install-${Date.now()}-${++this.sessionSeq}`
     const session: InstallSession = {
       sessionId,
       srcDir: src,
       manifest: null,
-      providerDir: '',
+      installDir: '',
       skipAssets,
       stages: { validate: 'pending', copy: 'pending', deps: 'pending', assets: 'pending', register: 'pending' },
     }
     this.sessions.set(sessionId, session)
     // validate：定位 manifest + 校验
-    const providerDir = this.locateSource(src)
-    const manifest = this.readManifest(providerDir)
-    this.validateManifest(manifest, providerDir)
-    session.providerDir = providerDir
+    const installDir = this.locateSource(src)
+    const manifest = this.readManifest(installDir)
+    this.validateManifest(manifest, installDir)
+    session.installDir = installDir
     session.manifest = manifest
     session.stages.validate = 'done'
     return session
@@ -97,7 +97,7 @@ export class Installer {
           this.copyToInstallDir(session)
           break
         case 'deps':
-          await this.installNpmDeps(session.providerDir)
+          await this.installNpmDeps(session.installDir)
           break
         case 'assets':
           // 统一走 downloadAssets（唯一实现——跳过 skipAssets 指定项）
@@ -147,7 +147,7 @@ export class Installer {
       sessionId: `install-${Date.now()}-${++this.sessionSeq}`,
       srcDir: '',
       manifest: null,
-      providerDir: '',
+      installDir: '',
       skipAssets: [],
       stages: { validate: 'pending', copy: 'pending', deps: 'pending', assets: 'pending', register: 'pending' },
       sourceType: 'npm',
@@ -176,12 +176,12 @@ export class Installer {
     const located = locateManifestDir(extracted)
     if (!located) {
       rmSync(tmpDir, { recursive: true, force: true })
-      throw new Error('npm 包内未找到 manifest.json（不是有效的 TinkerDesk 扩展包）')
+      throw new Error('npm 包内未找到 manifest.json（不是有效的安装包（缺 manifest.json））')
     }
     const manifest = this.readManifest(located)
     this.validateManifest(manifest, located)
     session.srcDir = located
-    session.providerDir = located
+    session.installDir = located
     session.manifest = manifest
     session.stages.validate = 'done'
     session.tmpDir = tmpDir
@@ -194,10 +194,10 @@ export class Installer {
   }
 
   /** 读取已装扩展 manifest（安装域自包含——配置页下载/就绪检查用——不依赖 manager） */
-  getManifestById(id: string): ProviderManifest {
+  getManifestById(id: string): InstallManifest {
     const file = join(this.deps.providersDir, id, 'manifest.json')
     if (!existsSync(file)) throw new Error(`扩展不存在: ${id}`)
-    return JSON.parse(readFileSync(file, 'utf-8')) as ProviderManifest
+    return JSON.parse(readFileSync(file, 'utf-8')) as InstallManifest
   }
 
   /** 资源下载（按 id——读扩展目录 manifest——配置页手动触发——depName 指定单个） */
@@ -234,7 +234,7 @@ export class Installer {
 
   /** 资源下载（唯一实现——配置页手动/安装阶段共用——depName 指定单个——skipNames 跳过指定——失败返回 error） */
   async downloadAssets(
-    manifest: ProviderManifest,
+    manifest: InstallManifest,
     onProgress?: (depName: string, received: number, total: number) => void,
     depName?: string,
     skipNames: string[] = [],
@@ -304,11 +304,11 @@ export class Installer {
     throw new Error('请选择扩展文件夹或 .zip 扩展包')
   }
 
-  private readManifest(providerDir: string): ProviderManifest {
-    return JSON.parse(readFileSync(join(providerDir, 'manifest.json'), 'utf-8')) as ProviderManifest
+  private readManifest(installDir: string): InstallManifest {
+    return JSON.parse(readFileSync(join(installDir, 'manifest.json'), 'utf-8')) as InstallManifest
   }
 
-  private validateManifest(manifest: ProviderManifest, providerDir: string): void {
+  private validateManifest(manifest: InstallManifest, installDir: string): void {
     if (!manifest.id || !manifest.entry || !manifest.name) {
       throw new Error('manifest 缺少 id/entry/name')
     }
@@ -318,7 +318,7 @@ export class Installer {
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(manifest.id)) {
       throw new Error(`扩展 id 非法（仅允许小写字母/数字/连字符）: ${manifest.id}`)
     }
-    if (manifest.id !== providerDir.split(/[\\/]/).pop() && !existsSync(join(providerDir, 'manifest.json'))) {
+    if (manifest.id !== installDir.split(/[\\/]/).pop() && !existsSync(join(installDir, 'manifest.json'))) {
       // 目录安装时 id 不必等于目录名（zip 解压目录可能带前缀）——仅校验合法性
     }
   }
@@ -328,13 +328,13 @@ export class Installer {
     const base = session.manifest?.kind === 'tool' && this.deps.toolsDir ? this.deps.toolsDir : this.deps.providersDir
     const destDir = join(base, session.manifest!.id)
     if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true })
-    cpSync(session.providerDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
-    session.providerDir = destDir
+    cpSync(session.installDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
+    session.installDir = destDir
   }
 
   /** npm 依赖安装（有 dependencies 且缺 node_modules——异步——不阻塞） */
-  private async installNpmDeps(providerDir: string): Promise<void> {
-    const pkgFile = join(providerDir, 'package.json')
+  private async installNpmDeps(installDir: string): Promise<void> {
+    const pkgFile = join(installDir, 'package.json')
     if (!existsSync(pkgFile)) return
     let pkg: { dependencies?: Record<string, string> } | null = null
     try {
@@ -344,11 +344,11 @@ export class Installer {
     }
     const deps = pkg?.dependencies
     if (!deps || Object.keys(deps).length === 0) return
-    if (existsSync(join(providerDir, 'node_modules'))) return
+    if (existsSync(join(installDir, 'node_modules'))) return
     const cli = resolveNpmCli()
     const args = cli === 'npm'
-      ? ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', providerDir]
-      : [cli, 'install', '--no-audit', '--no-fund', '--no-progress', '--prefix', providerDir]
+      ? ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', installDir]
+      : [cli, 'install', '--no-audit', '--no-fund', '--no-progress', '--prefix', installDir]
     await new Promise<void>((resolvePromise, reject) => {
       execFileAsync(process.execPath, args).then(() => resolvePromise()).catch((e) => reject(new Error(`npm 依赖安装失败（${(e as Error).message}）——扩展未加载`)))
     })
@@ -377,12 +377,12 @@ export class Installer {
   }
 
   /** sha256sums.json 完整性校验（分发 zip） */
-  private verifyHashes(providerDir: string): void {
-    const sumsFile = join(providerDir, 'sha256sums.json')
+  private verifyHashes(installDir: string): void {
+    const sumsFile = join(installDir, 'sha256sums.json')
     if (!existsSync(sumsFile)) return
     const sums = JSON.parse(readFileSync(sumsFile, 'utf-8')) as Record<string, string>
     for (const [rel, expected] of Object.entries(sums)) {
-      const file = join(providerDir, rel)
+      const file = join(installDir, rel)
       if (!existsSync(file)) throw new Error(`校验失败: ${rel} 缺失`)
       const actual = createHash('sha256').update(readFileSync(file)).digest('hex')
       if (actual.toLowerCase() !== String(expected).toLowerCase()) {

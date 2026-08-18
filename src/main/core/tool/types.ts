@@ -11,7 +11,7 @@ import type {ToolSchema} from './tool-schema'
 import type {ToolResult} from './tool-result'
 import type {ToolContext} from '../loop/types'
 import type { ToolManager } from './tool-manager'
-import type { Installer } from '../provider/installer'
+import type { Installer } from '../installer/installer'
 
 // ── ToolFunction（ToolFunction） ─────────────────────────
 
