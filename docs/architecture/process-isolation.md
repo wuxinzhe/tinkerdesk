@@ -69,10 +69,20 @@ Electron 主进程内的 child process：
 | worker→main | `provider:invoke{providerId,kind,args}` | voice/stt/tts（ProviderCenter 在主进程） |
 | worker→main | `chat:stream{chunk}` / `agent:done` / `agent:error` | 流式回 UI |
 | main→worker | `agent:prompt{userMsg}` | 新用户消息入口 |
+| main→worker | `cancel` / `interrupt` / `redirect` / `barge` | 中断/打断（注入 worker 内 SessionRuntime 的 pending 状态） |
 | main→worker | `approval:decide{id,ok}` | 审批结果 → 恢复 waitToolResult |
-| main→worker | `cancel{id}` | 中断 |
+| main→worker | `dispose` | 会话结束 → 回收进程 |
 
 **审批恢复链**（原 waitToolResult）：危险工具 → worker 内 `waitToolResult` 挂起 → `approval:request` → main → renderer 弹窗 → 用户决定 → main `approval:decide` → worker `waitToolResult.resolve` 恢复/取消。**链路不变，只是跨了进程**。
+
+### 机制按实际核对（源码实证）
+
+| 机制 | 实际实现（源码位置） | 进程隔离落点 |
+|---|---|---|
+| AgentLoop 循环 | `conversation.ts` `while(true)` + `llmRouter.chat(routerOpt,onChunk)`；分支 handleText/ToolCalls/Empty/Overflow | worker 内同构，循环不改；只换 4 类外呼为 WorkerRpc |
+| LLM 流式 | `llmRouter.chat` onChunk 逐 token 推 `sender.sendSession`（`types.ts:178/237`） | onChunk 每 token → `chat:stream` IPC → 主进程转 renderer |
+| 审批/门检 | `tool-call-executor.ts` toolAuth→requestApproval(danger/sandbox)→sandbox→waitToolResult | emitter 全部 worker 内；仅 request/decide + waitToolResult 跨进程 |
+| 会话生命周期 | `session-runtime.ts` interrupt/clear/dispose（幂等）+ pendingBarge 10s | pending 状态 worker 内；cancel/interrupt/barge/redirect 经 IPC 注入，dispose 通知主进程回收 |
 
 ## 五、持久化：保持现有「内存暂存 + 每轮 flush」语义（跨进程只走 flush 一步）
 
