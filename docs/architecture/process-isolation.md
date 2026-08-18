@@ -74,11 +74,17 @@ Electron 主进程内的 child process：
 
 **审批恢复链**（原 waitToolResult）：危险工具 → worker 内 `waitToolResult` 挂起 → `approval:request` → main → renderer 弹窗 → 用户决定 → main `approval:decide` → worker `waitToolResult.resolve` 恢复/取消。**链路不变，只是跨了进程**。
 
-## 五、持久化：worker 自持活跃状态 + 归档写主进程 DB
+## 五、持久化：保持现有「内存暂存 + 每轮 flush」语义（跨进程只走 flush 一步）
 
-对齐 dsh「session 自持 + resume」：**worker 活跃时把会话/消息状态放在进程内内存**（无跨进程实时读写，避免 IPC 往返性能损失）；**会话结束时一次性归档写主进程 DB**（渲染层读历史走 DB）。中断恢复时从 DB 归档兜底重建。
+tinker 实际（`message-service.ts`）：双层存储——`tempMessages` 内存暂存 + `flushConversation` **每轮批写 DB**（`conversation.ts:456`）+ interrupt 前兜底 `flushPendingMessagesToDb`（`:688`）。**不是"会话结束才 flush"**。
 
-> 不做跨进程中央共享——dsh 无中央 DB，tinker 以此规避并发写锁 + 实时 IPC 的复杂度。
+进程隔离下**保持这个语义、不退化为结束归档**：
+- worker 内 `message-service.tempMessages`（内存暂存——天然进程内，不动）
+- **每轮对话结束** `persist:flush{convId,rounds}` 经 IPC → 主进程写 DB（低频、每轮一次）
+- **interrupt 退出前** `flushPendingMessagesToDb` 同经 IPC 兜底
+- **崩溃**最多丢最后一轮（前序各轮已落库），比结束归档损失小得多
+
+> 结论修正：dsh 的「session 自持 + 结束归档」**不照搬**——tinker 本身已是更细的 round 粒度，进程隔离只需把"每轮 flush"一步跨进程。
 
 ## 六、异常与生命周期
 
@@ -100,7 +106,7 @@ Electron 主进程内的 child process：
 ## 八、降级与取舍
 
 - **保留主进程内路径**（`WorkerRpc` 内联实现）——单 profile/低配调试直接主进程跑，不强制 worker（dsh 也有 headless 内跑）。
-- **成本最高点**：状态进程内自持后，存档/中断恢复的边界要理清（何时算"一轮结束"归档）——用「会话事件批次结束」触发一次性归档。
+- **成本最高点**：持久化本就是每轮 flush（低频、每轮一次）——跨进程只把这步搬走，无额外往返负担；要理清的是 worker 崩溃时"未 flush 的最后一轮"如何兜底。
 - **工具状态跨进程隔离**（terminal session 等）——换进程即丢，属预期（隔离换取安全）。
 - **Renderer 完全无感**：仍只连 main，main 把 worker 当"远程 agent"，消息协议不变。
 
