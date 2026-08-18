@@ -44,17 +44,46 @@ export class ProviderManager {
     this.installer = new Installer({
       providersDir: this.providersDir,
       toolsDir: join(app.getPath('userData'), 'tools'),
-      hasProvider: (id) => this.registry.has(id),
-      registerProvider: (srcDir) => {
-        // 安装完成：从安装目录加载并注册（同 loadAll 流程）
-        const destDir = join(this.providersDir, JSON.parse(readFileSync(join(srcDir, 'manifest.json'), 'utf-8')).id as string)
-        this.loadProvider(destDir)
-        const record = this.registry.get(JSON.parse(readFileSync(join(srcDir, 'manifest.json'), 'utf-8')).id as string)
-        if (!record) throw new Error('扩展注册失败')
-        return record
-      },
     })
     mkdirSync(this.providersDir, { recursive: true })
+  }
+
+  /** 扩展是否已安装（注册表查询——center 安装前校验） */
+  isInstalled(id: string): boolean {
+    return this.registry.has(id)
+  }
+
+  /** 注册已安装目录（分步安装 register 阶段——loadProvider + 返回注册记录） */
+  registerInstalled(srcDir: string): ProviderRecord {
+    const manifest = JSON.parse(readFileSync(join(srcDir, 'manifest.json'), 'utf-8')) as ProviderManifest
+    const destDir = join(this.providersDir, manifest.id)
+    this.loadProvider(destDir)
+    const record = this.registry.get(manifest.id)
+    if (!record) throw new Error('扩展注册失败')
+    return record
+  }
+
+  /** 本地安装（目录/zip——复用分步安装器 + 自己注册） */
+  async installLocal(src: string): Promise<ProviderRecord> {
+    const session = this.installer.start(src)
+    for (const stage of ['copy', 'deps'] as const) {
+      const r = await this.installer.step(session.sessionId, stage)
+      if (!r.ok) throw new Error(r.error)
+    }
+    return this.registerInstalled(session.srcDir)
+  }
+
+  /** npm 在线安装（包名——下载 → 分步 → 自己注册） */
+  async installFromNpm(pkgName: string, registry?: string): Promise<ProviderRecord> {
+    const session = await this.installer.startNpm(pkgName, registry ? { registry } : undefined)
+    await this.installer.downloadSession(session.sessionId)
+    for (const stage of ['copy', 'deps'] as const) {
+      const r = await this.installer.step(session.sessionId, stage)
+      if (!r.ok) throw new Error(r.error)
+    }
+    const record = this.registerInstalled(session.srcDir)
+    this.installer.cleanupSession(session.sessionId)
+    return record
   }
 
   /** 注入事件转发目标（窗口创建后调用） */

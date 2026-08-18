@@ -140,7 +140,7 @@ export class ProviderController {
   /** 安装扩展：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
   private async install(payload: { path: string }): Promise<ApiResult<ProviderInfo>> {
     try {
-      const record = await this.installer.install(payload?.path ?? '')
+      const record = await this.providerManager.installLocal(payload?.path ?? '')
       return ok({ manifest: record.manifest, status: (record as unknown as { status(): ProviderStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
@@ -150,7 +150,7 @@ export class ProviderController {
   /** 在线安装扩展（npm 包名——npm pack 下载 → 解压 → 标准安装） */
   private async installFromNpm(payload: { pkg: string; registry?: string }): Promise<ApiResult<ProviderInfo>> {
     try {
-      const record = await this.installer.installFromNpm(payload?.pkg ?? '', payload?.registry ? { registry: payload.registry } : undefined)
+      const record = await this.providerManager.installFromNpm(payload?.pkg ?? '', payload?.registry)
       return ok({ manifest: record.manifest, status: (record as unknown as { status(): ProviderStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
@@ -187,6 +187,13 @@ export class ProviderController {
         session.skipAssets = payload.skipAssets
       }
       const sid = payload?.sessionId ?? ''
+      if (stage === 'register') {
+        // 注册阶段是扩展中心职责（installer 纯安装基建——不含品类概念）
+        this.providerManager.registerInstalled(session.srcDir)
+        this.installer.cleanupSession(sid)
+        session.stages.register = 'done'
+        return ok({ ok: true, stages: session.stages })
+      }
       const r = await this.installer.step(sid, stage, (depName, received, total) => {
         // 资源下载进度（复用 provider:assets-progress 事件——安装向导监听）
         const wc = this.providerManager.getEmitTarget()

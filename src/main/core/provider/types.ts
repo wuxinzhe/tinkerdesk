@@ -249,15 +249,11 @@ export interface InstallSession {
   tarballSize?: number
 }
 
-/** 安装器依赖（manager 注入） */
+/** 安装器依赖（纯品类无关基建——路径配置；注册/已装检查由各 center 自己做） */
 export interface InstallerDeps {
   providersDir: string
   /** 工具包复制目标（kind:tool 分流——不装进扩展目录） */
   toolsDir?: string
-  /** 创建并注册 Provider（validate 后调用——安装器完成文件操作后交 manager） */
-  registerProvider: (srcDir: string) => ProviderRecord
-  /** 查询扩展是否已安装（安装前校验——同 id 已装 → 拒绝） */
-  hasProvider: (id: string) => boolean
 }
 
 /* ── Provider 活动对象 ── */

@@ -1,11 +1,11 @@
 /**
  * installer.ts — 扩展安装器（独立子系统——安装/资源下载/卸载）
  *
- * 与 ProviderManager 解耦：installer 只做"文件系统操作 + 资源获取"——
- * 完成后把 Provider 交给 manager 注册（register 回调）——
- * manager 不关心安装细节。
+ * 纯品类无关安装基建：只做"文件系统操作 + 资源获取"——
+ * 注册/已装检查由各 center（ProviderManager/ToolCenter）自己做——
+ * 品类概念（provider/tool）不进入本文件。
  *
- * 分步骤安装（向导支持）：validate → copy → deps → assets → 完成
+ * 分步骤安装（向导支持）：validate → copy → deps → assets
  * 每步可独立调用（失败重试该步——不重头）。
  */
 import { execFileSync } from 'child_process'
@@ -16,7 +16,7 @@ import { basename, join } from 'path'
 import { getPackageTarball } from '../../repository/npm-registry-repository'
 import { locateManifestDir, resolveNpmCli, tarBin } from '../../utils/installer-utils'
 import { downloadWithMirror, execFileAsync } from '../../utils/process-utils'
-import type { InstallerDeps, InstallSession, ProviderManifest, ProviderRecord } from './types'
+import type { InstallerDeps, InstallSession, ProviderManifest } from './types'
 
 /** 自定义 registry 的 tarball 查询（npm view 命令——走镜像/代理） */
 async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ url: string; size?: number }> {
@@ -79,18 +79,14 @@ export class Installer {
     const providerDir = this.locateSource(src)
     const manifest = this.readManifest(providerDir)
     this.validateManifest(manifest, providerDir)
-    // 已安装校验（同 id 已注册 → 拒绝——更新走独立入口）
-    if (this.deps.hasProvider(manifest.id)) {
-      throw new Error(`扩展已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
-    }
     session.providerDir = providerDir
     session.manifest = manifest
     session.stages.validate = 'done'
     return session
   }
 
-  /** 执行下一步（copy/deps/assets/register——失败可重试该步——assets 下载带进度回调） */
-  async step(sessionId: string, stage: 'copy' | 'deps' | 'assets' | 'register', onProgress?: (depName: string, received: number, total: number) => void): Promise<{ ok: boolean; error?: string }> {
+  /** 执行下一步（copy/deps/assets——失败可重试该步——assets 下载带进度回调） */
+  async step(sessionId: string, stage: 'copy' | 'deps' | 'assets', onProgress?: (depName: string, received: number, total: number) => void): Promise<{ ok: boolean; error?: string }> {
     const session = this.sessions.get(sessionId)
     if (!session) throw new Error(`安装会话不存在: ${sessionId}`)
     if (!session.manifest) throw new Error('安装会话未完成校验')
@@ -112,14 +108,6 @@ export class Installer {
             throw new Error(`资源下载失败: ${failed.map((f) => `${f.name}（${f.error ?? '未知错误'}）`).join('、')}`)
           }
           break
-        case 'register':
-          this.deps.registerProvider(session.srcDir)
-          // 注册完成——npm 临时目录不再需要——清理
-          if (session.tmpDir) {
-            rmSync(session.tmpDir, { recursive: true, force: true })
-            session.tmpDir = undefined
-          }
-          break
       }
       session.stages[stage] = 'done'
       return { ok: true }
@@ -135,7 +123,7 @@ export class Installer {
     return this.sessions.get(sessionId)
   }
 
-  /** 清理安装会话（center 不走 register 分步时调用——删临时目录 + 移除会话） */
+  /** 清理安装会话（center 安装完成后调用——删临时目录 + 移除会话） */
   cleanupSession(sessionId: string): void {
     const session = this.sessions.get(sessionId)
     if (session) {
@@ -144,41 +132,6 @@ export class Installer {
       }
       this.sessions.delete(sessionId)
     }
-  }
-
-  // ── 一次性安装（兼容——顺序执行全部阶段） ──
-
-  /** 完整安装（validate→copy→deps→register——不含 assets——资源手动） */
-  async install(src: string): Promise<ProviderRecord> {
-    const session = this.start(src)
-    for (const stage of ['copy', 'deps'] as const) {
-      const r = await this.step(session.sessionId, stage)
-      if (!r.ok) throw new Error(r.error)
-    }
-    const provider = this.deps.registerProvider(session.srcDir)
-    if (session.tmpDir) {
-      rmSync(session.tmpDir, { recursive: true, force: true })
-      session.tmpDir = undefined
-    }
-    this.sessions.delete(session.sessionId)
-    return provider
-  }
-
-  /** 在线安装（npm 包名——下载 tarball → 解压 → 走标准安装流程） */
-  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<ProviderRecord> {
-    const session = await this.startNpm(pkgName, opts)
-    await this.downloadSession(session.sessionId)
-    for (const stage of ['copy', 'deps'] as const) {
-      const r = await this.step(session.sessionId, stage)
-      if (!r.ok) throw new Error(r.error)
-    }
-    const provider = this.deps.registerProvider(session.srcDir)
-    if (session.tmpDir) {
-      rmSync(session.tmpDir, { recursive: true, force: true })
-      session.tmpDir = undefined
-    }
-    this.sessions.delete(session.sessionId)
-    return provider
   }
 
   /** 开始 npm 分步安装会话（查询 tarball URL——不下载——下载在独立 download 步骤带进度） */
@@ -227,10 +180,6 @@ export class Installer {
     }
     const manifest = this.readManifest(located)
     this.validateManifest(manifest, located)
-    if (this.deps.hasProvider(manifest.id)) {
-      rmSync(tmpDir, { recursive: true, force: true })
-      throw new Error(`扩展已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
-    }
     session.srcDir = located
     session.providerDir = located
     session.manifest = manifest

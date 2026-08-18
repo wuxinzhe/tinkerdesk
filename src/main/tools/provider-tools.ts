@@ -83,7 +83,7 @@ export class ProviderInstallTool extends BaseTool {
           setTimeout(() => rmSync(tmpDir, { recursive: true, force: true }), 5000)
         }
       }
-      const record = await this.providerManager.getInstaller().install(srcPath)
+      const record = await this.providerManager.installLocal(srcPath)
       const info = {
         manifest: record.manifest,
         status: (record as unknown as { status(): import('../core/provider/types').ProviderStatus }).status(),
