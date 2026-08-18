@@ -20,11 +20,12 @@ import type { TinkerAgentOptions } from '../core/loop/types'
 import type { SessionContextFactory } from '../service/session-context-factory'
 import type { SessionService } from '../service/session-service'
 import type { MessageService } from '../service/message-service'
+import type { AgentWorkerHost } from '../core/agent/agent-worker-host'
 import { nowIso } from '../utils/time'
 import type { ApiResponse } from './api-response'
 import { fail, ok } from './api-response'
 import { ElectronEventSender as EventSenderService } from '../service/event-sender-service'
-import type { AgentApprovalRequestDTO, AgentClearAllRequestDTO, AgentInterruptRequestDTO, AgentMessageVO, AgentRevokeRequestDTO, AgentSendRequest, AgentToolResultRequestDTO } from './types'
+import type { AgentApprovalRequestDTO, AgentClearAllRequestDTO, AgentInterruptRequestDTO, AgentMessageVO, AgentRevokeRequestDTO, AgentSendRequest, AgentToolResultRequestDTO, AgentWorkerSendRequest } from './types'
 
 /** Agent controller（OO 化：按 session 惰性实例化 TinkerAgent——一个会话一个实例） */
 export class AgentController {
@@ -36,6 +37,7 @@ export class AgentController {
     private readonly sessionContextFactory: SessionContextFactory,
     private readonly sessionService: SessionService,
     private readonly messageService: MessageService,
+    private readonly agentWorkerHost?: AgentWorkerHost,
   ) { }
 
   /** 获取/惰性创建会话实例（profile 从 session 表查——IPC 不依赖前端传） */
@@ -61,6 +63,8 @@ export class AgentController {
     handleTrusted('agent:interrupt', (_event, payload) => this.interruptSession(_event, payload))
     handleTrusted('agent:interruptNoPending', (_event, payload) => this.interruptNoPendingSession(_event, payload))
     handleTrusted('agent:clearAll', (_event, payload) => this.clearSessionState(_event, payload))
+    // AgentWorker 并行路径：把一条用户消息投递给 worker 进程跑 AgentLoop（流式经 host 转发回 UI）
+    handleTrusted('agent-worker:send', (event, req) => this.sendToWorker(event, req))
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -98,7 +102,35 @@ export class AgentController {
     }
   }
 
-  /** 提交工具执行结果（onToolResult）：UI/扩展工具异步返回 */
+  /**
+   * AgentWorker 并行路径触发器：user 文本 → host → AgentWorker 进程（AgentLoop）
+   * → 流式事件经 host 转发回 UI。作为并行能力——不触碰主进程内联 agent:chat 路径。
+   * 注意：流式结果由 worker 侧 AgentLoop 经 host 转发到渲染层（agent:message 通道），
+   * 此处仅登记回流目标（event.sender）并投递，不等 LLM 完成（异步闭环）。
+   */
+  private async sendToWorker(event: Electron.IpcMainInvokeEvent, req: AgentWorkerSendRequest): Promise<ApiResponse<{ sessionId: string }>> {
+    const senderId = event.sender.id
+    try {
+      if (!this.agentWorkerHost) {
+        return fail('AgentWorkerHost 未初始化（agentWorkerHost 未注入）')
+      }
+      const profile = req.profile || 'default'
+      // 会话：存在则用；不存在则主进程先建（worker 的 SessionContextFactory.build 要求会话已在 DB）
+      let sessionId = req.sessionId
+      if (!sessionId) {
+        const created = this.sessionService.create(profile)
+        sessionId = created.id
+      }
+      // 登记该会话 worker 事件回流目标（当前 renderer）
+      this.agentWorkerHost.setRelay(sessionId, senderId)
+      // 投递给 AgentWorker 进程驱动 AgentLoop
+      this.agentWorkerHost.dispatch(sessionId, { type: 'agent:prompt', sessionId, profile, text: req.text })
+      return ok({ sessionId })
+    } catch (e) {
+      return fail((e as Error).message)
+    }
+  }
+
   private submitToolResult(_event: Electron.IpcMainInvokeEvent, payload: AgentToolResultRequestDTO): ApiResponse<null> {
     this.getAgent(payload.sessionId).onToolResult(payload.sessionId, payload.toolCallId, payload.result)
     // clarify 回答回显：把 user_response 写入对应 clarify_request 消息（刷新后卡片显示"已回复"）

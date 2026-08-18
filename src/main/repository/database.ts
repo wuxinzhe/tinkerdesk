@@ -9,19 +9,21 @@ import { resolveResource } from '../utils/resources-path';
 let db: DatabaseSync | null = null;
 
 /** 获取数据库文件路径（用户数据目录，随 app 打包/安装自动定位） */
-function dbPath(): string {
-  return join(app.getPath('userData'), 'tinkerdesk.db');
+function dbPath(userDataPath?: string): string {
+  return join(userDataPath ?? app.getPath('userData'), 'tinkerdesk.db');
 }
 
 /**
  * 初始化数据库：打开连接 + 建表 + 种子数据（幂等）
  * 参考 schema：custom_models 去掉 user_id，providers 沿用 system_providers
+ * @param userDataPath 可选——AgentWorker（utilityProcess 无 app 对象）传入自己的用户数据目录；
+ *                     主进程不传，回落 app.getPath('userData')。
  */
-export function initDatabase(): DatabaseSync {
+export function initDatabase(userDataPath?: string): DatabaseSync {
   if (db) {
     return db;
   }
-  db = new DatabaseSync(dbPath());
+  db = new DatabaseSync(dbPath(userDataPath));
   db.exec('PRAGMA journal_mode = WAL;');
   createTables(db);
   ensureSkillRelatedSchema(db);

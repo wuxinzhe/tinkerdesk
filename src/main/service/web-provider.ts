@@ -11,7 +11,7 @@
  */
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { app } from 'electron'
+import { getAppUserDataPath } from '../utils/electron-app'
 import { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManifest } from '../core/provider/types'
 
@@ -48,7 +48,7 @@ export class WebProvider {
   private readonly configFile: string
 
   constructor(private readonly providerCenter: ProviderCenter) {
-    this.configFile = join(app.getPath('userData'), 'web-provider-config.json')
+    this.configFile = join(getAppUserDataPath(), 'web-provider-config.json')
   }
 
   /** 收集某接口的扩展 provider（内置不在此——内置是工具内建兜底） */

@@ -7,6 +7,7 @@
  */
 import { renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { getAppRootPath } from '../../utils/electron-app'
 import { Worker } from 'worker_threads'
 import type { ProviderApi, ProviderCheckResult, ProviderContext, ProviderHostHooks, ProviderRecord, ProviderStatus } from './types'
 
@@ -19,7 +20,7 @@ export class ProviderHost {
 
   /** 启动扩展 Worker（后台加载——ready 经 hooks.onReady 通知——main 事件循环零阻塞） */
   spawnWorker(record: ProviderRecord, dir: string, configFile: string, config: Record<string, unknown>): void {
-    const worker = new Worker(join(__dirname, 'provider-host-worker.js'), {
+    const worker = new Worker(join(getAppRootPath(), 'out', 'main', 'provider-host-worker.js'), {
       workerData: { providerDir: dir, entry: record.manifest.entry, manifest: record.manifest, configFile },
     })
     record.worker = worker

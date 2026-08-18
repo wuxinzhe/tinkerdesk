@@ -11,7 +11,7 @@
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { app } from 'electron'
+import { getAppUserDataPath } from '../utils/electron-app'
 import { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManifest } from '../core/provider/types'
 
@@ -47,7 +47,7 @@ export class AudioToolProvider {
   private readonly configFile: string
 
   constructor(private readonly providerCenter: ProviderCenter) {
-    this.configFile = join(app.getPath('userData'), 'audio-tool-provider-config.json')
+    this.configFile = join(getAppUserDataPath(), 'audio-tool-provider-config.json')
   }
 
   /** 收集某接口的扩展 provider（内置 Edge 不在此——由 getActiveTts 独立处理） */

@@ -43,6 +43,15 @@ export class ElectronEventSender implements IEventSender {
     this.send(sessionId, `${ROUTE_CHAT}:${type}`, data)
   }
 
+  /**
+   * 供跨进程转发：agent-worker-host 收到 worker 的 `agent:event` 后，把
+   * worker 的 IEventSender 消息统一经此处投递到 UI——route 已是 '{一级}:{二级}'，
+   * 直接走统一出口（IPC_MESSAGE 单通道），与主进程内联路径的前端事件形态完全一致。
+   */
+  sendRoute(route: string, sessionId: string, data: unknown, convId?: string): void {
+    this.send(sessionId, route, data, convId)
+  }
+
   /** action 域（行为动作） */
   sendAction(sessionId: string, type: string, data: unknown): void {
     this.send(sessionId, `${ROUTE_ACTION}:${type}`, data)

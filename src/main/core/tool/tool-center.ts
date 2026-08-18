@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
-import { app } from 'electron'
+import { getAppUserDataPath } from '../../utils/electron-app'
 import type { Installer } from '../installer/installer'
 import type { ToolManager } from './tool-manager'
 import { ToolSchema } from './tool-schema'
@@ -30,7 +30,7 @@ export class ToolCenter implements ICenter {
     this.installer = deps.installer
     this.uninstaller = new Uninstaller()
     this.builtin = deps.builtin ?? []
-    this.toolsDir = join(app.getPath('userData'), 'tools')
+    this.toolsDir = join(getAppUserDataPath(), 'tools')
     mkdirSync(this.toolsDir, { recursive: true })
   }
 

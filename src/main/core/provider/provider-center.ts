@@ -13,7 +13,7 @@
  *   旧目录 plugins/ 首次启动一次性迁移到 providers/（数据不丢）。
  */
 
-import { app } from 'electron'
+import { getAppUserDataPath } from '../../utils/electron-app'
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync } from 'fs'
 import { join } from 'path'
 import { handleTrusted } from '../../security/ipc-guard'
@@ -44,7 +44,7 @@ export class ProviderCenter implements ICenter {
   private readonly uninstaller: Uninstaller
 
   constructor() {
-    this.providersDir = join(app.getPath('userData'), 'providers')
+    this.providersDir = join(getAppUserDataPath(), 'providers')
     this.migrateLegacyPluginsDir()
     // host 先建（hooks 闭包延迟调用 loader——loader 随后赋值——消息到来时已就绪）
     this.host = new ProviderHost({
@@ -54,7 +54,7 @@ export class ProviderCenter implements ICenter {
     })
     this.installer = new Installer({
       providersDir: this.providersDir,
-      toolsDir: join(app.getPath('userData'), 'tools'),
+      toolsDir: join(getAppUserDataPath(), 'tools'),
     })
     this.uninstaller = new Uninstaller()
     mkdirSync(this.providersDir, { recursive: true })
@@ -62,7 +62,7 @@ export class ProviderCenter implements ICenter {
 
   /** 旧目录迁移：plugins/ → providers/（一次——目录存在才 rename——幂等） */
   private migrateLegacyPluginsDir(): void {
-    const legacy = join(app.getPath('userData'), 'plugins')
+    const legacy = join(getAppUserDataPath(), 'plugins')
     if (existsSync(legacy) && !existsSync(this.providersDir)) {
       try {
         renameSync(legacy, this.providersDir)

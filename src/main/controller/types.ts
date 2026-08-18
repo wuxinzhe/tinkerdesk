@@ -81,6 +81,16 @@ export interface AgentSendRequest {
   content: string
 }
 
+/** AgentWorker 路径发送请求（user 文本 → host → AgentWorker 进程 → AgentLoop → 流式 → UI） */
+export interface AgentWorkerSendRequest {
+  /** 会话 ID（可空——此时主进程先按 profile 创建会话） */
+  sessionId?: string
+  /** Agent 画像标识（必传） */
+  profile: string
+  /** 用户文本 */
+  text: string
+}
+
 /** 审批请求事件（主进程 → 渲染层，弹审批卡片） */
 export interface AgentApprovalEvent {
   toolCallId: string

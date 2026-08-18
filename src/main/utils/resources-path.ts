@@ -9,7 +9,7 @@
  */
 import {existsSync} from 'fs'
 import {join} from 'path'
-import {app} from 'electron'
+import {getAppRootPath} from './electron-app'
 
 /** 资源根目录（src/main/resources 或打包后 resources） */
 export function getResourcesDir(): string {
@@ -20,7 +20,7 @@ export function getResourcesDir(): string {
     // 2. dev：项目根 src/main/resources
     join(process.cwd(), 'src', 'main', 'resources'),
     // 3. 兜底：app 目录下 resources / out/main 上溯两级的 resources
-    join(app.getAppPath(), 'resources'),
+    join(getAppRootPath(), 'resources'),
     join(__dirname, '..', '..', 'resources'),
   ]
   for (const c of candidates) {
