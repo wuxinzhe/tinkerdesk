@@ -47,7 +47,7 @@ Electron 主进程内的 child process：
 - 会话关闭/超时（建议 idle 30s）→ 销毁进程释放；
 - 崩溃 → 仅重启该会话进程，不伤其他。
 
-> ⚠️ **待拍板**：session 粒度（推荐） vs profile 粒度（每 profile 一进程，进程数少但同 profile 多会话仍共享）。
+> 粒度定稿：session 进程隔离（dsh 多 agent 进程隔离一致）。
 
 ## 四、职责边界（避免跨进程对象陷阱）
 
@@ -63,7 +63,7 @@ Electron 主进程内的 child process：
 
 | 方向 | 消息 | 说明 |
 |---|---|---|
-| worker→main | `persist:save{kind,id,data}` | 写消息/会话/tool 记录（主进程 Repository 唯一写入） |
+| worker→main | `persist:save{kind,id,data}` | **归档**（worker 活跃态自持，结束时一次性写主进程 DB） |
 | worker→main | `persist:load{kind,id}` | 读历史 |
 | worker→main | `approval:request{id,tool,args}` | 危险工具挂起，等主进程回复 `approval:decide` |
 | worker→main | `provider:invoke{providerId,kind,args}` | voice/stt/tts（ProviderCenter 在主进程） |
@@ -74,11 +74,11 @@ Electron 主进程内的 child process：
 
 **审批恢复链**（原 waitToolResult）：危险工具 → worker 内 `waitToolResult` 挂起 → `approval:request` → main → renderer 弹窗 → 用户决定 → main `approval:decide` → worker `waitToolResult.resolve` 恢复/取消。**链路不变，只是跨了进程**。
 
-## 五、持久化：DB 归主进程（唯一写入者）
+## 五、持久化：worker 自持活跃状态 + 归档写主进程 DB
 
-SQLite 单文件，**主进程独占写**（避免并发写锁竞争）。worker 所有读写走 `persist:*` RPC。渲染层看到的会话/消息一致性由主进程统一保证。
+对齐 dsh「session 自持 + resume」：**worker 活跃时把会话/消息状态放在进程内内存**（无跨进程实时读写，避免 IPC 往返性能损失）；**会话结束时一次性归档写主进程 DB**（渲染层读历史走 DB）。中断恢复时从 DB 归档兜底重建。
 
-> ⚠️ **待拍板**：DB 归主进程（推荐） vs worker 直连 DB（需额外锁机制）。
+> 不做跨进程中央共享——dsh 无中央 DB，tinker 以此规避并发写锁 + 实时 IPC 的复杂度。
 
 ## 六、异常与生命周期
 
@@ -100,7 +100,7 @@ SQLite 单文件，**主进程独占写**（避免并发写锁竞争）。worker
 ## 八、降级与取舍
 
 - **保留主进程内路径**（`WorkerRpc` 内联实现）——单 profile/低配调试直接主进程跑，不强制 worker（dsh 也有 headless 内跑）。
-- **成本最高点**：DB 归主进程后 worker 每次读写有 IPC 往返 → **批量化**（一个 prompt 回合攒批写，非逐条）——需注意性能。
+- **成本最高点**：状态进程内自持后，存档/中断恢复的边界要理清（何时算"一轮结束"归档）——用「会话事件批次结束」触发一次性归档。
 - **工具状态跨进程隔离**（terminal session 等）——换进程即丢，属预期（隔离换取安全）。
 - **Renderer 完全无感**：仍只连 main，main 把 worker 当"远程 agent"，消息协议不变。
 
@@ -111,10 +111,12 @@ SQLite 单文件，**主进程独占写**（避免并发写锁竞争）。worker
 3. **M3**：持久化 / 审批 / 工具执行跨进程打通。
 4. **M4**：进程池生命周期 + 崩溃重启 + 并发多 profile 实测。
 
-## 待拍板
+## 待拍板（已按 dsh 对照定稿）
 
-1. 隔离粒度：session vs profile。
-2. DB 归属：主进程独占（推荐） vs worker 直连。
-3. 降级路径：保留主进程内跑 vs 纯 worker 必跑。
+对照 dsh（同为 Node.js）实现后，三个疑问均有答案，定稿如下：
 
-拍板后定稿类签名 + 消息 Schema + 文件清单。
+1. **隔离粒度 → session 进程隔离**（与 dsh 多 agent 进程隔离一致）；工具**不再单独拉进程**——worker 进程内可信工具直接执行，重/不可信的同步工具用 worker 内的 `worker_thread` 隔离（dsh：工具在 agent 进程内 + 不可信代码走 code-runtime-worker-thread / subprocess 沙盒）。
+2. **DB 归属 → 不做跨进程中央共享**。dsh 无中央 DB，用 session 目录 + resume 自持状态。tinker 适配：**worker 活跃时状态进程内自持（内存，无 IPC 实时读写）→ 结束/归档一次性写主进程 DB**（渲染层读历史走 DB，低频归档写）。删掉原"persist:* RPC 每次往返"。
+3. **降级路径 → 保留主进程内跑**（dsh CLI headless 同款）：单 agent/低配/调试直接主进程跑 AgentLoop；高并发多会话才进程隔离。
+
+> 结论由 `docs/decisions/`（dsh 对照）支撑——AgentLoop 中断进程隔离（多会话并发）、工具按可信度分级、状态进程内自持 + 归档。
