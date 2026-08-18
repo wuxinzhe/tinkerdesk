@@ -296,6 +296,15 @@ const router = createRouter({
           // 扩展市场详情（readme 展示）
         },
         {
+          path: 'settings/tools-market/:name',
+          components: {
+            default: () => import('@/renderer/views/settings/detail/ToolMarketDetailView.vue'),
+            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/ToolMarketDetailView.vue'),
+          },
+          // 工具市场详情（readme 展示）
+        },
+        {
           path: 'settings/providers/install',
           components: {
             default: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),

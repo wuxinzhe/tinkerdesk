@@ -322,7 +322,7 @@ async function installTool(tool: MarketToolItem) {
 }
 
 function viewTool(tool: MarketToolItem) {
-  window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'info', code: 'tool:market:detail', message: `工具详情页即将上线（${displayToolName(tool.name)}）` } }))
+  router.push({ path: `/workspace/settings/tools-market/${encodeURIComponent(tool.name)}` })
 }
 
 // URL type 变化（外部导航 /market/skill 等）→ 同步本地 Tab
