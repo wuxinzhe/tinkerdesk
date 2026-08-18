@@ -10,6 +10,7 @@ import type { AgentConfig } from '../../core/loop/types'
 import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
 import type { PromptRenderer } from '../../core/prompt/renderer'
+import type { ToolManager } from '../../core/tool/tool-manager'
 
 /** 默认 Agent Mode 元数据 */
 const META = {
@@ -40,8 +41,10 @@ export class DefaultAgentMode implements IAgentMode {
 
   /** 运行时已渲染的灵魂提示词文本 */
   private readonly soulPromptTemp: string
+  /** ToolManager（通用模式取全量工具清单用） */
+  private readonly toolManager: ToolManager
 
-  constructor(promptRenderer: PromptRenderer) {
+  constructor(promptRenderer: PromptRenderer, toolManager: ToolManager) {
     // Bean 实例化时即将 getAgentModePrompt() 指定的模板渲染为最终文本
     const templateName = META.promptTemplate
     const ctxMap: Record<string, unknown> = {
@@ -49,15 +52,16 @@ export class DefaultAgentMode implements IAgentMode {
     }
     const rendered = promptRenderer.render(templateName, ctxMap)
     this.soulPromptTemp = rendered ?? ''
+    this.toolManager = toolManager
   }
 
   getModuleList(): string[] {
     return MODULE_ORDER
   }
 
-  /** 默认（通用）模式：全量工具——所有 profile 可见全局工具池全部工具 */
-  getToolset(): string[] {
-    return ['*']
+  /** 默认（通用）模式：全量工具——具体列出全部注册工具名（含内置 + 外置安装） */
+  getToolset(_profile?: string): string[] {
+    return this.toolManager.getAllToolNames()
   }
 
   getDefaultConfig(): AgentConfig {

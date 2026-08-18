@@ -74,6 +74,8 @@ import { AgentToolService } from './service/agent-tool-service'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
 import { DefaultAgentMode } from './service/agent/default-agent-mode'
+import { MinimalAgentMode } from './service/agent/minimal-agent-mode'
+import { CreatorAgentMode } from './service/agent/creator-agent-mode'
 import { ModelConfigService } from './service/model-config-service'
 import { PrivateSkillService } from './service/private-skill-service'
 import { PromptService } from './service/prompt-service'
@@ -373,7 +375,9 @@ export function bootstrap(
   const sceneModelService = new SceneModelService(sceneRepo, operationManager)
   // ── Agent Mode：注册表 + 默认模式，agentService 创建时需要 ---
   const agentModeRegistry = new AgentModeRegistry()
-  agentModeRegistry.register(new DefaultAgentMode(renderer))
+  agentModeRegistry.register(new DefaultAgentMode(renderer, toolManager))
+  agentModeRegistry.register(new MinimalAgentMode())
+  agentModeRegistry.register(new CreatorAgentMode(toolManager, agentToolService))
   const agentService = new AgentService(agentRepo, agentConfigRepo, agentModeRegistry)
   const agentConfigService = new AgentConfigService(agentConfigRepo, agentService, agentModeRegistry)
   const systemProviderService = new SystemProviderService(providerRepo)

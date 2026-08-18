@@ -187,6 +187,11 @@ export class ToolManager {
     return names.filter((n) => !disabled.has(n))
   }
 
+  /** 全部已注册工具名（模式 getToolset 取全量用——含内置 + 外置安装） */
+  getAllToolNames(): string[] {
+    return Array.from(this.tools.keys())
+  }
+
   /** 根据工具名获取完整 ToolSchema（未找到返回 null） */
   getToolSchema(toolName: string): ToolSchema | null {
     const tool = this.tools.get(toolName)

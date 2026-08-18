@@ -85,8 +85,10 @@ export class Conversation implements BusyLoopHost {
     // ── 对话周期：创建 IN_PROGRESS 对话 + 构建 ConversationContext ──
     const conv = conversationService.startConversation(this.sessionId)
     this.convId = conv.id
-    // 装配 toolNameSet：DB agent_tools（已授权）优先，空则回落注入的 profile 默认（mode.getToolset）
-    const toolNames = toolManager.getAvailableToolNames(this.profile, agentToolService.resolveToolNames(this.profile))
+    // 装配 toolNameSet：只从当前 Agent 的 mode.getToolset(profile) 获取——不再有 DB 优先/兜底
+    // （创造者模式 getToolset 内部按 profile 授权定制 + 空回落全量；极简/通用为静态/全量配置）
+    const toolset = this.ctx.agentMode?.getToolset(this.profile) ?? []
+    const toolNames = toolManager.getAvailableToolNames(this.profile, toolset.length > 0 ? toolset : null)
     const allConfigs = this.resolveAllConfigs(this.profile)
     this.convCtx = buildConvCtx(ctx, this.convId, toolNames, allConfigs)
     // 忙碌模式策略（构建时读一次——回合内固定——中途修改配置下一轮生效）
