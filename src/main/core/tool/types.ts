@@ -88,6 +88,8 @@ export interface ToolCenterDeps {
   toolManager: ToolManager
   /** 分步安装器（与 provider 扩展共用——工具/扩展/app 走分步安装链路） */
   installer: Installer
+  /** 代码内置工具（工程 src/main/tools 的所有工具——启动经 ToolCenter 校验后注册） */
+  builtin?: AgentToolRegistration[]
 }
 
 /** 外置工具包 manifest（tinkerdesk-tool-* 包内 manifest.json 结构） */

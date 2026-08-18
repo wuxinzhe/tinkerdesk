@@ -328,9 +328,9 @@ export function bootstrap(
     { meta: { name: PROVIDER_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new ProviderUninstallTool(renderer, providerCenter) },
   ]
 
-  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...providerTools, ...toolRegistrations])
-  // 工具中心：外置工具包安装/加载/注册（独立于 provider 扩展——复用分步安装器）
-  const toolCenter = new ToolCenter({ toolManager, installer: providerCenter.getInstaller() })
+  const toolManager = new ToolManager()
+  // 工具中心：启动统一注册两类工具（代码内置 + 外置安装）——逐 check 可用性只注册可用
+  const toolCenter = new ToolCenter({ toolManager, installer: providerCenter.getInstaller(), builtin: [...builtinTools, ...desktopTools, ...providerTools, ...toolRegistrations] })
   toolCenter.loadAll()
   // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())

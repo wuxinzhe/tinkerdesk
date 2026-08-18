@@ -48,10 +48,15 @@ export class ToolManager {
   }
 
   /**
-   * 构造：接收所有工具注册项（内建 + 桌面 + 客户端），逐个 check 可用性后按名称编入内存。
-   * 重复名称抛错；不可用工具跳过（不入池）。
+   * 构造：接收所有内置工具注册项（内建 + 桌面 + 客户端），逐 check 可用性后编入内存。
+   * 重复名称抛错；不可用工具跳过（不入池）。ToolCenter 启动注册也走 registerAll。
    */
-  constructor(registrations: AgentToolRegistration[]) {
+  constructor(registrations: AgentToolRegistration[] = []) {
+    this.registerAll(registrations)
+  }
+
+  /** 批量注册（内建/桌面/外置 统一入口）——逐 check 可用性，不可用记录原因不入池 */
+  registerAll(registrations: AgentToolRegistration[]): void {
     for (const reg of registrations) {
       const toolName = reg.meta.name
 

@@ -13,13 +13,15 @@ import type { ICenter } from '../center/types'
  * 与 ToolManager 分工：ToolCenter 管"装了什么工具"（生命周期），ToolManager 管"谁能用/怎么调"（授权/查询/执行）。
  * 安装链路复用 installer 的 npm 下载/解压/校验（与 provider 扩展同一套基建）。
  */
-import type { ToolCenterDeps, ToolPackageManifest } from './types'
+import type { ToolCenterDeps, ToolPackageManifest, AgentToolRegistration } from './types'
 import { Uninstaller } from '../installer/uninstaller'
 
 export class ToolCenter implements ICenter {
   private readonly toolManager: ToolManager
   private readonly installer: Installer
   private readonly uninstaller: Uninstaller
+  /** 代码内置工具注册项（启动校验后注册——与安装工具统一入口） */
+  private readonly builtin: AgentToolRegistration[]
   /** 外置工具安装目录（独立于 provider 扩展 plugins/） */
   readonly toolsDir: string
 
@@ -27,12 +29,18 @@ export class ToolCenter implements ICenter {
     this.toolManager = deps.toolManager
     this.installer = deps.installer
     this.uninstaller = new Uninstaller()
+    this.builtin = deps.builtin ?? []
     this.toolsDir = join(app.getPath('userData'), 'tools')
     mkdirSync(this.toolsDir, { recursive: true })
   }
 
-  /** 启动：扫描工具目录 → 加载并注册全部已装工具（不可用跳过并记录） */
+  /** 启动：注册全部工具（两类一起）——① 代码内置 ② 外置安装扫描——每个过可用性校验只注册可用 */
   loadAll(): void {
+    // ① 代码内置工具（工程 src/main/tools——逐 check 可用性，不可用不入池）
+    if (this.builtin.length > 0) {
+      this.toolManager.registerAll(this.builtin)
+    }
+    // ② 外置安装工具（文件扫描 tools/ 目录——require entry → {schema,execute} → 注册）
     if (!existsSync(this.toolsDir)) return
     for (const name of readdirSync(this.toolsDir)) {
       const dir = join(this.toolsDir, name)
@@ -57,8 +65,10 @@ export class ToolCenter implements ICenter {
     if (!toolName) throw new Error(`工具包 ${manifest.id} 未声明工具名`)
 
     // 包装成 IAgentTool：schema 静态 + execute 转发扩展契约（{ok, output?, error?} → ToolResult）
+    // check：外置工具加载成功（manifest/entry/schema/execute 齐）即视为注册可用——实现类型定义即通过
     const tool: import('./types').IAgentTool = {
       getSchema: () => mod.schema as ToolSchema,
+      check: () => true,
       async execute(ctx) {
         try {
           const result = await mod.execute!({ arguments: ctx.toolCall?.arguments ?? {} })
