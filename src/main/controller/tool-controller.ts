@@ -76,6 +76,7 @@ export class ToolController {
       error: errors.get(s.name) ?? undefined,
       editable,
       authorized,
+      source: this.toolManager.getToolSource(s.name),
     })
 
     // creator：授权集可编辑（显示全量可授权，勾选 = authorized）

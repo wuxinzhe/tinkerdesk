@@ -206,6 +206,8 @@ export interface ToolItemVO {
   editable?: boolean
   /** 是否已授权给该 profile（creator 模式——agent_tools 勾选态） */
   authorized?: boolean
+  /** 注册来源：builtin（框架内置）/ external（外置安装）——前端 Tab 分组 */
+  source?: 'builtin' | 'external'
 }
 
 /** 工具清单查询 DTO */

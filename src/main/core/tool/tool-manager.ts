@@ -192,6 +192,11 @@ export class ToolManager {
     return [...this.tools.keys()].filter((n) => allow.includes(this.toolSources.get(n) ?? 'builtin'))
   }
 
+  /** 获取工具注册来源（内置 builtin / 外置 external——缺省内置） */
+  getToolSource(name: string): 'builtin' | 'external' {
+    return (this.toolSources.get(name) as 'builtin' | 'external') ?? 'builtin'
+  }
+
   /** 根据工具名获取完整 ToolSchema（未找到返回 null） */
   getToolSchema(toolName: string): ToolSchema | null {
     const tool = this.tools.get(toolName)
