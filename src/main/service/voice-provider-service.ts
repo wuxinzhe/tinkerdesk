@@ -13,7 +13,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { ProviderManager } from '../core/provider/provider-manager'
+import { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManifest } from '../core/provider/types'
 
 export interface VoiceProviderInfo {
@@ -33,11 +33,11 @@ export interface VoiceConfig {
 export class VoiceProviderService {
   private readonly configFile: string
 
-  constructor(private readonly providerManager: ProviderManager) {
+  constructor(private readonly providerCenter: ProviderCenter) {
     this.configFile = join(app.getPath('userData'), 'voice-config.json')
   }
 
-  /** 收集语音接口的 provider（从 ProviderManager 的接口 provider 注册表读取） */
+  /** 收集语音接口的 provider（从 ProviderCenter 的接口 provider 注册表读取） */
   providers(): { stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] } {
     const toInfo = (r: { manifest: ProviderManifest }): VoiceProviderInfo => ({
       providerId: r.manifest.id,
@@ -46,8 +46,8 @@ export class VoiceProviderService {
       interfaceVersion: r.manifest.systemInterfaces?.find((i) => i.id.startsWith('voice.'))?.version ?? 1,
     })
     return {
-      stt: this.providerManager.getProviders('voice.stt').map(toInfo),
-      tts: this.providerManager.getProviders('voice.tts').map(toInfo),
+      stt: this.providerCenter.getProviders('voice.stt').map(toInfo),
+      tts: this.providerCenter.getProviders('voice.tts').map(toInfo),
     }
   }
 
@@ -79,7 +79,7 @@ export class VoiceProviderService {
   async transcribe(samples: Float32Array): Promise<string> {
     const { sttProvider } = this.getConfig()
     if (!sttProvider) throw new Error('未配置 STT provider，请到 系统设置 → 语音设置 选择')
-    const result = await this.providerManager.invokeProvider<{ text?: string }>(
+    const result = await this.providerCenter.invokeProvider<{ text?: string }>(
       sttProvider,
       'stt:transcribe',
       { samples },
@@ -91,7 +91,7 @@ export class VoiceProviderService {
   async speak(text: string): Promise<string> {
     const { ttsProvider } = this.getConfig()
     if (!ttsProvider) throw new Error('未配置 TTS provider，请到 系统设置 → 语音设置 选择')
-    const result = await this.providerManager.invokeProvider<{ audio?: string }>(
+    const result = await this.providerCenter.invokeProvider<{ audio?: string }>(
       ttsProvider,
       'tts:speak',
       { text },
@@ -104,7 +104,7 @@ export class VoiceProviderService {
    *  与扩展自检的"当前配置就绪"不一致） */
   async providerReady(providerId: string): Promise<boolean> {
     try {
-      const status = await this.providerManager.getStatus(providerId)
+      const status = await this.providerCenter.getStatus(providerId)
       return status.status === 'registered'
     } catch {
       return false

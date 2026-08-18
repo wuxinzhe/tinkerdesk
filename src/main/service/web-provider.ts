@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { ProviderManager } from '../core/provider/provider-manager'
+import { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManifest } from '../core/provider/types'
 
 /** Web 系统接口（与 SYSTEM_INTERFACES 一致） */
@@ -47,7 +47,7 @@ const CONFIG_KEY: Record<WebInterfaceId, 'search' | 'extract'> = {
 export class WebProvider {
   private readonly configFile: string
 
-  constructor(private readonly providerManager: ProviderManager) {
+  constructor(private readonly providerCenter: ProviderCenter) {
     this.configFile = join(app.getPath('userData'), 'web-provider-config.json')
   }
 
@@ -59,7 +59,7 @@ export class WebProvider {
       version: r.manifest.version,
       interfaceVersion: r.manifest.systemInterfaces?.find((i) => i.id === iface)?.version ?? 1,
     })
-    return this.providerManager.getProviders(iface).map(toInfo)
+    return this.providerCenter.getProviders(iface).map(toInfo)
   }
 
   /** 读取激活配置（默认内置兜底） */
@@ -93,7 +93,7 @@ export class WebProvider {
   async callProvider<T = unknown>(iface: WebInterfaceId, payload: unknown): Promise<T> {
     const providerId = this.getActiveProvider(iface)
     if (!providerId) throw new Error(`未激活 ${iface} 扩展 provider（工具设置中选择）`)
-    return this.providerManager.invokeProvider<T>(providerId, INTERFACE_CHANNELS[iface], payload)
+    return this.providerCenter.invokeProvider<T>(providerId, INTERFACE_CHANNELS[iface], payload)
   }
 
   private exists(iface: WebInterfaceId, providerId: string): boolean {

@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { app } from 'electron'
-import { ProviderManager } from '../core/provider/provider-manager'
+import { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManifest } from '../core/provider/types'
 
 /** Agent 语音工具接口 */
@@ -46,7 +46,7 @@ const INTERFACE_CHANNELS: Record<AudioToolInterfaceId, string> = {
 export class AudioToolProvider {
   private readonly configFile: string
 
-  constructor(private readonly providerManager: ProviderManager) {
+  constructor(private readonly providerCenter: ProviderCenter) {
     this.configFile = join(app.getPath('userData'), 'audio-tool-provider-config.json')
   }
 
@@ -58,7 +58,7 @@ export class AudioToolProvider {
       version: r.manifest.version,
       interfaceVersion: r.manifest.systemInterfaces?.find((i) => i.id === iface)?.version ?? 1,
     })
-    return this.providerManager.getProviders(iface).map(toInfo)
+    return this.providerCenter.getProviders(iface).map(toInfo)
   }
 
   /** 读取激活配置（tts 默认内置 Edge 扩展；stt 默认空） */
@@ -104,7 +104,7 @@ export class AudioToolProvider {
       // 目录创建失败——让后续报错携带明确信息（不静默）
     }
     try {
-      const result = await this.providerManager.invokeProvider<{ filePath?: string }>(
+      const result = await this.providerCenter.invokeProvider<{ filePath?: string }>(
         active,
         INTERFACE_CHANNELS['tool.tts'],
         { text, outputPath },
@@ -114,7 +114,7 @@ export class AudioToolProvider {
     } catch (e) {
       if (active !== BUILTIN_EDGE_TTS_PLUGIN && this.allowFallback()) {
         console.warn('[audio-tool] tts 扩展失败，回退内置 Edge:', (e as Error).message)
-        const fallbackResult = await this.providerManager.invokeProvider<{ filePath?: string }>(
+        const fallbackResult = await this.providerCenter.invokeProvider<{ filePath?: string }>(
           BUILTIN_EDGE_TTS_PLUGIN,
           INTERFACE_CHANNELS['tool.tts'],
           { text, outputPath },
@@ -131,7 +131,7 @@ export class AudioToolProvider {
     if (!active) {
       throw new Error('未配置 STT provider——到 工具管理 → speech_to_text → Provider 设置 选择（如 sherpa 本地）')
     }
-    const result = await this.providerManager.invokeProvider<{ text?: string }>(
+    const result = await this.providerCenter.invokeProvider<{ text?: string }>(
       active,
       INTERFACE_CHANNELS['tool.stt'],
       { filePath },

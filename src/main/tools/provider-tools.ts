@@ -18,6 +18,7 @@ import { get as httpsGet } from 'https'
 import { get as httpGet } from 'http'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../core/tool/tool-result'
+import type { ProviderCenter } from '../core/provider/provider-center'
 import type { ProviderManager } from '../core/provider/provider-manager'
 import type { PromptRenderer } from '../core/prompt/renderer'
 import type { ToolContext } from '../core/loop/types'
@@ -58,7 +59,7 @@ function downloadToTemp(url: string, destDir: string): Promise<string> {
 
 /** 安装扩展（本地路径或 URL） */
 export class ProviderInstallTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly providerManager: ProviderManager) {
+  constructor(renderer: PromptRenderer, private readonly providerCenter: ProviderCenter) {
     super(renderer, PROVIDER_INSTALL_TOOL_NAME)
   }
 
@@ -83,7 +84,7 @@ export class ProviderInstallTool extends BaseTool {
           setTimeout(() => rmSync(tmpDir, { recursive: true, force: true }), 5000)
         }
       }
-      const record = await this.providerManager.installLocal(srcPath)
+      const record = await this.providerCenter.installLocal(srcPath)
       const info = {
         manifest: record.manifest,
         status: (record as unknown as { status(): import('../core/provider/types').ProviderStatus }).status(),
@@ -101,7 +102,7 @@ export class ProviderInstallTool extends BaseTool {
 
 /** 读取/保存扩展配置 */
 export class ProviderConfigureTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly providerManager: ProviderManager) {
+  constructor(renderer: PromptRenderer, private readonly providerCenter: ProviderCenter, private readonly providerManager: ProviderManager) {
     super(renderer, PROVIDER_CONFIGURE_TOOL_NAME)
   }
 
@@ -114,7 +115,7 @@ export class ProviderConfigureTool extends BaseTool {
     const id = (params.id ?? '').trim()
     if (!id) return ToolResult.sync(JSON.stringify({ error: 'id 必填' }))
     try {
-      const record = this.providerManager.getRecord(id)
+      const record = this.providerCenter.getRecord(id)
       if (!record) return ToolResult.sync(JSON.stringify({ error: `扩展不存在: ${id}` }))
       if (params.values && Object.keys(params.values).length > 0) {
         if (!record.ctx) return ToolResult.sync(JSON.stringify({ error: `扩展未初始化: ${id}` }))
@@ -132,7 +133,7 @@ export class ProviderConfigureTool extends BaseTool {
 
 /** 启用扩展（内部走 check 自检） */
 export class ProviderEnableTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly providerManager: ProviderManager) {
+  constructor(renderer: PromptRenderer, private readonly providerCenter: ProviderCenter) {
     super(renderer, PROVIDER_ENABLE_TOOL_NAME)
   }
 
@@ -145,7 +146,7 @@ export class ProviderEnableTool extends BaseTool {
     const id = (params.id ?? '').trim()
     if (!id) return ToolResult.sync(JSON.stringify({ error: 'id 必填' }))
     try {
-      const result = await this.providerManager.toggle(id, true)
+      const result = await this.providerCenter.toggle(id, true)
       return ToolResult.sync(JSON.stringify(result))
     } catch (e) {
       return ToolResult.sync(JSON.stringify({ error: (e as Error).message }))
@@ -155,7 +156,7 @@ export class ProviderEnableTool extends BaseTool {
 
 /** 列出已安装扩展 */
 export class ProviderListTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly providerManager: ProviderManager) {
+  constructor(renderer: PromptRenderer, private readonly providerCenter: ProviderCenter) {
     super(renderer, PROVIDER_LIST_TOOL_NAME)
   }
 
@@ -164,7 +165,7 @@ export class ProviderListTool extends BaseTool {
   }
 
   async execute(_ctx: ToolContext): Promise<ToolResult> {
-    const list = this.providerManager.list()
+    const list = this.providerCenter.providerList()
     return ToolResult.sync(
       JSON.stringify(
         list.map((p) => ({
@@ -182,7 +183,7 @@ export class ProviderListTool extends BaseTool {
 
 /** 卸载扩展（删除扩展及下载的模型） */
 export class ProviderUninstallTool extends BaseTool {
-  constructor(renderer: PromptRenderer, private readonly providerManager: ProviderManager) {
+  constructor(renderer: PromptRenderer, private readonly providerCenter: ProviderCenter) {
     super(renderer, PROVIDER_UNINSTALL_TOOL_NAME)
   }
 
@@ -195,7 +196,7 @@ export class ProviderUninstallTool extends BaseTool {
     const id = (params.id ?? '').trim()
     if (!id) return ToolResult.sync(JSON.stringify({ error: 'id 必填' }))
     try {
-      this.providerManager.uninstallProvider(id)
+      this.providerCenter.uninstall(id)
       return ToolResult.sync(JSON.stringify({ ok: true, uninstalled: id }))
     } catch (e) {
       return ToolResult.sync(JSON.stringify({ error: (e as Error).message }))

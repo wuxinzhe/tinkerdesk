@@ -14,6 +14,7 @@ import { handleTrusted } from '../security/ipc-guard'
 import {  existsSync, statSync } from 'fs'
 import { join } from 'path'
 import { ProviderManager } from '../core/provider/provider-manager'
+import { ProviderCenter } from '../core/provider/provider-center'
 import { Installer } from '../core/installer/installer'
 import { getMarketProviderDetail, listMarketProviders } from '../service/provider-market-service'
 import type { ProviderCheckResult, ProviderInfo, ProviderStatus, ToggleResult } from '../core/provider/types'
@@ -29,11 +30,15 @@ function fail(error: string): ApiResult<never> {
 
 export class ProviderController {
   constructor(
+    private readonly providerCenter: ProviderCenter,
     private readonly providerManager: ProviderManager,
-    private readonly installer: Installer,
     /** 主窗口提供者（文件对话框必须关联窗口，否则不显示） */
     private readonly getWindow: () => BrowserWindow | null,
-  ) {}
+  ) {
+    this.installer = providerCenter.getInstaller()
+  }
+
+  private readonly installer: Installer
 
   register(): void {
     handleTrusted('provider:list', () => this.listProviders())
@@ -89,7 +94,7 @@ export class ProviderController {
       if (!payload?.id) return fail('id 不能为空')
       const id = payload.id
       const results = await this.installer.downloadAssetsById(id, (depName, received, total) => {
-        const wc = this.providerManager.getEmitTarget()
+        const wc = this.providerCenter.getEmitTarget()
         if (wc && !wc.isDestroyed()) {
           wc.send('provider:assets-progress', { providerId: id, depName, received, total })
         }
@@ -103,7 +108,7 @@ export class ProviderController {
   /** 扩展列表 */
   private listProviders(): ApiResult<ProviderInfo[]> {
     try {
-      return ok(this.providerManager.list())
+      return ok(this.providerCenter.providerList())
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -113,7 +118,7 @@ export class ProviderController {
   private async toggle(payload: { id: string; enabled: boolean }): Promise<ApiResult<ToggleResult>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.providerManager.toggle(payload.id, !!payload.enabled))
+      return ok(await this.providerCenter.toggle(payload.id, !!payload.enabled))
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -140,7 +145,7 @@ export class ProviderController {
   /** 安装扩展：自动检测目录或 zip → 校验 → 复制到 plugins/ → 热加载（无需重启） */
   private async install(payload: { path: string }): Promise<ApiResult<ProviderInfo>> {
     try {
-      const record = await this.providerManager.installLocal(payload?.path ?? '')
+      const record = await this.providerCenter.installLocal(payload?.path ?? '')
       return ok({ manifest: record.manifest, status: (record as unknown as { status(): ProviderStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
@@ -150,7 +155,7 @@ export class ProviderController {
   /** 在线安装扩展（npm 包名——npm pack 下载 → 解压 → 标准安装） */
   private async installFromNpm(payload: { pkg: string; registry?: string }): Promise<ApiResult<ProviderInfo>> {
     try {
-      const record = await this.providerManager.installFromNpm(payload?.pkg ?? '', payload?.registry)
+      const record = await this.providerCenter.installFromNpmFull(payload?.pkg ?? '', payload?.registry)
       return ok({ manifest: record.manifest, status: (record as unknown as { status(): ProviderStatus }).status() })
     } catch (e) {
       return fail((e as Error).message)
@@ -189,14 +194,14 @@ export class ProviderController {
       const sid = payload?.sessionId ?? ''
       if (stage === 'register') {
         // 注册阶段是扩展中心职责（installer 纯安装基建——不含品类概念）
-        this.providerManager.registerInstalled(session.srcDir)
+        this.providerCenter.registerInstalled(session.srcDir)
         this.installer.cleanupSession(sid)
         session.stages.register = 'done'
         return ok({ ok: true, stages: session.stages })
       }
       const r = await this.installer.step(sid, stage, (depName, received, total) => {
         // 资源下载进度（复用 provider:assets-progress 事件——安装向导监听）
-        const wc = this.providerManager.getEmitTarget()
+        const wc = this.providerCenter.getEmitTarget()
         if (wc && !wc.isDestroyed()) {
           wc.send('provider:assets-progress', { providerId: 'install', sessionId: sid, depName, received, total })
         }
@@ -214,7 +219,7 @@ export class ProviderController {
       if (!session) return fail('安装会话不存在或已过期')
       await this.installer.downloadSession(payload?.sessionId ?? '', (received, total) => {
         // 进度事件推送（renderer 监听 provider:install-progress）
-        const wc = this.providerManager.getEmitTarget()
+        const wc = this.providerCenter.getEmitTarget()
         if (wc && !wc.isDestroyed()) {
           wc.send('provider:install-progress', { sessionId: payload?.sessionId, received, total })
         }
@@ -235,7 +240,7 @@ export class ProviderController {
   /** 扩展详情（npm 包元数据 + 官方标记 + 已安装——详情页） */
   private async marketDetail(payload: { name: string }): Promise<ApiResult<import('../service/provider-market-service').MarketProviderDetail>> {
     try {
-      const installedIds = this.providerManager.list().map((p) => p.manifest.id)
+      const installedIds = this.providerCenter.providerList().map((p) => p.manifest.id)
       return ok(await getMarketProviderDetail(payload?.name ?? '', installedIds))
     } catch (e) {
       return fail((e as Error).message)
@@ -245,7 +250,7 @@ export class ProviderController {
   /** 扩展市场列表（service 层——真实 npm 搜索——分类/搜索词透传） */
   private async marketList(payload: { category?: string; search?: string } = {}): Promise<ApiResult<import('../service/provider-market-service').MarketListResult>> {
     try {
-      const installedIds = this.providerManager.list().map((p) => p.manifest.id)
+      const installedIds = this.providerCenter.providerList().map((p) => p.manifest.id)
       return ok(await listMarketProviders({ installedIds, category: payload.category, search: payload.search }))
     } catch (e) {
       return fail((e as Error).message)
@@ -282,10 +287,10 @@ export class ProviderController {
   private uninstall(payload: { id: string }): ApiResult<void> {
     try {
       const id = payload?.id
-      if (!id || !this.providerManager.list().some((p) => p.manifest.id === id)) {
+      if (!id || !this.providerCenter.providerList().some((p) => p.manifest.id === id)) {
         return fail('扩展不存在')
       }
-      this.providerManager.uninstallProvider(id)
+      this.providerCenter.uninstall(id)
       return ok(undefined)
     } catch (e) {
       return fail((e as Error).message)
@@ -318,7 +323,7 @@ export class ProviderController {
   private async check(payload: { id: string }): Promise<ApiResult<ProviderCheckResult>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.providerManager.check(payload.id))
+      return ok(await this.providerCenter.checkHealth(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -328,7 +333,7 @@ export class ProviderController {
   private async getProviderStatus(payload: { id: string }): Promise<ApiResult<ProviderStatus>> {
     try {
       if (!payload?.id) return fail('id 不能为空')
-      return ok(await this.providerManager.getStatus(payload.id))
+      return ok(await this.providerCenter.getStatus(payload.id))
     } catch (e) {
       return fail((e as Error).message)
     }
@@ -355,9 +360,9 @@ export class ProviderController {
 
   /** 分层容错：Worker 不可用但主进程静态检查通过/有资源依赖 → 返回 degraded 可配置信息 */
   private degradedSchema(id: string): { configurable: true; degraded: true; note: string; assetDeps: import('../core/provider/types').AssetDep[] } | null {
-    const record = this.providerManager.getRecord(id)
+    const record = this.providerCenter.getRecord(id)
     if (!record) return null
-    const staticOk = this.providerManager.staticCheck(record)
+    const staticOk = this.providerCenter.staticCheck(record)
     const deps = record.manifest.assetDeps ?? record.manifest.modelDeps ?? []
     if (staticOk.ok || !staticOk.ok && deps.length > 0) {
       return {

@@ -205,14 +205,14 @@ function createWindow() {
     new MemoryController(desk.memoryStore).register()
 
     // ── 扩展系统：扫描加载 + IPC（扩展不进应用包，用户自行下载到 plugins/） ──
-    desk.providerManager.loadAll()
-    new ProviderController(desk.providerManager, desk.providerManager.getInstaller(), () => mainWindow).register()
+    desk.providerCenter.loadAll()
+    new ProviderController(desk.providerCenter, desk.providerManager, () => mainWindow).register()
 
     // ── 工具中心：外置工具市场查询 + 已装清单（安装接口后续接入） ──
     new ToolCenterController(desk.toolCenter).register()
 
     // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给扩展 provider ──
-    const voiceService = new VoiceProviderService(desk.providerManager)
+    const voiceService = new VoiceProviderService(desk.providerCenter)
     new VoiceController(voiceService).register()
 
     // ── 通用设置（快捷键等全局键值配置） ──
@@ -247,7 +247,7 @@ function createWindow() {
 
     createWindow()
     // 扩展事件转发目标（窗口就绪后注入）
-    desk.providerManager.setEmitTarget(mainWindow?.webContents ?? null)
+    desk.providerCenter.setEmitTarget(mainWindow?.webContents ?? null)
     checkForUpdatesOnStartup()
   })
 

@@ -14,16 +14,19 @@ import type { ICenter } from '../center/types'
  * 安装链路复用 installer 的 npm 下载/解压/校验（与 provider 扩展同一套基建）。
  */
 import type { ToolCenterDeps, ToolPackageManifest } from './types'
+import { Uninstaller } from '../installer/uninstaller'
 
 export class ToolCenter implements ICenter {
   private readonly toolManager: ToolManager
   private readonly installer: Installer
+  private readonly uninstaller: Uninstaller
   /** 外置工具安装目录（独立于 provider 扩展 plugins/） */
   readonly toolsDir: string
 
   constructor(deps: ToolCenterDeps) {
     this.toolManager = deps.toolManager
     this.installer = deps.installer
+    this.uninstaller = new Uninstaller()
     this.toolsDir = join(app.getPath('userData'), 'tools')
     mkdirSync(this.toolsDir, { recursive: true })
   }
@@ -126,7 +129,8 @@ export class ToolCenter implements ICenter {
       // manifest 损坏——按 id 兜底反注册
       this.toolManager.unregister(id)
     }
-    rmSync(dir, { recursive: true, force: true })
+    // 委托卸载器删目录（品类无关基建——center 不手写文件删除）
+    this.uninstaller.remove(dir)
     console.log(`[tool-center] 已卸载工具包 ${id}`)
   }
 

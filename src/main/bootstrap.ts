@@ -48,6 +48,7 @@ import { SummaryOperation } from './core/llm/operations/summary-operation'
 import { TitleOperation } from './core/llm/operations/title-operation'
 import { VisionOperation } from './core/llm/operations/vision-operation'
 import { AgentModeRegistry } from './core/mode/agent-mode-registry'
+import { ProviderCenter } from './core/provider/provider-center'
 import { ProviderManager } from './core/provider/provider-manager'
 import { ToolCenter } from './core/tool/tool-center'
 import { AgentConfigRepository } from './repository/agent-config-repository'
@@ -168,6 +169,7 @@ export interface TinkerDesk {
   toolCenter: ToolCenter
   /** 工具授权服务（DB agent_tools——授权/回收/装配 toolNameSet） */
   agentToolService: AgentToolService
+  providerCenter: ProviderCenter
   providerManager: ProviderManager
   llmRouter: LlmRouter
   modelConfigService: ModelConfigService
@@ -289,11 +291,12 @@ export function bootstrap(
   })
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
   // ── 扩展管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
-  const providerManager = new ProviderManager()
+  const providerCenter = new ProviderCenter()
+  const providerManager = new ProviderManager(providerCenter)
   // 内置扩展（代码注册——出现在扩展列表、可配置，不可卸载）
-  providerManager.registerBuiltinProvider({ manifest: EDGE_TTS_MANIFEST, provider: edgeTtsProvider })
-  const webProvider = new WebProvider(providerManager)
-  const audioToolProvider = new AudioToolProvider(providerManager)
+  providerCenter.registerBuiltinProvider({ manifest: EDGE_TTS_MANIFEST, provider: edgeTtsProvider })
+  const webProvider = new WebProvider(providerCenter)
+  const audioToolProvider = new AudioToolProvider(providerCenter)
   // 模型配置解析服务（custom_models + providers → ModelConfig[]）——vision provider 依赖（场景模型解析）
   const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
   const visionProvider = new VisionProvider(llmRouter, modelConfigService)
@@ -318,16 +321,16 @@ export function bootstrap(
   ]
   // ── 扩展管理工具（Agent 可操作扩展生命周期；依赖 ProviderManager） ──
   const providerTools: AgentToolRegistration[] = [
-    { meta: { name: PROVIDER_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new ProviderInstallTool(renderer, providerManager) },
-    { meta: { name: PROVIDER_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new ProviderConfigureTool(renderer, providerManager) },
-    { meta: { name: PROVIDER_ENABLE_TOOL_NAME, emoji: '✅' }, tool: new ProviderEnableTool(renderer, providerManager) },
-    { meta: { name: PROVIDER_LIST_TOOL_NAME, emoji: '📦' }, tool: new ProviderListTool(renderer, providerManager) },
-    { meta: { name: PROVIDER_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new ProviderUninstallTool(renderer, providerManager) },
+    { meta: { name: PROVIDER_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new ProviderInstallTool(renderer, providerCenter) },
+    { meta: { name: PROVIDER_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new ProviderConfigureTool(renderer, providerCenter, providerManager) },
+    { meta: { name: PROVIDER_ENABLE_TOOL_NAME, emoji: '✅' }, tool: new ProviderEnableTool(renderer, providerCenter) },
+    { meta: { name: PROVIDER_LIST_TOOL_NAME, emoji: '📦' }, tool: new ProviderListTool(renderer, providerCenter) },
+    { meta: { name: PROVIDER_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new ProviderUninstallTool(renderer, providerCenter) },
   ]
 
   const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...providerTools, ...toolRegistrations])
   // 工具中心：外置工具包安装/加载/注册（独立于 provider 扩展——复用分步安装器）
-  const toolCenter = new ToolCenter({ toolManager, installer: providerManager.getInstaller() })
+  const toolCenter = new ToolCenter({ toolManager, installer: providerCenter.getInstaller() })
   toolCenter.loadAll()
   // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
@@ -390,6 +393,7 @@ export function bootstrap(
     toolManager,
     toolCenter,
     agentToolService,
+    providerCenter,
     providerManager,
     llmRouter,
     modelConfigService,

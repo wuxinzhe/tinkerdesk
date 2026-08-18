@@ -188,11 +188,6 @@ export class Installer {
   }
 
   /** 卸载扩展（删除目录——Worker 由调用方先释放） */
-  uninstall(id: string): void {
-    const dir = join(this.deps.providersDir, id)
-    if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
-  }
-
   /** 读取已装扩展 manifest（安装域自包含——配置页下载/就绪检查用——不依赖 manager） */
   getManifestById(id: string): InstallManifest {
     const file = join(this.deps.providersDir, id, 'manifest.json')
