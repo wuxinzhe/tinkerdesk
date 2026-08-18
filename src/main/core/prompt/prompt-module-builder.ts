@@ -99,7 +99,7 @@ export class PromptModuleBuilder {
 
   /** 构建会话提示词（动态模块 + 静态模块） */
   private buildSessionPrompt(ctx: ConversationContext): string {
-    const dynamicPart = this.buildFromModules(ctx, this.getModuleList(ctx))
+    const dynamicPart = this.buildFromModules(ctx, ctx.agentMode?.getPromptList() ?? [])
     const staticPart = this.buildStaticModules(ctx)
     if (!staticPart) {
       return dynamicPart
@@ -172,14 +172,5 @@ export class PromptModuleBuilder {
       parts.push(rendered)
     }
     return parts.join('\n\n').trim()
-  }
-
-  /**
-   * 获取模块列表：优先 AgentMode.getModuleList()（模式决定渲染顺序），
-   * 兜底全部已注册模块。
-   */
-  private getModuleList(ctx: ConversationContext): string[] {
-    const modeList = ctx.agentMode?.getPromptList()
-    return modeList && modeList.length > 0 ? modeList : this.promptManager.getModuleIds()
   }
 }
