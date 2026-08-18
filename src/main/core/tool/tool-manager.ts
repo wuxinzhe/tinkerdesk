@@ -109,6 +109,15 @@ export class ToolManager {
     }
   }
 
+  /**
+   * 反注册工具（卸载/移除——ToolCenter 卸载工具包时调用）。
+   */
+  unregister(toolName: string): void {
+    this.tools.delete(toolName)
+    this.toolEmojis.delete(toolName)
+    this.toolTypes.delete(toolName)
+  }
+
   // ════════════════════════════════════════════════════════════
   // 工具查询
   // ════════════════════════════════════════════════════════════

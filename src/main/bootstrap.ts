@@ -51,6 +51,7 @@ import { AgentModeRegistry } from './core/mode/agent-mode-registry'
 import { PluginManager } from './core/plugin/plugin-manager'
 import type { McpToolCenter } from './core/tool'
 import { getMcpToolCenter, ToolManager } from './core/tool'
+import { ToolCenter } from './core/tool/tool-center'
 import { AgentConfigRepository } from './repository/agent-config-repository'
 import { AgentRepository } from './repository/agent-repository'
 import { PrivateSkillFileRepository } from './repository/private-skill-file-repository'
@@ -168,6 +169,8 @@ export interface TinkerDesk {
   promptManager: PromptManager
   promptModuleBuilder: PromptModuleBuilder
   toolManager: ToolManager
+  /** 工具中心（外置工具包安装/卸载/可用性） */
+  toolCenter: ToolCenter
   /** 工具授权服务（DB agent_tools——授权/回收/装配 toolNameSet） */
   agentToolService: AgentToolService
   pluginManager: PluginManager
@@ -334,6 +337,9 @@ export function bootstrap(
   ]
 
   const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
+  // 工具中心：外置工具包安装/加载/注册（独立于 provider 插件）
+  const toolCenter = new ToolCenter({ toolManager })
+  toolCenter.loadAll()
   // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
   toolManager.loadDisabled(userDisabledToolService.listAll())
@@ -399,6 +405,7 @@ export function bootstrap(
     promptManager,
     promptModuleBuilder,
     toolManager,
+    toolCenter,
     agentToolService,
     pluginManager,
     llmRouter,
