@@ -10,41 +10,30 @@
 import type { AgentConfig } from '../../core/loop/types'
 import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
-import { CLARIFY_TOOL_NAME, MEMORY_TOOL_NAME, SESSION_SEARCH_TOOL_NAME, SKILL_MANAGE_TOOL_NAME, SKILL_VIEW_TOOL_NAME, SKILLS_LIST_TOOL_NAME, TODO_TOOL_NAME } from '../tools'
-import { PROMPT_SOUL } from '../prompts/soul-prompt-module'
-import { PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT, PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL, PROMPT_MEMORY, PROMPT_SESSION_SEARCH } from '../prompts/preset-module-impls'
-import { PROMPT_MEMORY_SNAPSHOT } from '../prompts/memory-snapshot-module'
-import { PROMPT_USER_PROFILE } from '../prompts/user-profile-module'
-import { PROMPT_SKILLS_INDEX } from '../prompts/skills-index-module'
+import { TERMINAL_TOOL_NAME, PWSH_TOOL_NAME, READ_FILE_TOOL_NAME, WRITE_FILE_TOOL_NAME, PATCH_TOOL_NAME } from '../tools'
+import { PROMPT_TOOL_ENFORCEMENT } from '../prompts/preset-module-impls'
 
 /** 极简模式元数据 */
 const META = {
   id: 'minimal',
   version: '1.0',
   name: '极简模式',
-  description: '极简模式——只保留内建核心工具（记忆/待办/澄清/会话搜索/技能），不暴露终端、文件、网页等对外能力',
+  description: '极简模式——只保留文件读写与终端工具（terminal/pwsh/read_file/write_file/patch），面向代码任务的极简 Agent',
   promptTemplate: 'agent-mode-minimal',
 }
 
-/** 极简工具集：仅内建业务工具（硬编码一套——不可自由选配） */
+/** 极简工具集：仅文件读写与终端工具（硬编码一套——不可自由选配） */
 const MINIMAL_TOOLSET = [
-  MEMORY_TOOL_NAME,
-  TODO_TOOL_NAME,
-  CLARIFY_TOOL_NAME,
-  SESSION_SEARCH_TOOL_NAME,
-  SKILL_VIEW_TOOL_NAME,
-  SKILLS_LIST_TOOL_NAME,
-  SKILL_MANAGE_TOOL_NAME,
+  TERMINAL_TOOL_NAME,
+  PWSH_TOOL_NAME,
+  READ_FILE_TOOL_NAME,
+  WRITE_FILE_TOOL_NAME,
+  PATCH_TOOL_NAME,
 ]
 
-/** 动态模块渲染顺序（复用通用默认） */
+/** 动态模块渲染顺序（只保留与这几个工具相关的模块——工具执行约束） */
 const PROMPT_LIST = [
-  PROMPT_SOUL,
-  PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT,
-  PROMPT_MEMORY, PROMPT_SESSION_SEARCH,
-  PROMPT_SKILLS_INDEX,
-  PROMPT_MEMORY_SNAPSHOT, PROMPT_USER_PROFILE,
-  PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL,
+  PROMPT_TOOL_ENFORCEMENT,
 ]
 
 /** 极简 Agent Mode 实现 */
