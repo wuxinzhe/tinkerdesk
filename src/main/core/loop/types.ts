@@ -10,6 +10,7 @@ import type {ToolManager} from '../tool/tool-manager'
 import type {LlmResponse, ModelConfig} from '../llm/types'
 import type {LlmChunk} from '../llm/types'
 import type {IAgentMode} from '../mode/agent-mode'
+import type {AgentRpc} from './agent-rpc'
 import type {PromptModuleBuilder} from '../prompt/prompt-module-builder'
 import type {CompactionService} from '../../service/compaction-service'
 import type {ModelConfigService} from '../../service/model-config-service'
@@ -305,6 +306,8 @@ export interface ConversationDeps {
   toolExecutor: ToolCallExecutor
   /** 工具授权服务（toolManager 管理——authorize/revoke/resolveToolNames(DB agent_tools)） */
   agentToolService: AgentToolService
+  /** 跨进程外呼契约（主进程内联 / worker IPC——见 agent-rpc.ts） */
+  rpc: AgentRpc
 }
 
 /** 工具执行器依赖（TinkerAgent 组装传入 ToolCallExecutor） */

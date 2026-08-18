@@ -21,6 +21,7 @@
  *   clearAll      — 清理会话状态
  */
 import type { CompactionService } from '../../service/compaction-service'
+import {AgentRpcInline} from './agent-rpc'
 import type { ConversationService } from '../../service/conversation-service'
 import type { MessageService } from '../../service/message-service'
 import { MessageFactory } from '../../service/message-service'
@@ -47,6 +48,8 @@ import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
 import { RES_INTERRUPTED } from './types'
 
 /** 线程模型 TinkerAgent */
+const defaultRpc = new AgentRpcInline()
+
 export class TinkerAgent {
   private readonly llmRouter: LlmRouter
   private readonly toolManager: ToolManager
@@ -210,6 +213,7 @@ export class TinkerAgent {
           runtime: this.runtime,
           approvalManager: this.approvalManager,
           agentToolService: this.agentToolService,
+          rpc: defaultRpc,
           toolExecutor: new ToolCallExecutor({
             toolManager: this.toolManager,
             sandboxWhitelistService: this.sandboxWhitelistService,

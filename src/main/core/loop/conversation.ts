@@ -11,7 +11,6 @@
  * discarded after run() returns.
  */
 import { withTransaction } from '../../repository/database'
-import { eventRecorder } from '../../service/event-recorder'
 import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
 import { getShortName } from '../../utils/tool-display'
@@ -140,7 +139,7 @@ export class Conversation implements BusyLoopHost {
     this.tokenAccum = { prompt: 0, completion: 0, cacheRead: 0, cacheWrite: 0 }
     this.scheduleWorkingTip()
     // 事件埋点：回合开始
-    eventRecorder.record({
+    this.deps.rpc.recordEvent({
       sessionId: this.sessionId,
       conversationId: this.convId,
       eventType: 'conversation',
@@ -434,7 +433,7 @@ export class Conversation implements BusyLoopHost {
     const { approvalManager, messageService, conversationService, sessionService } = this.deps
     const cycleStats = { durationMs: Date.now() - this.cycleStart, iterationCount: this.iteration, llmRequestCount: this.llmRequestCount }
     // 事件埋点：回合结束（含原因——completed/max_iter/error 等）
-    eventRecorder.record({
+    this.deps.rpc.recordEvent({
       sessionId: this.sessionId,
       conversationId: this.convId,
       eventType: 'conversation',
@@ -634,7 +633,7 @@ export class Conversation implements BusyLoopHost {
     }
     if (!this.abort.signal.aborted) return true
     // 事件埋点：回合中断退出（interrupt/queue/手动停止）
-    eventRecorder.record({
+    this.deps.rpc.recordEvent({
       sessionId: this.sessionId,
       conversationId: this.convId,
       eventType: 'conversation',
@@ -668,7 +667,7 @@ export class Conversation implements BusyLoopHost {
     )
     this.streamTextAccum = ''
     // 事件埋点：重定向注入（用户修正——排查 redirect 链路）
-    eventRecorder.record({
+    this.deps.rpc.recordEvent({
       sessionId: this.sessionId,
       conversationId: this.convId,
       eventType: 'conversation',
