@@ -3,7 +3,7 @@ import { join } from 'path'
 import { app } from 'electron'
 import type { Installer } from '../installer/installer'
 import type { ToolManager } from './tool-manager'
-import type { ToolSchema } from './tool-schema'
+import { ToolSchema } from './tool-schema'
 import type { ICenter } from '../center/types'
 
 /**
@@ -53,25 +53,40 @@ export class ToolCenter implements ICenter {
     }
   }
 
-  /** 加载单个工具包目录：require entry → { schema, execute } → 注册进 ToolManager */
+  /**
+   * 加载单个工具包目录 → 注册进 ToolManager。
+   * 优先：外置包实现 IAgentTool（导出 tool/default——getSchema/execute/check 方法，与内建同构）——直接注册。
+   * 兼容旧格式 { schema, execute }：包装成 IAgentTool（过渡期——新包一律实现 IAgentTool）。
+   */
   load(dir: string): void {
     const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as ToolPackageManifest
     if (!manifest.entry) throw new Error(`工具包 ${manifest.id} 缺少 entry`)
-    const mod = require(join(dir, manifest.entry)) as { schema?: ToolSchema; execute?: (toolCall: Record<string, unknown>) => unknown }
-    if (!mod.schema || typeof mod.execute !== 'function') {
-      throw new Error(`工具包 ${manifest.id} entry 未导出 { schema, execute }`)
-    }
-    const toolName = mod.schema.name ?? manifest.tool?.name ?? manifest.id
-    if (!toolName) throw new Error(`工具包 ${manifest.id} 未声明工具名`)
+    const mod = require(join(dir, manifest.entry)) as Record<string, unknown>
+    const toolName = manifest.tool?.name ?? manifest.id
+    const externalTool = (mod.tool ?? mod.default) as import('./types').IAgentTool | undefined
 
-    // 包装成 IAgentTool：schema 静态 + execute 转发扩展契约（{ok, output?, error?} → ToolResult）
-    // check：外置工具加载成功（manifest/entry/schema/execute 齐）即视为注册可用——实现类型定义即通过
+    // ── 优先：外置包导出 IAgentTool（与内建同构——getSchema/execute/check 方法）──
+    if (
+      externalTool && typeof externalTool.getSchema === 'function' && typeof externalTool.execute === 'function'
+    ) {
+      const name = externalTool.getSchema()?.name ?? toolName
+      if (!name) throw new Error(`工具包 ${manifest.id} 未声明工具名`)
+      this.toolManager.register({ meta: { name }, tool: externalTool })
+      console.log(`[tool-center] 已注册工具 ${name}（包 ${manifest.id}）`)
+      return
+    }
+
+    // ── 兼容旧格式 { schema, execute }（过渡期——新包一律实现 IAgentTool）──
+    const legacy = mod as { schema?: { name?: string; description?: string; parameters?: Record<string, unknown> }; execute?: (toolCall: Record<string, unknown>) => unknown }
+    if (!legacy.schema || typeof legacy.execute !== 'function') {
+      throw new Error(`工具包 ${manifest.id} entry 未实现 IAgentTool（需导出 getSchema/execute）`)
+    }
     const tool: import('./types').IAgentTool = {
-      getSchema: () => mod.schema as ToolSchema,
+      getSchema: () => new ToolSchema(legacy.schema!.name ?? toolName, legacy.schema!.description ?? '', legacy.schema!.parameters ?? null),
       check: () => true,
       async execute(ctx) {
         try {
-          const result = await mod.execute!({ arguments: ctx.toolCall?.arguments ?? {} })
+          const result = await legacy.execute!({ arguments: ctx.toolCall?.arguments ?? {} })
           const r = result as { ok?: boolean; output?: string; error?: string }
           if (r?.ok === false || (r && !r.ok)) {
             return import('./tool-result').then((m) => m.ToolResult.sync(JSON.stringify({ error: r?.error ?? '工具执行失败' })))
@@ -83,7 +98,7 @@ export class ToolCenter implements ICenter {
       },
     }
     this.toolManager.register({ meta: { name: toolName }, tool })
-    console.log(`[tool-center] 已注册工具 ${toolName}（包 ${manifest.id}）`)
+    console.log(`[tool-center] 已注册工具 ${toolName}（包 ${manifest.id}，旧格式）`)
   }
 
   /** 可用性检查：entry 存在 + require 成功 + schema/execute 有效 */
