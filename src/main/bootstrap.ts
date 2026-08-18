@@ -76,6 +76,7 @@ import { AgentService } from './service/agent-service'
 import { DefaultAgentMode } from './service/agent/default-agent-mode'
 import { MinimalAgentMode } from './service/agent/minimal-agent-mode'
 import { CreatorAgentMode } from './service/agent/creator-agent-mode'
+import { ButlerAgentMode } from './service/agent/butler-agent-mode'
 import { ModelConfigService } from './service/model-config-service'
 import { PrivateSkillService } from './service/private-skill-service'
 import { PromptService } from './service/prompt-service'
@@ -378,6 +379,7 @@ export function bootstrap(
   agentModeRegistry.register(new DefaultAgentMode(renderer, toolManager))
   agentModeRegistry.register(new MinimalAgentMode())
   agentModeRegistry.register(new CreatorAgentMode(toolManager, agentToolService))
+  agentModeRegistry.register(new ButlerAgentMode())
   const agentService = new AgentService(agentRepo, agentConfigRepo, agentModeRegistry)
   const agentConfigService = new AgentConfigService(agentConfigRepo, agentService, agentModeRegistry)
   const systemProviderService = new SystemProviderService(providerRepo)
