@@ -27,6 +27,7 @@ import { ModelController } from './controller/model-controller'
 import { AccountController } from './controller/account-controller'
 import { MemoryController } from './controller/memory-controller'
 import { ProviderController } from './controller/provider-controller'
+import { ToolCenterController } from './controller/tool-center-controller'
 import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
@@ -206,6 +207,9 @@ function createWindow() {
     // ── 扩展系统：扫描加载 + IPC（扩展不进应用包，用户自行下载到 plugins/） ──
     desk.providerManager.loadAll()
     new ProviderController(desk.providerManager, desk.providerManager.getInstaller(), () => mainWindow).register()
+
+    // ── 工具中心：外置工具市场查询 + 已装清单（安装接口后续接入） ──
+    new ToolCenterController(desk.toolCenter).register()
 
     // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给扩展 provider ──
     const voiceService = new VoiceProviderService(desk.providerManager)

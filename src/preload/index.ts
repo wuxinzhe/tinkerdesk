@@ -164,6 +164,12 @@ const api = {
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => inv('window:phoneMode'),
 
+  // Tool Center（外置工具包：市场查询 + 已装清单——安装接口后续接入）
+  toolCenter: {
+    marketList: (payload?: { search?: string }) => inv('tool:market-list', payload).then(unwrap),
+    marketDetail: (name: string) => inv('tool:market-detail', { name }).then(unwrap),
+    list: () => inv('tool:list').then(unwrap),
+  },
 
   // Auto-update
     checkForUpdates: (manual = false) => inv('update:check', manual),

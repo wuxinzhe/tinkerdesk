@@ -833,6 +833,47 @@ export interface ConfigSchema {
   properties: Record<string, ConfigField>
 }
 
+/* ── 工具中心类型（外置工具包市场/已装清单） ── */
+
+/** 市场工具条目（卡片展示） */
+export interface MarketToolItem {
+  name: string
+  version: string
+  description: string
+  updated: string
+  official: boolean
+  installed: boolean
+  categories: string[]
+  keywords: string[]
+}
+
+/** 工具市场列表结果 */
+export interface MarketToolListResult {
+  items: MarketToolItem[]
+  categories: string[]
+}
+
+/** 工具详情（详情页展示） */
+export interface MarketToolDetail {
+  name: string
+  version: string
+  description: string
+  readme: string
+  homepage: string
+  categories: string[]
+  official: boolean
+  installed: boolean
+  updated: string
+  dependencies: string[]
+}
+
+/** 已装工具清单项 */
+export interface ToolCenterItem {
+  id: string
+  ok: boolean
+  reason?: string
+}
+
 /* ── 桌面 API（preload contextBridge 暴露） ── */
 
 export interface WindowApi {
@@ -844,6 +885,13 @@ export interface WindowApi {
   onEvent: (channel: string, callback: (data: unknown) => void) => () => void
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => Promise<boolean>
+
+  /** 工具中心（外置工具包：市场查询 + 已装清单——安装接口后续接入） */
+  toolCenter: {
+    marketList: (payload?: { search?: string }) => Promise<MarketToolListResult>
+    marketDetail: (name: string) => Promise<MarketToolDetail | undefined>
+    list: () => Promise<ToolCenterItem[]>
+  }
 
   checkForUpdates: (manual?: boolean) => Promise<unknown>
   installUpdate: () => Promise<void>

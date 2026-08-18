@@ -114,7 +114,47 @@
       </div>
     </template>
 
-    <!-- 工具/皮肤/应用市场（规划中） -->
+    <!-- 工具市场（外置工具包 tinkerdesk-tool-*） -->
+    <template v-else-if="activeTab === 'tool'">
+      <div class="open-market__toolbar">
+        <span class="open-market__count">共 {{ tools.length }} 个工具</span>
+      </div>
+      <div v-if="loading" class="open-market__grid">
+        <div v-for="i in 6" :key="i" class="market-skeleton">
+          <SaSkeleton variant="rect" width="36px" height="36px" radius="8px" />
+          <SaSkeleton variant="text" :text-lines="1" height="14px" last-line-width="65%" />
+          <SaSkeleton variant="text" :text-lines="2" :last-line-width="'45%'" height="11px" line-height="11px" />
+        </div>
+      </div>
+      <SaEmpty v-else-if="tools.length === 0" text="暂未发现工具" />
+      <div v-else class="open-market__grid">
+        <div v-for="tool in tools" :key="tool.name" class="market-card" @click="viewTool(tool)">
+          <div class="market-card__body">
+            <div class="market-card__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+              </svg>
+            </div>
+            <div class="market-card__info">
+              <div class="market-card__name">
+                {{ displayToolName(tool.name) }}
+                <span v-if="tool.official" class="market-card__official">官方</span>
+                <span class="market-card__version">v{{ tool.version }}</span>
+              </div>
+              <div class="market-card__desc">{{ tool.description || '-' }}</div>
+              <div v-if="toolKeywords(tool).length" class="market-card__meta">
+                <span v-for="kw in toolKeywords(tool)" :key="kw" class="market-card__tag">{{ kw }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="market-card__actions">
+            <SaActionBtn :text="'安装'" :done="!!tool.installed" :done-text="'已安装'" :disabled="!tool.installed" :loading-text="'安装中...'" @click.stop="installTool(tool)" />
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 皮肤/应用市场（规划中） -->
     <template v-else>
       <SaEmpty :text="'「' + activeLabel + '」市场即将上线'" />
     </template>
@@ -125,7 +165,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
-import type { SkillInfo, MarketProviderItem } from '@/renderer/api/types'
+import type { SkillInfo, MarketProviderItem, MarketToolItem } from '@/renderer/api/types'
 import { skillsApi } from '@/renderer/api/skills-api'
 import { providersApi } from '@/renderer/api/providers-api'
 import { useSessionStore } from '@/renderer/stores/session-store'
@@ -237,6 +277,40 @@ function viewProvider(provider: MarketProviderItem) {
   router.push(`/workspace/settings/providers-market/${encodeURIComponent(provider.name)}`)
 }
 
+// ── 工具市场（外置工具包 tinkerdesk-tool-*） ──
+const tools = ref<MarketToolItem[]>([])
+
+async function loadTools() {
+  loading.value = true
+  try {
+    const res = await window.api?.toolCenter.marketList({})
+    tools.value = res?.items ?? []
+  } catch (e) {
+    console.error('load tool market failed', e)
+    tools.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function displayToolName(name: string): string {
+  return name.replace(/^tinkerdesk-tool-/, '')
+}
+
+function toolKeywords(tool: MarketToolItem): string[] {
+  return (tool.keywords ?? []).filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-tool'))
+}
+
+/** 工具安装（后续接入 ToolCenter 安装链路——当前占位） */
+function installTool(tool: MarketToolItem) {
+  if (tool.installed) return
+  window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'info', code: 'tool:market:install', message: `「${displayToolName(tool.name)}」安装即将支持` } }))
+}
+
+function viewTool(tool: MarketToolItem) {
+  window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'info', code: 'tool:market:detail', message: `工具详情页即将上线（${displayToolName(tool.name)}）` } }))
+}
+
 // URL type 变化（外部导航 /market/skill 等）→ 同步本地 Tab
 watch(() => route.params.type, (t) => {
   if (typeof t === 'string' && t !== activeTab.value) activeTab.value = t
@@ -246,11 +320,13 @@ watch(() => route.params.type, (t) => {
 watch(activeTab, (t) => {
   if (t === 'skill') void loadSkills()
   else if (t === 'extension') void loadProviders()
+  else if (t === 'tool') void loadTools()
 })
 
 onMounted(() => {
   if (activeTab.value === 'skill') void loadSkills()
   else if (activeTab.value === 'extension') void loadProviders()
+  else if (activeTab.value === 'tool') void loadTools()
 })
 </script>
 
