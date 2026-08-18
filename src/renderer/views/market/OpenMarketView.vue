@@ -165,12 +165,10 @@ const installingSkillIds = ref(new Set<string>())
 async function loadSkills() {
   loading.value = true
   try {
-    const [list, inst] = await Promise.all([
-      skillsApi.listOfficial({ profile: profile.value }),
-      skillsApi.installed({ profile: profile.value }),
-    ])
+    // 已装状态来自 listOfficial 返回的 isInstalled（后端已按当前 profile 过滤）——精确反映该 agent 已装
+    const list = await skillsApi.listOfficial({ profile: profile.value })
     skills.value = list?.items ?? []
-    installedSkillIds.value = new Set((inst?.items ?? []).map((s) => s.id))
+    installedSkillIds.value = new Set((list?.items ?? []).filter((s) => s.isInstalled).map((s) => s.id))
   } catch (e) {
     console.error('load skills market failed', e)
     skills.value = []
@@ -183,17 +181,26 @@ async function installSkill(skill: SkillInfo) {
   if (installedSkillIds.value.has(skill.id) || installingSkillIds.value.has(skill.id)) return
   installingSkillIds.value.add(skill.id)
   try {
-    const res = await skillsApi.installFromMarket(skill.name, profile.value)
-    if (res?.ok) {
-      installedSkillIds.value.add(skill.id)
+    // npm 在线安装——用完整包名 skill.id
+    const res = await skillsApi.installFromMarket(skill.id, profile.value)
+    if (!res?.ok) {
+      window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'skill:market:install', message: res?.error ?? '安装失败' } }))
+      return
     }
+    installedSkillIds.value = new Set(installedSkillIds.value).add(skill.id)
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'success', code: 'skill:market:install', message: `技能 ${res?.name ?? skill.name} 安装完成` } }))
+  } catch (e) {
+    console.error('Failed to install skill from market', e)
   } finally {
-    installingSkillIds.value.delete(skill.id)
+    const next = new Set(installingSkillIds.value)
+    next.delete(skill.id)
+    installingSkillIds.value = next
   }
 }
 
 function viewSkill(skill: SkillInfo) {
-  router.push(`/workspace/market/skill/${encodeURIComponent(skill.name)}`)
+  // 跳现有技能说明页——用完整包名 skill.id + 当前 profile
+  router.push({ path: `/workspace/agents/${profile.value}/market/${skill.id}` })
 }
 
 // ── 扩展（provider）市场 ──
