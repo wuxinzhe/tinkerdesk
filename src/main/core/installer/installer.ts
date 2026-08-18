@@ -16,7 +16,7 @@ import { basename, join } from 'path'
 import { getPackageTarball } from '../../repository/npm-registry-repository'
 import { locateManifestDir, resolveNpmCli, tarBin } from '../../utils/installer-utils'
 import { downloadWithMirror, execFileAsync } from '../../utils/process-utils'
-import type { InstallAssetDep, InstallerDeps, InstallManifest, InstallSession } from './types'
+import type { InstallerDeps, InstallManifest, InstallSession } from './types'
 
 /** 自定义 registry 的 tarball 查询（npm view 命令——走镜像/代理） */
 async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ url: string; size?: number }> {

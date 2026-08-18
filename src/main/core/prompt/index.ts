@@ -6,7 +6,7 @@
 export {PromptManager} from './prompt-manager'
 export {PromptModuleBuilder} from './prompt-module-builder'
 export {PromptRenderer} from './renderer'
-export {HandlebarsPresetModule} from './modules/preset-module'
+export {HandlebarsPresetModule} from '../../builtins/prompts/preset-module'
 export {
   ToolEnforcementModule,
   TaskCompletionModule,
@@ -14,13 +14,13 @@ export {
   GoogleOperationalModule,
   MemoryGuidanceModule,
   SessionSearchModule,
-} from './modules/preset-modules'
-export {SystemContextModule} from './modules/system-context-module'
-export {RuntimeEnvironmentModule} from './modules/runtime-environment-module'
-export {SkillsIndexModule} from './modules/skills-index-module'
-export {MemorySnapshotModule} from './modules/memory-snapshot-module'
-export {SoulPromptModule} from './modules/soul-prompt-module'
-export {UserProfileModule} from './modules/user-profile-module'
+} from '../../builtins/prompts/preset-modules'
+export {SystemContextModule} from '../../builtins/prompts/system-context-module'
+export {RuntimeEnvironmentModule} from '../../builtins/prompts/runtime-environment-module'
+export {SkillsIndexModule} from '../../builtins/prompts/skills-index-module'
+export {MemorySnapshotModule} from '../../builtins/prompts/memory-snapshot-module'
+export {SoulPromptModule} from '../../builtins/prompts/soul-prompt-module'
+export {UserProfileModule} from '../../builtins/prompts/user-profile-module'
 export type {StaticPromptModule, IStaticPromptModuleRepository} from './prompt-module-builder'
 export type {
   IDynamicPromptModule,

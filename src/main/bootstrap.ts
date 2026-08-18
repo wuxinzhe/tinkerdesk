@@ -66,17 +66,17 @@ import { AccountService } from './service/account-service'
 import { AgentConfigService } from './service/agent-config-service'
 import { WebProvider } from './service/web-provider'
 import { AudioToolProvider } from './service/audio-tool-provider'
-import { EDGE_TTS_MANIFEST, edgeTtsProvider } from './providers/tts/edge'
+import { EDGE_TTS_MANIFEST, edgeTtsProvider } from './builtins/providers/tts/edge'
 import { AgentToolRepository } from './repository/agent-tool-repository'
 import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
 import { UserDisabledToolService } from './service/user-disabled-tool-service'
 import { AgentToolService } from './service/agent-tool-service'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
-import { DefaultAgentMode } from './service/agent/default-agent-mode'
-import { MinimalAgentMode } from './service/agent/minimal-agent-mode'
-import { CreatorAgentMode } from './service/agent/creator-agent-mode'
-import { ButlerAgentMode } from './service/agent/butler-agent-mode'
+import { DefaultAgentMode } from './builtins/modes/default-agent-mode'
+import { MinimalAgentMode } from './builtins/modes/minimal-agent-mode'
+import { CreatorAgentMode } from './builtins/modes/creator-agent-mode'
+import { ButlerAgentMode } from './builtins/modes/butler-agent-mode'
 import { ModelConfigService } from './service/model-config-service'
 import { PrivateSkillService } from './service/private-skill-service'
 import { PromptService } from './service/prompt-service'
@@ -88,7 +88,7 @@ import { SystemProviderService } from './service/system-provider-service'
 import { TodoService } from './service/todo-service'
 import { ToolAuthService } from './service/tool-auth-service'
 import { UserCustomModelService } from './service/user-custom-model-service'
-import type { AgentToolRegistration } from './tools'
+import type { AgentToolRegistration } from './builtins/tools'
 import {
   CLARIFY_TOOL_NAME,
   ClarifyTool,
@@ -104,7 +104,7 @@ import {
   SkillViewTool,
   TODO_TOOL_NAME,
   TodoTool,
-} from './tools'
+} from './builtins/tools'
 import {
   CLOSE_TERMINAL_TOOL_NAME,
   CloseTerminalTool,
@@ -136,7 +136,7 @@ import {
   SPEECH_TO_TEXT_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   WriteFileTool,
-} from './tools'
+} from './builtins/tools'
 import {
   PROVIDER_CONFIGURE_TOOL_NAME,
   PROVIDER_ENABLE_TOOL_NAME,
@@ -148,13 +148,13 @@ import {
   ProviderInstallTool,
   ProviderListTool,
   ProviderUninstallTool,
-} from './tools/provider-tools'
+} from './builtins/tools/provider-tools'
 
 import type { TinkerAgentOptions } from './core/loop/types'
 import { ToolManager } from './core/tool'
 import {  } from './core/tool/types'
-import { DelegateTool } from './tools/delegate-tool'
-import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './tools/vision-tool'
+import { DelegateTool } from './builtins/tools/delegate-tool'
+import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './builtins/tools/vision-tool'
 import { VisionProvider } from './service/vision-provider'
 
 export interface TinkerDesk {
