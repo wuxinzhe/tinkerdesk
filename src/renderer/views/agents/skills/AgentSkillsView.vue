@@ -249,10 +249,9 @@ function onGlobalClick(e: MouseEvent): void {
   }
 }
 
-/** 跳转技能市场（npm 在线） */
+/** 跳转技能市场：入口统一到开放市场技能 tab（身份取当前选中 agent = sessionStore.profile） */
 function goMarket(): void {
-  const profile = route.params.profile as string
-  router.push(`/workspace/agents/${profile}/market`)
+  router.push('/workspace/market/skill')
 }
 
 /* ── 初始化 ── */

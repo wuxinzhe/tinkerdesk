@@ -135,7 +135,7 @@ async function togglePlugin(p: PluginInfo): Promise<void> {
 
 /** 打开插件市场（npm 在线安装入口——主按钮） */
 function openMarket(): void {
-  router.push('/workspace/settings/plugins-market')
+  router.push('/workspace/market/extension')
 }
 
 /** 安装插件（按类型）：主按钮=zip，箭头菜单可选手动 folder——选文件后跳转分步向导 */
