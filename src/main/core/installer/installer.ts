@@ -304,7 +304,9 @@ export class Installer {
   }
 
   private validateManifest(manifest: InstallManifest, installDir: string): void {
-    if (!manifest.id || !manifest.entry || !manifest.name) {
+    // 工具包（kind:tool）的 name/entry 在 tool（tool.name/tool.entry 概念——entry 仍顶层）——不要求顶层 name
+    const nameOk = manifest.name || manifest.kind === 'tool'
+    if (!manifest.id || !manifest.entry || !nameOk) {
       throw new Error('manifest 缺少 id/entry/name')
     }
     if (manifest.apiVersion !== 1) {

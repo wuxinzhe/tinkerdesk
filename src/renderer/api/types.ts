@@ -886,11 +886,12 @@ export interface WindowApi {
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => Promise<boolean>
 
-  /** 工具中心（外置工具包：市场查询 + 已装清单——安装接口后续接入） */
+  /** 工具中心（外置工具包：市场查询 + 已装清单 + 安装） */
   toolCenter: {
     marketList: (payload?: { search?: string }) => Promise<MarketToolListResult>
     marketDetail: (name: string) => Promise<MarketToolDetail | undefined>
     list: () => Promise<ToolCenterItem[]>
+    install: (pkg: string, registry?: string) => Promise<{ id: string }>
   }
 
   checkForUpdates: (manual?: boolean) => Promise<unknown>

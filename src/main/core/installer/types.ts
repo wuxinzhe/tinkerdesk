@@ -49,14 +49,18 @@ export interface InstallAssetDep {
 /** 安装包 manifest（品类无关——kind 区分 tool/provider；完整字段由各品类类型扩展） */
 export interface InstallManifest {
   id: string
-  name: string
-  version: string
-  apiVersion: number
+  /** 顶层展示名（provider 扩展有；工具包的 name 在 tool.name——此处可空） */
+  name?: string
   entry: string
+  apiVersion: number
+  /** 版本号（provider 校验用；工具包可选） */
+  version?: string
   /** 包类型（"tool" 分流到 toolsDir；缺省/其他 → providersDir） */
   kind?: string
   /** 能力标签（如 ["stt", "tts"]——展示用） */
   capabilities?: string[]
+  /** 工具声明（kind:tool 包——tool.name 工具名） */
+  tool?: { name?: string; displayName?: string; description?: string; categories?: string[] }
   assetDeps?: InstallAssetDep[]
   modelDeps?: InstallAssetDep[]
 }

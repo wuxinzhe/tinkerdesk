@@ -148,7 +148,7 @@
             </div>
           </div>
           <div class="market-card__actions">
-            <SaActionBtn :text="'安装'" :done="!!tool.installed" :done-text="'已安装'" :disabled="!tool.installed" :loading-text="'安装中...'" @click.stop="installTool(tool)" />
+            <SaActionBtn :text="'安装'" :done="!!tool.installed" :done-text="'已安装'" :loading="installingToolIds.has(tool.name)" :loading-text="'安装中...'" @click.stop="installTool(tool)" />
           </div>
         </div>
       </div>
@@ -279,6 +279,7 @@ function viewProvider(provider: MarketProviderItem) {
 
 // ── 工具市场（外置工具包 tinkerdesk-tool-*） ──
 const tools = ref<MarketToolItem[]>([])
+const installingToolIds = ref(new Set<string>())
 
 async function loadTools() {
   loading.value = true
@@ -301,10 +302,23 @@ function toolKeywords(tool: MarketToolItem): string[] {
   return (tool.keywords ?? []).filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-tool'))
 }
 
-/** 工具安装（后续接入 ToolCenter 安装链路——当前占位） */
-function installTool(tool: MarketToolItem) {
-  if (tool.installed) return
-  window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'info', code: 'tool:market:install', message: `「${displayToolName(tool.name)}」安装即将支持` } }))
+/** 工具安装（ToolCenter 委托安装器分步——npm 下载 → toolsDir → 注册） */
+async function installTool(tool: MarketToolItem) {
+  if (tool.installed || installingToolIds.value.has(tool.name)) return
+  const set = new Set(installingToolIds.value)
+  set.add(tool.name)
+  installingToolIds.value = set
+  try {
+    await window.api?.toolCenter.install(tool.name)
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'success', code: 'tool:market:install', message: `工具 ${displayToolName(tool.name)} 安装完成` } }))
+    await loadTools()
+  } catch (e) {
+    window.dispatchEvent(new CustomEvent('global-tip', { detail: { type: 'error', code: 'tool:market:install', message: `安装失败：${(e as Error).message}` } }))
+  } finally {
+    const next = new Set(installingToolIds.value)
+    next.delete(tool.name)
+    installingToolIds.value = next
+  }
 }
 
 function viewTool(tool: MarketToolItem) {
