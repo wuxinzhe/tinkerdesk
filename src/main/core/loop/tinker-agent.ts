@@ -48,8 +48,6 @@ import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
 import { RES_INTERRUPTED } from './types'
 
 /** 线程模型 TinkerAgent */
-const defaultRpc = new AgentRpcInline()
-
 export class TinkerAgent {
   private readonly llmRouter: LlmRouter
   private readonly toolManager: ToolManager
@@ -213,7 +211,11 @@ export class TinkerAgent {
           runtime: this.runtime,
           approvalManager: this.approvalManager,
           agentToolService: this.agentToolService,
-          rpc: defaultRpc,
+          rpc: new AgentRpcInline({
+            messageService: this.messageService,
+            conversationService: this.conversationService,
+            sessionService: this.sessionService,
+          }),
           toolExecutor: new ToolCallExecutor({
             toolManager: this.toolManager,
             sandboxWhitelistService: this.sandboxWhitelistService,
