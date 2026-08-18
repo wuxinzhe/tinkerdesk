@@ -3,7 +3,7 @@
  *
  * All 15 modules of the service/prompt package.
  */
-export {HandlebarsPresetModule} from './preset-module'
+export {PromptModuleBase} from './prompt-module-base'
 export {
   ToolEnforcementModule,
   TaskCompletionModule,
@@ -11,7 +11,7 @@ export {
   GoogleOperationalModule,
   MemoryGuidanceModule,
   SessionSearchModule,
-} from './preset-modules'
+} from './preset-module-impls'
 export {SystemContextModule} from './system-context-module'
 export {RuntimeEnvironmentModule} from './runtime-environment-module'
 export {SkillsIndexModule} from './skills-index-module'

@@ -7,12 +7,12 @@
  */
 import type {ConversationContext} from '../../core/prompt/types'
 import type {PromptRenderer} from '../../core/prompt/renderer'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 import type {FilteredSkillDTO} from '../../repository/types'
 import {TOOL_SKILL_MANAGE, TOOL_SKILL_VIEW, TOOL_SKILLS_LIST} from '../../core/constants'
 
 /** 技能索引模块 */
-export class SkillsIndexModule extends HandlebarsPresetModule {
+export class SkillsIndexModule extends PromptModuleBase {
   readonly id = 'skills-index'
 
   constructor(

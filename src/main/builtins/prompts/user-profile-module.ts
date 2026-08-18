@@ -7,13 +7,13 @@
  * Entry separator (\n§\n).
  */
 import type {ConversationContext} from '../../core/prompt/types'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 import type {PromptRenderer} from '../../core/prompt/renderer'
 import {TOOL_MEMORY} from '../../core/constants'
 import type {MemoryStore} from '../../service/memory-store'
 
 /** 用户画像模块 */
-export class UserProfileModule extends HandlebarsPresetModule {
+export class UserProfileModule extends PromptModuleBase {
   readonly id = 'user-profile'
 
   /** memory 工具默认查询的条目类型：用户画像 */

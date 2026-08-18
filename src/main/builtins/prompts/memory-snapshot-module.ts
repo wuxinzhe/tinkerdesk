@@ -6,12 +6,12 @@
  * injects them into the context.
  */
 import type {ConversationContext} from '../../core/prompt/types'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 import type {PromptRenderer} from '../../core/prompt/renderer'
 import {TOOL_MEMORY} from '../../core/constants'
 
 /** 记忆快照模块 */
-export class MemorySnapshotModule extends HandlebarsPresetModule {
+export class MemorySnapshotModule extends PromptModuleBase {
   readonly id = 'memory-snapshot'
 
   constructor(

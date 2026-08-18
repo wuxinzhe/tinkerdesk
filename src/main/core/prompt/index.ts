@@ -6,7 +6,7 @@
 export {PromptManager} from './prompt-manager'
 export {PromptModuleBuilder} from './prompt-module-builder'
 export {PromptRenderer} from './renderer'
-export {HandlebarsPresetModule} from '../../builtins/prompts/preset-module'
+export {PromptModuleBase} from '../../builtins/prompts/prompt-module-base'
 export {
   ToolEnforcementModule,
   TaskCompletionModule,
@@ -14,7 +14,7 @@ export {
   GoogleOperationalModule,
   MemoryGuidanceModule,
   SessionSearchModule,
-} from '../../builtins/prompts/preset-modules'
+} from '../../builtins/prompts/preset-module-impls'
 export {SystemContextModule} from '../../builtins/prompts/system-context-module'
 export {RuntimeEnvironmentModule} from '../../builtins/prompts/runtime-environment-module'
 export {SkillsIndexModule} from '../../builtins/prompts/skills-index-module'

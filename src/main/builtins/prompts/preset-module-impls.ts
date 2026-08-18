@@ -10,11 +10,11 @@
  */
 import type {ConversationContext} from '../../core/prompt/types'
 import type {PromptRenderer} from '../../core/prompt/renderer'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 import {TOOL_MEMORY} from '../../core/constants'
 
 /** 工具强制使用（无条件加载） */
-export class ToolEnforcementModule extends HandlebarsPresetModule {
+export class ToolEnforcementModule extends PromptModuleBase {
   readonly id = 'tool-enforcement'
   constructor(renderer: PromptRenderer) {
     super(renderer)
@@ -22,7 +22,7 @@ export class ToolEnforcementModule extends HandlebarsPresetModule {
 }
 
 /** 任务完成规范（无条件加载） */
-export class TaskCompletionModule extends HandlebarsPresetModule {
+export class TaskCompletionModule extends PromptModuleBase {
   readonly id = 'task-completion'
   constructor(renderer: PromptRenderer) {
     super(renderer)
@@ -30,7 +30,7 @@ export class TaskCompletionModule extends HandlebarsPresetModule {
 }
 
 /** OpenAI 执行规范（仅 OpenAI 系模型加载——gpt/o1/o3/o4 或 api.openai.com） */
-export class OpenAIExecutionModule extends HandlebarsPresetModule {
+export class OpenAIExecutionModule extends PromptModuleBase {
   readonly id = 'openai-execution'
   constructor(renderer: PromptRenderer) {
     super(renderer)
@@ -45,7 +45,7 @@ export class OpenAIExecutionModule extends HandlebarsPresetModule {
 }
 
 /** Google 操作规范（仅 Google 系模型加载——gemini 或 googleapis/generativelanguage） */
-export class GoogleOperationalModule extends HandlebarsPresetModule {
+export class GoogleOperationalModule extends PromptModuleBase {
   readonly id = 'google-operational'
   constructor(renderer: PromptRenderer) {
     super(renderer)
@@ -60,7 +60,7 @@ export class GoogleOperationalModule extends HandlebarsPresetModule {
 }
 
 /** 记忆使用指南（memory 工具可用时加载） */
-export class MemoryGuidanceModule extends HandlebarsPresetModule {
+export class MemoryGuidanceModule extends PromptModuleBase {
   readonly id = 'memory'
   constructor(renderer: PromptRenderer) {
     super(renderer)
@@ -71,7 +71,7 @@ export class MemoryGuidanceModule extends HandlebarsPresetModule {
 }
 
 /** 会话搜索（session_search 工具可用时加载） */
-export class SessionSearchModule extends HandlebarsPresetModule {
+export class SessionSearchModule extends PromptModuleBase {
   readonly id = 'session-search'
   constructor(renderer: PromptRenderer) {
     super(renderer)

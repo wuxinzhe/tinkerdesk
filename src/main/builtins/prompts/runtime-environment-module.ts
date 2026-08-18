@@ -7,7 +7,7 @@
  */
 import type {ConversationContext} from '../../core/prompt/types'
 import type {PromptRenderer} from '../../core/prompt/renderer'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 
 /** 客户端类型常量 */
 export const CLIENT_TYPE_DESKTOP_APP = 'desktop'
@@ -16,7 +16,7 @@ export const CLIENT_TYPE_MOBILE_WEB = 'mobile-web'
 export const CLIENT_TYPE_MINIPROGRAM = 'miniprogram'
 
 /** 运行时环境模块 */
-export class RuntimeEnvironmentModule extends HandlebarsPresetModule {
+export class RuntimeEnvironmentModule extends PromptModuleBase {
   readonly id = 'runtime-environment'
   constructor(renderer: PromptRenderer) {
     super(renderer)

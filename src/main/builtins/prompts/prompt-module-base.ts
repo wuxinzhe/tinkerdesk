@@ -1,8 +1,8 @@
 /**
  * preset-module.ts — Handlebars 预设模块基类
  *
- * HandlebarsPresetModule:
- * System preset modules extend this class; it loads the {id}.hbs template
+ * PromptModuleBase:
+ * System preset modules extend this base class; it loads the {id}.hbs template
  * via PromptRenderer. Loads unconditionally by default (shouldLoad=true);
  * subclasses may override.
  */
@@ -10,7 +10,7 @@ import type {IDynamicPromptModule, ConversationContext} from '../../core/prompt/
 import type {PromptRenderer} from '../../core/prompt/renderer'
 
 /** Handlebars 预设模块基类 */
-export abstract class HandlebarsPresetModule implements IDynamicPromptModule {
+export abstract class PromptModuleBase implements IDynamicPromptModule {
   protected readonly renderer: PromptRenderer
 
   constructor(renderer: PromptRenderer) {

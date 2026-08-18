@@ -6,10 +6,10 @@
  */
 import type {ConversationContext} from '../../core/prompt/types'
 import type {PromptRenderer} from '../../core/prompt/renderer'
-import {HandlebarsPresetModule} from './preset-module'
+import {PromptModuleBase} from './prompt-module-base'
 
 /** 系统上下文模块 */
-export class SystemContextModule extends HandlebarsPresetModule {
+export class SystemContextModule extends PromptModuleBase {
   readonly id = 'system-context'
   constructor(renderer: PromptRenderer) {
     super(renderer)
