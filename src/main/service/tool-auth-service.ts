@@ -5,56 +5,12 @@
  * matches dangerous command patterns in tool argument strings; on a hit
  * returns ASK to trigger user approval.
  * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
+ *
+ * 边界：只对【框架内建终端类工具】(terminal/pwsh/*_terminal) 做灾难/危险命令门检。
+ * 外部工具安全不由框架写死——交给工具自声明安全分级 + 后续优化（非强制）。
  */
 import { AuthzDecision } from './types'
 export { AuthzDecision } from './types'
-
-/** computer_use 安全策略（原 tools/computer-use/schema——工具已外置为插件包，安全判定保留在主进程） */
-const COMPUTER_USE_SAFE_ACTIONS: ReadonlySet<string> = new Set([
-  'capture', 'wait', 'list_apps', 'list_windows', 'cua_browser_state',
-])
-
-const COMPUTER_USE_KEY_ALIASES: Record<string, string> = {
-  command: 'cmd', control: 'ctrl', alt: 'option', '⌘': 'cmd', '⌥': 'option',
-  windows: 'win', super: 'win', meta: 'win',
-}
-
-const COMPUTER_USE_BLOCKED_KEY_COMBOS: ReadonlySet<string>[] = [
-  new Set(['cmd', 'shift', 'backspace']), // 清空废纸篓
-  new Set(['cmd', 'option', 'backspace']), // 强制删除
-  new Set(['cmd', 'ctrl', 'q']), // 锁屏
-  new Set(['cmd', 'shift', 'q']), // 登出
-  new Set(['cmd', 'option', 'shift', 'q']), // 强制登出
-  new Set(['win', 'l']), // Windows 锁屏
-  new Set(['ctrl', 'option', 'delete']), // Windows 安全
-  new Set(['ctrl', 'option', 'del']),
-  new Set(['option', 'f4']), // Windows 关闭
-]
-
-const COMPUTER_USE_BLOCKED_TYPE_PATTERNS: RegExp[] = [
-  /curl\s+[^|]*\|\s*bash/i,
-  /curl\s+[^|]*\|\s*sh/i,
-  /wget\s+[^|]*\|\s*bash/i,
-  /\bsudo\s+rm\s+-[rf]/i,
-  /\brm\s+-rf\s+\/\s*$/i,
-  /:\s*\(\)\s*\{\s*:\|:\s*&\s*\}/i, // fork bomb
-]
-
-function canonKeyCombo(keys: string): Set<string> {
-  const parts = keys
-    .split(/[\s+-]+/)
-    .map((p) => p.trim().toLowerCase())
-    .filter(Boolean)
-    .map((p) => COMPUTER_USE_KEY_ALIASES[p] ?? p)
-  return new Set(parts)
-}
-
-function blockedTypePattern(text: string): string | null {
-  for (const pat of COMPUTER_USE_BLOCKED_TYPE_PATTERNS) {
-    if (pat.test(text)) return pat.source
-  }
-  return null
-}
 
 /** 灾难性命令模式 — 命中后返回 DENY（绝对不执行，不进审批，直接拦截） */
 const CATASTROPHIC_PATTERNS: RegExp[] = [
@@ -152,13 +108,9 @@ const DANGEROUS_ARG_PATTERNS: RegExp[] = [
 
 /** 工具授权服务 */
 export class ToolAuthService {
-  /** 检查工具调用：灾难命令 → DENY（直接拦截）；危险模式 → ASK（审批）；其余 ALLOW */
+  /** 检查工具调用：灾难命令 → DENY（直接拦截）；危险模式 → ASK（审批）；其余 ALLOW。
+   *  仅对框架内建终端类工具判参数；外部工具不写死安全（由工具自声明 + 后续优化）。 */
   check(toolName: string, args: Record<string, unknown>): AuthzDecision {
-    // computer_use：按 action 判定（capture/list 免费；destructive ASK；硬封锁 DENY）
-    if (toolName === 'computer_use') {
-      return this.checkComputerUse(args)
-    }
-
     // 仅对终端类工具做参数危险检测（其它工具参数非命令语义）
     const isTerminalLike = toolName === 'terminal'
       || toolName === 'desktop_tinker_terminal'
@@ -183,29 +135,5 @@ export class ToolAuthService {
       }
     }
     return AuthzDecision.ALLOW
-  }
-
-  /** computer_use 审批判定：免费 action → ALLOW；硬封锁（危险按键/文本）→ DENY；其余（destructive）→ ASK */
-  private checkComputerUse(args: Record<string, unknown>): AuthzDecision {
-    const action = String(args?.action ?? '').toLowerCase()
-    if (COMPUTER_USE_SAFE_ACTIONS.has(action)) {
-      return AuthzDecision.ALLOW
-    }
-    // 硬封锁（无论审批级别——1:1）
-    if (action === 'key') {
-      const combo = canonKeyCombo(String(args?.keys ?? ''))
-      for (const blocked of COMPUTER_USE_BLOCKED_KEY_COMBOS) {
-        if (blocked.size <= combo.size && [...blocked].every((k) => combo.has(k))) {
-          return AuthzDecision.DENY
-        }
-      }
-    }
-    if (action === 'type' || action === 'cua_browser_type') {
-      if (blockedTypePattern(String(args?.text ?? ''))) {
-        return AuthzDecision.DENY
-      }
-    }
-    // 其余改变用户可见状态的动作 → 审批
-    return AuthzDecision.ASK
   }
 }
