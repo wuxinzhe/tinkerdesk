@@ -11,7 +11,7 @@
  */
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { StdioTransport } from '../../core/tool/mcp-stdio-transport'
+import { StdioTransport } from '../../core/tool/mcp/mcp-stdio-transport'
 import type { McpCallResult } from '../../core/tool/types'
 
 /** cua-driver 不可用 */

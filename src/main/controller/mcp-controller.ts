@@ -13,7 +13,7 @@
 import { handleTrusted } from '../security/ipc-guard'
 import * as nodeOs from 'os'
 import * as nodeFs from 'fs'
-import type { McpToolCenter } from '../core/tool/mcp-tool-center'
+import type { McpToolCenter } from '../core/tool/mcp/mcp-tool-center'
 import type { McpServerConfig, ToolCenterState } from '../core/tool/types'
 import type { ClientEnvInfo } from '../core/tool/types'
 import type { ApiResponse } from './api-response'
