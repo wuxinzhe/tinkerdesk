@@ -49,8 +49,6 @@ import { TitleOperation } from './core/llm/operations/title-operation'
 import { VisionOperation } from './core/llm/operations/vision-operation'
 import { AgentModeRegistry } from './core/mode/agent-mode-registry'
 import { ProviderManager } from './core/provider/provider-manager'
-import type { McpToolCenter } from './core/tool'
-import { getMcpToolCenter, ToolManager } from './core/tool'
 import { ToolCenter } from './core/tool/tool-center'
 import { AgentConfigRepository } from './repository/agent-config-repository'
 import { AgentRepository } from './repository/agent-repository'
@@ -68,12 +66,10 @@ import { AgentConfigService } from './service/agent-config-service'
 import { WebProvider } from './service/web-provider'
 import { AudioToolProvider } from './service/audio-tool-provider'
 import { EDGE_TTS_MANIFEST, edgeTtsProvider } from './providers/tts/edge'
-import { CUA_DRIVER_MANIFEST, cuaDriverProvider } from './providers/computer-use/cua-driver'
-import { ComputerUseProvider } from './service/computer-use-provider'
-import { UserDisabledToolService } from './service/user-disabled-tool-service'
-import { AgentToolService } from './service/agent-tool-service'
 import { AgentToolRepository } from './repository/agent-tool-repository'
 import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
+import { UserDisabledToolService } from './service/user-disabled-tool-service'
+import { AgentToolService } from './service/agent-tool-service'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
 import { DefaultAgentMode } from './service/agent/default-agent-mode'
@@ -151,13 +147,12 @@ import {
 } from './tools/provider-tools'
 
 import type { TinkerAgentOptions } from './core/loop/types'
+import { ToolManager } from './core/tool'
 import { TOOL_TYPE_DESKTOP } from './core/tool/types'
 import { DelegateTool } from './tools/delegate-tool'
-import { ComputerUseTool, TOOL_NAME as COMPUTER_USE_TOOL_NAME } from './tools/computer-use/computer-use-tool'
 import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './tools/desktop/vision-tool'
 import { VisionProvider } from './service/vision-provider'
 
-/** 组装结果 */
 export interface TinkerDesk {
   /** TinkerAgent 装配选项（OO 化——controller 按 session 惰性实例化） */
   agentLoopOptions: Omit<TinkerAgentOptions, 'sessionId' | 'profile'>
@@ -196,7 +191,6 @@ export interface TinkerDesk {
   sessionContextFactory: SessionContextFactory
   agentModeRegistry: AgentModeRegistry
   agentModeService: AgentModeService
-  mcpToolCenter: McpToolCenter
 }
 
 /**
@@ -293,17 +287,13 @@ export function bootstrap(
       sessionService,
     })),
   })
-  // 桌面控制工具（cua-driver——后台桌面自动化；check() 在 cua-driver 未安装时自动不入池）→ desktop 组（与 terminal 一致）
-  // 注册在 desktopTools（见下方）——工具名 desktop_tinker_computer_use
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
   // ── 扩展管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
   const providerManager = new ProviderManager()
   // 内置扩展（代码注册——出现在扩展列表、可配置，不可卸载）
   providerManager.registerBuiltinProvider({ manifest: EDGE_TTS_MANIFEST, provider: edgeTtsProvider })
-  providerManager.registerBuiltinProvider({ manifest: CUA_DRIVER_MANIFEST, provider: cuaDriverProvider })
   const webProvider = new WebProvider(providerManager)
   const audioToolProvider = new AudioToolProvider(providerManager)
-  const computerUseProvider = new ComputerUseProvider(providerManager)
   // 模型配置解析服务（custom_models + providers → ModelConfig[]）——vision provider 依赖（场景模型解析）
   const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
   const visionProvider = new VisionProvider(llmRouter, modelConfigService)
@@ -324,7 +314,6 @@ export function bootstrap(
     { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤', toolType: TOOL_TYPE_DESKTOP }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
     { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰', toolType: TOOL_TYPE_DESKTOP }, tool: new ScheduleTimerTool(renderer) },
     { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬', toolType: TOOL_TYPE_DESKTOP }, tool: new FileMutationVerifierTool(renderer) },
-    { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️', toolType: TOOL_TYPE_DESKTOP }, tool: new ComputerUseTool(renderer, computerUseProvider) },
     { meta: { name: VISION_RECOGNIZE_TOOL_NAME, emoji: '👁️', toolType: TOOL_TYPE_DESKTOP }, tool: new VisionRecognizeTool(renderer, visionProvider) },
   ]
   // ── 扩展管理工具（Agent 可操作扩展生命周期；依赖 ProviderManager） ──
@@ -344,12 +333,6 @@ export function bootstrap(
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
   toolManager.loadDisabled(userDisabledToolService.listAll())
   toolManager.setPersistence((profile, toolNames) => userDisabledToolService.replaceProfile(profile, toolNames))
-  // MCP 工具同构注册：McpToolCenter 连接后生成 McpTool 实例 → 动态注册进统一注册中心
-  // （toolType=mcp，ToolManager.execute 按类型路由到 MCP 统一执行器）
-  const mcpCenter = getMcpToolCenter()
-  mcpCenter.attachToolManager(toolManager)
-  // 启动恢复：从库加载已注册 MCP 工具 → check 可用性 → 注册（无需重新 discover）
-  void mcpCenter.restoreFromDb()
 
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
   // （已提前到 providerManager 区——vision provider 依赖场景模型解析）
@@ -429,6 +412,5 @@ export function bootstrap(
     audioToolProvider,
     agentModeRegistry,
     agentModeService,
-    mcpToolCenter: mcpCenter,
   }
 }

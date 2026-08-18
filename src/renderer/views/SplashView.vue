@@ -63,7 +63,6 @@
 <script setup lang="ts">
 import { FullScreenCenterLayout, LogoBrand } from '@/renderer/components'
 import { markAppInitialized } from '@/renderer/router'
-import { getToolCenterApi } from '@/renderer/api/tool-center-api'
 import { NButton } from 'naive-ui'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -162,13 +161,7 @@ async function start() {
 // ── 环境检查（本地探测，不依赖后端） ──
 
 async function checkEnvironment(): Promise<void> {
-  // 本地应用：探测 ToolCenter 是否可用（桌面端 IPC，Web 端返回空）
-  const toolCenterApi = getToolCenterApi()
-  try {
-    await toolCenterApi.initialize()
-  } catch {
-    // 桌面端 ToolCenter 不可用不阻塞启动，工具注册步骤会降级
-  }
+  // 本地应用：启动阶段无额外依赖——通过即进入加载
 }
 
 // ── 加载配置（暂为桩） ──

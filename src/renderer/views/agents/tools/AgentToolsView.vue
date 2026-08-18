@@ -81,12 +81,11 @@ const toolsLoading = ref(false)
 const toolTabs = [
   { type: 'builtin', label: '内建工具' },
   { type: 'desktop', label: '扩展工具' },
-  { type: 'mcp', label: 'MCP 工具' },
 ]
 const activeToolType = ref('builtin')
 
 const toolTypeLabels: Record<string, string> = {
-  builtin: '内建工具', desktop: '扩展工具', client: '客户端工具', mcp: 'MCP 工具',
+  builtin: '内建工具', desktop: '扩展工具', client: '客户端工具',
 }
 
 function switchTab(type: string): void {
@@ -186,7 +185,6 @@ onMounted(() => loadTools())
 .tag-builtin { background: #e8f5e9; color: #2e7d32; }
 .tag-desktop { background: #e3f2fd; color: #1565c0; }
 .tag-client { background: #f3e5f5; color: #7b1fa2; }
-.tag-mcp { background: #fff3e0; color: #e65100; }
 .tag-unknown { background: #eceff1; color: #546e7a; }
 .tool-row__name {
   font-size: 13px;
@@ -263,7 +261,7 @@ onMounted(() => loadTools())
   background: rgba(10, 132, 255, 0.08);
 }
 
-/* ── Tab 页签（内建/桌面/MCP 分类） ── */
+/* ── Tab 页签（内建/桌面分类） ── */
 .tools-tabs {
   display: flex;
   gap: 8px;

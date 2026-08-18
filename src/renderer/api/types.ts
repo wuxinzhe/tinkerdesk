@@ -541,14 +541,7 @@ export class ApiError extends Error {
 // ── 客户端环境（原 defines/api/client-env-types.ts） ──
 
 /** 客户端环境信息（tool-center:collect-env 返回） */
-export interface ClientEnvInfo {
-  os: string
-  arch: string
-  clientType: string
-  shell: string
-  homeDir: string
-  pathFormat: string
-}
+
 
 // ── 账号初始化 ──
 
@@ -740,39 +733,6 @@ export interface CenterToolSchema {
   emoji?: string
 }
 
-export interface CheckedTool {
-  id: string; name: string; description: string; category: string
-  source: 'builtin'; available: boolean; reason?: string
-  schema: CenterToolSchema
-}
-
-export interface McpServerConfig {
-  name: string; transport: 'stdio' | 'http'
-  command?: string; args?: string[]; url?: string; enabled: boolean
-}
-
-export interface McpDiscoveredTool {
-  name: string; description: string; inputSchema: Record<string, unknown>
-}
-
-export interface McpServerState extends McpServerConfig {
-  connected: boolean; lastCheck: string | null; error?: string
-  tools: McpDiscoveredTool[]
-}
-
-export interface RegisteredTool {
-  id: string; name: string; description: string; category: string
-  available: boolean; schema: CenterToolSchema
-}
-
-export interface ToolCenterState {
-  builtin: CheckedTool[]
-  mcpServers: McpServerState[]
-
-  updatedAt: string
-}
-
-
 // ── window.api 接口（原 ipc-api-types.ts） ──
 
 /** window.api 完整结构（与 src/preload/index.ts 的 api 对象一一对应） */
@@ -884,16 +844,6 @@ export interface WindowApi {
   onEvent: (channel: string, callback: (data: unknown) => void) => () => void
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => Promise<boolean>
-
-  toolCenter: {
-    initialize: () => Promise<ToolCenterState>
-    recheckMcp: () => Promise<ToolCenterState>
-    getState: () => Promise<ToolCenterState>
-    getMcpConfigs: () => Promise<McpServerConfig[]>
-    upsertMcpServer: (config: McpServerConfig) => Promise<void>
-    removeMcpServer: (name: string) => Promise<void>
-    collectEnv: () => Promise<ClientEnvInfo>
-  }
 
   checkForUpdates: (manual?: boolean) => Promise<unknown>
   installUpdate: () => Promise<void>

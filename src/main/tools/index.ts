@@ -29,5 +29,5 @@ export {
   FileMutationVerifierTool, FILE_MUTATION_VERIFIER_TOOL_NAME,
 } from './desktop'
 // 核心类型 re-export（定义在 core/tool/types）
-export { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT, TOOL_TYPE_MCP } from '../core/tool/types'
+export { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT, TOOL_TYPE_DESKTOP } from '../core/tool/types'
 export type { AgentToolMeta, AgentToolRegistration, IAgentTool, ToolFunction, ToolType } from '../core/tool/types'

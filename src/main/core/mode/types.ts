@@ -34,7 +34,7 @@ export interface IAgentMode {
    * 该 Agent 模式允许使用的工具名集合（per-agent 工具集白名单）。
    * `['*']` 表示全量（该 profile 可见全局工具池中所有工具）；其余情况只暴露名单内的工具。
    * 工具集归属 AgentMode（随模式走、可写死），不落 AgentConfig——用于受限 Agent（如管家 Agent）
-   * 固定其可用工具，未列入的（尤其外部 MCP 工具）对该 Agent 天然隔离。
+   * 固定其可用工具，未列入的（尤其外部工具）对该 Agent 天然隔离。
    */
   getToolset(): string[]
 }

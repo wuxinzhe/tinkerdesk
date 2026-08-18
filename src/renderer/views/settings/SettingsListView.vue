@@ -57,12 +57,6 @@ const settingItems: SettingItem[] = [
     icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>'
   },
   {
-    key: 'mcp',
-    label: 'MCP 工具',
-    desc: '管理 MCP 服务器和外部工具',
-    icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
-  },
-  {
     key: 'providers',
     label: '扩展设置',
     desc: '管理客户端扩展和扩展能力',
@@ -200,7 +194,7 @@ onMounted(() => {
 }
 /* 每个图标对应不同背景色（iOS Settings 风格）——顺序与 items 数组一致 */
 .settings-row:nth-child(1) .settings-row__icon { background: var(--tk-accent); }   /* 模型 — 蓝色 */
-.settings-row:nth-child(2) .settings-row__icon { background: var(--tk-success); }   /* MCP — 绿色 */
+.settings-row:nth-child(2) .settings-row__icon { background: var(--tk-success); }   /* 扩展 — 绿色 */
 .settings-row:nth-child(3) .settings-row__icon { background: var(--tk-warning); }   /* 扩展 — 橙色 */
 .settings-row:nth-child(4) .settings-row__icon { background: #af52de; }   /* 通用 — 灰色 */
 .settings-row:nth-child(4) .settings-row__icon { background: #8e8e93; }   /* 通用 — 灰色 */

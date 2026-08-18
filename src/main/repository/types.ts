@@ -476,28 +476,3 @@ export interface SceneModelBinding {
   isMain?: boolean
 }
 
-// ── tool-center 持久化（表 mcp_servers） ──
-
-/** MCP 服务器配置行 */
-export interface McpServerRow {
-  name: string
-  transport: string
-  command: string | null
-  argsJson: string
-  url: string | null
-  enabled: number
-  createdAt: string
-  updatedAt: string
-}
-
-/** MCP 工具定义行（首次发现后持久化） */
-export interface McpToolRow {
-  name: string
-  serverName: string
-  toolName: string
-  description: string
-  inputSchema: string
-  enabled: number
-  createdAt: string
-  updatedAt: string
-}

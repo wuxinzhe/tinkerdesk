@@ -7,11 +7,54 @@
  * 本地单用户无 DENY（拒绝即审批拒绝）；危险操作一律走审批。
  */
 import { AuthzDecision } from './types'
-import {
-  COMPUTER_USE_BLOCKED_KEY_COMBOS, COMPUTER_USE_SAFE_ACTIONS,
-  blockedTypePattern, canonKeyCombo,
-} from '../tools/computer-use/schema'
 export { AuthzDecision } from './types'
+
+/** computer_use 安全策略（原 tools/computer-use/schema——工具已外置为插件包，安全判定保留在主进程） */
+const COMPUTER_USE_SAFE_ACTIONS: ReadonlySet<string> = new Set([
+  'capture', 'wait', 'list_apps', 'list_windows', 'cua_browser_state',
+])
+
+const COMPUTER_USE_KEY_ALIASES: Record<string, string> = {
+  command: 'cmd', control: 'ctrl', alt: 'option', '⌘': 'cmd', '⌥': 'option',
+  windows: 'win', super: 'win', meta: 'win',
+}
+
+const COMPUTER_USE_BLOCKED_KEY_COMBOS: ReadonlySet<string>[] = [
+  new Set(['cmd', 'shift', 'backspace']), // 清空废纸篓
+  new Set(['cmd', 'option', 'backspace']), // 强制删除
+  new Set(['cmd', 'ctrl', 'q']), // 锁屏
+  new Set(['cmd', 'shift', 'q']), // 登出
+  new Set(['cmd', 'option', 'shift', 'q']), // 强制登出
+  new Set(['win', 'l']), // Windows 锁屏
+  new Set(['ctrl', 'option', 'delete']), // Windows 安全
+  new Set(['ctrl', 'option', 'del']),
+  new Set(['option', 'f4']), // Windows 关闭
+]
+
+const COMPUTER_USE_BLOCKED_TYPE_PATTERNS: RegExp[] = [
+  /curl\s+[^|]*\|\s*bash/i,
+  /curl\s+[^|]*\|\s*sh/i,
+  /wget\s+[^|]*\|\s*bash/i,
+  /\bsudo\s+rm\s+-[rf]/i,
+  /\brm\s+-rf\s+\/\s*$/i,
+  /:\s*\(\)\s*\{\s*:\|:\s*&\s*\}/i, // fork bomb
+]
+
+function canonKeyCombo(keys: string): Set<string> {
+  const parts = keys
+    .split(/[\s+-]+/)
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean)
+    .map((p) => COMPUTER_USE_KEY_ALIASES[p] ?? p)
+  return new Set(parts)
+}
+
+function blockedTypePattern(text: string): string | null {
+  for (const pat of COMPUTER_USE_BLOCKED_TYPE_PATTERNS) {
+    if (pat.test(text)) return pat.source
+  }
+  return null
+}
 
 /** 灾难性命令模式 — 命中后返回 DENY（绝对不执行，不进审批，直接拦截） */
 const CATASTROPHIC_PATTERNS: RegExp[] = [

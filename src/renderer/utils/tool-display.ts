@@ -12,7 +12,7 @@
  * 从带前缀的全名中提取简短的展示名。
  * 格式：{type}_{server}_{toolId} → toolId
  * 例如：desktop_tinker_terminal → terminal
- *       mcp_filesystem_list_directory → list_directory
+ *       filesystem_list_directory → list_directory
  */
 export function getShortName(fullName: string): string {
   return fullName.replace(/^\w+_\w+_/, '')

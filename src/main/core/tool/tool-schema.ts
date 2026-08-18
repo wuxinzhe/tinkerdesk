@@ -11,7 +11,7 @@ export class ToolSchema {
   readonly type = 'function'
   /** 工具函数定义（名称、描述、参数） */
   readonly function: ToolFunction
-  /** 工具类型分类：builtin = 内建；mcp = MCP 统一执行器；client = 客户端工具 */
+  /** 工具类型分类：builtin = 内建；desktop = 客户端本地；client = 客户端工具 */
   toolType: ToolType = 'builtin'
   /** 展示用 emoji 图标，默认 ⚡ */
   emoji = '⚡'

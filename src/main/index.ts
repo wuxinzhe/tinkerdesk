@@ -26,7 +26,6 @@ import { SandboxController } from './controller/sandbox-controller'
 import { ModelController } from './controller/model-controller'
 import { AccountController } from './controller/account-controller'
 import { MemoryController } from './controller/memory-controller'
-import { McpController } from './controller/mcp-controller'
 import { ProviderController } from './controller/provider-controller'
 import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
@@ -199,7 +198,6 @@ function createWindow() {
     new SandboxController(desk.sandboxWhitelistService).register()
 
     // 注册 IPC handlers
-    new McpController(desk.mcpToolCenter).register()
     new ModelController(desk.customModelService, desk.sceneModelService, desk.systemProviderService).register()
     new AgentModeController(desk.agentModeService).register()
     new AccountController(desk.accountService).register()

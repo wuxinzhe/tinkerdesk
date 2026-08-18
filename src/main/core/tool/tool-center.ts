@@ -13,20 +13,7 @@ import type { ICenter } from '../center/types'
  * 与 ToolManager 分工：ToolCenter 管"装了什么工具"（生命周期），ToolManager 管"谁能用/怎么调"（授权/查询/执行）。
  * 安装链路复用 installer 的 npm 下载/解压/校验（与 provider 扩展同一套基建）。
  */
-export interface ToolCenterDeps {
-  toolManager: ToolManager
-  /** 分步安装器（与 provider 扩展共用——工具/扩展/app 走分步安装链路） */
-  installer: Installer
-}
-
-interface ToolPackageManifest {
-  id: string
-  entry?: string
-  apiVersion?: number
-  kind?: string
-  tool?: { name?: string; displayName?: string; description?: string; categories?: string[] }
-  assetDeps?: Array<{ name: string; dest: string; optional?: boolean; sizeMB?: number }>
-}
+import type { ToolCenterDeps, ToolPackageManifest } from './types'
 
 export class ToolCenter implements ICenter {
   private readonly toolManager: ToolManager

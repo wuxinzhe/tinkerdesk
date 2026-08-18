@@ -71,17 +71,6 @@ export interface StreamToken {
   finishReason?: string
 }
 
-/** 工具中心（MCP）相关 DTO */
-
-/** MCP 服务器配置请求 DTO */
-export interface McpServerConfigDTO {
-  name: string
-  transport: 'stdio' | 'http'
-  command?: string
-  args?: string[]
-  url?: string
-  enabled: boolean
-}
 
 /** 发送消息请求（渲染层 → Agent 层） */
 export interface AgentSendRequest {
@@ -219,7 +208,7 @@ export interface ToolItemVO {
 /** 工具清单查询 DTO */
 export interface ToolListQueryDTO {
   profile?: string
-  /** 按工具类型过滤（builtin / desktop / client / mcp——不传返回全部） */
+  /** 按工具类型过滤（builtin / desktop / client——不传返回全部） */
   toolType?: string
 }
 

@@ -4,12 +4,12 @@
  * ToolManager (local):
  * - startup registration: checks each tool's availability, caches only the
  *   available name → tool map
- * - tool kinds: builtin (built-in) / client (external-facing) / mcp (unified MCP executor)
+ * - tool kinds: builtin (built-in) / client (external-facing) / desktop (local)
  * - 工具执行：取出 tool 实例 → 按 toolType 路由——
  *     builtin / client → tool.execute(ctx)（工具自身执行器）
- *     mcp            → MCP 统一执行器（McpTool.execute 内部转发 mcpManager）
+ *     desktop        → 客户端本地工具（tools/desktop）
  *
- * 所有工具（内建/客户端/MCP）同构为 IAgentTool，注册在同一注册中心。
+ * 所有工具（内建/客户端/桌面）同构为 IAgentTool，注册在同一注册中心。
  * 路由依据 tool 实例的 toolType，不使用前缀判断。
  */
 import type { ToolCall } from '../llm/types'
@@ -21,10 +21,10 @@ import { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT } from './types'
 
 /** 工具管理器（统一工具注册中心） */
 export class ToolManager {
-  /** 工具池：toolName → IAgentTool（仅可用工具，内建/客户端/MCP 同构注册） */
+  /** 工具池：toolName → IAgentTool（仅可用工具，内建/桌面/客户端同构注册） */
   private readonly tools = new Map<string, IAgentTool>()
 
-  /** 工具类型：toolName → toolType（builtin / desktop / client / mcp） */
+  /** 工具类型：toolName → toolType（builtin / desktop / client） */
   private readonly toolTypes = new Map<string, ToolType>()
   /** 不可用工具（check 失败——列表展示灰色 + 管理页错误原因）：toolName → { schema, reason } */
   private readonly unavailableTools = new Map<string, { schema: ToolSchema; reason: string }>()
@@ -35,7 +35,7 @@ export class ToolManager {
   /**
    * per-agent 工具集白名单：profile → 允许的工具名集合。
    * 未设置 = 全量（该 profile 可见全局工具池全部工具——兼容 default 模式）。由 bootstrap 按
-   * 该 profile 的 AgentMode.getToolset() 注入——受限 Agent（如管家）白名单不含 MCP/外部工具 → 天然隔离。
+   * 该 profile 的 AgentMode.getToolset() 注入——受限 Agent（如管家）白名单不含外部工具 → 天然隔离。
    */
   private readonly profileToolsets = new Map<string, Set<string>>()
 
@@ -48,7 +48,7 @@ export class ToolManager {
   }
 
   /**
-   * 构造：接收所有工具注册项（内建 + MCP + 客户端），逐个 check 可用性后按名称编入内存。
+   * 构造：接收所有工具注册项（内建 + 桌面 + 客户端），逐个 check 可用性后按名称编入内存。
    * 重复名称抛错；不可用工具跳过（不入池）。
    */
   constructor(registrations: AgentToolRegistration[]) {
@@ -87,7 +87,7 @@ export class ToolManager {
   }
 
   /**
-   * 动态注册工具（MCP 工具连接后调用）。
+   * 动态注册工具（插件工具安装后调用）。
    * 重复名称：已存在则跳过（工具已注册）。
    */
   register(reg: AgentToolRegistration): void {
@@ -188,7 +188,7 @@ export class ToolManager {
     return tool ? this.getEffectiveSchema(tool) : null
   }
 
-  /** 获取工具类型（builtin / mcp / client） */
+  /** 获取工具类型（builtin / desktop / client） */
   getToolType(toolName: string): ToolType | null {
     return this.toolTypes.get(toolName) ?? null
   }
@@ -315,7 +315,7 @@ export class ToolManager {
     return this.isToolAllowed(ctx.profile, toolName)
   }
 
-  /** 执行工具调用（builtin/client 走自身执行器；mcp 走 MCP 统一执行器） */
+  /** 执行工具调用（builtin/client/desktop 走各自执行器） */
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const toolName = ctx.toolCall.name
 

@@ -164,16 +164,6 @@ const api = {
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => inv('window:phoneMode'),
 
-  // Tool Center
-  toolCenter: {
-    initialize: () => inv('tool-center:initialize').then(unwrap),
-    recheckMcp: () => inv('tool-center:recheck-mcp').then(unwrap),
-    getState: () => inv('tool-center:get-state').then(unwrap),
-    getMcpConfigs: () => inv('tool-center:get-mcp-configs').then(unwrap),
-    upsertMcpServer: (config: { name: string; transport: 'stdio' | 'http'; command?: string; args?: string[]; url?: string; enabled: boolean }) => inv('tool-center:upsert-mcp-server', config).then(unwrap),
-    removeMcpServer: (name: string) => inv('tool-center:remove-mcp-server', name).then(unwrap),
-    collectEnv: () => inv('tool-center:collect-env').then(unwrap),
-  },
 
   // Auto-update
     checkForUpdates: (manual = false) => inv('update:check', manual),

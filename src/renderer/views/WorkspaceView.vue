@@ -181,11 +181,8 @@ const l3ToolbarTitle = computed(() => {
     if (route.path.includes('/settings/providers-market')) return '扩展市场'
     if (route.path.includes('/settings/model/create')) return '添加模型'
     if (route.path.includes('/settings/model/') && route.path.endsWith('/edit')) return '编辑模型'
-    if (route.path.includes('/settings/mcp/create')) return '添加 MCP 服务器'
-    if (route.path.includes('/settings/mcp/') && route.path.endsWith('/edit')) return '编辑 MCP 服务器'
     const section = route.params.section as string
     if (section === 'model') return '模型设置'
-    if (section === 'mcp') return 'MCP 工具'
     if (section === 'providers') return '扩展设置'
     if (section === 'voice') return '语音设置'
     if (section === 'general') return '通用设置'
@@ -230,7 +227,7 @@ const l3ToolbarTitle = computed(() => {
 const sessionTitle = computed(() => sessionStore.currentSession?.title ?? '')
 
 const SECTION_TITLES: Record<string, string> = {
-  model: '模型设置', mcp: 'MCP 工具', providers: '扩展设置', voice: '语音设置', general: '通用设置',
+  model: '模型设置', providers: '扩展设置', voice: '语音设置', general: '通用设置',
 }
 const AGENT_SUB_TITLES: Record<string, string> = {
   skills: '技能管理', tools: '工具配置',
@@ -244,8 +241,6 @@ const topbarTitle = computed(() => {
   if (activeTab.value === 'settings') {
     if (route.path.includes('/settings/model/create')) return '添加模型'
     if (route.path.includes('/settings/model/') && route.path.endsWith('/edit')) return '编辑模型'
-    if (route.path.includes('/settings/mcp/create')) return '添加 MCP 服务器'
-    if (route.path.includes('/settings/mcp/') && route.path.endsWith('/edit')) return '编辑 MCP 服务器'
     const section = route.params.section as string
     if (section && SECTION_TITLES[section]) return SECTION_TITLES[section]
   }
@@ -361,12 +356,6 @@ const settingsItems: SettingsItem[] = [
     label: '模型设置',
     desc: '管理 AI 模型提供商和默认模型',
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>',
-  },
-  {
-    key: 'mcp',
-    label: 'MCP 工具',
-    desc: '管理 MCP 服务器和外部工具',
-    icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
   },
   {
     key: 'providers',

@@ -5,7 +5,7 @@
  * (e.g. desktop_tinker_terminal); UI-facing text shows the short name.
  * Format: {type}_{server}_{toolId} → toolId
  *   desktop_tinker_terminal → terminal
- *   mcp_filesystem_list_directory → list_directory
+ *   filesystem_list_directory → list_directory
  * (mirrors the renderer copy in src/renderer/utils/tool-display.ts —
  * main/renderer are built separately, so the logic lives in both.)
  */

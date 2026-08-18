@@ -5,8 +5,7 @@
       <!-- 模型设置 -->
       <CustomModelSettingsView v-if="section === 'model'" />
 
-      <!-- MCP 工具设置 -->
-      <McpSettingsView v-else-if="section === 'mcp'" />
+      
 
       <!-- 扩展设置 -->
       <ProviderSettingsView v-else-if="section === 'providers'" />
@@ -37,7 +36,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
-import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
 import ProviderSettingsView from '@/renderer/views/settings/detail/ProviderSettingsView.vue'
 import GeneralSettingsView from '@/renderer/views/settings/detail/GeneralSettingsView.vue'
 

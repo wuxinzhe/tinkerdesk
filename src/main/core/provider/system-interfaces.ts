@@ -50,20 +50,13 @@ export const SYSTEM_INTERFACES: SystemInterfaceDef[] = [
     optionalChannels: ['models:status', 'models:download'],
   },
   {
-    id: 'tool.stt',
-    name: '语音转文本（Agent 工具）',
-    description: 'Agent 工具的 STT：音频文件路径 → 文本（与系统输入 voice.stt 分开）',
-    requiredChannel: 'stt:transcribe_file',
-    optionalChannels: ['models:status', 'models:download'],
-  },
-  {
-    id: 'tool.computer_use',
-    name: '桌面控制（Agent 工具）',
-    description: 'Agent 工具的 computer_use：后台桌面自动化（cua-driver——截图/鼠标/键盘/窗口）',
-    // 无契约频道——执行由工具经 provider 直连（不经过扩展 IPC）
-    requiredChannel: '',
-  },
-]
+      id: 'tool.stt',
+      name: '语音转文本（Agent 工具）',
+      description: 'Agent 工具的 STT：音频文件路径 → 文本（与系统输入 voice.stt 分开）',
+      requiredChannel: 'stt:transcribe_file',
+      optionalChannels: ['models:status', 'models:download'],
+    },
+  ]
 
 /** 按 id 查接口定义 */
 export function findSystemInterface(id: string): SystemInterfaceDef | undefined {

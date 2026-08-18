@@ -10,6 +10,8 @@ import type {ToolCall} from '../llm/types'
 import type {ToolSchema} from './tool-schema'
 import type {ToolResult} from './tool-result'
 import type {ToolContext} from '../loop/types'
+import type { ToolManager } from './tool-manager'
+import type { Installer } from '../provider/installer'
 
 // ── ToolFunction（ToolFunction） ─────────────────────────
 
@@ -55,13 +57,11 @@ export interface ToolCheckResult {
 export const TOOL_TYPE_BUILTIN = 'builtin'
 /** 客户端工具：对外的普通工具（与内建走相同执行器 tool.execute） */
 export const TOOL_TYPE_CLIENT = 'client'
-/** 桌面工具：客户端本地工具（terminal/file/web/computer_use 等——desktop 组） */
+/** 桌面工具：客户端本地工具（terminal/file/web 等——desktop 组） */
 export const TOOL_TYPE_DESKTOP = 'desktop'
-/** MCP 工具：由 MCP 统一执行器（mcpManager）执行 */
-export const TOOL_TYPE_MCP = 'mcp'
 
-/** 工具类型：builtin/desktop/client 走自身执行器；mcp 走 MCP 统一执行器 */
-export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_DESKTOP | typeof TOOL_TYPE_CLIENT | typeof TOOL_TYPE_MCP
+/** 工具类型：builtin/desktop/client 走各自执行器 */
+export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_DESKTOP | typeof TOOL_TYPE_CLIENT
 
 // ── 工具注册元信息（@AgentTool 注解） ────────────────────
 
@@ -81,124 +81,22 @@ export interface AgentToolRegistration {
   tool: IAgentTool
 }
 
-// ══════════════════════════════════════════════════════════════
-// MCP 类型（MCP 服务器配置/状态/工具定义）
-// ══════════════════════════════════════════════════════════════
+// ── ToolCenter 类型（外置工具包中心） ──
 
-/** MCP 传输类型 */
-export type McpTransportType = 'stdio' | 'http'
-
-/** MCP 服务器配置 */
-export interface McpServerConfig {
-  /** 服务器名（唯一） */
-  name: string
-  /** 传输类型：stdio（子进程）或 http（远程） */
-  transport: McpTransportType
-  /** stdio 模式：启动命令 */
-  command?: string
-  /** stdio 模式：命令参数 */
-  args?: string[]
-  /** http 模式：服务器 URL */
-  url?: string
-  /** 是否启用 */
-  enabled: boolean
+/** ToolCenter 构造依赖 */
+export interface ToolCenterDeps {
+  toolManager: ToolManager
+  /** 分步安装器（与 provider 扩展共用——工具/扩展/app 走分步安装链路） */
+  installer: Installer
 }
 
-/** MCP 服务器状态（连接 + 发现的工具） */
-export interface McpServerState {
-  name: string
-  transport: McpTransportType
-  command?: string
-  args?: string[]
-  url?: string
-  enabled: boolean
-  /** 是否已连接 */
-  connected: boolean
-  /** 最近检测时间 */
-  lastCheck: string | null
-  /** 连接错误信息（连接失败时） */
-  error?: string
-  /** 发现的工具列表 */
-  tools: McpDiscoveredTool[]
-}
-
-/** MCP 发现的工具（服务器返回的原始定义） */
-export interface McpDiscoveredTool {
-  name: string
-  description: string
-  inputSchema: Record<string, unknown>
-}
-
-/** MCP 工具完整定义（注册用） */
-export interface McpToolDefinition {
+/** 外置工具包 manifest（tinkerdesk-tool-* 包内 manifest.json 结构） */
+export interface ToolPackageManifest {
   id: string
-  name: string
-  description: string
-  inputSchema: Record<string, unknown>
-  serverName: string
+  entry?: string
+  apiVersion?: number
+  kind?: string
+  tool?: { name?: string; displayName?: string; description?: string; categories?: string[] }
+  assetDeps?: Array<{ name: string; dest: string; optional?: boolean; sizeMB?: number }>
 }
 
-/** JSON-RPC 请求 */
-export interface JsonRpcRequest {
-  jsonrpc: '2.0'
-  id: number | string
-  method: string
-  params?: Record<string, unknown>
-}
-
-/** JSON-RPC 响应 */
-export interface JsonRpcResponse {
-  jsonrpc: '2.0'
-  id: number | string
-  result?: unknown
-  error?: { code: number; message: string; data?: unknown }
-}
-
-/** MCP 调用结果 */
-export interface McpCallResult {
-  content: Array<{ type: string; text?: string }>
-  isError?: boolean
-}
-
-/** 检测过的工具（内置检测结果，本地版恒为空） */
-export interface CheckedTool {
-  id: string
-  name: string
-  description: string
-  category: string
-  source: 'builtin'
-  available: boolean
-  reason?: string
-  schema: unknown
-}
-
-/** 统一工具定义（用于 register_tools 上报服务端） */
-export interface RegisteredTool {
-  id: string
-  name: string
-  description: string
-  category: string
-  available: boolean
-  schema: unknown
-  /** MCP 工具的服务器配置名（仅 MCP 来源有效） */
-  serverName?: string
-}
-
-/** ToolCenter 状态快照（主进程→渲染进程，设置页用） */
-export interface ToolCenterState {
-  /** 内建工具（本地版已移除，恒为空） */
-  builtin: CheckedTool[]
-  /** MCP 服务器状态列表 */
-  mcpServers: McpServerState[]
-  updatedAt: string
-}
-
-/** 客户端环境信息（collect-env 返回） */
-export interface ClientEnvInfo {
-  os: string
-  arch: string
-  clientType: string
-  shell: string
-  homeDir: string
-  pathFormat: string
-}

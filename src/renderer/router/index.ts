@@ -260,22 +260,6 @@ const router = createRouter({
           },
         },
         {
-          path: 'settings/mcp/create',
-          components: {
-            default: () => import('@/renderer/views/settings/detail/AddMcpView.vue'),
-            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            workspace: () => import('@/renderer/views/settings/detail/AddMcpView.vue'),
-          },
-        },
-        {
-          path: 'settings/mcp/:name/edit',
-          components: {
-            default: () => import('@/renderer/views/settings/detail/EditMcpView.vue'),
-            sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            workspace: () => import('@/renderer/views/settings/detail/EditMcpView.vue'),
-          },
-        },
-        {
           path: 'settings',
           components: {
             default: () => import('@/renderer/views/settings/SettingsListView.vue'),
@@ -285,7 +269,7 @@ const router = createRouter({
           meta: { workspacePlaceholder: true },
         },
         {
-          path: 'settings/:section(model|mcp|providers|voice|general)',
+          path: 'settings/:section(model|providers|voice|general)',
           components: {
             default: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),

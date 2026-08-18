@@ -496,30 +496,6 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_user_scene_models_scene ON user_scene_models(profile, scene_id);
 
-    -- ── tool-center 持久化（原 tool-center/db.ts，统一并入主库） ──
-    CREATE TABLE IF NOT EXISTS mcp_servers (
-      name        TEXT PRIMARY KEY,
-      transport   TEXT NOT NULL DEFAULT 'stdio',
-      command     TEXT,
-      args_json   TEXT,
-      url         TEXT,
-      enabled     INTEGER NOT NULL DEFAULT 1,
-      created_at  TEXT NOT NULL,
-      updated_at  TEXT NOT NULL
-    );
-    -- MCP 工具定义（首次发现后持久化，重启从库加载避免反复 discover）
-    CREATE TABLE IF NOT EXISTS mcp_tools (
-      name            TEXT PRIMARY KEY,
-      server_name     TEXT NOT NULL,
-      tool_name       TEXT NOT NULL,
-      description     TEXT NOT NULL DEFAULT '',
-      input_schema    TEXT NOT NULL DEFAULT '{}',
-      enabled         INTEGER NOT NULL DEFAULT 1,
-      created_at      TEXT NOT NULL,
-      updated_at      TEXT NOT NULL
-    );
-
-    -- 工具授权（per-profile 已安装工具——toolManager 授权/回收落库；卸载=物理删除记录）
     -- 该 profile 的 toolNameSet 优先取此表；空则回落 AgentMode 默认工具集
     CREATE TABLE IF NOT EXISTS agent_tools (
       profile     TEXT NOT NULL,
