@@ -37,7 +37,6 @@ export class ToolManager {
    * 未设置 = 全量（该 profile 可见全局工具池全部工具——兼容 default 模式）。由 bootstrap 按
    * 该 profile 的 AgentMode.getToolset() 注入——受限 Agent（如管家）白名单不含外部工具 → 天然隔离。
    */
-  private readonly profileToolsets = new Map<string, Set<string>>()
 
   /** 工具 emoji 元信息：toolName → emoji */
   private readonly toolEmojis = new Map<string, string>()
@@ -151,8 +150,6 @@ export class ToolManager {
   /** 白名单解析：authorized（DB 授权）优先 → 回落注入的 profile 默认 → 无记录 = 全量 */
   private resolveAllowSet(profile: string, authorized?: string[] | null): Set<string> | null {
     if (authorized && authorized.length > 0) return new Set(authorized)
-    const injected = this.profileToolsets.get(profile)
-    if (injected) return injected
     return null
   }
 
@@ -219,7 +216,6 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_CLIENT) continue
       if (disabled.has(name)) continue
-      if (!this.isToolAllowed(profile, name)) continue
       result.push(this.getEffectiveSchema(tool))
     }
     return result
@@ -232,7 +228,6 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_BUILTIN) continue
       if (disabled.has(name)) continue
-      if (!this.isToolAllowed(profile, name)) continue
       result.push(this.getEffectiveSchema(tool))
     }
     return result
@@ -241,23 +236,6 @@ export class ToolManager {
   // ════════════════════════════════════════════════════════════
   // per-agent 工具集白名单（按 AgentMode.getToolset 注入）
   // ════════════════════════════════════════════════════════════
-
-  /** 注入某 profile 的可允许工具集（'*' 或空数组 = 全量——撤销白名单限制） */
-  setProfileToolset(profile: string, toolset: string[]): void {
-    if (!toolset || toolset.length === 0) return
-    if (toolset.length === 1 && toolset[0] === '*') {
-      this.profileToolsets.delete(profile)
-      return
-    }
-    this.profileToolsets.set(profile, new Set(toolset))
-  }
-
-  /** 某 profile 是否允许某工具（白名单判断——未设白名单 = 全量放行） */
-  private isToolAllowed(profile: string, toolName: string): boolean {
-    const set = this.profileToolsets.get(profile)
-    if (!set) return true
-    return set.has(toolName)
-  }
 
   // ════════════════════════════════════════════════════════════
   // 禁用工具配置（本地 Map）
@@ -319,10 +297,11 @@ export class ToolManager {
 
   /** execute 兜底：当前 Agent 是否允许调某工具——优先用本周期已装配的 ctx.toolNames（DB/mode 白名单） */
   private isToolAllowedFor(ctx: ToolContext, toolName: string): boolean {
+    // 白名单兜底：以本周期装配的 ctx.toolNames（mode 决定的工具集）为准；未装配则放行
     if (ctx.toolNames && ctx.toolNames.length > 0) {
       return ctx.toolNames.includes(toolName)
     }
-    return this.isToolAllowed(ctx.profile, toolName)
+    return true
   }
 
   /** 执行工具调用（builtin/client/desktop 走各自执行器） */

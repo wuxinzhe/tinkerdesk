@@ -12,9 +12,9 @@ export class ToolsApi {
     return (data as ToolItem[]) ?? []
   }
 
-  async toggle(toolName: string, disabled: boolean, profile: string): Promise<ApiResponse> {
+  async toggle(toolName: string, authorized: boolean, profile: string): Promise<ApiResponse> {
     try {
-      await window.api.tools.toggle(toolName, disabled, profile)
+      await window.api.tools.toggle(toolName, authorized, profile)
       return { success: true, data: null }
     } catch (e) {
       return { success: false, error: (e as Error).message }

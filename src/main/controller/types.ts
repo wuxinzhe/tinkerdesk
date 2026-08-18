@@ -203,6 +203,10 @@ export interface ToolItemVO {
   supportsProvider?: boolean
   /** 工具不可用原因（check 失败——管理页 tps-tool-error 展示） */
   error?: string
+  /** 是否可编辑授权（仅 creator 模式 true——其余模式只读） */
+  editable?: boolean
+  /** 是否已授权给该 profile（creator 模式——agent_tools 勾选态） */
+  authorized?: boolean
 }
 
 /** 工具清单查询 DTO */
@@ -212,10 +216,10 @@ export interface ToolListQueryDTO {
   toolType?: string
 }
 
-/** 工具禁用切换请求 DTO */
+/** 工具授权切换请求 DTO（creator 模式：authorize/revoke agent_tools） */
 export interface ToggleToolRequestDTO {
   toolName: string
-  disabled: boolean
+  authorized: boolean
   profile?: string
 }
 

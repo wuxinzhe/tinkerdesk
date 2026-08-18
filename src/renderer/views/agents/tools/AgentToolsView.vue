@@ -49,6 +49,19 @@
                   <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
                 </svg>
               </button>
+              <!-- creator 模式：授权开关（editable=true 时显示——其余模式只读） -->
+              <label v-if="tool.editable" class="tool-auth" :title="tool.authorized ? '已授权该 Agent' : '未授权'">
+                <input
+                  type="checkbox"
+                  :checked="tool.authorized"
+                  :disabled="!!tool.error"
+                  @change="toggleAuthorize(tool)"
+                />
+                <span class="tool-auth__slider"></span>
+              </label>
+              <span v-else class="tool-auth__readonly" title="当前模式固定工具集，不可编辑">
+                只读
+              </span>
             </div>
             <div class="tool-row__desc">
               {{ tool.description || '暂无描述' }}
@@ -111,6 +124,24 @@ async function loadTools() {
 /** 打开工具设置 L3 页（每工具可进——含 Provider 配置/描述/错误/黑名单开关） */
 function openToolSettings(tool: ToolItem) {
   router.push(`/workspace/agents/${detailProfile.value}/tools/${encodeURIComponent(tool.name)}/provider`)
+}
+
+/** creator 模式：切换该工具授权（agent_tools authorize/revoke）——只读模式后端拒绝 */
+async function toggleAuthorize(tool: ToolItem) {
+  if (!tool.editable) return
+  const profile = detailProfile.value
+  if (!profile) return
+  const res = await toolsApi.toggle(tool.name, !tool.authorized, profile)
+  if (res.success) {
+    tool.authorized = !tool.authorized
+  }
+  window.dispatchEvent(new CustomEvent('global-tip', {
+    detail: {
+      type: res.success ? 'success' : 'error',
+      code: 'tools:authorize',
+      message: res.success ? `已${tool.authorized ? '授权' : '移除授权'} ${tool.name}` : (res.error || '操作失败'),
+    },
+  }))
 }
 
 watch(() => route.params.profile, () => loadTools())
@@ -314,5 +345,58 @@ onMounted(() => loadTools())
 .tool-row__settings-btn:hover {
   color: var(--tk-accent);
   background: rgba(10, 132, 255, 0.08);
+}
+
+/* ── creator 授权开关（editable 模式）── */
+.tool-auth {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 18px;
+  cursor: pointer;
+}
+.tool-auth input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.tool-auth__slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--tk-border);
+  transition: background 0.15s;
+}
+.tool-auth__slider::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.tool-auth input:checked + .tool-auth__slider {
+  background: var(--tk-accent);
+}
+.tool-auth input:checked + .tool-auth__slider::before {
+  transform: translateX(14px);
+}
+.tool-auth input:disabled + .tool-auth__slider {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tool-auth__readonly {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--tk-text-tertiary);
+  padding: 2px 8px;
+  border: 1px solid var(--tk-border);
+  border-radius: 6px;
 }
 </style>

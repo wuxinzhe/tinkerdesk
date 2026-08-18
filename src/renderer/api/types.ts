@@ -472,6 +472,10 @@ export interface ToolItem {
   supportsProvider?: boolean
   /** 工具不可用原因（check 失败——管理页 tps-tool-error 展示） */
   error?: string
+  /** 是否可编辑授权（仅 creator 模式 true——其余模式只读） */
+  editable?: boolean
+  /** 是否已授权给该 profile（creator 模式——agent_tools 勾选态） */
+  authorized?: boolean
 }
 
 // ── Web 工具 provider（web-provider:list/set） ──

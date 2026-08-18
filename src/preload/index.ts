@@ -395,8 +395,8 @@ const api = {
   // ── 工具配置（ToolController）──
   tools: {
     list: (payload?: { profile?: string; toolType?: string }) => inv('tool-config:list', payload ?? {}).then(unwrap),
-    toggle: (toolName: string, disabled: boolean, profile?: string) =>
-      inv('tool-config:toggle', { toolName, disabled, profile }).then(unwrap),
+    toggle: (toolName: string, authorized: boolean, profile?: string) =>
+      inv('tool-config:toggle', { toolName, authorized, profile }).then(unwrap),
   },
 
   // ── 媒体附件（MediaController——pick-and-import 返回相对路径 media/xxx.ext；kind 限定文件类型）──

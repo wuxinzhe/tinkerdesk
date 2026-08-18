@@ -30,8 +30,4 @@ export class AgentToolService {
    * 装配 toolNameSet：profile 已授权（agent_tools）优先。
    * @returns 已授权工具名数组；空（未授权任何工具）返回 null——由 ToolManager 回落 profile 默认工具集。
    */
-  resolveToolNames(profile: string): string[] | null {
-    const authorized = this.repo.getToolNames(profile)
-    return authorized.length > 0 ? authorized : null
-  }
 }

@@ -191,7 +191,7 @@ function createWindow() {
     new MediaController().register()
     new AgentCrudController(desk.agentService, desk.memoryStore, desk.agentConfigService).register()
     new AgentConfigController(desk.agentConfigService).register()
-    new ToolController(desk.toolManager).register()
+    new ToolController(desk.toolManager, desk.agentService, desk.agentModeRegistry, desk.agentToolService).register()
     new WebProviderController(desk.webProviderService).register()
     new AudioToolProviderController(desk.audioToolProvider).register()
     new SkillController(desk.privateSkillService, desk.skillCategoryService, () => mainWindow).register()
