@@ -9,7 +9,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, renameSync } from 'fs'
-import { unifiedDiff } from '../../utils/diff'
+import { unifiedDiff } from '../utils/diff'
 import { dirname } from 'path'
 import { fuzzyFindAndReplace, formatNoMatchHint } from './fuzzy-match'
 import type { Hunk, PatchApplyResult, PatchOperation } from './types'

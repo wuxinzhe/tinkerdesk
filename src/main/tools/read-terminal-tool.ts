@@ -6,12 +6,12 @@
  * - 字段对齐：{total_lines, start, end, text} + status
  * - start_line 0-indexed（0 = 最旧）；省略 → 最近 200 行
  */
-import { BaseTool } from '../base-tool'
-import { processRegistry } from '../common/process-registry'
-import { redactSensitiveText } from '../../utils/redact'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { processRegistry } from './common/process-registry'
+import { redactSensitiveText } from '../utils/redact'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { ReadTerminalParams } from './types'
 
 /** 工具名 */

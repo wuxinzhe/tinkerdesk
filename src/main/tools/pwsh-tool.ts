@@ -8,12 +8,12 @@
  * - Reuses the bash TerminalTool execution pipeline (background/timeout/guardrails)
  *   with the shell parameter overridden.
  */
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import { ToolSchema } from '../../core/tool/tool-schema'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import { ToolSchema } from '../core/tool/tool-schema'
 import { TerminalTool } from './terminal-tool'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 
 /** 工具名 */
 export const TOOL_NAME = 'desktop_tinker_pwsh'

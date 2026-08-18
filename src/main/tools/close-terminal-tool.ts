@@ -6,11 +6,11 @@
  * - 进程输出继续缓冲，随时可用 process/read_terminal 查询
  * - process_id 必填；会话不存在不视为错误
  */
-import { BaseTool } from '../base-tool'
-import { processRegistry } from '../common/process-registry'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { processRegistry } from './common/process-registry'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { CloseTerminalParams } from './types'
 
 /** 工具名 */

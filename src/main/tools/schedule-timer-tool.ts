@@ -4,10 +4,10 @@
  * Schedule-timer tool: in-memory timer management (setTimeout wrapper): start / cancel / list
  * 内存定时器管理（setTimeout 封装）：start / cancel / list
  */
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { ScheduleTimerParams, TimerRecord } from './types'
 
 /** 工具名 */

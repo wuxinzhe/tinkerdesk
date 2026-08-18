@@ -133,7 +133,7 @@ import {
   SPEECH_TO_TEXT_TOOL_NAME,
   WRITE_FILE_TOOL_NAME,
   WriteFileTool,
-} from './tools/desktop'
+} from './tools'
 import {
   PROVIDER_CONFIGURE_TOOL_NAME,
   PROVIDER_ENABLE_TOOL_NAME,
@@ -149,9 +149,9 @@ import {
 
 import type { TinkerAgentOptions } from './core/loop/types'
 import { ToolManager } from './core/tool'
-import { TOOL_TYPE_DESKTOP } from './core/tool/types'
+import {  } from './core/tool/types'
 import { DelegateTool } from './tools/delegate-tool'
-import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './tools/desktop/vision-tool'
+import { VisionRecognizeTool, TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME } from './tools/vision-tool'
 import { VisionProvider } from './service/vision-provider'
 
 export interface TinkerDesk {
@@ -289,7 +289,7 @@ export function bootstrap(
       sessionService,
     })),
   })
-  // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
+  // ── Desktop 工具（客户端工具，与内建隔离在 tools/） ──
   // ── 扩展管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
   const providerCenter = new ProviderCenter()
   const providerManager = new ProviderManager(providerCenter)
@@ -302,22 +302,22 @@ export function bootstrap(
   const visionProvider = new VisionProvider(llmRouter, modelConfigService)
 
   const desktopTools: AgentToolRegistration[] = [
-    { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new TerminalTool(renderer) },
-    { meta: { name: PWSH_TOOL_NAME, emoji: '💻', toolType: TOOL_TYPE_DESKTOP }, tool: new PwshTool(renderer) },
-    { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️', toolType: TOOL_TYPE_DESKTOP }, tool: new ProcessTool(renderer) },
-    { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋', toolType: TOOL_TYPE_DESKTOP }, tool: new ReadTerminalTool(renderer) },
-    { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌', toolType: TOOL_TYPE_DESKTOP }, tool: new CloseTerminalTool(renderer) },
-    { meta: { name: READ_FILE_TOOL_NAME, emoji: '📄', toolType: TOOL_TYPE_DESKTOP }, tool: new ReadFileTool(renderer) },
-    { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝', toolType: TOOL_TYPE_DESKTOP }, tool: new WriteFileTool(renderer) },
-    { meta: { name: PATCH_TOOL_NAME, emoji: '✂️', toolType: TOOL_TYPE_DESKTOP }, tool: new PatchTool(renderer) },
-    { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍', toolType: TOOL_TYPE_DESKTOP }, tool: new SearchFilesTool(renderer) },
-    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐', toolType: TOOL_TYPE_DESKTOP }, tool: new WebSearchTool(renderer, webProvider) },
-    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰', toolType: TOOL_TYPE_DESKTOP }, tool: new WebExtractTool(renderer, webProvider) },
-    { meta: { name: TEXT_TO_SPEECH_TOOL_NAME, emoji: '🔊', toolType: TOOL_TYPE_DESKTOP }, tool: new TextToSpeechTool(renderer, audioToolProvider) },
-    { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤', toolType: TOOL_TYPE_DESKTOP }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
-    { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰', toolType: TOOL_TYPE_DESKTOP }, tool: new ScheduleTimerTool(renderer) },
-    { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬', toolType: TOOL_TYPE_DESKTOP }, tool: new FileMutationVerifierTool(renderer) },
-    { meta: { name: VISION_RECOGNIZE_TOOL_NAME, emoji: '👁️', toolType: TOOL_TYPE_DESKTOP }, tool: new VisionRecognizeTool(renderer, visionProvider) },
+    { meta: { name: TERMINAL_TOOL_NAME, emoji: '💻' }, tool: new TerminalTool(renderer) },
+    { meta: { name: PWSH_TOOL_NAME, emoji: '💻' }, tool: new PwshTool(renderer) },
+    { meta: { name: PROCESS_TOOL_NAME, emoji: '⚙️' }, tool: new ProcessTool(renderer) },
+    { meta: { name: READ_TERMINAL_TOOL_NAME, emoji: '📋' }, tool: new ReadTerminalTool(renderer) },
+    { meta: { name: CLOSE_TERMINAL_TOOL_NAME, emoji: '🔌' }, tool: new CloseTerminalTool(renderer) },
+    { meta: { name: READ_FILE_TOOL_NAME, emoji: '📄' }, tool: new ReadFileTool(renderer) },
+    { meta: { name: WRITE_FILE_TOOL_NAME, emoji: '📝' }, tool: new WriteFileTool(renderer) },
+    { meta: { name: PATCH_TOOL_NAME, emoji: '✂️' }, tool: new PatchTool(renderer) },
+    { meta: { name: SEARCH_FILES_TOOL_NAME, emoji: '🔍' }, tool: new SearchFilesTool(renderer) },
+    { meta: { name: WEB_SEARCH_TOOL_NAME, emoji: '🌐' }, tool: new WebSearchTool(renderer, webProvider) },
+    { meta: { name: WEB_EXTRACT_TOOL_NAME, emoji: '📰' }, tool: new WebExtractTool(renderer, webProvider) },
+    { meta: { name: TEXT_TO_SPEECH_TOOL_NAME, emoji: '🔊' }, tool: new TextToSpeechTool(renderer, audioToolProvider) },
+    { meta: { name: SPEECH_TO_TEXT_TOOL_NAME, emoji: '🎤' }, tool: new SpeechToTextTool(renderer, audioToolProvider) },
+    { meta: { name: SCHEDULE_TIMER_TOOL_NAME, emoji: '⏰' }, tool: new ScheduleTimerTool(renderer) },
+    { meta: { name: FILE_MUTATION_VERIFIER_TOOL_NAME, emoji: '🔬' }, tool: new FileMutationVerifierTool(renderer) },
+    { meta: { name: VISION_RECOGNIZE_TOOL_NAME, emoji: '👁️' }, tool: new VisionRecognizeTool(renderer, visionProvider) },
   ]
   // ── 扩展管理工具（Agent 可操作扩展生命周期；依赖 ProviderManager） ──
   const providerTools: AgentToolRegistration[] = [

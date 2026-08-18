@@ -10,11 +10,11 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { Buffer } from 'buffer'
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import { checkSensitivePath } from '../../utils/path-security'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import { checkSensitivePath } from '../utils/path-security'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { WriteFileParams } from './types'
 
 /** 工具名 */

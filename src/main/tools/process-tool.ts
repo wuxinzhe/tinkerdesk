@@ -7,12 +7,12 @@
  * - not_found → {status:"not_found", error}；已退出 → {status:"already_exited", ...}
  * - 输出脱敏
  */
-import { BaseTool } from '../base-tool'
-import { processRegistry } from '../common/process-registry'
-import { redactSensitiveText } from '../../utils/redact'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { processRegistry } from './common/process-registry'
+import { redactSensitiveText } from '../utils/redact'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { ProcessParams } from './types'
 
 /** 工具名 */

@@ -57,11 +57,9 @@ export interface ToolCheckResult {
 export const TOOL_TYPE_BUILTIN = 'builtin'
 /** 客户端工具：对外的普通工具（与内建走相同执行器 tool.execute） */
 export const TOOL_TYPE_CLIENT = 'client'
-/** 桌面工具：客户端本地工具（terminal/file/web 等——desktop 组） */
-export const TOOL_TYPE_DESKTOP = 'desktop'
-
+/** 工具类型：builtin/client 走各自执行器（不再区分 desktop——全部内置） */
 /** 工具类型：builtin/desktop/client 走各自执行器 */
-export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_DESKTOP | typeof TOOL_TYPE_CLIENT
+export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_CLIENT
 
 // ── 工具注册元信息（@AgentTool 注解） ────────────────────
 

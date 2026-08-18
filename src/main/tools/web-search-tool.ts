@@ -6,14 +6,14 @@
  *
  * 环境变量（内置 provider 用）：SHOWING_WEB_SEARCH_BACKEND / TAVILY_API_KEY 等——见 providers/search。
  */
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import { errMessage } from '../../utils/http'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
-import type { WebProvider } from '../../service/web-provider'
-import type { WebSearchResponseData } from '../../providers/search/types'
-import { getConfiguredBackend, getProvider, getActiveSearchProvider } from '../../providers/search'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import { errMessage } from '../utils/http'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
+import type { WebProvider } from '../service/web-provider'
+import type { WebSearchResponseData } from '../providers/search/types'
+import { getConfiguredBackend, getProvider, getActiveSearchProvider } from '../providers/search'
 import type { WebSearchParams } from './types'
 
 /** 工具名 */

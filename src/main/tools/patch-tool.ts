@@ -8,14 +8,14 @@
  */
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
 import { fuzzyFindAndReplace, formatNoMatchHint } from './fuzzy-match'
 import { parseV4aPatch, applyV4aOperations } from './v4a-patch'
-import { checkSensitivePath, rejectV4aTraversal } from '../../utils/path-security'
-import { unifiedDiff } from '../../utils/diff'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { checkSensitivePath, rejectV4aTraversal } from '../utils/path-security'
+import { unifiedDiff } from '../utils/diff'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { PatchParams } from './types'
 
 /** 工具名 */

@@ -7,12 +7,12 @@
  * - 返回 { success, text }
  */
 import { existsSync } from 'fs'
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
-import { resolveMediaPath } from '../../service/media-service'
-import type { AudioToolProvider } from '../../service/audio-tool-provider'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
+import { resolveMediaPath } from '../service/media-service'
+import type { AudioToolProvider } from '../service/audio-tool-provider'
 
 /** 工具名 */
 export const TOOL_NAME = 'stt'

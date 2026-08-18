@@ -6,10 +6,10 @@
  * - 二进制内容 → 摘要
  * - 否则 LCS diff + added/removed 计数
  */
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { VerifyMutationParams } from './types'
 
 /** 工具名 */

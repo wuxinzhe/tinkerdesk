@@ -9,13 +9,13 @@
  * - 返回 JSON 字符串 {output, session_id, pid, exit_code, error, status, hint}
  */
 import { spawn } from 'child_process'
-import { BaseTool } from '../base-tool'
-import { processRegistry } from '../common/process-registry'
-import { ToolResult } from '../../core/tool/tool-result'
-import { ToolSchema } from '../../core/tool/tool-schema'
-import { detectAvailableShells, resolveShell, buildShellSpawn, createShellDecoder, SHELL_HINTS } from '../common/shell-env'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { processRegistry } from './common/process-registry'
+import { ToolResult } from '../core/tool/tool-result'
+import { ToolSchema } from '../core/tool/tool-schema'
+import { detectAvailableShells, resolveShell, buildShellSpawn, createShellDecoder, SHELL_HINTS } from './common/shell-env'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { TerminalParams } from './types'
 
 /** 工具名 */

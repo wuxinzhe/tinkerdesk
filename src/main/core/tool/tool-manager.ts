@@ -7,7 +7,7 @@
  * - tool kinds: builtin (built-in) / client (external-facing) / desktop (local)
  * - 工具执行：取出 tool 实例 → 按 toolType 路由——
  *     builtin / client → tool.execute(ctx)（工具自身执行器）
- *     desktop        → 客户端本地工具（tools/desktop）
+ *     builtin        → 所有代码内置工具（tools/ 根，不再区分 desktop）
  *
  * 所有工具（内建/客户端/桌面）同构为 IAgentTool，注册在同一注册中心。
  * 路由依据 tool 实例的 toolType，不使用前缀判断。

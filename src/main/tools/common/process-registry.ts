@@ -7,7 +7,7 @@
  * 进程注册表为全局单例，由 process / read_terminal / close_terminal 工具共享。
  */
 import { spawn } from 'child_process'
-import type { ProcessSession, SpawnOptions } from '../desktop/types'
+import type { ProcessSession, SpawnOptions } from '../types'
 import { buildShellSpawn, createShellDecoder, resolveShell } from './shell-env'
 
 // ── 常量 ──

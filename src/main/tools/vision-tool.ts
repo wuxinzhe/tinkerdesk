@@ -5,11 +5,11 @@
  * 执行：image_url（http/https/data: base64）→ VisionProvider.recognize
  *      → scene=image_recognition（本地 ollama qwen3.5:9B 多模态）→ 返回文本
  */
-import { BaseTool } from '../base-tool'
-import type { ToolContext } from '../../core/loop/types'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { VisionProvider } from '../../service/vision-provider'
+import { BaseTool } from './base-tool'
+import type { ToolContext } from '../core/loop/types'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { VisionProvider } from '../service/vision-provider'
 
 /** 工具名（desktop 组——扩展工具） */
 export const TOOL_NAME = 'desktop_tinker_vision_recognize'

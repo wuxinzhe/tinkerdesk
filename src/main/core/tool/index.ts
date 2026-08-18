@@ -12,7 +12,7 @@
 export { ToolManager } from './tool-manager'
 export { ToolSchema } from './tool-schema'
 export { ToolResult } from './tool-result'
-export { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT, TOOL_TYPE_DESKTOP } from './types'
+export { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT } from './types'
 export type {
   AgentToolMeta,
   AgentToolRegistration,

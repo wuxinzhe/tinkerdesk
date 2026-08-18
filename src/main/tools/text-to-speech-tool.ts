@@ -10,11 +10,11 @@
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 import { app } from 'electron'
-import { BaseTool } from '../base-tool'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
-import type { AudioToolProvider } from '../../service/audio-tool-provider'
+import { BaseTool } from './base-tool'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
+import type { AudioToolProvider } from '../service/audio-tool-provider'
 
 /** 工具名 */
 export const TOOL_NAME = 'tts'

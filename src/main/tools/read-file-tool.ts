@@ -10,13 +10,13 @@
  */
 import { readFileSync, statSync, existsSync } from 'fs'
 import { resolve } from 'path'
-import { BaseTool } from '../base-tool'
-import { redactSensitiveText } from '../../utils/redact'
-import {  normalizeReadPagination } from '../../utils/number'
-import { isBlockedDevicePath, hasBinaryExtension, truncateToCharBudget, addLineNumbers } from '../../utils/file-read'
-import { ToolResult } from '../../core/tool/tool-result'
-import type { PromptRenderer } from '../../core/prompt/renderer'
-import type { ToolContext } from '../../core/loop/types'
+import { BaseTool } from './base-tool'
+import { redactSensitiveText } from '../utils/redact'
+import {  normalizeReadPagination } from '../utils/number'
+import { isBlockedDevicePath, hasBinaryExtension, truncateToCharBudget, addLineNumbers } from '../utils/file-read'
+import { ToolResult } from '../core/tool/tool-result'
+import type { PromptRenderer } from '../core/prompt/renderer'
+import type { ToolContext } from '../core/loop/types'
 import type { ReadFileParams } from './types'
 
 /** 工具名 */
