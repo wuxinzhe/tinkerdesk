@@ -70,6 +70,8 @@ import { EDGE_TTS_MANIFEST, edgeTtsPlugin } from './providers/tts/edge'
 import { CUA_DRIVER_MANIFEST, cuaDriverPlugin } from './providers/computer-use/cua-driver'
 import { ComputerUseProvider } from './service/computer-use-provider'
 import { UserDisabledToolService } from './service/user-disabled-tool-service'
+import { AgentToolService } from './service/agent-tool-service'
+import { AgentToolRepository } from './repository/agent-tool-repository'
 import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
@@ -166,6 +168,8 @@ export interface TinkerDesk {
   promptManager: PromptManager
   promptModuleBuilder: PromptModuleBuilder
   toolManager: ToolManager
+  /** 工具授权服务（DB agent_tools——授权/回收/装配 toolNameSet） */
+  agentToolService: AgentToolService
   pluginManager: PluginManager
   llmRouter: LlmRouter
   modelConfigService: ModelConfigService
@@ -349,6 +353,8 @@ export function bootstrap(
   const toolAuthService = new ToolAuthService()
 
   // ── TinkerAgent ──
+  // 工具授权服务（DB agent_tools——装配/授权/回收）
+  const agentToolService = new AgentToolService(new AgentToolRepository())
   // OO 化：不再建单例——AgentController 按 session 惰性 new TinkerAgent（构造绑定 sessionId/profile）
   const agentLoopOptions = {
     llmRouter,
@@ -361,6 +367,7 @@ export function bootstrap(
     modelConfigService,
     sandboxWhitelistService,
     toolAuthService,
+    agentToolService,
   }
 
   // ── Controller 层依赖 ──
@@ -392,6 +399,7 @@ export function bootstrap(
     promptManager,
     promptModuleBuilder,
     toolManager,
+    agentToolService,
     pluginManager,
     llmRouter,
     modelConfigService,

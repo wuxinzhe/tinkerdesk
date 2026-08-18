@@ -519,6 +519,15 @@ function createTables(database: DatabaseSync): void {
       updated_at      TEXT NOT NULL
     );
 
+    -- 工具授权（per-profile 已安装工具——toolManager 授权/回收落库；卸载=物理删除记录）
+    -- 该 profile 的 toolNameSet 优先取此表；空则回落 AgentMode 默认工具集
+    CREATE TABLE IF NOT EXISTS agent_tools (
+      profile     TEXT NOT NULL,
+      tool_name   TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (profile, tool_name)
+    );
+
     -- ── 应用级设置（快捷键等全局键值配置） ──
     CREATE TABLE IF NOT EXISTS app_settings (
       key        TEXT PRIMARY KEY,

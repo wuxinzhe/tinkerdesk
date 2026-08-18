@@ -76,7 +76,7 @@ export class Conversation implements BusyLoopHost {
     this.sessionId = sessionId
     this.profile = profile
     this.ctx = ctx
-    const { runtime, messageService, conversationService, toolManager, promptModuleBuilder } = this.deps
+    const { runtime, messageService, conversationService, toolManager, promptModuleBuilder, agentToolService } = this.deps
 
     // 注册中断控制
     this.abort = new AbortController()
@@ -85,7 +85,8 @@ export class Conversation implements BusyLoopHost {
     // ── 对话周期：创建 IN_PROGRESS 对话 + 构建 ConversationContext ──
     const conv = conversationService.startConversation(this.sessionId)
     this.convId = conv.id
-    const toolNames = toolManager.getAvailableToolNames(this.profile)
+    // 装配 toolNameSet：DB agent_tools（已授权）优先，空则回落注入的 profile 默认（mode.getToolset）
+    const toolNames = toolManager.getAvailableToolNames(this.profile, agentToolService.resolveToolNames(this.profile))
     const allConfigs = this.resolveAllConfigs(this.profile)
     this.convCtx = buildConvCtx(ctx, this.convId, toolNames, allConfigs)
     // 忙碌模式策略（构建时读一次——回合内固定——中途修改配置下一轮生效）
@@ -110,7 +111,7 @@ export class Conversation implements BusyLoopHost {
     this.messages.push(...history)
 
     const tools = toolManager
-      .getAvailableSchemas(this.profile)
+      .getAvailableSchemas(this.profile, toolNames)
       .map((s) => s.toFunctionCallingFormat() as unknown as ToolSchema)
     // 推理深度（per-session——sessions.reasoning_depth；'' 不传走模型默认）
     const session = this.deps.sessionService.findById(this.sessionId, this.profile)

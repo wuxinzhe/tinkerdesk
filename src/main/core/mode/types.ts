@@ -19,7 +19,7 @@ export interface AgentModeMeta {
   promptTemplate: string
 }
 
-/** Agent Mode SPI（组合元数据 + 模块顺序 + 默认配置） */
+/** Agent Mode SPI（组合元数据 + 模块顺序 + 默认配置 + 工具集） */
 export interface IAgentMode {
   /** 模式元数据 */
   readonly meta: AgentModeMeta
@@ -29,6 +29,14 @@ export interface IAgentMode {
 
   /** agent_configs 无行时的默认配置 */
   getDefaultConfig(): AgentConfig
+
+  /**
+   * 该 Agent 模式允许使用的工具名集合（per-agent 工具集白名单）。
+   * `['*']` 表示全量（该 profile 可见全局工具池中所有工具）；其余情况只暴露名单内的工具。
+   * 工具集归属 AgentMode（随模式走、可写死），不落 AgentConfig——用于受限 Agent（如管家 Agent）
+   * 固定其可用工具，未列入的（尤其外部 MCP 工具）对该 Agent 天然隔离。
+   */
+  getToolset(): string[]
 }
 
 /** 模式元数据 DTO */

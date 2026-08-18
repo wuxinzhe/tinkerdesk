@@ -35,6 +35,7 @@ const MODULE_ORDER = [
 
 /** 默认 Agent Mode 实现 */
 export class DefaultAgentMode implements IAgentMode {
+  
   readonly meta = META
 
   /** 运行时已渲染的灵魂提示词文本 */
@@ -52,6 +53,11 @@ export class DefaultAgentMode implements IAgentMode {
 
   getModuleList(): string[] {
     return MODULE_ORDER
+  }
+
+  /** 默认（通用）模式：全量工具——所有 profile 可见全局工具池全部工具 */
+  getToolset(): string[] {
+    return ['*']
   }
 
   getDefaultConfig(): AgentConfig {

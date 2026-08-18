@@ -18,6 +18,7 @@ import type {MessageService} from '../../service/message-service'
 import type {SessionService} from '../../service/session-service'
 import type {SandboxWhitelistService} from '../../service/sandbox-whitelist-service'
 import type {ToolAuthService} from '../../service/tool-auth-service'
+import type {AgentToolService} from '../../service/agent-tool-service'
 import type {ToolCall} from '../llm/types'
 import type {ApprovalManager} from './approval-manager'
 import type {ToolCallExecutor} from './tool-call-executor'
@@ -46,6 +47,8 @@ export interface TinkerAgentOptions {
   promptModuleBuilder: PromptModuleBuilder
   /** 模型配置解析服务（custom_models + providers → ModelConfig[]） */
   modelConfigService: ModelConfigService
+  /** 工具授权服务（toolManager 管理——DB agent_tools） */
+  agentToolService: AgentToolService
   /** 沙盒白名单服务（工具门检：URL/路径白名单） */
   sandboxWhitelistService: SandboxWhitelistService
   /** 工具授权服务（工具门检：危险参数检测） */
@@ -300,6 +303,8 @@ export interface ConversationDeps {
   approvalManager: ApprovalManager
   /** 工具执行器（无状态——可每轮新建或共享） */
   toolExecutor: ToolCallExecutor
+  /** 工具授权服务（toolManager 管理——authorize/revoke/resolveToolNames(DB agent_tools)） */
+  agentToolService: AgentToolService
 }
 
 /** 工具执行器依赖（TinkerAgent 组装传入 ToolCallExecutor） */

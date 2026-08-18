@@ -41,6 +41,7 @@ import type { SessionContext } from './context'
 import { Conversation } from './conversation'
 import { SessionRuntime } from './session-runtime'
 import { ToolCallExecutor } from './tool-call-executor'
+import type { AgentToolService } from '../../service/agent-tool-service'
 import type { TinkerAgentOptions, TinkerAgentResult } from './types'
 import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
 import { RES_INTERRUPTED } from './types'
@@ -60,6 +61,8 @@ export class TinkerAgent {
   private readonly sandboxWhitelistService: SandboxWhitelistService
   /** 工具授权服务（工具门检） */
   private readonly toolAuthService: ToolAuthService
+  /** 工具授权服务（DB agent_tools——装配 toolNameSet 用） */
+  private readonly agentToolService: AgentToolService
 
   /** 实例绑定：会话 id + profile（OO 化——一个实例服务一个会话） */
   private readonly sessionId: string
@@ -88,6 +91,7 @@ export class TinkerAgent {
     this.modelConfigService = options.modelConfigService
     this.sandboxWhitelistService = options.sandboxWhitelistService
     this.toolAuthService = options.toolAuthService
+    this.agentToolService = options.agentToolService
   }
 
   /** LlmRouterOptions 由 processCycle 内联构造 */
@@ -205,6 +209,7 @@ export class TinkerAgent {
           toolAuthService: this.toolAuthService,
           runtime: this.runtime,
           approvalManager: this.approvalManager,
+          agentToolService: this.agentToolService,
           toolExecutor: new ToolCallExecutor({
             toolManager: this.toolManager,
             sandboxWhitelistService: this.sandboxWhitelistService,

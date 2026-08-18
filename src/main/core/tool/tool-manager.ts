@@ -17,7 +17,7 @@ import type { ToolContext } from '../loop/types'
 import { ToolResult } from './tool-result'
 import { ToolSchema } from './tool-schema'
 import type { AgentToolRegistration, IAgentTool, ToolType } from './types'
-import { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT, TOOL_TYPE_MCP } from './types'
+import { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT } from './types'
 
 /** 工具管理器（统一工具注册中心） */
 export class ToolManager {
@@ -31,6 +31,13 @@ export class ToolManager {
 
   /** 禁用工具集合：profile → Set<toolName> */
   private readonly disabledTools = new Map<string, Set<string>>()
+
+  /**
+   * per-agent 工具集白名单：profile → 允许的工具名集合。
+   * 未设置 = 全量（该 profile 可见全局工具池全部工具——兼容 default 模式）。由 bootstrap 按
+   * 该 profile 的 AgentMode.getToolset() 注入——受限 Agent（如管家）白名单不含 MCP/外部工具 → 天然隔离。
+   */
+  private readonly profileToolsets = new Map<string, Set<string>>()
 
   /** 工具 emoji 元信息：toolName → emoji */
   private readonly toolEmojis = new Map<string, string>()
@@ -127,12 +134,22 @@ export class ToolManager {
     return map
   }
 
-  /** 获取可用工具 Schema（排除禁用） */
-  getAvailableSchemas(profile: string): ToolSchema[] {
+  /** 白名单解析：authorized（DB 授权）优先 → 回落注入的 profile 默认 → 无记录 = 全量 */
+  private resolveAllowSet(profile: string, authorized?: string[] | null): Set<string> | null {
+    if (authorized && authorized.length > 0) return new Set(authorized)
+    const injected = this.profileToolsets.get(profile)
+    if (injected) return injected
+    return null
+  }
+
+  /** 获取可用工具 Schema（排除禁用 + 白名单——authorized 或注入默认） */
+  getAvailableSchemas(profile: string, authorized?: string[] | null): ToolSchema[] {
     const disabled = this.getDisabledSet(profile)
+    const allow = this.resolveAllowSet(profile, authorized)
     const result: ToolSchema[] = []
 
     for (const [internalName, tool] of this.tools) {
+      if (allow && !allow.has(internalName)) continue
       const schema = this.getEffectiveSchema(tool)
       if (!disabled.has(internalName) && !disabled.has(schema.name)) {
         result.push(schema)
@@ -141,17 +158,19 @@ export class ToolManager {
     return result
   }
 
-  /** 获取可用工具名列表（排除禁用） */
-  getAvailableToolNames(profile: string): string[] {
+  /** 获取可用工具名列表（排除禁用 + 白名单——authorized 或注入默认） */
+  getAvailableToolNames(profile: string, authorized?: string[] | null): string[] {
     const disabled = this.getDisabledSet(profile)
+    const allow = this.resolveAllowSet(profile, authorized)
     const names: string[] = []
 
     for (const internalName of this.tools.keys()) {
-      if (!disabled.has(internalName)) {
+      if (!allow || allow.has(internalName)) {
         names.push(internalName)
       }
     }
-    return names
+    // 与禁用取并——放在 allow 过滤之后
+    return names.filter((n) => !disabled.has(n))
   }
 
   /** 根据工具名获取完整 ToolSchema（未找到返回 null） */
@@ -181,6 +200,7 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_CLIENT) continue
       if (disabled.has(name)) continue
+      if (!this.isToolAllowed(profile, name)) continue
       result.push(this.getEffectiveSchema(tool))
     }
     return result
@@ -193,9 +213,31 @@ export class ToolManager {
     for (const [name, tool] of this.tools) {
       if (this.toolTypes.get(name) !== TOOL_TYPE_BUILTIN) continue
       if (disabled.has(name)) continue
+      if (!this.isToolAllowed(profile, name)) continue
       result.push(this.getEffectiveSchema(tool))
     }
     return result
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // per-agent 工具集白名单（按 AgentMode.getToolset 注入）
+  // ════════════════════════════════════════════════════════════
+
+  /** 注入某 profile 的可允许工具集（'*' 或空数组 = 全量——撤销白名单限制） */
+  setProfileToolset(profile: string, toolset: string[]): void {
+    if (!toolset || toolset.length === 0) return
+    if (toolset.length === 1 && toolset[0] === '*') {
+      this.profileToolsets.delete(profile)
+      return
+    }
+    this.profileToolsets.set(profile, new Set(toolset))
+  }
+
+  /** 某 profile 是否允许某工具（白名单判断——未设白名单 = 全量放行） */
+  private isToolAllowed(profile: string, toolName: string): boolean {
+    const set = this.profileToolsets.get(profile)
+    if (!set) return true
+    return set.has(toolName)
   }
 
   // ════════════════════════════════════════════════════════════
@@ -256,9 +298,24 @@ export class ToolManager {
   // 工具执行
   // ════════════════════════════════════════════════════════════
 
+  /** execute 兜底：当前 Agent 是否允许调某工具——优先用本周期已装配的 ctx.toolNames（DB/mode 白名单） */
+  private isToolAllowedFor(ctx: ToolContext, toolName: string): boolean {
+    if (ctx.toolNames && ctx.toolNames.length > 0) {
+      return ctx.toolNames.includes(toolName)
+    }
+    return this.isToolAllowed(ctx.profile, toolName)
+  }
+
   /** 执行工具调用（builtin/client 走自身执行器；mcp 走 MCP 统一执行器） */
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const toolName = ctx.toolCall.name
+
+    // per-agent 白名单兜底：受限 Agent 调白名单外工具 → 拒绝
+    //（装配层只是"列表不可见"，执行层才是真正防线——防 LLM 绕过 schema 列表硬调白名单外工具）
+    if (!this.isToolAllowedFor(ctx, toolName)) {
+      return ToolResult.sync(`错误：工具 ${toolName} 不在当前 Agent 的可用工具范围内`)
+    }
+
     const tool = this.tools.get(toolName)
 
     if (!tool) {
@@ -266,10 +323,6 @@ export class ToolManager {
     }
 
     const toolType = this.toolTypes.get(toolName)
-    if (toolType === TOOL_TYPE_MCP) {
-      // MCP 工具：McpTool.execute 内部转发给 MCP 统一执行器（mcpManager）
-      return tool.execute(ctx)
-    }
 
     // builtin / client：工具自身执行器
     return tool.execute(ctx)
