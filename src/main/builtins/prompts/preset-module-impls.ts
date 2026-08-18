@@ -14,8 +14,15 @@ import {PromptModuleBase} from './prompt-module-base'
 import {TOOL_MEMORY} from '../../core/constants'
 
 /** 工具强制使用（无条件加载） */
+export const PROMPT_TOOL_ENFORCEMENT = 'tool-enforcement'
+export const PROMPT_TASK_COMPLETION = 'task-completion'
+export const PROMPT_OPENAI_EXECUTION = 'openai-execution'
+export const PROMPT_GOOGLE_OPERATIONAL = 'google-operational'
+export const PROMPT_MEMORY = 'memory'
+export const PROMPT_SESSION_SEARCH = 'session-search'
+
 export class ToolEnforcementModule extends PromptModuleBase {
-  readonly id = 'tool-enforcement'
+  readonly id = PROMPT_TOOL_ENFORCEMENT
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
@@ -23,7 +30,7 @@ export class ToolEnforcementModule extends PromptModuleBase {
 
 /** 任务完成规范（无条件加载） */
 export class TaskCompletionModule extends PromptModuleBase {
-  readonly id = 'task-completion'
+  readonly id = PROMPT_TASK_COMPLETION
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
@@ -31,7 +38,7 @@ export class TaskCompletionModule extends PromptModuleBase {
 
 /** OpenAI 执行规范（仅 OpenAI 系模型加载——gpt/o1/o3/o4 或 api.openai.com） */
 export class OpenAIExecutionModule extends PromptModuleBase {
-  readonly id = 'openai-execution'
+  readonly id = PROMPT_OPENAI_EXECUTION
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
@@ -46,7 +53,7 @@ export class OpenAIExecutionModule extends PromptModuleBase {
 
 /** Google 操作规范（仅 Google 系模型加载——gemini 或 googleapis/generativelanguage） */
 export class GoogleOperationalModule extends PromptModuleBase {
-  readonly id = 'google-operational'
+  readonly id = PROMPT_GOOGLE_OPERATIONAL
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
@@ -61,7 +68,7 @@ export class GoogleOperationalModule extends PromptModuleBase {
 
 /** 记忆使用指南（memory 工具可用时加载） */
 export class MemoryGuidanceModule extends PromptModuleBase {
-  readonly id = 'memory'
+  readonly id = PROMPT_MEMORY
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
@@ -72,7 +79,7 @@ export class MemoryGuidanceModule extends PromptModuleBase {
 
 /** 会话搜索（session_search 工具可用时加载） */
 export class SessionSearchModule extends PromptModuleBase {
-  readonly id = 'session-search'
+  readonly id = PROMPT_SESSION_SEARCH
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }

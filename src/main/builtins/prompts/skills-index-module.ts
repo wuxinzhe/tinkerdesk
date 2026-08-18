@@ -12,8 +12,10 @@ import type {FilteredSkillDTO} from '../../repository/types'
 import {TOOL_SKILL_MANAGE, TOOL_SKILL_VIEW, TOOL_SKILLS_LIST} from '../../core/constants'
 
 /** 技能索引模块 */
+export const PROMPT_SKILLS_INDEX = 'skills-index'
+
 export class SkillsIndexModule extends PromptModuleBase {
-  readonly id = 'skills-index'
+  readonly id = PROMPT_SKILLS_INDEX
 
   constructor(
     renderer: PromptRenderer,

@@ -25,7 +25,7 @@ export interface IAgentMode {
   readonly meta: AgentModeMeta
 
   /** 动态提示词模块渲染顺序（对应 PromptModule 的 id 列表） */
-  getModuleList(): string[]
+  getPromptList(): string[]
 
   /** agent_configs 无行时的默认配置 */
   getDefaultConfig(): AgentConfig

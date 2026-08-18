@@ -11,6 +11,11 @@ import type { AgentConfig } from '../../core/loop/types'
 import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
 import { CLARIFY_TOOL_NAME, MEMORY_TOOL_NAME, SESSION_SEARCH_TOOL_NAME, SKILL_MANAGE_TOOL_NAME, SKILL_VIEW_TOOL_NAME, SKILLS_LIST_TOOL_NAME, TODO_TOOL_NAME } from '../tools'
+import { PROMPT_SOUL } from '../prompts/soul-prompt-module'
+import { PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT, PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL, PROMPT_MEMORY, PROMPT_SESSION_SEARCH } from '../prompts/preset-module-impls'
+import { PROMPT_MEMORY_SNAPSHOT } from '../prompts/memory-snapshot-module'
+import { PROMPT_USER_PROFILE } from '../prompts/user-profile-module'
+import { PROMPT_SKILLS_INDEX } from '../prompts/skills-index-module'
 
 /** 极简模式元数据 */
 const META = {
@@ -33,21 +38,21 @@ const MINIMAL_TOOLSET = [
 ]
 
 /** 动态模块渲染顺序（复用通用默认） */
-const MODULE_ORDER = [
-  'soul-prompt',
-  'task-completion', 'tool-enforcement',
-  'memory', 'session-search',
-  'skills-index',
-  'memory-snapshot', 'user-profile',
-  'openai-execution', 'google-operational',
+const PROMPT_LIST = [
+  PROMPT_SOUL,
+  PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT,
+  PROMPT_MEMORY, PROMPT_SESSION_SEARCH,
+  PROMPT_SKILLS_INDEX,
+  PROMPT_MEMORY_SNAPSHOT, PROMPT_USER_PROFILE,
+  PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL,
 ]
 
 /** 极简 Agent Mode 实现 */
 export class MinimalAgentMode implements IAgentMode {
   readonly meta = META
 
-  getModuleList(): string[] {
-    return MODULE_ORDER
+  getPromptList(): string[] {
+    return PROMPT_LIST
   }
 
   /** 极简工具集：静态配置好的具体工具名（不查任何表） */

@@ -16,8 +16,10 @@ export const CLIENT_TYPE_MOBILE_WEB = 'mobile-web'
 export const CLIENT_TYPE_MINIPROGRAM = 'miniprogram'
 
 /** 运行时环境模块 */
+export const PROMPT_RUNTIME_ENVIRONMENT = 'runtime-environment'
+
 export class RuntimeEnvironmentModule extends PromptModuleBase {
-  readonly id = 'runtime-environment'
+  readonly id = PROMPT_RUNTIME_ENVIRONMENT
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }

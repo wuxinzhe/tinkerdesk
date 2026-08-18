@@ -26,7 +26,7 @@ export class ButlerAgentMode implements IAgentMode {
   readonly meta = META
 
   /** 提示词模块清单：暂空（后续细化管家决策提示词） */
-  getModuleList(): string[] {
+  getPromptList(): string[] {
     return []
   }
 

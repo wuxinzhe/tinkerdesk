@@ -11,6 +11,11 @@ import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { ToolManager } from '../../core/tool/tool-manager'
+import { PROMPT_SOUL } from '../prompts/soul-prompt-module'
+import { PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT, PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL, PROMPT_MEMORY, PROMPT_SESSION_SEARCH } from '../prompts/preset-module-impls'
+import { PROMPT_MEMORY_SNAPSHOT } from '../prompts/memory-snapshot-module'
+import { PROMPT_USER_PROFILE } from '../prompts/user-profile-module'
+import { PROMPT_SKILLS_INDEX } from '../prompts/skills-index-module'
 
 /** 默认 Agent Mode 元数据 */
 const META = {
@@ -22,16 +27,13 @@ const META = {
 }
 
 /** 动态模块渲染顺序 */
-const MODULE_ORDER = [
-  // pre
-  'soul-prompt',
-  'task-completion', 'tool-enforcement',
-  // mid
-  'memory', 'session-search',
-  'skills-index',
-  'memory-snapshot', 'user-profile',
-  // post
-  'openai-execution', 'google-operational',
+const PROMPT_LIST = [
+  PROMPT_SOUL,
+  PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT,
+  PROMPT_MEMORY, PROMPT_SESSION_SEARCH,
+  PROMPT_SKILLS_INDEX,
+  PROMPT_MEMORY_SNAPSHOT, PROMPT_USER_PROFILE,
+  PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL,
 ]
 
 /** 默认 Agent Mode 实现 */
@@ -55,8 +57,8 @@ export class DefaultAgentMode implements IAgentMode {
     this.toolManager = toolManager
   }
 
-  getModuleList(): string[] {
-    return MODULE_ORDER
+  getPromptList(): string[] {
+    return PROMPT_LIST
   }
 
   /** 默认（通用）模式：全量工具——具体列出全部注册工具名（含内置 + 外置安装） */

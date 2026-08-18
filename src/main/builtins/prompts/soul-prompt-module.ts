@@ -9,8 +9,10 @@ import type {ConversationContext} from '../../core/prompt/types'
 import type {PromptRenderer} from '../../core/prompt/renderer'
 
 /** 灵魂提示词模块 */
+export const PROMPT_SOUL = 'soul-prompt'
+
 export class SoulPromptModule {
-  readonly id = 'soul-prompt'
+  readonly id = PROMPT_SOUL
 
   constructor(private readonly renderer: PromptRenderer) {}
 

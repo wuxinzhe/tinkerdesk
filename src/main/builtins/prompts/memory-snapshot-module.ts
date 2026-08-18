@@ -11,8 +11,10 @@ import type {PromptRenderer} from '../../core/prompt/renderer'
 import {TOOL_MEMORY} from '../../core/constants'
 
 /** 记忆快照模块 */
+export const PROMPT_MEMORY_SNAPSHOT = 'memory-snapshot'
+
 export class MemorySnapshotModule extends PromptModuleBase {
-  readonly id = 'memory-snapshot'
+  readonly id = PROMPT_MEMORY_SNAPSHOT
 
   constructor(
     renderer: PromptRenderer,

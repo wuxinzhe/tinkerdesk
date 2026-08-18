@@ -13,6 +13,11 @@ import { BUSY_MODE_QUEUE } from '../../core/loop/types'
 import type { IAgentMode } from '../../core/mode/agent-mode'
 import type { ToolManager } from '../../core/tool/tool-manager'
 import type { AgentToolService } from '../../service/agent-tool-service'
+import { PROMPT_SOUL } from '../prompts/soul-prompt-module'
+import { PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT, PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL, PROMPT_MEMORY, PROMPT_SESSION_SEARCH } from '../prompts/preset-module-impls'
+import { PROMPT_MEMORY_SNAPSHOT } from '../prompts/memory-snapshot-module'
+import { PROMPT_USER_PROFILE } from '../prompts/user-profile-module'
+import { PROMPT_SKILLS_INDEX } from '../prompts/skills-index-module'
 
 /** 创造者模式元数据 */
 const META = {
@@ -24,13 +29,13 @@ const META = {
 }
 
 /** 动态模块渲染顺序（复用通用默认） */
-const MODULE_ORDER = [
-  'soul-prompt',
-  'task-completion', 'tool-enforcement',
-  'memory', 'session-search',
-  'skills-index',
-  'memory-snapshot', 'user-profile',
-  'openai-execution', 'google-operational',
+const PROMPT_LIST = [
+  PROMPT_SOUL,
+  PROMPT_TASK_COMPLETION, PROMPT_TOOL_ENFORCEMENT,
+  PROMPT_MEMORY, PROMPT_SESSION_SEARCH,
+  PROMPT_SKILLS_INDEX,
+  PROMPT_MEMORY_SNAPSHOT, PROMPT_USER_PROFILE,
+  PROMPT_OPENAI_EXECUTION, PROMPT_GOOGLE_OPERATIONAL,
 ]
 
 /** 创造者 Agent Mode 实现 */
@@ -42,8 +47,8 @@ export class CreatorAgentMode implements IAgentMode {
     private readonly agentToolService: AgentToolService,
   ) {}
 
-  getModuleList(): string[] {
-    return MODULE_ORDER
+  getPromptList(): string[] {
+    return PROMPT_LIST
   }
 
   /** 创造者工具集：profile 有授权 → 授权集（自由选配）；空 → 全量（具体列名） */

@@ -179,7 +179,7 @@ export class PromptModuleBuilder {
    * 兜底全部已注册模块。
    */
   private getModuleList(ctx: ConversationContext): string[] {
-    const modeList = ctx.agentMode?.getModuleList()
+    const modeList = ctx.agentMode?.getPromptList()
     return modeList && modeList.length > 0 ? modeList : this.promptManager.getModuleIds()
   }
 }

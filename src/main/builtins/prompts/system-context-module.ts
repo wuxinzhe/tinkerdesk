@@ -9,8 +9,10 @@ import type {PromptRenderer} from '../../core/prompt/renderer'
 import {PromptModuleBase} from './prompt-module-base'
 
 /** 系统上下文模块 */
+export const PROMPT_SYSTEM_CONTEXT = 'system-context'
+
 export class SystemContextModule extends PromptModuleBase {
-  readonly id = 'system-context'
+  readonly id = PROMPT_SYSTEM_CONTEXT
   constructor(renderer: PromptRenderer) {
     super(renderer)
   }
