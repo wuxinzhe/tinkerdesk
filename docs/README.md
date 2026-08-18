@@ -26,6 +26,7 @@
 | data-model | 数据库 20 表（messages / sessions / agent_events …） |
 | event-system | 事件推送协议（agent:message 单通道 / route 两级） |
 | security | 安全模型（IPC 校验 / 三层门检 / 沙盒白名单） |
+| process-isolation | Agent 进程隔离（B 方案——每会话独立进程跑 AgentLoop，对齐 dsh） |
 
 ### 🛠️ 开发（development/）
 
