@@ -149,6 +149,7 @@ import {
 } from './builtins/tools/provider-tools'
 
 import type { TinkerAgentOptions } from './core/loop/types'
+import type { AgentWorkerHost } from './core/agent/agent-worker-host'
 import { ToolManager } from './core/tool'
 import {  } from './core/tool/types'
 import { DelegateTool } from './builtins/tools/delegate-tool'
@@ -174,6 +175,8 @@ export interface TinkerDesk {
   providerManager: ProviderManager
   llmRouter: LlmRouter
   modelConfigService: ModelConfigService
+  /** Agent 进程宿主（进程隔离——M2 起使用，主进程内联时可选） */
+  agentWorkerHost?: AgentWorkerHost
   // ── controller 层依赖 ──
   privateSkillService: PrivateSkillService
   skillCategoryService: SkillCategoryService

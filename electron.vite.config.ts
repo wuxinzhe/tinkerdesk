@@ -16,6 +16,7 @@ export default defineConfig({
                 input: {
                   index: resolve(__dirname, 'src/main/index.ts'),
                   'provider-host-worker': resolve(__dirname, 'src/main/core/provider/provider-host-worker.ts'),
+                  'agent-worker': resolve(__dirname, 'src/main/worker/agent-worker-main.ts'),
                 },
       }
     }

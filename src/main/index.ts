@@ -6,6 +6,7 @@ import { resolveResource } from './utils/resources-path'
 import { initDatabase, closeDatabase } from './repository/database'
 import { bootstrap } from './bootstrap'
 import { AgentController } from './controller/agent-controller'
+import { AgentWorkerHost } from './core/agent/agent-worker-host'
 
 // 允许外部 CDP 客户端（python/node/浏览器自动化）连接 Remote Debugging —— 本地开发调试用
 if (process.env.NODE_ENV !== 'production') {
@@ -183,6 +184,10 @@ function createWindow() {
 
     // ── Agent 会话（本地 TinkerAgent）：组装依赖 + 注册 IPC ──
     const desk = bootstrap([], [])
+    // M2a: Agent 进程隔离基建——拉起默认会话进程（ping/pong 自检连通）
+    const agentWorkerHost = new AgentWorkerHost()
+    desk.agentWorkerHost = agentWorkerHost
+    agentWorkerHost.spawn('default')
     // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
     usageRecorder.init()
     new AgentController(desk.agentLoopOptions, desk.sessionContextFactory, desk.sessionService, desk.messageService).register()
