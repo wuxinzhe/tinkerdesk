@@ -6,6 +6,7 @@
  * - provider 用户配置（扩展 sherpa 本地等），模型只发文件路径
  * - 返回 { success, text }
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { existsSync } from 'fs'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
@@ -22,9 +23,9 @@ export class SpeechToTextTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return !!this.audioToolProvider
-  }
+  check(): ToolCheckResult {
+    return { ok: !!this.audioToolProvider };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as { file_path?: unknown }

@@ -6,6 +6,7 @@
  *
  * 环境变量（内置 provider 用）：SHOWING_WEB_SEARCH_BACKEND / TAVILY_API_KEY 等——见 providers/search。
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import { errMessage } from '../../utils/http'
@@ -37,14 +38,14 @@ export class WebSearchTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
+  check(): ToolCheckResult {
     // 与 execute 同逻辑：显式 backend 优先，否则 availability-walk
     const backend = getConfiguredBackend()
     let provider = backend ? getProvider(backend) : null
     if (!provider || !provider.supportsSearch() || !provider.isAvailable()) {
       provider = getActiveSearchProvider()
     }
-    return provider !== null
+    return { ok: provider !== null, reason: provider ? undefined : '未配置可用的搜索 provider' }
   }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {

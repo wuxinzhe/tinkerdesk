@@ -11,6 +11,7 @@
  * - provider_list()              列出已安装扩展
  * - provider_uninstall(id)       卸载（删除扩展及下载的模型）
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { mkdirSync, rmSync, createWriteStream } from 'fs'
 import { join, basename } from 'path'
 import { tmpdir } from 'os'
@@ -63,9 +64,9 @@ export class ProviderInstallTool extends BaseTool {
     super(renderer, PROVIDER_INSTALL_TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as { source?: string }
@@ -106,9 +107,9 @@ export class ProviderConfigureTool extends BaseTool {
     super(renderer, PROVIDER_CONFIGURE_TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as { id?: string; values?: Record<string, unknown> }
@@ -137,9 +138,9 @@ export class ProviderEnableTool extends BaseTool {
     super(renderer, PROVIDER_ENABLE_TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as { id?: string }
@@ -160,9 +161,9 @@ export class ProviderListTool extends BaseTool {
     super(renderer, PROVIDER_LIST_TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(_ctx: ToolContext): Promise<ToolResult> {
     const list = this.providerCenter.providerList()
@@ -187,9 +188,9 @@ export class ProviderUninstallTool extends BaseTool {
     super(renderer, PROVIDER_UNINSTALL_TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as { id?: string }

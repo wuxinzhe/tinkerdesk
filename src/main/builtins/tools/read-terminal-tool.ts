@@ -6,6 +6,7 @@
  * - 字段对齐：{total_lines, start, end, text} + status
  * - start_line 0-indexed（0 = 最旧）；省略 → 最近 200 行
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { processRegistry } from './common/process-registry'
 import { redactSensitiveText } from '../../utils/redact'
@@ -25,9 +26,9 @@ export class ReadTerminalTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as ReadTerminalParams

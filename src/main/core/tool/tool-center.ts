@@ -83,7 +83,7 @@ export class ToolCenter implements ICenter {
     }
     const tool: import('./types').IAgentTool = {
       getSchema: () => new ToolSchema(legacy.schema!.name ?? toolName, legacy.schema!.description ?? '', legacy.schema!.parameters ?? null),
-      check: () => true,
+      check: () => ({ ok: true }),
       async execute(ctx) {
         try {
           const result = await legacy.execute!({ arguments: ctx.toolCall?.arguments ?? {} })

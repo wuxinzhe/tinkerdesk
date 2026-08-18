@@ -8,6 +8,7 @@
  * - 字符预算 100_000：超预算 → 尾部完整行截断 + next_offset/hint
  * - 敏感信息脱敏 + dedup（mtime 未变 → stub）连续重复读检测
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { readFileSync, statSync, existsSync } from 'fs'
 import { resolve } from 'path'
 import { BaseTool } from './base-tool'
@@ -59,9 +60,9 @@ export class ReadFileTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as ReadFileParams

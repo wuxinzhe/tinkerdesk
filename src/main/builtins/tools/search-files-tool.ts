@@ -8,6 +8,7 @@
  * - 匹配内容脱敏 + 路径不存在提示相似路径
  * - 重复搜索阻断：连续 ≥3 次 _warning、≥4 次 BLOCKED
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { spawnSync } from 'child_process'
 import {  join } from 'path'
 import { existsSync, readdirSync, statSync } from 'fs'
@@ -37,9 +38,9 @@ export class SearchFilesTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
+  check(): ToolCheckResult {
     const engine = checkSearchEngine()
-    return engine !== null
+    return { ok: engine !== null, reason: engine ? undefined : '未检测到可用的搜索服务' }
   }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {

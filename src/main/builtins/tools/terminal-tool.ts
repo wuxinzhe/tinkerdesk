@@ -8,6 +8,7 @@
  * - background 返回 session_id，用 process/read_terminal/close_terminal 管理
  * - 返回 JSON 字符串 {output, session_id, pid, exit_code, error, status, hint}
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { spawn } from 'child_process'
 import { BaseTool } from './base-tool'
 import { processRegistry } from './common/process-registry'
@@ -49,15 +50,15 @@ export class TerminalTool extends BaseTool {
   }
 
   /** 平台门控：bash 工具仅非 Windows（Windows 用 PowerShell 工具——灰色展示原因） */
-  check(): boolean | { ok: boolean; reason: string } {
+  check(): ToolCheckResult {
     if (process.platform === 'win32') {
       return { ok: false, reason: 'Windows 请使用 PowerShell 终端工具（pwsh）——bash 方言/编码在 Windows 不可靠' }
     }
-    return detectAvailableShells().length > 0
+    return { ok: detectAvailableShells().length > 0 }
   }
 
-  /** 动态 Schema：按当前机器可用 shell 枚举参数（LLM 看到真实可选项 + 语法提示） */
-  getToolSchema(): ToolSchema {
+  /** Schema：按当前机器可用 shell 枚举参数（动态生成——LLM 看到真实可选项 + 语法提示） */
+  getSchema(): ToolSchema {
     const shells = detectAvailableShells()
     const shellEnum = ['auto', ...shells]
     const hint = shells.map((s) => SHELL_HINTS[s]).join(' ')

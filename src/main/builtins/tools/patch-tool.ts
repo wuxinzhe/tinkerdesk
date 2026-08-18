@@ -6,6 +6,7 @@
  * - mode=patch：V4A 多文件 patch（v4a-patch.ts，两阶段 validate-then-apply）
  * - 敏感路径守卫 + V4A 头部 .. traversal 拒绝
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { readFileSync, existsSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import { BaseTool } from './base-tool'
@@ -28,9 +29,9 @@ export class PatchTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as PatchParams

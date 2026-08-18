@@ -5,6 +5,7 @@
  * 执行：image_url（http/https/data: base64）→ VisionProvider.recognize
  *      → scene=image_recognition（本地 ollama qwen3.5:9B 多模态）→ 返回文本
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import type { ToolContext } from '../../core/loop/types'
 import { ToolResult } from '../../core/tool/tool-result'
@@ -21,9 +22,9 @@ export class VisionRecognizeTool extends BaseTool {
   }
 
   /** 可用性：provider 是否配置（图像识别场景已绑模型——resolveForScene 有兜底） */
-  check(): boolean {
-    return !!this.visionProvider
-  }
+  check(): ToolCheckResult {
+    return { ok: !!this.visionProvider };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as { image_url?: unknown; prompt?: unknown }

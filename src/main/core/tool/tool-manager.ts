@@ -40,9 +40,9 @@ export class ToolManager {
   /** 工具 emoji 元信息：toolName → emoji */
   private readonly toolEmojis = new Map<string, string>()
 
-  /** 统一 schema 出口：优先动态 getToolSchema()（环境感知）——兜底静态 getSchema() */
+  /** 统一 schema 出口：直接取工具的 getSchema()（静态或动态由工具内部决定） */
   private getEffectiveSchema(tool: IAgentTool): ToolSchema {
-    return tool.getToolSchema?.() ?? tool.getSchema()
+    return tool.getSchema()
   }
 
   /**
@@ -63,11 +63,10 @@ export class ToolManager {
       }
       // check 可用性：未实现 check 视为可用——失败记录原因（列表展示灰色 + 管理页错误信息）
       const checkResult = reg.tool.check ? reg.tool.check() : true
-      const available = typeof checkResult === 'object' && 'ok' in checkResult ? checkResult.ok : (checkResult as boolean)
+      // 兼容 ToolCheckResult 对象与旧 boolean——统一成 { ok, reason }
+      const available = typeof checkResult === 'object' && checkResult !== null ? checkResult.ok : Boolean(checkResult)
       if (!available) {
-        const reason = typeof checkResult === 'object' && 'ok' in checkResult && checkResult.reason
-          ? checkResult.reason
-          : '工具不可用（未通过可用性检测）'
+        const reason = typeof checkResult === 'object' && checkResult.reason ? checkResult.reason : 'check 失败'
         console.warn(`[ToolManager] 工具不可用，跳过注册: ${toolName}（${reason}）`)
         // 保留展示信息（管理页列表显示灰色 + 错误原因）
         const schema = this.getEffectiveSchema(reg.tool)
@@ -96,7 +95,9 @@ export class ToolManager {
     if (this.tools.has(toolName)) {
       return
     }
-    const available = reg.tool.check ? reg.tool.check() : true
+    // 兼容 ToolCheckResult 对象与旧 boolean——统一判断 ok
+    const checkResult = reg.tool.check ? reg.tool.check() : true
+    const available = typeof checkResult === 'object' && checkResult !== null ? checkResult.ok : Boolean(checkResult)
     if (!available) {
       console.warn(`[ToolManager] 工具不可用，跳过注册: ${toolName}`)
       return

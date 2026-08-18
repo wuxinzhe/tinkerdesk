@@ -4,6 +4,7 @@
  * Schedule-timer tool: in-memory timer management (setTimeout wrapper): start / cancel / list
  * 内存定时器管理（setTimeout 封装）：start / cancel / list
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
@@ -22,9 +23,9 @@ export class ScheduleTimerTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as ScheduleTimerParams

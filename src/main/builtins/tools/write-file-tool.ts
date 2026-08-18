@@ -7,6 +7,7 @@
  * - read_file 行号内容拒绝（防止把 "N|content" 显示文本写进文件）
  * - 自动创建父目录，返回 bytes_written / dirs_created / resolved_path
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { Buffer } from 'buffer'
@@ -52,9 +53,9 @@ export class WriteFileTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as WriteFileParams

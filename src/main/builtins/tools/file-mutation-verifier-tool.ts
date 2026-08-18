@@ -6,6 +6,7 @@
  * - 二进制内容 → 摘要
  * - 否则 LCS diff + added/removed 计数
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
@@ -51,9 +52,9 @@ export class FileMutationVerifierTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as VerifyMutationParams

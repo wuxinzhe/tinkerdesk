@@ -8,6 +8,7 @@
  * - Reuses the bash TerminalTool execution pipeline (background/timeout/guardrails)
  *   with the shell parameter overridden.
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { ToolResult } from '../../core/tool/tool-result'
 import { ToolSchema } from '../../core/tool/tool-schema'
@@ -28,15 +29,15 @@ export class PwshTool extends BaseTool {
   }
 
   /** 平台门控：仅 Windows 可用（Unix 上 PowerShell 不存在——灰色展示原因） */
-  check(): boolean | { ok: boolean; reason: string } {
+  check(): ToolCheckResult {
     return process.platform === 'win32'
-      ? true
+      ? { ok: true }
       : { ok: false, reason: 'PowerShell 工具仅支持 Windows——请使用 terminal（bash）工具' }
   }
 
   /** 动态 Schema：PowerShell 方言描述（路径/变量/退出码语义教给模型） */
-  getToolSchema(): ToolSchema {
-    const base = this.terminal.getToolSchema()
+  getSchema(): ToolSchema {
+    const base = this.terminal.getSchema()
     const description =
       'Execute a command in the Windows PowerShell terminal (pwsh.exe -NoProfile -Command). ' +
       'PowerShell dialect: use native Windows paths (C:\\...), $env:NAME environment variables, and cmdlets (Get-ChildItem, Get-Content). ' +

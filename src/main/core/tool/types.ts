@@ -33,15 +33,12 @@ export type {ToolCall}
 
 /** Agent 工具 SPI 接口（所有工具需实现） */
 export interface IAgentTool {
-  /** 获取工具的 Schema 定义（用于向 LLM 描述工具） */
+  /** 获取工具的 Schema 定义（用于向 LLM 描述工具）。动态工具（如 terminal/pwsh 按平台）在内部自行判断环境生成。 */
   getSchema(): ToolSchema
-  /** 可选：运行时动态生成 Schema（环境感知——如 terminal 按平台枚举 shell）。
-   *   ToolManager 优先调用本方法；未实现则兜底 getSchema() 静态定义。 */
-  getToolSchema?(): ToolSchema
   /** 执行工具调用，返回字符串结果（将直接发送给 LLM）。入参 = loop 的 ToolContext。 */
   execute(ctx: ToolContext): Promise<ToolResult>
-  /** 可用性检测（启动时调用；不可用工具不入池）。默认实现返回 true。可返回 { ok, reason } 提供不可用原因。 */
-  check?(): Promise<boolean> | boolean | ToolCheckResult
+  /** 可用性检测（注册时调用；不可用工具不入池）。同步返回 ToolCheckResult：ok=false 时 reason 展示给用户。 */
+  check?(): ToolCheckResult
 }
 
 /** 工具可用性检测结果（check 可返回——reason 给管理页 tps-tool-error 展示） */

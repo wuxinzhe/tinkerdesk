@@ -6,6 +6,7 @@
  * - 进程输出继续缓冲，随时可用 process/read_terminal 查询
  * - process_id 必填；会话不存在不视为错误
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { processRegistry } from './common/process-registry'
 import { ToolResult } from '../../core/tool/tool-result'
@@ -22,9 +23,9 @@ export class CloseTerminalTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as CloseTerminalParams

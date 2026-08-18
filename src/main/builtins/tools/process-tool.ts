@@ -7,6 +7,7 @@
  * - not_found → {status:"not_found", error}；已退出 → {status:"already_exited", ...}
  * - 输出脱敏
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { BaseTool } from './base-tool'
 import { processRegistry } from './common/process-registry'
 import { redactSensitiveText } from '../../utils/redact'
@@ -32,9 +33,9 @@ export class ProcessTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return true
-  }
+  check(): ToolCheckResult {
+    return { ok: true };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const params = (ctx.toolCall.arguments ?? {}) as unknown as ProcessParams

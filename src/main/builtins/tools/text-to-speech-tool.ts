@@ -7,6 +7,7 @@
  * - 长文本按 provider 上限截断
  * - 返回 { success, file_path } + MEDIA: 路径
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { join } from 'path'
 import { mkdirSync } from 'fs'
 import { app } from 'electron'
@@ -31,9 +32,9 @@ export class TextToSpeechTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
-    return !!this.audioToolProvider
-  }
+  check(): ToolCheckResult {
+    return { ok: !!this.audioToolProvider };
+    }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
     const args = (ctx.toolCall.arguments ?? {}) as { text?: unknown; output_path?: unknown }

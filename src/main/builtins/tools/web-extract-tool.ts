@@ -9,6 +9,7 @@
  * - base64 图片 → [IMAGE: alt] 占位符；完整文本存本地 + read_file 指引
  * - 返回 {"results": [{url, title, content, error}]} JSON 字符串（indent=2）
  */
+import type { ToolCheckResult } from '../../core/tool/types'
 import { promises as dns } from 'dns'
 import { createHash } from 'crypto'
 import * as fs from 'fs'
@@ -254,9 +255,9 @@ export class WebExtractTool extends BaseTool {
     super(renderer, TOOL_NAME)
   }
 
-  check(): boolean {
+  check(): ToolCheckResult {
     const provider = getActiveExtractProvider()
-    return provider !== null
+    return { ok: provider !== null, reason: provider ? undefined : '未配置可用的提取 provider' }
   }
 
   async execute(ctx: ToolContext): Promise<ToolResult> {
