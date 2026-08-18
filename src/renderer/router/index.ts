@@ -68,16 +68,9 @@ const router = createRouter({
           meta: { workspacePlaceholder: true },
         },
 
-        // ── 开放市场（全局——带 type 直达对应品类 Tab） ──
+        // ── 开放市场（全局——可选 type 直达对应品类 Tab；单 record 保证切换不重建组件） ──
         {
-          path: 'market',
-          components: {
-            default: () => import('@/renderer/views/market/OpenMarketView.vue'),
-            workspace: () => import('@/renderer/views/market/OpenMarketView.vue'),
-          },
-        },
-        {
-          path: 'market/:type',
+          path: 'market/:type?',
           components: {
             default: () => import('@/renderer/views/market/OpenMarketView.vue'),
             workspace: () => import('@/renderer/views/market/OpenMarketView.vue'),

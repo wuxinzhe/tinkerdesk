@@ -143,7 +143,7 @@ const TABS = [
   { type: 'skill', label: '技能' },
 ] as const
 
-const activeTab = computed(() => ((route.params.type as string) || 'extension'))
+const activeTab = ref<string>((route.params.type as string) || 'extension')
 const activeLabel = computed(() => TABS.find((t) => t.type === activeTab.value)?.label ?? activeTab.value)
 
 /** 当前选中的 Agent 身份（全局会话 store） */
@@ -153,7 +153,8 @@ const loading = ref(false)
 
 function switchTab(type: string): void {
   if (activeTab.value === type) return
-  router.replace({ params: { ...route.params, type } })
+  // 只改本地状态——不触发路由导航 → 组件不重建，只切换内容区
+  activeTab.value = type
 }
 
 // ── 技能市场 ──
@@ -228,6 +229,11 @@ function installPlugin(plugin: MarketPluginItem) {
 function viewPlugin(plugin: MarketPluginItem) {
   router.push(`/workspace/settings/plugins-market/${encodeURIComponent(plugin.name)}`)
 }
+
+// URL type 变化（外部导航 /market/skill 等）→ 同步本地 Tab
+watch(() => route.params.type, (t) => {
+  if (t && t !== activeTab.value) activeTab.value = t
+})
 
 // 切 Tab → 加载对应数据
 watch(activeTab, (t) => {
