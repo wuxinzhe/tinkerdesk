@@ -26,20 +26,6 @@
         </div>
       </div>
 
-      <!-- 黑名单开关（工具设置页——列表页的开关移入） -->
-      <div class="tps-section">
-        <label class="tps-fallback-row">
-          <div class="tps-fallback-info">
-            <div class="tps-fallback-name">启用该工具</div>
-            <div class="tps-fallback-desc">关闭后 Agent 不可调用此工具（黑名单）</div>
-          </div>
-          <span class="tps-switch">
-            <input type="checkbox" :checked="!toolDisabled" :disabled="toolToggling" @change="toggleToolEnabled" />
-            <span class="tps-switch-track"></span>
-          </span>
-        </label>
-      </div>
-
       <!-- Provider 配置（仅 supportsProvider 工具显示） -->
       <template v-if="supportsProvider">
         <div class="tps-section">
@@ -133,9 +119,7 @@ const toolInfo = ref<ToolItem | null>(null)
 const toolLabel = computed(() => toolInfo.value ? parseDisplayName(toolInfo.value.name) : toolName.value)
 const toolDescription = computed(() => toolInfo.value?.description || '暂无描述')
 const toolError = computed(() => toolInfo.value?.error ?? '')
-const toolDisabled = computed(() => toolInfo.value?.disabled ?? false)
 const supportsProvider = computed(() => toolInfo.value?.supportsProvider ?? false)
-const toolToggling = ref(false)
 
 /** 接口类型：web.search / web.extract / tool.tts / tool.stt / tool.vision / tool.computer_use */
 const iface = computed(() => {
@@ -205,21 +189,6 @@ async function load() {
     }
   }
   loading.value = false
-}
-
-/** 黑名单开关（启用/停用工具） */
-async function toggleToolEnabled(): Promise<void> {
-  if (toolToggling.value || !toolInfo.value) return
-  toolToggling.value = true
-  try {
-    const next = !toolDisabled.value
-    await toolsApi.toggle(toolInfo.value.name, next, profile.value)
-    toolInfo.value.disabled = next
-  } catch {
-    // 保存失败静默（开关回弹由 :checked 绑定自动处理）
-  } finally {
-    toolToggling.value = false
-  }
 }
 
 async function selectProvider(id: string) {

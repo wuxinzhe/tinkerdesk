@@ -149,35 +149,22 @@ export class ToolManager {
     return null
   }
 
-  /** 获取可用工具 Schema（排除禁用 + 白名单——authorized 或注入默认） */
+  /** 获取工具 Schema（authorized 白名单过滤——authorized null 未提供则全量） */
   getAvailableSchemas(profile: string, authorized?: string[] | null): ToolSchema[] {
-    const disabled = this.getDisabledSet(profile)
     const allow = this.resolveAllowSet(profile, authorized)
     const result: ToolSchema[] = []
 
     for (const [internalName, tool] of this.tools) {
       if (allow && !allow.has(internalName)) continue
-      const schema = this.getEffectiveSchema(tool)
-      if (!disabled.has(internalName) && !disabled.has(schema.name)) {
-        result.push(schema)
-      }
+      result.push(this.getEffectiveSchema(tool))
     }
     return result
   }
 
-  /** 获取可用工具名列表（排除禁用 + 白名单——authorized 或注入默认） */
+  /** 获取工具名列表（authorized 白名单过滤——authorized null 未提供则全量） */
   getAvailableToolNames(profile: string, authorized?: string[] | null): string[] {
-    const disabled = this.getDisabledSet(profile)
     const allow = this.resolveAllowSet(profile, authorized)
-    const names: string[] = []
-
-    for (const internalName of this.tools.keys()) {
-      if (!allow || allow.has(internalName)) {
-        names.push(internalName)
-      }
-    }
-    // 与禁用取并——放在 allow 过滤之后
-    return names.filter((n) => !disabled.has(n))
+    return [...this.tools.keys()].filter((n) => !allow || allow.has(n))
   }
 
   /** 全部已注册工具名（模式 getToolset 取全量用——含内置 + 外置安装） */
@@ -211,56 +198,6 @@ export class ToolManager {
   // ════════════════════════════════════════════════════════════
   // 禁用工具配置（本地 Map）
   // ════════════════════════════════════════════════════════════
-
-  getDisabledTools(profile: string): string[] {
-    return [...this.getDisabledSet(profile)]
-  }
-
-  disableTool(profile: string, toolName: string): void {
-    this.getDisabledSet(profile).add(toolName)
-    this.persistDisabled(profile)
-  }
-
-  enableTool(profile: string, toolName: string): void {
-    this.getDisabledSet(profile).delete(toolName)
-    this.persistDisabled(profile)
-  }
-
-  /**
-   * 批量注入已保存的禁用列表（应用启动时调用——持久化于 app_settings）
-   * @param map profile → 禁用的工具名列表
-   */
-  loadDisabled(map: Record<string, string[]>): void {
-    for (const [profile, names] of Object.entries(map)) {
-      if (!Array.isArray(names)) continue
-      for (const name of names) this.getDisabledSet(profile).add(name)
-    }
-  }
-
-  /** 持久化回调（bootstrap 注入——写 app_settings） */
-  setPersistence(onPersist: (profile: string, toolNames: string[]) => void): void {
-    this.persist = onPersist
-  }
-
-  private persist: ((profile: string, toolNames: string[]) => void) | null = null
-
-  private persistDisabled(profile: string): void {
-    try {
-      this.persist?.(profile, this.getDisabledTools(profile))
-    } catch (e) {
-      console.error('[ToolManager] 持久化禁用工具失败:', (e as Error).message)
-    }
-  }
-
-  private getDisabledSet(profile: string): Set<string> {
-    const key = `${profile}`
-    let set = this.disabledTools.get(key)
-    if (!set) {
-      set = new Set<string>()
-      this.disabledTools.set(key, set)
-    }
-    return set
-  }
 
   // ════════════════════════════════════════════════════════════
   // 工具执行

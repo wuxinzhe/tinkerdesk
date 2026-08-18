@@ -59,7 +59,6 @@ export class ToolController {
     const profile = payload?.profile ?? 'default'
     const mode = this.resolveMode(profile)
     const modeId = mode.meta.id
-    const disabled = this.toolManager.getDisabledTools(profile)
     const errors = this.toolManager.getToolErrors()
     const allSchemas = this.toolManager.getAllSchemas()
 
@@ -71,7 +70,6 @@ export class ToolController {
     const base = (s: ToolSchema, editable: boolean, authorized?: boolean): ToolItemVO => ({
       name: s.name,
       description: s.description ?? '',
-      disabled: disabled.includes(s.name),
       supportsProvider: s.supportsProvider,
       error: errors.get(s.name) ?? undefined,
       editable,
@@ -111,6 +109,6 @@ export class ToolController {
     } else if (payload.authorized === false && isAuthorized) {
       this.agentToolService.revoke(profile, toolName)
     }
-    return ok({ name: toolName, description: '', disabled: !payload.authorized })
+    return ok({ name: toolName, description: '' })
   }
 }

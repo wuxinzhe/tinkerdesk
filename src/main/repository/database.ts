@@ -463,13 +463,6 @@ function createTables(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_path_whitelist_profile ON user_path_whitelist(profile);
 
-    -- ── user_disabled_tools（去 user_id，PK(profile, tool_name)） ──
-    CREATE TABLE IF NOT EXISTS user_disabled_tools (
-      profile   TEXT NOT NULL,
-      tool_name TEXT NOT NULL,
-      PRIMARY KEY (profile, tool_name)
-    );
-
     -- ── prompt_modules（去 user_id/User 前缀，UNIQUE(profile, name)） ──
     CREATE TABLE IF NOT EXISTS prompt_modules (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,

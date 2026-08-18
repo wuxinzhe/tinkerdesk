@@ -68,8 +68,6 @@ import { WebProvider } from './service/web-provider'
 import { AudioToolProvider } from './service/audio-tool-provider'
 import { EDGE_TTS_MANIFEST, edgeTtsProvider } from './builtins/providers/tts/edge'
 import { AgentToolRepository } from './repository/agent-tool-repository'
-import { UserDisabledToolRepository } from './repository/user-disabled-tool-repository'
-import { UserDisabledToolService } from './service/user-disabled-tool-service'
 import { AgentToolService } from './service/agent-tool-service'
 import { AgentModeService } from './service/agent-mode-service'
 import { AgentService } from './service/agent-service'
@@ -335,11 +333,6 @@ export function bootstrap(
   // 工具中心：启动统一注册两类工具（代码内置 + 外置安装）——逐 check 可用性只注册可用
   const toolCenter = new ToolCenter({ toolManager, installer: providerCenter.getInstaller(), builtin: [...builtinTools, ...desktopTools, ...providerTools, ...toolRegistrations] })
   toolCenter.loadAll()
-  // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
-  const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
-  toolManager.loadDisabled(userDisabledToolService.listAll())
-  toolManager.setPersistence((profile, toolNames) => userDisabledToolService.replaceProfile(profile, toolNames))
-
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
   // （已提前到 providerManager 区——vision provider 依赖场景模型解析）
 
