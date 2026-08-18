@@ -1,12 +1,12 @@
 <template>
-  <L3PageLayout class="plugin-detail-page">
-    <div class="plugin-detail-page__body">
+  <L3PageLayout class="provider-detail-page">
+    <div class="provider-detail-page__body">
       <!-- 页面 hero -->
       <SaPageHero
         icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /><rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot; /></svg>"
         gradient="linear-gradient(135deg, #5ac8fa 0%, #0a84ff 100%)"
-        title="插件详情"
-        desc="查看插件说明、环境要求并安装"
+        title="扩展详情"
+        desc="查看扩展说明、环境要求并安装"
       />
 
       <!-- 头部信息卡 -->
@@ -72,19 +72,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { MarketPluginDetail } from '@/renderer/api/types'
+import type { MarketProviderDetail } from '@/renderer/api/types'
 import { SaActionBtn, L3PageLayout, SaPageHero } from '@/renderer/components'
 import MarkdownRender from '@/renderer/components/MarkdownRender.vue'
-import { pluginsApi } from '@/renderer/api/plugins-api'
+import { providersApi } from '@/renderer/api/providers-api'
 
 const route = useRoute()
 const router = useRouter()
 
-const detail = ref<MarketPluginDetail | null>(null)
+const detail = ref<MarketProviderDetail | null>(null)
 const loading = ref(true)
 const error = ref('')
 
-const displayName = computed(() => (detail.value?.name ?? '').replace(/^tinkerdesk-plugin-/, ''))
+const displayName = computed(() => (detail.value?.name ?? '').replace(/^tinkerdesk-provider-/, ''))
 
 function formatDate(s?: string): string {
   if (!s) return '-'
@@ -99,7 +99,7 @@ onMounted(async () => {
   const name = (route.params.pkg as string) || ''
   loading.value = true
   try {
-    detail.value = await pluginsApi.marketDetail(name)
+    detail.value = await providersApi.marketDetail(name)
   } catch (e) {
     error.value = (e as Error).message
   } finally {
@@ -109,16 +109,16 @@ onMounted(async () => {
 
 function goInstall() {
   if (!detail.value || detail.value.installed) return
-  router.push({ path: '/workspace/settings/plugins/install', query: { pkg: detail.value.name } })
+  router.push({ path: '/workspace/settings/providers/install', query: { pkg: detail.value.name } })
 }
 </script>
 
 <style scoped>
-.plugin-detail-page {
+.provider-detail-page {
   width: 100%;
 }
 
-.plugin-detail-page__body {
+.provider-detail-page__body {
   max-width: 680px;
   width: 100%;
   display: flex;

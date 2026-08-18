@@ -4,7 +4,7 @@
       <div class="iw-panel">
         <!-- 标题 + 关闭 -->
         <div class="iw-header">
-          <div class="iw-title">安装插件</div>
+          <div class="iw-title">安装扩展</div>
           <button class="iw-close" @click="close">✕</button>
         </div>
 
@@ -41,18 +41,18 @@
           <div v-else-if="(isNpm && currentStep === 1) || (!isNpm && currentStep === 0)">
             <div v-if="loading" class="iw-loading">校验安装包中...</div>
             <div v-else-if="session" class="iw-confirm">
-              <div class="iw-plugin-name">{{ session.manifest?.name }} <span class="iw-version">v{{ session.manifest?.version }}</span></div>
+              <div class="iw-provider-name">{{ session.manifest?.name }} <span class="iw-version">v{{ session.manifest?.version }}</span></div>
               <div v-if="session.manifest?.capabilities?.length" class="iw-caps">
                 <span v-for="c in session.manifest.capabilities" :key="c" class="iw-cap">{{ c }}</span>
               </div>
-              <div class="iw-note">安装后插件将以完全权限运行（可读写文件、执行命令、访问网络）——仅安装你信任的来源</div>
+              <div class="iw-note">安装后扩展将以完全权限运行（可读写文件、执行命令、访问网络）——仅安装你信任的来源</div>
             </div>
             <div v-else class="iw-error">{{ startError }}</div>
           </div>
 
           <!-- Step 2/1：资源勾选 -->
           <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)" class="iw-assets">
-            <div v-if="!session?.assetDeps?.length" class="iw-note">该插件无需下载资源（无模型/二进制依赖）</div>
+            <div v-if="!session?.assetDeps?.length" class="iw-note">该扩展无需下载资源（无模型/二进制依赖）</div>
             <label v-for="dep in session?.assetDeps ?? []" :key="dep.dest" class="iw-asset">
               <input v-model="selectedAssets" type="checkbox" :value="dep.dest" :disabled="!dep.optional" />
               <div class="iw-asset__info">
@@ -115,7 +115,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import type { InstallSessionInfo } from '@/renderer/api/types'
 import { SaActionBtn } from '@/renderer/components'
-import { pluginsApi } from '@/renderer/api/plugins-api'
+import { providersApi } from '@/renderer/api/providers-api'
 
 const props = defineProps<{ pkg?: string; path?: string }>()
 const emit = defineEmits<{ close: []; installed: [id: string] }>()
@@ -200,7 +200,7 @@ async function start() {
   loading.value = true
   startError.value = ''
   try {
-    session.value = await pluginsApi.installStart({
+    session.value = await providersApi.installStart({
       pkg: props.pkg,
       path: props.path,
     })
@@ -223,7 +223,7 @@ async function doDownload() {
   downloadPercent.value = 0
   downloadReceived.value = 0
   downloadTotal.value = 0
-  const unsubscribe = window.api.onEvent('plugin:install-progress', (data) => {
+  const unsubscribe = window.api.onEvent('provider:install-progress', (data) => {
     const d = data as { sessionId: string; received: number; total: number }
     if (d.sessionId !== session.value?.sessionId) return
     downloadReceived.value = d.received
@@ -231,7 +231,7 @@ async function doDownload() {
     downloadPercent.value = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
   })
   try {
-    const r = await pluginsApi.installDownload(session.value.sessionId)
+    const r = await providersApi.installDownload(session.value.sessionId)
     // 下载完成——manifest/资源清单来自返回（validate 已完成——不重复 start）
     if (r.manifest) {
       session.value = { ...session.value!, manifest: r.manifest, assetDeps: r.assetDeps ?? [], stages: r.stages }
@@ -255,7 +255,7 @@ async function startInstall() {
   installFailed.value = false
   stageError.value = ''
   for (const stage of installStages) {
-    const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
+    const r = await providersApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
     session.value!.stages = r.stages
     if (!r.ok) {
       installFailed.value = true
@@ -276,7 +276,7 @@ async function retryFailed() {
   const failedStage = installStages.find((s) => stageStatus(s) === 'failed')
   if (!failedStage) return
   for (const stage of installStages.slice(installStages.indexOf(failedStage))) {
-    const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
+    const r = await providersApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
     session.value!.stages = r.stages
     if (!r.ok) {
       installFailed.value = true
@@ -444,7 +444,7 @@ function close() {
   text-align: center;
 }
 
-.iw-confirm .iw-plugin-name {
+.iw-confirm .iw-provider-name {
   font-size: 15px;
   font-weight: 600;
   color: var(--tk-text-primary);

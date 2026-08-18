@@ -8,8 +8,8 @@
       <!-- MCP 工具设置 -->
       <McpSettingsView v-else-if="section === 'mcp'" />
 
-      <!-- 插件设置 -->
-      <PluginSettingsView v-else-if="section === 'plugins'" />
+      <!-- 扩展设置 -->
+      <ProviderSettingsView v-else-if="section === 'providers'" />
 
       <!-- 语音设置 -->
 
@@ -38,7 +38,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import CustomModelSettingsView from '@/renderer/views/settings/detail/CustomModelSettingsView.vue'
 import McpSettingsView from '@/renderer/views/settings/detail/McpSettingsView.vue'
-import PluginSettingsView from '@/renderer/views/settings/detail/PluginSettingsView.vue'
+import ProviderSettingsView from '@/renderer/views/settings/detail/ProviderSettingsView.vue'
 import GeneralSettingsView from '@/renderer/views/settings/detail/GeneralSettingsView.vue'
 
 const route = useRoute()

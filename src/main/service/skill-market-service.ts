@@ -1,7 +1,7 @@
 /**
  * skill-market-service.ts — 技能市场（npm 在线——keywords:tinkerdesk-skill）
  *
- * 参照插件市场（plugin-market-service）三层模式：
+ * 参照扩展市场（provider-market-service）三层模式：
  *   repository：npm registry 真实搜索/详情（复用 npm-registry-repository）
  *   service：列表（含已装标记）+ 安装（tarball 下载 → 解压 → SKILL.md 解析 → 入库）
  * 包规范：npm 包名 tinkerdesk-skill-<name>；package.json keywords 含 "tinkerdesk-skill"；
@@ -17,7 +17,7 @@ import { getPackageDetail, getPackageTarball, searchNpm, type NpmPackage } from 
 export const SKILL_MARKET_PREFIX = 'tinkerdesk-skill-'
 /** 官方维护者 */
 export const OFFICIAL_MAINTAINER = 'wuxinzhe'
-/** 技能分类词（keywords 承载——与插件市场同款约定） */
+/** 技能分类词（keywords 承载——与扩展市场同款约定） */
 export const SKILL_MARKET_CATEGORIES = ['agent', 'productivity', 'voice', 'video', 'game', 'code', 'creative', 'research', 'apple']
 
 /** 技能市场条目（controller → renderer） */
@@ -39,7 +39,7 @@ export interface SkillMarketInstallResult {
   name?: string
 }
 
-/** 查询 npm registry（生态 + 官方兜底——带分类/搜索词——与插件市场同构） */
+/** 查询 npm registry（生态 + 官方兜底——带分类/搜索词——与扩展市场同构） */
 async function queryNpm(category?: string, search?: string, maintainer?: string): Promise<NpmPackage[]> {
   const parts: string[] = []
   if (maintainer) parts.push(`maintainer:${maintainer}`)

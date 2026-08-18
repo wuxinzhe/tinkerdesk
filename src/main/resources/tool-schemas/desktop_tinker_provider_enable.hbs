@@ -1,0 +1,13 @@
+{
+  "name": "desktop_tinker_provider_enable",
+  "description": "Enable (register) a provider. Runs the provider's check() self-check first; if it fails, the result includes failing checks with hints for what to fix (download models, configure).",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "description": "Provider id (from provider_list)" }
+    },
+    "required": ["id"]
+  },
+  "toolType": "desktop",
+  "emoji": "✅"
+}

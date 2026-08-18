@@ -285,7 +285,7 @@ const router = createRouter({
           meta: { workspacePlaceholder: true },
         },
         {
-          path: 'settings/:section(model|mcp|plugins|voice|general)',
+          path: 'settings/:section(model|mcp|providers|voice|general)',
           components: {
             default: () => import('@/renderer/views/settings/detail/SettingsDetailView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
@@ -294,25 +294,25 @@ const router = createRouter({
           // 真实详情页（非占位）——不加 workspacePlaceholder：移动端 hasLevel3 才能渲染 L3 详情
         },
         {
-          path: 'settings/plugins-market',
+          path: 'settings/providers-market',
           components: {
-            default: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
+            default: () => import('@/renderer/views/settings/detail/ProviderMarketView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            workspace: () => import('@/renderer/views/settings/detail/PluginMarketView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/ProviderMarketView.vue'),
           },
-          // 插件市场（独立 L3——安装按钮跳转入口）
+          // 扩展市场（独立 L3——安装按钮跳转入口）
         },
         {
-          path: 'settings/plugins-market/:pkg',
+          path: 'settings/providers-market/:pkg',
           components: {
-            default: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
+            default: () => import('@/renderer/views/settings/detail/ProviderMarketDetailView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            workspace: () => import('@/renderer/views/settings/detail/PluginMarketDetailView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/ProviderMarketDetailView.vue'),
           },
-          // 插件市场详情（readme 展示）
+          // 扩展市场详情（readme 展示）
         },
         {
-          path: 'settings/plugins/install',
+          path: 'settings/providers/install',
           components: {
             default: () => import('@/renderer/views/settings/detail/InstallWizardView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
@@ -321,11 +321,11 @@ const router = createRouter({
           // 安装向导（L3 页面——pkg/path 查询参数）
         },
         {
-          path: 'settings/plugins/:pluginId',
+          path: 'settings/providers/:providerId',
           components: {
-            default: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
+            default: () => import('@/renderer/views/settings/detail/ProviderConfigView.vue'),
             sidebar: () => import('@/renderer/views/settings/SettingsListView.vue'),
-            workspace: () => import('@/renderer/views/settings/detail/PluginConfigView.vue'),
+            workspace: () => import('@/renderer/views/settings/detail/ProviderConfigView.vue'),
           },
           // 真实详情页（非占位）——不加 workspacePlaceholder
         },

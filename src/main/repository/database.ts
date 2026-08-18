@@ -127,7 +127,7 @@ function ensureSkillRelatedSchema(database: DatabaseSync): void {
   }
 }
 
-/** 种子：默认技能（tinkerdesk-plugin-install / tinkerdesk-skill-authoring），name 冲突忽略（幂等） */
+/** 种子：默认技能（tinkerdesk-provider-install / tinkerdesk-skill-authoring），name 冲突忽略（幂等） */
 function seedDefaultSkills(database: DatabaseSync): void {
   const defaults: Array<{
     name: string
@@ -137,18 +137,18 @@ function seedDefaultSkills(database: DatabaseSync): void {
     file: string
   }> = [
     {
-      name: 'tinkerdesk-plugin-install',
-      displayName: '插件安装引导',
-      description: '安装/管理 TinkerDesk 插件时加载：plugin_install 装包 → 读 guide.md → 准备环境 → 配置 → 启用',
-      category: 'plugin',
-      file: 'tinkerdesk-plugin-install.md',
+      name: 'tinkerdesk-provider-install',
+      displayName: '扩展安装引导',
+      description: '安装/管理 TinkerDesk 扩展时加载：provider_install 装包 → 读 guide.md → 准备环境 → 配置 → 启用',
+      category: 'provider',
+      file: 'tinkerdesk-provider-install/SKILL.md',
     },
     {
       name: 'tinkerdesk-skill-authoring',
       displayName: 'Skill 编写规范',
       description: '编写/更新 TinkerDesk skill 时加载：表字段映射、body 纯正文规范、创建方式、自检清单',
       category: 'agent',
-      file: 'tinkerdesk-skill-authoring.md',
+      file: 'tinkerdesk-skill-authoring/SKILL.md',
     },
   ]
   for (const d of defaults) {
@@ -163,34 +163,34 @@ function seedDefaultSkills(database: DatabaseSync): void {
       console.warn(`[Seed] 默认技能文件缺失: ${d.file} — ${(e as Error).message}`)
       continue
     }
-    const id = randomUUID()
-    database
-      .prepare(
-        `INSERT INTO private_skills (id, name, display_name, description, category, version, author, license, platforms, tags, requires_tools, triggers, body, profile, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, '1.0.0', 'TinkerDesk', 'MIT', 'desktop', ?, ?, ?, ?, 'default', datetime('now'), datetime('now'))`,
-      )
-      .run(
-        id,
-        d.name,
-        d.displayName,
-        d.description,
-        d.category,
-        d.name === 'tinkerdesk-plugin-install'
-          ? 'plugin,install,agent'
-          : 'skill,authoring,规范',
-        d.name === 'tinkerdesk-plugin-install'
-          ? 'desktop_tinker_plugin_install,desktop_tinker_plugin_configure,desktop_tinker_plugin_enable,desktop_tinker_plugin_list,desktop_tinker_plugin_uninstall,desktop_tinker_read_file,desktop_tinker_terminal,desktop_tinker_pwsh'
-          : 'desktop_tinker_skill_manage',
-        d.name === 'tinkerdesk-plugin-install'
-          ? '装插件,安装插件,卸载插件,配置插件,plugin install'
-          : '写skill,编写skill,创建skill,skill规范',
-        body,
-      )
+    const skillId = Number(
+      database
+        .prepare(
+          `INSERT INTO private_skills (name, display_name, description, category, version, author, license, platforms, tags, requires_tools, triggers, body, profile, created_at, updated_at)
+           VALUES (?, ?, ?, ?, '1.0.0', 'TinkerDesk', 'MIT', 'desktop', ?, ?, ?, ?, 'default', datetime('now'), datetime('now'))`,
+        )
+        .run(
+          d.name,
+          d.displayName,
+          d.description,
+          d.category,
+          d.name === 'tinkerdesk-provider-install'
+            ? 'provider,install,agent'
+            : 'skill,authoring,规范',
+          d.name === 'tinkerdesk-provider-install'
+            ? 'desktop_tinker_provider_install,desktop_tinker_provider_configure,desktop_tinker_provider_enable,desktop_tinker_provider_list,desktop_tinker_provider_uninstall,desktop_tinker_read_file,desktop_tinker_terminal,desktop_tinker_pwsh'
+            : 'desktop_tinker_skill_manage',
+          d.name === 'tinkerdesk-provider-install'
+            ? '装扩展,安装扩展,卸载扩展,配置扩展,provider install'
+            : '写skill,编写skill,创建skill,skill规范',
+          body,
+        ).lastInsertRowid,
+    )
     database
       .prepare(
         `INSERT INTO private_skill_files (skill_id, file_type, content, language, sort_order) VALUES (?, 'SKILL.md', ?, '', 0)`,
       )
-      .run(id, body)
+      .run(skillId, body)
     console.log(`[Seed] 默认技能已创建: ${d.name}`)
   }
 }

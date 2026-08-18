@@ -63,9 +63,9 @@ const settingItems: SettingItem[] = [
     icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>'
   },
   {
-    key: 'plugins',
-    label: '插件设置',
-    desc: '管理客户端插件和扩展能力',
+    key: 'providers',
+    label: '扩展设置',
+    desc: '管理客户端扩展和扩展能力',
     icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>'
   },
 
@@ -201,7 +201,7 @@ onMounted(() => {
 /* 每个图标对应不同背景色（iOS Settings 风格）——顺序与 items 数组一致 */
 .settings-row:nth-child(1) .settings-row__icon { background: var(--tk-accent); }   /* 模型 — 蓝色 */
 .settings-row:nth-child(2) .settings-row__icon { background: var(--tk-success); }   /* MCP — 绿色 */
-.settings-row:nth-child(3) .settings-row__icon { background: var(--tk-warning); }   /* 插件 — 橙色 */
+.settings-row:nth-child(3) .settings-row__icon { background: var(--tk-warning); }   /* 扩展 — 橙色 */
 .settings-row:nth-child(4) .settings-row__icon { background: #af52de; }   /* 通用 — 灰色 */
 .settings-row:nth-child(4) .settings-row__icon { background: #8e8e93; }   /* 通用 — 灰色 */
 

@@ -1,0 +1,13 @@
+{
+  "name": "desktop_tinker_provider_install",
+  "description": "Install a provider from a local folder, a local .zip file, or a remote download URL. Returns the installed provider info. For install workflow details (reading the provider's guide.md, preparing dependencies), follow the tinkerdesk-provider-install skill.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "source": { "type": "string", "description": "Provider source: local folder path, local .zip path, or http(s) download URL" }
+    },
+    "required": ["source"]
+  },
+  "toolType": "desktop",
+  "emoji": "🧩"
+}

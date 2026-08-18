@@ -74,7 +74,7 @@
     <!-- 扩展（provider）市场 -->
     <template v-else-if="activeTab === 'extension'">
       <div class="open-market__toolbar">
-        <span class="open-market__count">共 {{ plugins.length }} 个扩展</span>
+        <span class="open-market__count">共 {{ providers.length }} 个扩展</span>
       </div>
       <div v-if="loading" class="open-market__grid">
         <div v-for="i in 6" :key="i" class="market-skeleton">
@@ -83,9 +83,9 @@
           <SaSkeleton variant="text" :text-lines="2" :last-line-width="'45%'" height="11px" line-height="11px" />
         </div>
       </div>
-      <SaEmpty v-else-if="plugins.length === 0" text="暂未发现扩展" />
+      <SaEmpty v-else-if="providers.length === 0" text="暂未发现扩展" />
       <div v-else class="open-market__grid">
-        <div v-for="plugin in plugins" :key="plugin.name" class="market-card" @click="viewPlugin(plugin)">
+        <div v-for="provider in providers" :key="provider.name" class="market-card" @click="viewProvider(provider)">
           <div class="market-card__body">
             <div class="market-card__icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -97,18 +97,18 @@
             </div>
             <div class="market-card__info">
               <div class="market-card__name">
-                {{ displayPluginName(plugin.name) }}
-                <span v-if="plugin.official" class="market-card__official">官方</span>
-                <span class="market-card__version">v{{ plugin.version }}</span>
+                {{ displayProviderName(provider.name) }}
+                <span v-if="provider.official" class="market-card__official">官方</span>
+                <span class="market-card__version">v{{ provider.version }}</span>
               </div>
-              <div class="market-card__desc">{{ plugin.description || '-' }}</div>
-              <div v-if="pluginKeywords(plugin).length" class="market-card__meta">
-                <span v-for="kw in pluginKeywords(plugin)" :key="kw" class="market-card__tag">{{ kw }}</span>
+              <div class="market-card__desc">{{ provider.description || '-' }}</div>
+              <div v-if="providerKeywords(provider).length" class="market-card__meta">
+                <span v-for="kw in providerKeywords(provider)" :key="kw" class="market-card__tag">{{ kw }}</span>
               </div>
             </div>
           </div>
           <div class="market-card__actions">
-            <SaActionBtn :text="'安装'" :done="!!plugin.installed" :done-text="'已安装'" @click.stop="installPlugin(plugin)" />
+            <SaActionBtn :text="'安装'" :done="!!provider.installed" :done-text="'已安装'" @click.stop="installProvider(provider)" />
           </div>
         </div>
       </div>
@@ -125,9 +125,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { SaEmpty, SaActionBtn, SaSkeleton, L3PageLayout, SaPageHero } from '@/renderer/components'
-import type { SkillInfo, MarketPluginItem } from '@/renderer/api/types'
+import type { SkillInfo, MarketProviderItem } from '@/renderer/api/types'
 import { skillsApi } from '@/renderer/api/skills-api'
-import { pluginsApi } from '@/renderer/api/plugins-api'
+import { providersApi } from '@/renderer/api/providers-api'
 import { useSessionStore } from '@/renderer/stores/session-store'
 
 const route = useRoute()
@@ -204,53 +204,53 @@ function viewSkill(skill: SkillInfo) {
 }
 
 // ── 扩展（provider）市场 ──
-const plugins = ref<MarketPluginItem[]>([])
+const providers = ref<MarketProviderItem[]>([])
 
-async function loadPlugins() {
+async function loadProviders() {
   loading.value = true
   try {
-    const res = await pluginsApi.marketList({})
-    plugins.value = res?.items ?? []
+    const res = await providersApi.marketList({})
+    providers.value = res?.items ?? []
   } catch (e) {
-    console.error('load plugin market failed', e)
-    plugins.value = []
+    console.error('load provider market failed', e)
+    providers.value = []
   } finally {
     loading.value = false
   }
 }
 
-function displayPluginName(name: string): string {
-  return name.replace(/^tinkerdesk-plugin-/, '')
+function displayProviderName(name: string): string {
+  return name.replace(/^tinkerdesk-provider-/, '')
 }
 
-function pluginKeywords(plugin: MarketPluginItem): string[] {
-  return (plugin.keywords ?? []).filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-plugin'))
+function providerKeywords(provider: MarketProviderItem): string[] {
+  return (provider.keywords ?? []).filter((k) => k.trim() !== '' && !k.startsWith('tinkerdesk-provider'))
 }
 
-/** 插件安装：跳转现有分步安装向导 */
-function installPlugin(plugin: MarketPluginItem) {
-  if (plugin.installed) return
-  router.push({ path: '/workspace/settings/plugins/install', query: { pkg: plugin.name } })
+/** 扩展安装：跳转现有分步安装向导 */
+function installProvider(provider: MarketProviderItem) {
+  if (provider.installed) return
+  router.push({ path: '/workspace/settings/providers/install', query: { pkg: provider.name } })
 }
 
-function viewPlugin(plugin: MarketPluginItem) {
-  router.push(`/workspace/settings/plugins-market/${encodeURIComponent(plugin.name)}`)
+function viewProvider(provider: MarketProviderItem) {
+  router.push(`/workspace/settings/providers-market/${encodeURIComponent(provider.name)}`)
 }
 
 // URL type 变化（外部导航 /market/skill 等）→ 同步本地 Tab
 watch(() => route.params.type, (t) => {
-  if (t && t !== activeTab.value) activeTab.value = t
+  if (typeof t === 'string' && t !== activeTab.value) activeTab.value = t
 })
 
 // 切 Tab → 加载对应数据
 watch(activeTab, (t) => {
   if (t === 'skill') void loadSkills()
-  else if (t === 'extension') void loadPlugins()
+  else if (t === 'extension') void loadProviders()
 })
 
 onMounted(() => {
   if (activeTab.value === 'skill') void loadSkills()
-  else if (activeTab.value === 'extension') void loadPlugins()
+  else if (activeTab.value === 'extension') void loadProviders()
 })
 </script>
 
@@ -303,7 +303,7 @@ onMounted(() => {
   color: var(--tk-text-tertiary);
 }
 
-/* ── 卡片网格（参考技能/插件市场） ── */
+/* ── 卡片网格（参考技能/扩展市场） ── */
 .open-market__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -325,7 +325,7 @@ onMounted(() => {
   overflow: hidden;
   transition: transform 160ms ease-out, border-color 150ms ease, box-shadow 150ms ease;
 }
-/* skill 整卡可点进详情（plugin 也整卡可点——skill 用 body 内层 click） */
+/* skill 整卡可点进详情（provider 也整卡可点——skill 用 body 内层 click） */
 .market-card:active {
   transform: scale(0.99);
 }

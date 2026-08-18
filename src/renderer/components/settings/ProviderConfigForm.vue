@@ -1,15 +1,15 @@
 <script setup lang="ts">
 /**
- * PluginConfigForm.vue — 插件配置动态表单渲染器
+ * ProviderConfigForm.vue — 扩展配置动态表单渲染器
  *
- * 按插件返回的 ConfigSchema 动态渲染表单，UI 不写死任何插件字段。
+ * 按扩展返回的 ConfigSchema 动态渲染表单，UI 不写死任何扩展字段。
  * 字段类型：string / secret / number / boolean / select / textarea
  */
 import { ref, reactive, watch, onMounted } from 'vue'
 import type { ConfigSchema } from '@/renderer/api/types'
 
 const props = defineProps<{
-  pluginId: string
+  providerId: string
   schema: ConfigSchema
   /** 初始配置（secret 已脱敏为 ***） */
   initial: Record<string, unknown>
@@ -19,7 +19,7 @@ const emit = defineEmits<{
   save: [patch: Record<string, unknown>]
 }>()
 
-// 动态 schema 表单：值类型由插件字段决定（string/number/boolean），运行时才知道，用宽松类型
+// 动态 schema 表单：值类型由扩展字段决定（string/number/boolean），运行时才知道，用宽松类型
  
 const form = reactive<Record<string, any>>({})
 const loaded = ref(false)
@@ -63,7 +63,7 @@ async function pickFile(key: string, filters?: { name: string; extensions: strin
   console.log(`[config-form] pickFile 触发: ${key}`)
   try {
     const plain = filters ? JSON.parse(JSON.stringify(filters)) : undefined
-    const path = await window.api.plugins.pickFile(plain)
+    const path = await window.api.providers.pickFile(plain)
     console.log(`[config-form] pickFile 返回: ${path ?? 'null'}`)
     if (path) form[key] = path
   } catch (e) {

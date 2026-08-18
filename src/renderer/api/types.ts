@@ -268,10 +268,10 @@ export interface PromptModuleData {
 
 // ── 技能（原 defines/models/skill.ts） ──
 
-// ── 插件市场（与后端 controller VO 对应——service 层 MarketPluginItem） ──
+// ── 扩展市场（与后端 controller VO 对应——service 层 MarketProviderItem） ──
 
-/** 市场插件条目（controller → renderer） */
-export interface MarketPluginItem {
+/** 市场扩展条目（controller → renderer） */
+export interface MarketProviderItem {
   name: string
   version: string
   description: string
@@ -288,12 +288,12 @@ export interface MarketPluginItem {
 
 /** 市场查询结果（列表 + 可用分类） */
 export interface MarketListResult {
-  items: MarketPluginItem[]
+  items: MarketProviderItem[]
   categories: string[]
 }
 
-/** 插件详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
-export interface MarketPluginDetail {
+/** 扩展详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
+export interface MarketProviderDetail {
   name: string
   version: string
   description: string
@@ -477,7 +477,7 @@ export interface ToolItem {
 // ── Web 工具 provider（web-provider:list/set） ──
 
 export interface WebProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number
@@ -486,14 +486,14 @@ export interface WebProviderInfo {
 export interface WebProviderListVO {
   iface: 'web.search' | 'web.extract'
   providers: WebProviderInfo[]
-  activePluginId: string | null
+  activeProviderId: string | null
   fallback: boolean
 }
 
 // ── Agent 语音工具 provider（audio-tool-provider:list/set） ──
 
 export interface AudioToolProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number
@@ -502,7 +502,7 @@ export interface AudioToolProviderInfo {
 export interface AudioToolProviderListVO {
   iface: 'tool.tts' | 'tool.stt'
   providers: AudioToolProviderInfo[]
-  /** 当前激活 provider id（内置 Edge 插件 id 为 builtin-edge-tts） */
+  /** 当前激活 provider id（内置 Edge 扩展 id 为 builtin-edge-tts） */
   activeProviderId: string | null
   fallback: boolean
 }
@@ -776,9 +776,9 @@ export interface ToolCenterState {
 // ── window.api 接口（原 ipc-api-types.ts） ──
 
 /** window.api 完整结构（与 src/preload/index.ts 的 api 对象一一对应） */
-/* ── 插件系统类型（协议 v1，与 main/core/plugin/types.ts 对应） ── */
+/* ── 扩展系统类型（协议 v1，与 main/core/provider/types.ts 对应） ── */
 
-export interface PluginManifest {
+export interface ProviderManifest {
   id: string
   name: string
   /** npm 分类词（package.json keywords——已过滤生态标记/包全名） */
@@ -788,9 +788,9 @@ export interface PluginManifest {
   entry: string
   requiresMain?: boolean
   capabilities?: string[]
-  /** 插件声明实现的系统开放接口（如 voice.stt / voice.tts） */
+  /** 扩展声明实现的系统开放接口（如 voice.stt / voice.tts） */
   systemInterfaces?: { id: string; version: number }[]
-  /** 内置插件标记（代码注册——显示「内置」、不可卸载） */
+  /** 内置扩展标记（代码注册——显示「内置」、不可卸载） */
   builtin?: boolean
   permissions?: string[]
   description?: string
@@ -801,19 +801,19 @@ export interface PluginManifest {
   /** 发布者（发布渠道标识） */
   publisher?: string
   assetDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
-  /** 旧字段别名（modelDeps——兼容早期插件） */
+  /** 旧字段别名（modelDeps——兼容早期扩展） */
   modelDeps?: { name: string; dest: string; sizeMB: number; url: string }[]
 }
 
 export interface VoiceProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number
   ready?: boolean
 }
 
-export interface PluginStatus {
+export interface ProviderStatus {
   loaded: boolean
   /** 持久化的启用意图（config.json.enabled） */
   enabled: boolean
@@ -824,17 +824,17 @@ export interface PluginStatus {
   detail?: string
 }
 
-/** 自检单项（插件契约 v1 强制 check() 的返回结构） */
-export interface PluginCheckItem {
+/** 自检单项（扩展契约 v1 强制 check() 的返回结构） */
+export interface ProviderCheckItem {
   name: string
   ok: boolean
   hint?: string
   action?: 'download-models' | 'open-config'
 }
 
-export interface PluginCheckResult {
+export interface ProviderCheckResult {
   ok: boolean
-  checks: PluginCheckItem[]
+  checks: ProviderCheckItem[]
 }
 
 /** 启停结果：启用被自检拦截时 ok=false + checks 引导项；成功时含运行时注册状态 */
@@ -843,12 +843,12 @@ export interface ToggleResult {
   enabled: boolean
   /** 运行时实际注册状态（start 成功 → true；停用/自检拦截 → false） */
   started?: boolean
-  checks?: PluginCheckItem[]
+  checks?: ProviderCheckItem[]
 }
 
-export interface PluginInfo {
-  manifest: PluginManifest
-  status: PluginStatus
+export interface ProviderInfo {
+  manifest: ProviderManifest
+  status: ProviderStatus
 }
 
 export type ConfigFieldType = 'string' | 'secret' | 'number' | 'boolean' | 'select' | 'textarea' | 'file'
@@ -880,7 +880,7 @@ export interface WindowApi {
   windowMaximize: () => Promise<void>
   windowClose: () => Promise<void>
   isMaximized: () => Promise<boolean>
-  /** 通用事件监听（返回取消订阅——如 plugin:install-progress） */
+  /** 通用事件监听（返回取消订阅——如 provider:install-progress） */
   onEvent: (channel: string, callback: (data: unknown) => void) => () => void
   /** 专注模式切换（窗口收窄到 375×812——临时突破 minWidth 768） */
   setPhoneMode: () => Promise<boolean>
@@ -1078,7 +1078,7 @@ export interface WindowApi {
 
   webProvider: {
     list: (iface: 'web.search' | 'web.extract') => Promise<WebProviderListVO>
-    set: (payload: { iface: 'web.search' | 'web.extract'; pluginId?: string | null; fallback?: boolean }) => Promise<WebProviderListVO>
+    set: (payload: { iface: 'web.search' | 'web.extract'; providerId?: string | null; fallback?: boolean }) => Promise<WebProviderListVO>
   }
 
   audioToolProvider: {
@@ -1086,11 +1086,11 @@ export interface WindowApi {
     set: (payload: { iface: 'tool.tts' | 'tool.stt'; providerId?: string | null; fallback?: boolean }) => Promise<AudioToolProviderListVO>
   }
 
-  plugins: {
-    list: () => Promise<PluginInfo[]>
+  providers: {
+    list: () => Promise<ProviderInfo[]>
     toggle: (id: string, enabled: boolean) => Promise<ToggleResult>
-    check: (id: string) => Promise<PluginCheckResult>
-    getStatus: (id: string) => Promise<PluginStatus>
+    check: (id: string) => Promise<ProviderCheckResult>
+    getStatus: (id: string) => Promise<ProviderStatus>
     getSchema: (id: string) => Promise<ConfigSchema | null>
     getConfig: (id: string) => Promise<Record<string, unknown>>
     saveConfig: (id: string, patch: Record<string, unknown>) => Promise<boolean>
@@ -1098,27 +1098,27 @@ export interface WindowApi {
     downloadAssets: (id: string, depName?: string) => Promise<{ name: string; ok: boolean; error?: string }[]>
     /** 资源就绪状态（主进程文件检查——不依赖 Worker） */
     assetStatus: (id: string) => Promise<Record<string, boolean>>
-    /** 调用插件注册的 IPC 能力 */
+    /** 调用扩展注册的 IPC 能力 */
     invoke: (id: string, channel: string, payload?: unknown) => Promise<unknown>
     /** 文件选择对话框（配置表单 file 字段） */
     pickFile: (filters?: { name: string; extensions: string[] }[]) => Promise<string | null>
-    /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
-    install: (path: string) => Promise<PluginInfo>
+    /** 安装扩展：路径可为扩展文件夹或 .zip 扩展包（自动检测） */
+    install: (path: string) => Promise<ProviderInfo>
     /** 在线安装（npm 包名——npm pack 下载 → 解压 → 标准安装） */
-    installNpm: (pkg: string, registry?: string) => Promise<PluginInfo>
+    installNpm: (pkg: string, registry?: string) => Promise<ProviderInfo>
     /** 分步安装：开始会话（pkg 或 path——validate——返回 manifest/资源清单） */
     installStart: (payload: { pkg?: string; path?: string; registry?: string }) => Promise<InstallSessionInfo>
     /** 分步安装：执行下一步（copy/deps/assets/register） */
     installStep: (sessionId: string, stage: string, skipAssets?: string[]) => Promise<{ ok: boolean; error?: string; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'> }>
-    /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
+    /** 分步安装：下载 tarball（进度经 provider:install-progress 事件推送） */
     installDownload: (sessionId: string) => Promise<{ ok: boolean; stages: Record<string, 'pending' | 'running' | 'done' | 'failed'>; manifest?: { id: string; name: string; version: string; capabilities: string[] } | null; assetDeps?: { name: string; dest: string; sizeMB: number; optional: boolean }[] }>
-    /** 插件市场列表（npm registry search——生态开放 + 官方标记） */
+    /** 扩展市场列表（npm registry search——生态开放 + 官方标记） */
     marketList: (payload?: { category?: string; search?: string }) => Promise<MarketListResult>
-    /** 插件市场详情（npm 包元数据 + readme） */
-    marketDetail: (name: string) => Promise<MarketPluginDetail>
-    /** 卸载插件（删除插件及下载的模型） */
+    /** 扩展市场详情（npm 包元数据 + readme） */
+    marketDetail: (name: string) => Promise<MarketProviderDetail>
+    /** 卸载扩展（删除扩展及下载的模型） */
     uninstall: (id: string) => Promise<void>
-    /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
+    /** 选择扩展包：zip（文件对话框）或 folder（目录对话框） */
     pickInstallPackage: (kind?: 'zip' | 'folder') => Promise<string | null>
   }
 
@@ -1126,7 +1126,7 @@ export interface WindowApi {
     providers: () => Promise<{ stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] }>
     getConfig: () => Promise<{ sttProvider: string | null; ttsProvider: string | null }>
     setProvider: (patch: { sttProvider?: string | null; ttsProvider?: string | null }) => Promise<{ sttProvider: string | null; ttsProvider: string | null }>
-    providerReady: (pluginId: string) => Promise<boolean>
+    providerReady: (providerId: string) => Promise<boolean>
     /** STT：整段音频（Float32Array 16kHz）转文本 */
     sttTranscribe: (samples: Float32Array) => Promise<{ text: string }>
     /** TTS：文本合成 → audio data URL */

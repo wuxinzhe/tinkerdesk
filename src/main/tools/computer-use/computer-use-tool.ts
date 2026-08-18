@@ -56,7 +56,7 @@ export class ComputerUseTool extends BaseTool {
     super(renderer, 'computer_use')
   }
 
-  /** 可用性：provider 是否配置（插件声明 tool.computer_use 接口）——cua-driver 未安装不拦（执行时报错提示） */
+  /** 可用性：provider 是否配置（扩展声明 tool.computer_use 接口）——cua-driver 未安装不拦（执行时报错提示） */
   check(): boolean | Promise<boolean> {
     return !!this.computerUseProvider && this.computerUseProvider.hasConfiguredProvider()
   }

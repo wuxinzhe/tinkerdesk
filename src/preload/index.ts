@@ -93,7 +93,7 @@ function inv<T>(channel: string, ...args: unknown[]): Promise<T> {
 }
 
 /** 静默 IPC 调用（探测性调用专用——失败只 console 不弹全局 toast——
- *  如插件配置页一次性探测 check/schema/config/status——Worker 挂时
+ *  如扩展配置页一次性探测 check/schema/config/status——Worker 挂时
  *  多个失败是预期——不该弹多次相同错误） */
 function invSilent<T>(channel: string, ...args: unknown[]): Promise<T> {
   const t = Date.now()
@@ -143,12 +143,12 @@ ipcRenderer.on('global-tip', (_event, payload: { type?: 'error' | 'tip'; code?: 
   dispatchGlobalTip(payload.type === 'tip' ? 'tip' : 'error', payload.code ?? 'fatal', payload.message)
 })
 
-// ── 插件事件转发：plugin:event → renderer（插件 emit() 的出口）──
-ipcRenderer.on('plugin:event', (_event, payload: { pluginId: string; event: string; data?: unknown } | null) => {
+// ── 扩展事件转发：provider:event → renderer（扩展 emit() 的出口）──
+ipcRenderer.on('provider:event', (_event, payload: { providerId: string; event: string; data?: unknown } | null) => {
   if (!payload) return
   try {
-    window.dispatchEvent(new CustomEvent('plugin:event', {
-      detail: { pluginId: payload.pluginId, event: payload.event, data: payload.data },
+    window.dispatchEvent(new CustomEvent('provider:event', {
+      detail: { providerId: payload.providerId, event: payload.event, data: payload.data },
     }))
   } catch {
     // 事件转发失败静默（日志已由 main 侧打印）
@@ -179,7 +179,7 @@ const api = {
     checkForUpdates: (manual = false) => inv('update:check', manual),
     installUpdate: () => inv('update:install'),
     getAppVersion: () => inv('app:version'),
-    /** 通用事件监听（返回取消订阅函数——如 plugin:install-progress） */
+    /** 通用事件监听（返回取消订阅函数——如 provider:install-progress） */
     onEvent: (channel: string, callback: (data: unknown) => void) => {
       const handler = (_event: Electron.IpcRendererEvent, data: unknown) => callback(data)
       ipcRenderer.on(channel, handler)
@@ -411,10 +411,10 @@ const api = {
     saveAs: (relPath: string) => inv('media:save-as', { relPath }).then(unwrap),
   },
 
-  // ── Web 工具 provider（WebProviderController——搜索/抓取插件接入）──
+  // ── Web 工具 provider（WebProviderController——搜索/抓取扩展接入）──
   webProvider: {
     list: (iface: 'web.search' | 'web.extract') => inv('web-provider:list', { iface }).then(unwrap),
-    set: (payload: { iface: 'web.search' | 'web.extract'; pluginId?: string | null; fallback?: boolean }) =>
+    set: (payload: { iface: 'web.search' | 'web.extract'; providerId?: string | null; fallback?: boolean }) =>
       inv('web-provider:set', payload).then(unwrap),
   },
 
@@ -425,56 +425,56 @@ const api = {
       inv('audio-tool-provider:set', payload).then(unwrap),
   },
 
-  // ── 插件系统 ──
-  plugins: {
-    list: () => inv('plugin:list').then(unwrap),
-    toggle: (id: string, enabled: boolean) => inv('plugin:toggle', { id, enabled }).then(unwrap),
+  // ── 扩展系统 ──
+  providers: {
+    list: () => inv('provider:list').then(unwrap),
+    toggle: (id: string, enabled: boolean) => inv('provider:toggle', { id, enabled }).then(unwrap),
     // 探测性调用（配置页一次性加载多个——失败是预期——静默不弹全局错误）
-    check: (id: string) => invSilent('plugin:check', { id }).then(unwrap),
-    getStatus: (id: string) => invSilent('plugin:get-status', { id }).then(unwrap),
-    getSchema: (id: string) => invSilent('plugin:get-schema', { id }).then(unwrap),
-    getConfig: (id: string) => invSilent('plugin:get-config', { id }).then(unwrap),
+    check: (id: string) => invSilent('provider:check', { id }).then(unwrap),
+    getStatus: (id: string) => invSilent('provider:get-status', { id }).then(unwrap),
+    getSchema: (id: string) => invSilent('provider:get-schema', { id }).then(unwrap),
+    getConfig: (id: string) => invSilent('provider:get-config', { id }).then(unwrap),
     saveConfig: (id: string, patch: Record<string, unknown>) =>
-      inv('plugin:save-config', { id, patch }).then(unwrap),
+      inv('provider:save-config', { id, patch }).then(unwrap),
     /** 主进程资源下载（不依赖 Worker——配置页下载按钮——depName 指定单个资源） */
-    downloadAssets: (id: string, depName?: string) => inv('plugin:download-assets', { id, depName }).then(unwrap),
+    downloadAssets: (id: string, depName?: string) => inv('provider:download-assets', { id, depName }).then(unwrap),
     /** 资源就绪状态（主进程文件检查——不依赖 Worker） */
-    assetStatus: (id: string) => inv('plugin:asset-status', { id }).then(unwrap),
-    /** 调用插件注册的 IPC 能力（plugin:<id>:<channel>） */
+    assetStatus: (id: string) => inv('provider:asset-status', { id }).then(unwrap),
+    /** 调用扩展注册的 IPC 能力（provider:<id>:<channel>） */
     invoke: (id: string, channel: string, payload?: unknown) =>
-      inv(`plugin:${id}:${channel}`, payload ?? {}).then(unwrap),
+      inv(`provider:${id}:${channel}`, payload ?? {}).then(unwrap),
     /** 文件选择对话框（配置表单 file 字段）——filters 可能是 Vue 响应式 Proxy，先序列化为普通对象 */
     pickFile: (filters?: { name: string; extensions: string[] }[]) =>
-      inv('plugin:pick-file', {
+      inv('provider:pick-file', {
         filters: filters ? JSON.parse(JSON.stringify(filters)) : undefined,
       }).then(unwrap),
-    /** 安装插件：路径可为插件文件夹或 .zip 插件包（自动检测） */
-    install: (path: string) => inv('plugin:install', { path }).then(unwrap),
+    /** 安装扩展：路径可为扩展文件夹或 .zip 扩展包（自动检测） */
+    install: (path: string) => inv('provider:install', { path }).then(unwrap),
     /** 在线安装（npm 包名） */
-    installNpm: (pkg: string, registry?: string) => inv('plugin:install-npm', { pkg, registry }).then(unwrap),
+    installNpm: (pkg: string, registry?: string) => inv('provider:install-npm', { pkg, registry }).then(unwrap),
     /** 分步安装：开始会话（pkg 或 path——validate——返回 manifest/资源清单） */
-    installStart: (payload: { pkg?: string; path?: string; registry?: string }) => inv('plugin:install-start', payload ?? {}).then(unwrap),
+    installStart: (payload: { pkg?: string; path?: string; registry?: string }) => inv('provider:install-start', payload ?? {}).then(unwrap),
     /** 分步安装：执行下一步（copy/deps/assets/register） */
-    installStep: (sessionId: string, stage: string, skipAssets?: string[]) => inv('plugin:install-step', { sessionId, stage, skipAssets }).then(unwrap),
-    /** 分步安装：下载 tarball（进度经 plugin:install-progress 事件推送） */
-    installDownload: (sessionId: string) => inv('plugin:install-download', { sessionId }).then(unwrap),
-    /** 插件市场列表（npm registry search——分类/搜索词真实查询） */
-    marketList: (payload?: { category?: string; search?: string }) => inv('plugin:market-list', payload ?? {}).then(unwrap),
-    /** 插件市场详情（npm 包元数据 + readme） */
-    marketDetail: (name: string) => inv('plugin:market-detail', { name }).then(unwrap),
-    /** 卸载插件（删除插件及下载的模型） */
-    uninstall: (id: string) => inv('plugin:uninstall', { id }).then(unwrap),
-    /** 选择插件包：zip（文件对话框）或 folder（目录对话框） */
-    pickInstallPackage: (kind?: 'zip' | 'folder') => inv('plugin:pick-install-package', { kind }).then(unwrap),
+    installStep: (sessionId: string, stage: string, skipAssets?: string[]) => inv('provider:install-step', { sessionId, stage, skipAssets }).then(unwrap),
+    /** 分步安装：下载 tarball（进度经 provider:install-progress 事件推送） */
+    installDownload: (sessionId: string) => inv('provider:install-download', { sessionId }).then(unwrap),
+    /** 扩展市场列表（npm registry search——分类/搜索词真实查询） */
+    marketList: (payload?: { category?: string; search?: string }) => inv('provider:market-list', payload ?? {}).then(unwrap),
+    /** 扩展市场详情（npm 包元数据 + readme） */
+    marketDetail: (name: string) => inv('provider:market-detail', { name }).then(unwrap),
+    /** 卸载扩展（删除扩展及下载的模型） */
+    uninstall: (id: string) => inv('provider:uninstall', { id }).then(unwrap),
+    /** 选择扩展包：zip（文件对话框）或 folder（目录对话框） */
+    pickInstallPackage: (kind?: 'zip' | 'folder') => inv('provider:pick-install-package', { kind }).then(unwrap),
   },
 
-  // ── 语音服务（系统固定接口，转发当前插件 provider） ──
+  // ── 语音服务（系统固定接口，转发当前扩展 provider） ──
   voice: {
     providers: () => inv('voice:providers').then(unwrap),
     getConfig: () => inv('voice:get-config').then(unwrap),
     setProvider: (patch: { sttProvider?: string | null; ttsProvider?: string | null }) =>
       inv('voice:set-provider', patch).then(unwrap),
-    providerReady: (pluginId: string) => inv('voice:provider-ready', { pluginId }).then(unwrap),
+    providerReady: (providerId: string) => inv('voice:provider-ready', { providerId }).then(unwrap),
     /** STT：录音（应用固有）后整段转文本 */
     sttTranscribe: (samples: Float32Array) =>
       inv('voice:stt:transcribe', { samples }).then(unwrap),

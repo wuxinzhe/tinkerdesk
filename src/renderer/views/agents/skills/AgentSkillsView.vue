@@ -31,7 +31,7 @@
       </div>
       <span class="skill-manage__count">共 {{ skillsTotal }} 个技能</span>
 
-      <!-- 页头动作：安装组合按钮（参考插件设置——大按钮=技能市场 + 箭头=本地安装） -->
+      <!-- 页头动作：安装组合按钮（参考扩展设置——大按钮=技能市场 + 箭头=本地安装） -->
       <div class="skill-install-group skill-install-group--header">
         <button class="skill-install-group__main" title="技能市场" @click="goMarket">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -591,7 +591,7 @@ onUnmounted(() => {
   gap: 0;
 }
 
-/* 页头位置（筛选行右侧靠右——参考插件设置按钮位置） */
+/* 页头位置（筛选行右侧靠右——参考扩展设置按钮位置） */
 .skill-install-group--header {
   margin-left: auto;
 }

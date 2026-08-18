@@ -48,7 +48,7 @@ import { SummaryOperation } from './core/llm/operations/summary-operation'
 import { TitleOperation } from './core/llm/operations/title-operation'
 import { VisionOperation } from './core/llm/operations/vision-operation'
 import { AgentModeRegistry } from './core/mode/agent-mode-registry'
-import { PluginManager } from './core/plugin/plugin-manager'
+import { ProviderManager } from './core/provider/provider-manager'
 import type { McpToolCenter } from './core/tool'
 import { getMcpToolCenter, ToolManager } from './core/tool'
 import { ToolCenter } from './core/tool/tool-center'
@@ -67,8 +67,8 @@ import { AccountService } from './service/account-service'
 import { AgentConfigService } from './service/agent-config-service'
 import { WebProvider } from './service/web-provider'
 import { AudioToolProvider } from './service/audio-tool-provider'
-import { EDGE_TTS_MANIFEST, edgeTtsPlugin } from './providers/tts/edge'
-import { CUA_DRIVER_MANIFEST, cuaDriverPlugin } from './providers/computer-use/cua-driver'
+import { EDGE_TTS_MANIFEST, edgeTtsProvider } from './providers/tts/edge'
+import { CUA_DRIVER_MANIFEST, cuaDriverProvider } from './providers/computer-use/cua-driver'
 import { ComputerUseProvider } from './service/computer-use-provider'
 import { UserDisabledToolService } from './service/user-disabled-tool-service'
 import { AgentToolService } from './service/agent-tool-service'
@@ -138,17 +138,17 @@ import {
   WriteFileTool,
 } from './tools/desktop'
 import {
-  PLUGIN_CONFIGURE_TOOL_NAME,
-  PLUGIN_ENABLE_TOOL_NAME,
-  PLUGIN_INSTALL_TOOL_NAME,
-  PLUGIN_LIST_TOOL_NAME,
-  PLUGIN_UNINSTALL_TOOL_NAME,
-  PluginConfigureTool,
-  PluginEnableTool,
-  PluginInstallTool,
-  PluginListTool,
-  PluginUninstallTool,
-} from './tools/plugin-tools'
+  PROVIDER_CONFIGURE_TOOL_NAME,
+  PROVIDER_ENABLE_TOOL_NAME,
+  PROVIDER_INSTALL_TOOL_NAME,
+  PROVIDER_LIST_TOOL_NAME,
+  PROVIDER_UNINSTALL_TOOL_NAME,
+  ProviderConfigureTool,
+  ProviderEnableTool,
+  ProviderInstallTool,
+  ProviderListTool,
+  ProviderUninstallTool,
+} from './tools/provider-tools'
 
 import type { TinkerAgentOptions } from './core/loop/types'
 import { TOOL_TYPE_DESKTOP } from './core/tool/types'
@@ -173,7 +173,7 @@ export interface TinkerDesk {
   toolCenter: ToolCenter
   /** 工具授权服务（DB agent_tools——授权/回收/装配 toolNameSet） */
   agentToolService: AgentToolService
-  pluginManager: PluginManager
+  providerManager: ProviderManager
   llmRouter: LlmRouter
   modelConfigService: ModelConfigService
   // ── controller 层依赖 ──
@@ -296,14 +296,14 @@ export function bootstrap(
   // 桌面控制工具（cua-driver——后台桌面自动化；check() 在 cua-driver 未安装时自动不入池）→ desktop 组（与 terminal 一致）
   // 注册在 desktopTools（见下方）——工具名 desktop_tinker_computer_use
   // ── Desktop 工具（客户端工具，与内建隔离在 tools/desktop/） ──
-  // ── 插件管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
-  const pluginManager = new PluginManager()
-  // 内置插件（代码注册——出现在插件列表、可配置，不可卸载）
-  pluginManager.registerBuiltinPlugin({ manifest: EDGE_TTS_MANIFEST, plugin: edgeTtsPlugin })
-  pluginManager.registerBuiltinPlugin({ manifest: CUA_DRIVER_MANIFEST, plugin: cuaDriverPlugin })
-  const webProvider = new WebProvider(pluginManager)
-  const audioToolProvider = new AudioToolProvider(pluginManager)
-  const computerUseProvider = new ComputerUseProvider(pluginManager)
+  // ── 扩展管理（提前创建：desktopTools 的 web/audio 工具需要 provider 服务） ──
+  const providerManager = new ProviderManager()
+  // 内置扩展（代码注册——出现在扩展列表、可配置，不可卸载）
+  providerManager.registerBuiltinProvider({ manifest: EDGE_TTS_MANIFEST, provider: edgeTtsProvider })
+  providerManager.registerBuiltinProvider({ manifest: CUA_DRIVER_MANIFEST, provider: cuaDriverProvider })
+  const webProvider = new WebProvider(providerManager)
+  const audioToolProvider = new AudioToolProvider(providerManager)
+  const computerUseProvider = new ComputerUseProvider(providerManager)
   // 模型配置解析服务（custom_models + providers → ModelConfig[]）——vision provider 依赖（场景模型解析）
   const modelConfigService = new ModelConfigService(CustomModelRepository, ProviderRepository, new UserSceneModelRepository())
   const visionProvider = new VisionProvider(llmRouter, modelConfigService)
@@ -327,18 +327,18 @@ export function bootstrap(
     { meta: { name: COMPUTER_USE_TOOL_NAME, emoji: '🖥️', toolType: TOOL_TYPE_DESKTOP }, tool: new ComputerUseTool(renderer, computerUseProvider) },
     { meta: { name: VISION_RECOGNIZE_TOOL_NAME, emoji: '👁️', toolType: TOOL_TYPE_DESKTOP }, tool: new VisionRecognizeTool(renderer, visionProvider) },
   ]
-  // ── 插件管理工具（Agent 可操作插件生命周期；依赖 PluginManager） ──
-  const pluginTools: AgentToolRegistration[] = [
-    { meta: { name: PLUGIN_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new PluginInstallTool(renderer, pluginManager) },
-    { meta: { name: PLUGIN_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new PluginConfigureTool(renderer, pluginManager) },
-    { meta: { name: PLUGIN_ENABLE_TOOL_NAME, emoji: '✅' }, tool: new PluginEnableTool(renderer, pluginManager) },
-    { meta: { name: PLUGIN_LIST_TOOL_NAME, emoji: '📦' }, tool: new PluginListTool(renderer, pluginManager) },
-    { meta: { name: PLUGIN_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new PluginUninstallTool(renderer, pluginManager) },
+  // ── 扩展管理工具（Agent 可操作扩展生命周期；依赖 ProviderManager） ──
+  const providerTools: AgentToolRegistration[] = [
+    { meta: { name: PROVIDER_INSTALL_TOOL_NAME, emoji: '🧩' }, tool: new ProviderInstallTool(renderer, providerManager) },
+    { meta: { name: PROVIDER_CONFIGURE_TOOL_NAME, emoji: '⚙️' }, tool: new ProviderConfigureTool(renderer, providerManager) },
+    { meta: { name: PROVIDER_ENABLE_TOOL_NAME, emoji: '✅' }, tool: new ProviderEnableTool(renderer, providerManager) },
+    { meta: { name: PROVIDER_LIST_TOOL_NAME, emoji: '📦' }, tool: new ProviderListTool(renderer, providerManager) },
+    { meta: { name: PROVIDER_UNINSTALL_TOOL_NAME, emoji: '🗑️' }, tool: new ProviderUninstallTool(renderer, providerManager) },
   ]
 
-  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...pluginTools, ...toolRegistrations])
-  // 工具中心：外置工具包安装/加载/注册（独立于 provider 插件）
-  const toolCenter = new ToolCenter({ toolManager })
+  const toolManager = new ToolManager([...builtinTools, ...desktopTools, ...providerTools, ...toolRegistrations])
+  // 工具中心：外置工具包安装/加载/注册（独立于 provider 扩展——复用分步安装器）
+  const toolCenter = new ToolCenter({ toolManager, installer: providerManager.getInstaller() })
   toolCenter.loadAll()
   // 工具禁用黑名单持久化（user_disabled_tools 表——PK(profile, tool_name)）
   const userDisabledToolService = new UserDisabledToolService(new UserDisabledToolRepository())
@@ -352,7 +352,7 @@ export function bootstrap(
   void mcpCenter.restoreFromDb()
 
   // ── 模型配置解析服务（custom_models + providers → ModelConfig[]） ──
-  // （已提前到 pluginManager 区——vision provider 依赖场景模型解析）
+  // （已提前到 providerManager 区——vision provider 依赖场景模型解析）
 
   // ── 安全门检服务（TinkerAgent 工具门检用，需在 TinkerAgent 之前组装） ──
   const sandboxWhitelistService = new SandboxWhitelistService(new UserUrlWhitelistRepository(), new UserPathWhitelistRepository())
@@ -407,7 +407,7 @@ export function bootstrap(
     toolManager,
     toolCenter,
     agentToolService,
-    pluginManager,
+    providerManager,
     llmRouter,
     modelConfigService,
     privateSkillService,

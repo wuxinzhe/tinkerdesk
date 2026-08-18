@@ -1,26 +1,26 @@
 /**
- * plugin-host.ts — 插件 Worker 宿主（Worker 线程生命周期 + 通信桥）
+ * provider-host.ts — 扩展 Worker 宿主（Worker 线程生命周期 + 通信桥）
  *
- * 职责：外部插件的 Worker 线程管理——spawn/terminate——消息代理
- * （api/ctx 代理——调用转发 Worker——隔离执行）——与 PluginManager 解耦：
+ * 职责：外部扩展的 Worker 线程管理——spawn/terminate——消息代理
+ * （api/ctx 代理——调用转发 Worker——隔离执行）——与 ProviderManager 解耦：
  * 所有 manager 域回调（通道注册/事件转发/ready 处理）经 hooks 注入。
  */
 import { renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { Worker } from 'worker_threads'
-import type { ConfigSchema, PluginApi, PluginCheckResult, PluginContext, PluginHostHooks, PluginRecord, PluginStatus } from './types'
+import type { ProviderApi, ProviderCheckResult, ProviderContext, ProviderHostHooks, ProviderRecord, ProviderStatus } from './types'
 
-/** 插件 Worker 宿主：Worker 生命周期 + 消息代理（每个 manager 一个实例） */
-export class PluginHost {
+/** 扩展 Worker 宿主：Worker 生命周期 + 消息代理（每个 manager 一个实例） */
+export class ProviderHost {
   private readonly workerCalls = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
   private workerCallSeq = 0
 
-  constructor(private readonly hooks: PluginHostHooks) { }
+  constructor(private readonly hooks: ProviderHostHooks) { }
 
-  /** 启动插件 Worker（后台加载——ready 经 hooks.onReady 通知——main 事件循环零阻塞） */
-  spawnWorker(record: PluginRecord, dir: string, configFile: string, config: Record<string, unknown>): void {
-    const worker = new Worker(join(__dirname, 'plugin-host-worker.js'), {
-      workerData: { pluginDir: dir, entry: record.manifest.entry, manifest: record.manifest, configFile },
+  /** 启动扩展 Worker（后台加载——ready 经 hooks.onReady 通知——main 事件循环零阻塞） */
+  spawnWorker(record: ProviderRecord, dir: string, configFile: string, config: Record<string, unknown>): void {
+    const worker = new Worker(join(__dirname, 'provider-host-worker.js'), {
+      workerData: { providerDir: dir, entry: record.manifest.entry, manifest: record.manifest, configFile },
     })
     record.worker = worker
 
@@ -38,7 +38,7 @@ export class PluginHost {
         if (!call) return
         this.workerCalls.delete(msg.callId ?? -1)
         if (msg.ok) call.resolve(msg.data)
-        else call.reject(new Error(msg.error ?? '插件调用失败'))
+        else call.reject(new Error(msg.error ?? '扩展调用失败'))
         return
       }
       if (msg.type === 'emit') {
@@ -46,14 +46,14 @@ export class PluginHost {
         return
       }
       if (msg.type === 'fatal') {
-        this.hooks.onFatal(record, msg.error ?? '插件 Worker 异常')
+        this.hooks.onFatal(record, msg.error ?? '扩展 Worker 异常')
         return
       }
     })
 
     worker.on('error', (err) => {
       record.error = err.message
-      console.error(`[plugin] ${record.manifest.id} Worker 异常:`, err.message)
+      console.error(`[provider] ${record.manifest.id} Worker 异常:`, err.message)
     })
 
     worker.on('exit', (code) => {
@@ -63,15 +63,15 @@ export class PluginHost {
         for (const [id, call] of this.workerCalls) {
           if ((call as unknown as { worker?: Worker }).worker === worker) {
             this.workerCalls.delete(id)
-            call.reject(new Error(`插件 ${record.manifest.id} Worker 已退出 (code=${code})`))
+            call.reject(new Error(`扩展 ${record.manifest.id} Worker 已退出 (code=${code})`))
           }
         }
       }
     })
   }
 
-  /** 终止 Worker（先 terminate——再清理该插件的挂起调用） */
-  terminateWorker(record: PluginRecord): void {
+  /** 终止 Worker（先 terminate——再清理该扩展的挂起调用） */
+  terminateWorker(record: ProviderRecord): void {
     if (record.worker) {
       try {
         record.worker.terminate()
@@ -81,17 +81,17 @@ export class PluginHost {
       record.worker = null
     }
     for (const [id, call] of this.workerCalls) {
-      if ((call as unknown as { pluginId?: string }).pluginId === record.manifest.id) {
+      if ((call as unknown as { providerId?: string }).providerId === record.manifest.id) {
         this.workerCalls.delete(id)
-        call.reject(new Error(`插件 ${record.manifest.id} 已终止`))
+        call.reject(new Error(`扩展 ${record.manifest.id} 已终止`))
       }
     }
   }
 
   /** 调用 Worker 执行（invoke handler / call 生命周期方法）——消息代理 + Promise */
-  invokeWorker(record: PluginRecord, type: 'invoke' | 'call', body: Record<string, unknown>): Promise<unknown> {
+  invokeWorker(record: ProviderRecord, type: 'invoke' | 'call', body: Record<string, unknown>): Promise<unknown> {
     const worker = record.worker
-    if (!worker) return Promise.reject(new Error(`插件 ${record.manifest.id} Worker 不可用`))
+    if (!worker) return Promise.reject(new Error(`扩展 ${record.manifest.id} Worker 不可用`))
     const callId = ++this.workerCallSeq
     return new Promise((resolve, reject) => {
       this.workerCalls.set(callId, { resolve, reject })
@@ -100,29 +100,29 @@ export class PluginHost {
     })
   }
 
-  /** Worker 插件的 api 代理（方法调用 → Worker 执行——现有代码 record.api.check() 等零改动） */
-  private createWorkerApiProxy(record: PluginRecord): PluginApi {
+  /** Worker 扩展的 api 代理（方法调用 → Worker 执行——现有代码 record.api.check() 等零改动） */
+  private createWorkerApiProxy(record: ProviderRecord): ProviderApi {
     const call = (method: string): Promise<unknown> => this.invokeWorker(record, 'call', { method })
     return {
       // check 契约是同步返回——代理异步（调用方 await 场景安全；类型上兼容）
-      check: (() => call('check')) as unknown as () => PluginCheckResult,
+      check: (() => call('check')) as unknown as () => ProviderCheckResult,
       start: () => call('start') as Promise<void>,
       stop: () => call('stop') as Promise<void>,
       dispose: () => call('dispose') as Promise<void>,
-      getStatus: () => call('getStatus') as Promise<PluginStatus>,
+      getStatus: () => call('getStatus') as Promise<ProviderStatus>,
     }
   }
 
-  /** Worker 插件的 ctx 代理（读写转发 Worker——与 main 直跑版接口一致） */
-  private createWorkerCtxProxy(record: PluginRecord, _dir: string, config: Record<string, unknown>): PluginContext {
+  /** Worker 扩展的 ctx 代理（读写转发 Worker——与 main 直跑版接口一致） */
+  private createWorkerCtxProxy(record: ProviderRecord, _dir: string, config: Record<string, unknown>): ProviderContext {
     const self = this
     return {
-      pluginId: record.manifest.id,
+      providerId: record.manifest.id,
       configDir: _dir,
       getManifest: () => record.manifest,
       emit: (event, data) => self.hooks.onEmit(record.manifest.id, event, data),
       registerIpc: (channel, handler) => {
-        // Worker 侧由插件自身 registerIpc——代理侧不需要（invoke 直发 Worker）
+        // Worker 侧由扩展自身 registerIpc——代理侧不需要（invoke 直发 Worker）
         void channel
         void handler
       },
@@ -137,7 +137,7 @@ export class PluginHost {
           writeFileSync(tmp, JSON.stringify(current, null, 2), 'utf-8')
           renameSync(tmp, file)
         } catch (e) {
-          console.error(`[plugin] ${record.manifest.id} setConfig 失败:`, (e as Error).message)
+          console.error(`[provider] ${record.manifest.id} setConfig 失败:`, (e as Error).message)
         }
       },
     }

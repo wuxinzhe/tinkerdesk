@@ -9,7 +9,7 @@
       desc="管理通过 MCP 协议接入的第三方工具"
     />
 
-    <!-- 页头动作：添加 MCP 服务器（参考插件设置按钮位置——页头右侧） -->
+    <!-- 页头动作：添加 MCP 服务器（参考扩展设置按钮位置——页头右侧） -->
     <div class="mcp-settings-page__header">
       <button class="page-action-btn" title="添加 MCP 服务器" @click="router.push('/workspace/settings/mcp/create')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -119,7 +119,7 @@ onMounted(load)
   margin: 12px 0 4px;
 }
 
-/* 页头动作按钮（参考插件设置安装按钮——accent 风格） */
+/* 页头动作按钮（参考扩展设置安装按钮——accent 风格） */
 .page-action-btn {
   display: inline-flex;
   align-items: center;

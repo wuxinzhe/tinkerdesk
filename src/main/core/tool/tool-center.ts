@@ -1,21 +1,22 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { execFileAsync } from '../../utils/process-utils'
-import { resolveNpmCli, tarBin, locateManifestDir } from '../../utils/plugin-installer-utils'
-import { getPackageTarball } from '../../repository/npm-registry-repository'
+import type { Installer } from '../provider/installer'
 import type { ToolManager } from './tool-manager'
 import type { ToolSchema } from './tool-schema'
+import type { ICenter } from '../center/types'
 
 /**
  * ToolCenter —— 工具中心
  *
  * 管客户端外置工具包（tinkerdesk-tool-*）的 安装 / 加载 / 注册 / 卸载 / 可用性检查。
  * 与 ToolManager 分工：ToolCenter 管"装了什么工具"（生命周期），ToolManager 管"谁能用/怎么调"（授权/查询/执行）。
- * 安装链路复用 plugin-installer 的 npm 下载/解压/校验（与 provider 插件同一套基建）。
+ * 安装链路复用 installer 的 npm 下载/解压/校验（与 provider 扩展同一套基建）。
  */
 export interface ToolCenterDeps {
   toolManager: ToolManager
+  /** 分步安装器（与 provider 扩展共用——工具/扩展/app 走分步安装链路） */
+  installer: Installer
 }
 
 interface ToolPackageManifest {
@@ -24,15 +25,18 @@ interface ToolPackageManifest {
   apiVersion?: number
   kind?: string
   tool?: { name?: string; displayName?: string; description?: string; categories?: string[] }
+  assetDeps?: Array<{ name: string; dest: string; optional?: boolean; sizeMB?: number }>
 }
 
-export class ToolCenter {
+export class ToolCenter implements ICenter {
   private readonly toolManager: ToolManager
-  /** 外置工具安装目录（独立于 provider 插件 plugins/） */
+  private readonly installer: Installer
+  /** 外置工具安装目录（独立于 provider 扩展 plugins/） */
   readonly toolsDir: string
 
   constructor(deps: ToolCenterDeps) {
     this.toolManager = deps.toolManager
+    this.installer = deps.installer
     this.toolsDir = join(app.getPath('userData'), 'tools')
     mkdirSync(this.toolsDir, { recursive: true })
   }
@@ -62,7 +66,7 @@ export class ToolCenter {
     const toolName = mod.schema.name ?? manifest.tool?.name ?? manifest.id
     if (!toolName) throw new Error(`工具包 ${manifest.id} 未声明工具名`)
 
-    // 包装成 IAgentTool：schema 静态 + execute 转发插件契约（{ok, output?, error?} → ToolResult）
+    // 包装成 IAgentTool：schema 静态 + execute 转发扩展契约（{ok, output?, error?} → ToolResult）
     const tool: import('./types').IAgentTool = {
       getSchema: () => mod.schema as ToolSchema,
       async execute(ctx) {
@@ -98,45 +102,30 @@ export class ToolCenter {
   }
 
   /**
-   * 从 npm 安装工具包（复用 plugin-installer 的 npm 下载/解压链路）
-   * 返回工具包 id（安装完成后目录名 = manifest.id）
-   */
-  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<{ id: string }> {
-    const registry = opts?.registry
-    // 1. 拿 tarball（npm registry——镜像回退在 getPackageTarball 内）
-    const { url } = await getPackageTarball(pkgName)
-    // 2. 下载到临时目录
-    const tmpDir = join(app.getPath('temp'), `tk-tool-${Date.now()}`)
-    mkdirSync(tmpDir, { recursive: true })
-    const tgz = join(tmpDir, 'pkg.tgz')
-    const packArgs = ['pack', pkgName, '--pack-destination', tmpDir]
-    if (registry) packArgs.push('--registry', registry)
-    await (execFileAsync as (cmd: string, args: string[]) => Promise<{ stdout: string; stderr: string }>)(resolveNpmCli(), packArgs)
-    // 若 npm pack 未产出（某些 registry），回退直接下载 tarball
-    if (!existsSync(tgz) && url) {
-      const { downloadFile } = await import('../../utils/process-utils')
-      await downloadFile(url, tgz)
+     * 从 npm 安装工具包（复用分步安装器：validate → 下载解压 → copy/deps/assets + center 自己注册）
+     * 返回工具包 id（安装完成后目录名 = manifest.id）
+     */
+    async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<{ id: string }> {
+      const session = await this.installer.startNpm(pkgName, opts)
+      await this.installer.downloadSession(session.sessionId)
+      for (const stage of ['copy', 'deps'] as const) {
+        const r = await this.installer.step(session.sessionId, stage)
+        if (!r.ok) throw new Error(r.error)
+      }
+      // 资源可选（工具包 assetDeps——按 manifest 声明）
+      const manifest = session.manifest as ToolPackageManifest | null
+      if (manifest?.assetDeps?.length) {
+        const r = await this.installer.step(session.sessionId, 'assets')
+        if (!r.ok) throw new Error(r.error)
+      }
+      // 不调 register 分步（那是 provider 专属）——center 自己从 toolsDir 加载注册
+      const id = manifest?.id
+      if (!id) throw new Error(`${pkgName} 未返回有效 manifest id`)
+      const destDir = join(this.toolsDir, id)
+      this.load(destDir)
+      this.installer.cleanupSession(session.sessionId)
+      return { id }
     }
-    // 3. 解压 + 定位 manifest 目录
-    const extracted = join(tmpDir, 'pkg')
-    mkdirSync(extracted, { recursive: true })
-    await execFileAsync(tarBin(), ['-xf', tgz, '-C', extracted])
-    const located = locateManifestDir(extracted)
-    if (!located) throw new Error(`${pkgName} 解压后未找到 manifest.json`)
-    // 4. 校验 kind:tool + 复制到 toolsDir
-    const manifest = JSON.parse(readFileSync(join(located, 'manifest.json'), 'utf-8')) as ToolPackageManifest
-    if (manifest.kind !== 'tool') throw new Error(`${pkgName} 不是工具包（kind 非 tool）`)
-    if (!manifest.id) throw new Error(`${pkgName} manifest 缺少 id`)
-    const destDir = join(this.toolsDir, manifest.id)
-    if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true })
-    const { cpSync } = await import('fs')
-    cpSync(located, destDir, { recursive: true })
-    // 5. 清理临时目录
-    rmSync(tmpDir, { recursive: true, force: true })
-    // 6. 加载注册
-    this.load(destDir)
-    return { id: manifest.id }
-  }
 
   /** 卸载：ToolManager 反注册 + 移除目录 */
   uninstall(id: string): void {

@@ -176,9 +176,9 @@ const l3ToolbarTitle = computed(() => {
   if (inConversationDetail.value) return '对话详情'
 
   if (activeTab.value === 'settings') {
-    if (route.path.includes('/settings/plugins/install')) return '安装插件'
-    if (route.path.includes('/settings/plugins-market/')) return '插件详情'
-    if (route.path.includes('/settings/plugins-market')) return '插件市场'
+    if (route.path.includes('/settings/providers/install')) return '安装扩展'
+    if (route.path.includes('/settings/providers-market/')) return '扩展详情'
+    if (route.path.includes('/settings/providers-market')) return '扩展市场'
     if (route.path.includes('/settings/model/create')) return '添加模型'
     if (route.path.includes('/settings/model/') && route.path.endsWith('/edit')) return '编辑模型'
     if (route.path.includes('/settings/mcp/create')) return '添加 MCP 服务器'
@@ -186,11 +186,11 @@ const l3ToolbarTitle = computed(() => {
     const section = route.params.section as string
     if (section === 'model') return '模型设置'
     if (section === 'mcp') return 'MCP 工具'
-    if (section === 'plugins') return '插件设置'
+    if (section === 'providers') return '扩展设置'
     if (section === 'voice') return '语音设置'
     if (section === 'general') return '通用设置'
-    // 插件配置页（/settings/plugins/:pluginId）
-    if (route.path.includes('/settings/plugins/')) return '插件配置'
+    // 扩展配置页（/settings/providers/:providerId）
+    if (route.path.includes('/settings/providers/')) return '扩展配置'
     return '系统设置'
   }
 
@@ -230,7 +230,7 @@ const l3ToolbarTitle = computed(() => {
 const sessionTitle = computed(() => sessionStore.currentSession?.title ?? '')
 
 const SECTION_TITLES: Record<string, string> = {
-  model: '模型设置', mcp: 'MCP 工具', plugins: '插件设置', voice: '语音设置', general: '通用设置',
+  model: '模型设置', mcp: 'MCP 工具', providers: '扩展设置', voice: '语音设置', general: '通用设置',
 }
 const AGENT_SUB_TITLES: Record<string, string> = {
   skills: '技能管理', tools: '工具配置',
@@ -369,9 +369,9 @@ const settingsItems: SettingsItem[] = [
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
   },
   {
-    key: 'plugins',
-    label: '插件设置',
-    desc: '管理客户端插件和扩展能力',
+    key: 'providers',
+    label: '扩展设置',
+    desc: '管理客户端扩展和扩展能力',
     icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.32 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
   },
   {

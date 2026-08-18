@@ -4,7 +4,7 @@
  *
  * 用法（命令式，无需模板内引用）：
  *   import { confirm } from '@/renderer/api/confirm'
- *   const ok = await confirm({ title: '卸载插件？', message: '…', confirmText: '卸载', destructive: true })
+ *   const ok = await confirm({ title: '卸载扩展？', message: '…', confirmText: '卸载', destructive: true })
  *   if (ok) { … }
  *
  * 机制：confirm() dispatch window 'global-confirm' 事件（带 resolve 回调）；

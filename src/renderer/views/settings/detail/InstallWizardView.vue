@@ -5,7 +5,7 @@
       <SaPageHero
         icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4&quot; /><polyline points=&quot;7 10 12 15 17 10&quot; /><line x1=&quot;12&quot; y1=&quot;15&quot; x2=&quot;12&quot; y2=&quot;3&quot; /></svg>"
         gradient="linear-gradient(135deg, #34c759 0%, #28a745 100%)"
-        title="安装插件"
+        title="安装扩展"
         desc="分步安装——下载、确认、安装、完成"
       />
 
@@ -84,14 +84,14 @@
                       <span v-for="c in session.manifest.capabilities" :key="c" class="iw-confirm__cap">{{ c }}</span>
                     </div>
                   </div>
-                  <p class="iw-confirm__note">安装后插件将以完全权限运行（可读写文件、执行命令、访问网络）。仅安装你信任的来源。</p>
+                  <p class="iw-confirm__note">安装后扩展将以完全权限运行（可读写文件、执行命令、访问网络）。仅安装你信任的来源。</p>
                 </div>
                 <div v-else class="iw-state is-error">{{ startError }}</div>
               </div>
 
               <!-- 资源勾选 -->
               <div v-else-if="(isNpm && currentStep === 2) || (!isNpm && currentStep === 1)">
-                <div v-if="!session?.assetDeps?.length" class="iw-state">该插件无需下载额外资源</div>
+                <div v-if="!session?.assetDeps?.length" class="iw-state">该扩展无需下载额外资源</div>
                 <div v-else class="iw-assets">
                   <label v-for="dep in session?.assetDeps ?? []" :key="dep.name" class="iw-asset">
                     <input v-model="selectedAssets" type="checkbox" :value="dep.name" :disabled="!dep.optional" class="iw-asset__input" />
@@ -146,7 +146,7 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                 </div>
                 <div class="iw-done__text">安装完成</div>
-                <p class="iw-done__sub">插件已注册，可在插件设置中查看</p>
+                <p class="iw-done__sub">扩展已注册，可在扩展设置中查看</p>
               </div>
             </div>
           </transition>
@@ -188,7 +188,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { InstallSessionInfo } from '@/renderer/api/types'
 import { SaActionBtn, L3PageLayout, SaPageHero } from '@/renderer/components'
-import { pluginsApi } from '@/renderer/api/plugins-api'
+import { providersApi } from '@/renderer/api/providers-api'
 
 const route = useRoute()
 const router = useRouter()
@@ -274,7 +274,7 @@ async function start() {
   loading.value = true
   startError.value = ''
   try {
-    session.value = await pluginsApi.installStart({
+    session.value = await providersApi.installStart({
       pkg: pkg.value || undefined,
       path: path.value || undefined,
     })
@@ -305,7 +305,7 @@ async function doDownload() {
   downloadPercent.value = 0
   downloadReceived.value = 0
   downloadTotal.value = 0
-  const unsubscribe = window.api.onEvent('plugin:install-progress', (data) => {
+  const unsubscribe = window.api.onEvent('provider:install-progress', (data) => {
     const d = data as { sessionId: string; received: number; total: number }
     if (d.sessionId !== session.value?.sessionId) return
     downloadReceived.value = d.received
@@ -313,7 +313,7 @@ async function doDownload() {
     downloadPercent.value = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
   })
   try {
-    const r = await pluginsApi.installDownload(session.value.sessionId)
+    const r = await providersApi.installDownload(session.value.sessionId)
     if (r.manifest) {
       session.value = { ...session.value!, manifest: r.manifest, assetDeps: r.assetDeps ?? [], stages: r.stages }
     }
@@ -336,8 +336,8 @@ async function startInstall() {
   installFailed.value = false
   stageError.value = ''
   assetsProgress.value = { active: false, name: '', percent: 0 }
-  // 监听资源下载进度（assets 阶段——plugin:assets-progress——sessionId 匹配）
-  const offAssets = window.api.onEvent('plugin:assets-progress', (data) => {
+  // 监听资源下载进度（assets 阶段——provider:assets-progress——sessionId 匹配）
+  const offAssets = window.api.onEvent('provider:assets-progress', (data) => {
     const d = data as { sessionId?: string; depName: string; received: number; total: number }
     if (d.sessionId && d.sessionId !== session.value?.sessionId) return
     const percent = d.total > 0 ? Math.min(100, Math.round((d.received / d.total) * 100)) : 0
@@ -345,7 +345,7 @@ async function startInstall() {
   })
   try {
     for (const stage of installStages) {
-      const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
+      const r = await providersApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
       session.value!.stages = r.stages
       if (!r.ok) {
         installFailed.value = true
@@ -370,7 +370,7 @@ async function retryFailed() {
   const failedStage = installStages.find((s) => stageStatus(s) === 'failed')
   if (!failedStage) return
   for (const stage of installStages.slice(installStages.indexOf(failedStage))) {
-    const r = await pluginsApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
+    const r = await providersApi.installStep(session.value!.sessionId, stage, stage === 'assets' ? skippedAssets() : undefined)
     session.value!.stages = r.stages
     if (!r.ok) {
       installFailed.value = true
@@ -382,11 +382,11 @@ async function retryFailed() {
 }
 
 function finish() {
-  router.push('/workspace/settings/plugins')
+  router.push('/workspace/settings/providers')
 }
 
 function close() {
-  router.push('/workspace/settings/plugins')
+  router.push('/workspace/settings/providers')
 }
 </script>
 

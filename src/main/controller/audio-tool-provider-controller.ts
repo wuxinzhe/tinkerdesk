@@ -3,7 +3,7 @@
  * provider 配置 IPC controller
  *
  * Called from the tool-management L3 settings page (tools with supportsProvider):
- *   audio-tool-provider:list  → plugin provider list for an interface + built-in Edge + active config
+ *   audio-tool-provider:list  → provider list for an interface + built-in Edge + active config
  *   audio-tool-provider:set   → set active provider / fallback toggle
  */
 
@@ -18,7 +18,7 @@ export interface AudioToolProviderListDTO {
 
 export interface AudioToolProviderSetDTO {
   iface: AudioToolInterfaceId
-  /** 激活 provider id（'builtin-edge' / 插件 id / null = 默认） */
+  /** 激活 provider id（'builtin-edge' / 扩展 id / null = 默认） */
   providerId?: string | null
   /** 失败回退内置开关（可选） */
   fallback?: boolean
@@ -26,7 +26,7 @@ export interface AudioToolProviderSetDTO {
 
 export interface AudioToolProviderListVO {
   iface: AudioToolInterfaceId
-  /** 插件 provider 列表（内置 Edge 插件也在内——pluginId 以 builtin- 开头） */
+  /** 扩展 provider 列表（内置 Edge 扩展也在内——providerId 以 builtin- 开头） */
   providers: AudioToolProviderInfo[]
   /** 当前激活 provider id */
   activeProviderId: string | null
@@ -65,7 +65,7 @@ export class AudioToolProviderController {
     const patch: Partial<AudioToolProviderConfig> = {}
     if (payload.providerId !== undefined) {
       const providerId = payload.providerId || null
-      if (providerId && providerId !== 'builtin-edge' && !this.audioToolProvider.providers(iface).some((p) => p.pluginId === providerId)) {
+      if (providerId && providerId !== 'builtin-edge' && !this.audioToolProvider.providers(iface).some((p) => p.providerId === providerId)) {
         return fail(`provider 不存在: ${providerId}`)
       }
       if (iface === 'tool.tts') patch.tts = providerId

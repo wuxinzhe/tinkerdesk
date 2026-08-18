@@ -5,7 +5,7 @@
       icon="<svg width=&quot;26&quot; height=&quot;26&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.8&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot;><path d=&quot;M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z&quot;/></svg>"
       gradient="linear-gradient(135deg, #4d9fff 0%, var(--tk-accent) 100%)"
       :title="toolLabel + ' 设置'"
-      desc="启用/停用该工具 + Provider 配置——内置为工具自带实现，插件可接入自己的服务"
+      desc="启用/停用该工具 + Provider 配置——内置为工具自带实现，扩展可接入自己的服务"
     />
     <div v-if="loading" class="tps-loading">
       加载中…
@@ -61,32 +61,32 @@
             </div>
           </label>
 
-          <!-- 插件 provider（内置插件 pluginId 以 builtin- 开头——显示「内置」标记） -->
+          <!-- 扩展 provider（内置扩展 providerId 以 builtin- 开头——显示「内置」标记） -->
           <label
             v-for="p in providers"
-            :key="p.pluginId"
+            :key="p.providerId"
             class="tps-provider-row"
-            :class="{ active: activeId === p.pluginId }"
+            :class="{ active: activeId === p.providerId }"
           >
             <input
               type="radio"
               name="provider"
-              :checked="activeId === p.pluginId"
-              @change="selectProvider(p.pluginId)"
+              :checked="activeId === p.providerId"
+              @change="selectProvider(p.providerId)"
             />
             <div class="tps-provider-info">
               <div class="tps-provider-name">
                 {{ p.name }}
-                <span v-if="p.pluginId.startsWith('builtin-')" class="tps-provider-builtin">内置</span>
+                <span v-if="p.providerId.startsWith('builtin-')" class="tps-provider-builtin">内置</span>
               </div>
               <div class="tps-provider-desc">
-                {{ p.pluginId }} · v{{ p.version }}{{ p.pluginId.startsWith('builtin-') ? '（内置实现）' : '（插件）' }}
+                {{ p.providerId }} · v{{ p.version }}{{ p.providerId.startsWith('builtin-') ? '（内置实现）' : '（扩展）' }}
               </div>
             </div>
           </label>
 
           <div v-if="providers.length === 0" class="tps-provider-empty">
-            {{ isSimpleBuiltin ? '内置实现——无需插件（见上方内置卡片说明）' : (builtin ? '暂无插件 provider——安装支持该工具的插件后可在此选择。' : '暂无可用 provider——安装支持该工具的插件（如 speech-sherpa）后可在此选择。') }}
+            {{ isSimpleBuiltin ? '内置实现——无需扩展（见上方内置卡片说明）' : (builtin ? '暂无扩展 provider——安装支持该工具的扩展后可在此选择。' : '暂无可用 provider——安装支持该工具的扩展（如 speech-sherpa）后可在此选择。') }}
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@
         <label class="tps-fallback-row">
           <div class="tps-fallback-info">
             <div class="tps-fallback-name">失败回退内置</div>
-            <div class="tps-fallback-desc">插件 provider 调用失败时自动使用内置实现，避免工具不可用</div>
+            <div class="tps-fallback-desc">扩展 provider 调用失败时自动使用内置实现，避免工具不可用</div>
           </div>
           <span class="tps-switch">
             <input type="checkbox" :checked="fallback" :disabled="saving" @change="toggleFallback" />
@@ -149,7 +149,7 @@ const iface = computed(() => {
 })
 
 const isToolIface = computed(() => iface.value.startsWith('tool.'))
-/** 纯内置实现（无插件接入——vision/computer_use——显示内置卡片即可） */
+/** 纯内置实现（无扩展接入——vision/computer_use——显示内置卡片即可） */
 const isSimpleBuiltin = computed(() => iface.value === 'tool.vision' || iface.value === 'tool.computer_use')
 const allowFallbackToggle = computed(() => iface.value !== 'tool.stt' && !isSimpleBuiltin.value)
 
@@ -174,7 +174,7 @@ async function load() {
   // 2. Provider 配置（仅 supportsProvider 工具）
   if (supportsProvider.value) {
     if (isSimpleBuiltin.value) {
-      // 纯内置实现（vision/computer_use——无插件接入——显示内置卡片）
+      // 纯内置实现（vision/computer_use——无扩展接入——显示内置卡片）
       builtin.value = {
         id: 'builtin',
         name: '内置（默认）',
@@ -189,7 +189,7 @@ async function load() {
       const data = await audioToolProviderApi.list(iface.value as 'tool.tts' | 'tool.stt')
       if (data) {
         providers.value = data.providers
-        // 内置插件（pluginId 以 builtin- 开头）在 providers 里——无独立 builtin 选项
+        // 内置扩展（providerId 以 builtin- 开头）在 providers 里——无独立 builtin 选项
         builtin.value = null
         activeId.value = data.activeProviderId
         fallback.value = data.fallback
@@ -199,7 +199,7 @@ async function load() {
       if (data) {
         providers.value = data.providers
         builtin.value = { id: 'builtin', name: '内置（默认）' }
-        activeId.value = data.activePluginId ?? 'builtin'
+        activeId.value = data.activeProviderId ?? 'builtin'
         fallback.value = data.fallback
       }
     }
@@ -232,10 +232,10 @@ async function selectProvider(id: string) {
       fallback.value = data.fallback
     }
   } else {
-    const pluginId = id === 'builtin' ? null : id
-    const data = await webProviderApi.set({ iface: iface.value as 'web.search' | 'web.extract', pluginId })
+    const providerId = id === 'builtin' ? null : id
+    const data = await webProviderApi.set({ iface: iface.value as 'web.search' | 'web.extract', providerId })
     if (data) {
-      activeId.value = data.activePluginId ?? 'builtin'
+      activeId.value = data.activeProviderId ?? 'builtin'
       fallback.value = data.fallback
     }
   }
@@ -254,7 +254,7 @@ async function toggleFallback() {
   } else {
     const data = await webProviderApi.set({ iface: iface.value as 'web.search' | 'web.extract', fallback: !fallback.value })
     if (data) {
-      activeId.value = data.activePluginId ?? 'builtin'
+      activeId.value = data.activeProviderId ?? 'builtin'
       fallback.value = data.fallback
     }
   }

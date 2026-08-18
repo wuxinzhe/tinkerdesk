@@ -23,14 +23,14 @@ export type {
 } from './types'
 
 // ── MCP ──
-export { McpToolCenter } from './mcp-tool-center'
-export { McpTool } from './mcp-tool'
-export { mcpManager, McpManager } from './mcp-manager'
-export { HttpTransport, PROTOCOL_VERSION } from './mcp-http-transport'
-export { StdioTransport } from './mcp-stdio-transport'
+export { McpToolCenter } from './mcp/mcp-tool-center'
+export { McpTool } from './mcp/mcp-tool'
+export { mcpManager, McpManager } from './mcp/mcp-manager'
+export { HttpTransport, PROTOCOL_VERSION } from './mcp/mcp-http-transport'
+export { StdioTransport } from './mcp/mcp-stdio-transport'
 
 // ── 单例工厂 ──
-export { getMcpToolCenter } from './mcp-tool-center'
+export { getMcpToolCenter } from './mcp/mcp-tool-center'
 
 export type {
   McpServerConfig,

@@ -3,7 +3,7 @@
  *
  * 用法：
  *   import { confirm } from '@/renderer/api/confirm'
- *   const ok = await confirm({ title: '卸载插件？', message: '…', confirmText: '卸载', destructive: true })
+ *   const ok = await confirm({ title: '卸载扩展？', message: '…', confirmText: '卸载', destructive: true })
  *   if (!ok) return
  *
  * 依赖全局组件 ConfirmModal（App.vue 挂载，监听 'global-confirm' 事件）。

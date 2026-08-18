@@ -3,7 +3,7 @@
  *
  * Speech-to-text tool:
  * - schema：file_path（必填）
- * - provider 用户配置（插件 sherpa 本地等），模型只发文件路径
+ * - provider 用户配置（扩展 sherpa 本地等），模型只发文件路径
  * - 返回 { success, text }
  */
 import { existsSync } from 'fs'

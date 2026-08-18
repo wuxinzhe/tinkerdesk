@@ -328,30 +328,30 @@ export class WebExtractTool extends BaseTool {
         }
       }
 
-      // 3. registry 分发提取（插件 provider 优先，未激活/失败回退内置）
+      // 3. registry 分发提取（扩展 provider 优先，未激活/失败回退内置）
       let results: ExtractResultItem[] = []
       if (safeUrls.length > 0) {
-        let pluginDone = false
+        let providerDone = false
         if (this.webProvider) {
           try {
-            const pluginResults: ExtractResultItem[] = []
+            const providerResults: ExtractResultItem[] = []
             for (const url of safeUrls) {
-              const pluginRes = await this.webProvider.callPlugin<{ content?: string; title?: string; error?: string }>('web.extract', { url, limit: effectiveCharLimit })
-              if (pluginRes?.content) {
-                pluginResults.push({ url, title: pluginRes.title ?? '', content: pluginRes.content, error: null })
+              const providerRes = await this.webProvider.callProvider<{ content?: string; title?: string; error?: string }>('web.extract', { url, limit: effectiveCharLimit })
+              if (providerRes?.content) {
+                providerResults.push({ url, title: providerRes.title ?? '', content: providerRes.content, error: null })
               } else {
-                pluginResults.push({ url, title: '', content: '', error: pluginRes?.error ?? '插件未返回内容' })
+                providerResults.push({ url, title: '', content: '', error: providerRes?.error ?? '扩展未返回内容' })
               }
             }
-            if (pluginResults.length > 0) { results = pluginResults; pluginDone = true }
+            if (providerResults.length > 0) { results = providerResults; providerDone = true }
           } catch (e) {
             if (!this.webProvider.allowFallback()) {
-              return ToolResult.sync(JSON.stringify({ success: false, error: `抓取插件失败: ${errMessage(e)}` }))
+              return ToolResult.sync(JSON.stringify({ success: false, error: `抓取扩展失败: ${errMessage(e)}` }))
             }
-            console.warn('[web_extract] 插件 provider 失败，回退内置:', errMessage(e))
+            console.warn('[web_extract] 扩展 provider 失败，回退内置:', errMessage(e))
           }
         }
-        if (!pluginDone) {
+        if (!providerDone) {
           const backend = getExtractBackend()
           let provider = backend ? getExtractProvider(backend) : null
           if (!provider || !provider.supportsExtract() || !provider.isAvailable()) {

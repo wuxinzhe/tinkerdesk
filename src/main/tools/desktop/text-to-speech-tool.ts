@@ -3,7 +3,7 @@
  *
  * Text-to-speech tool:
  * - schema：text（必填）+ output_path（可选）
- * - provider 用户配置（内置 Edge 在线语音 / 插件 sherpa / omni-voice），模型只发文本
+ * - provider 用户配置（内置 Edge 在线语音 / 扩展 sherpa / omni-voice），模型只发文本
  * - 长文本按 provider 上限截断
  * - 返回 { success, file_path } + MEDIA: 路径
  */

@@ -1,22 +1,22 @@
 /**
- * plugin-installer.ts — 插件安装器（独立子系统——安装/资源下载/卸载）
+ * installer.ts — 扩展安装器（独立子系统——安装/资源下载/卸载）
  *
- * 与 PluginManager 解耦：installer 只做"文件系统操作 + 资源获取"——
- * 完成后把 Plugin 交给 manager 注册（register 回调）——
+ * 与 ProviderManager 解耦：installer 只做"文件系统操作 + 资源获取"——
+ * 完成后把 Provider 交给 manager 注册（register 回调）——
  * manager 不关心安装细节。
  *
  * 分步骤安装（向导支持）：validate → copy → deps → assets → 完成
  * 每步可独立调用（失败重试该步——不重头）。
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, cpSync } from 'fs'
-import { basename, join } from 'path'
 import { execFileSync } from 'child_process'
 import { createHash } from 'crypto'
 import { app } from 'electron'
-import { downloadFile, downloadWithMirror, execFileAsync } from '../../utils/process-utils'
-import { resolveNpmCli, tarBin, locateManifestDir } from '../../utils/plugin-installer-utils'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync } from 'fs'
+import { basename, join } from 'path'
 import { getPackageTarball } from '../../repository/npm-registry-repository'
-import type { InstallerDeps, InstallSession, InstallStage, PluginRecord, PluginManifest } from './types'
+import { locateManifestDir, resolveNpmCli, tarBin } from '../../utils/installer-utils'
+import { downloadWithMirror, execFileAsync } from '../../utils/process-utils'
+import type { InstallerDeps, InstallSession, ProviderManifest, ProviderRecord } from './types'
 
 /** 自定义 registry 的 tarball 查询（npm view 命令——走镜像/代理） */
 async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ url: string; size?: number }> {
@@ -31,7 +31,7 @@ async function fetchTarballViaNpm(pkgName: string, registry: string): Promise<{ 
   return { url: out }
 }
 
-/** 解压归档到目标目录——若解压后只有单个子目录则提升其内容到根（whisper-bin-x64.zip → Release/；sherpa tar.bz2 → 模型名/——内容归位 dest 根，插件按根路径检查） */
+/** 解压归档到目标目录——若解压后只有单个子目录则提升其内容到根（whisper-bin-x64.zip → Release/；sherpa tar.bz2 → 模型名/——内容归位 dest 根，扩展按根路径检查） */
 async function extractArchivePromote(tmp: string, destDir: string): Promise<void> {
   const lower = tmp.toLowerCase()
   if (lower.endsWith('.zip')) {
@@ -53,8 +53,8 @@ async function extractArchivePromote(tmp: string, destDir: string): Promise<void
   }
 }
 
-/** 插件安装器（每 manager 一个实例） */
-export class PluginInstaller {
+/** 扩展安装器（每 manager 一个实例） */
+export class Installer {
   private readonly sessions = new Map<string, InstallSession>()
   private sessionSeq = 0
 
@@ -64,26 +64,26 @@ export class PluginInstaller {
 
   /** 开始安装会话：校验安装包 + 读 manifest（第 1 步——validate） */
   start(src: string, skipAssets: string[] = []): InstallSession {
-    if (!src || !existsSync(src)) throw new Error('插件包路径不存在')
+    if (!src || !existsSync(src)) throw new Error('扩展包路径不存在')
     const sessionId = `install-${Date.now()}-${++this.sessionSeq}`
     const session: InstallSession = {
       sessionId,
       srcDir: src,
       manifest: null,
-      pluginDir: '',
+      providerDir: '',
       skipAssets,
       stages: { validate: 'pending', copy: 'pending', deps: 'pending', assets: 'pending', register: 'pending' },
     }
     this.sessions.set(sessionId, session)
     // validate：定位 manifest + 校验
-    const pluginDir = this.locateSource(src)
-    const manifest = this.readManifest(pluginDir)
-    this.validateManifest(manifest, pluginDir)
+    const providerDir = this.locateSource(src)
+    const manifest = this.readManifest(providerDir)
+    this.validateManifest(manifest, providerDir)
     // 已安装校验（同 id 已注册 → 拒绝——更新走独立入口）
-    if (this.deps.hasPlugin(manifest.id)) {
-      throw new Error(`插件已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
+    if (this.deps.hasProvider(manifest.id)) {
+      throw new Error(`扩展已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
     }
-    session.pluginDir = pluginDir
+    session.providerDir = providerDir
     session.manifest = manifest
     session.stages.validate = 'done'
     return session
@@ -98,10 +98,10 @@ export class PluginInstaller {
     try {
       switch (stage) {
         case 'copy':
-          this.copyToPluginsDir(session)
+          this.copyToInstallDir(session)
           break
         case 'deps':
-          await this.installNpmDeps(session.pluginDir)
+          await this.installNpmDeps(session.providerDir)
           break
         case 'assets':
           // 统一走 downloadAssets（唯一实现——跳过 skipAssets 指定项）
@@ -113,7 +113,7 @@ export class PluginInstaller {
           }
           break
         case 'register':
-          this.deps.registerPlugin(session.srcDir)
+          this.deps.registerProvider(session.srcDir)
           // 注册完成——npm 临时目录不再需要——清理
           if (session.tmpDir) {
             rmSync(session.tmpDir, { recursive: true, force: true })
@@ -135,39 +135,50 @@ export class PluginInstaller {
     return this.sessions.get(sessionId)
   }
 
+  /** 清理安装会话（center 不走 register 分步时调用——删临时目录 + 移除会话） */
+  cleanupSession(sessionId: string): void {
+    const session = this.sessions.get(sessionId)
+    if (session) {
+      if (session.tmpDir && existsSync(session.tmpDir)) {
+        rmSync(session.tmpDir, { recursive: true, force: true })
+      }
+      this.sessions.delete(sessionId)
+    }
+  }
+
   // ── 一次性安装（兼容——顺序执行全部阶段） ──
 
   /** 完整安装（validate→copy→deps→register——不含 assets——资源手动） */
-  async install(src: string): Promise<PluginRecord> {
+  async install(src: string): Promise<ProviderRecord> {
     const session = this.start(src)
     for (const stage of ['copy', 'deps'] as const) {
       const r = await this.step(session.sessionId, stage)
       if (!r.ok) throw new Error(r.error)
     }
-    const plugin = this.deps.registerPlugin(session.srcDir)
+    const provider = this.deps.registerProvider(session.srcDir)
     if (session.tmpDir) {
       rmSync(session.tmpDir, { recursive: true, force: true })
       session.tmpDir = undefined
     }
     this.sessions.delete(session.sessionId)
-    return plugin
+    return provider
   }
 
   /** 在线安装（npm 包名——下载 tarball → 解压 → 走标准安装流程） */
-  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<PluginRecord> {
+  async installFromNpm(pkgName: string, opts?: { registry?: string }): Promise<ProviderRecord> {
     const session = await this.startNpm(pkgName, opts)
     await this.downloadSession(session.sessionId)
     for (const stage of ['copy', 'deps'] as const) {
       const r = await this.step(session.sessionId, stage)
       if (!r.ok) throw new Error(r.error)
     }
-    const plugin = this.deps.registerPlugin(session.srcDir)
+    const provider = this.deps.registerProvider(session.srcDir)
     if (session.tmpDir) {
       rmSync(session.tmpDir, { recursive: true, force: true })
       session.tmpDir = undefined
     }
     this.sessions.delete(session.sessionId)
-    return plugin
+    return provider
   }
 
   /** 开始 npm 分步安装会话（查询 tarball URL——不下载——下载在独立 download 步骤带进度） */
@@ -183,7 +194,7 @@ export class PluginInstaller {
       sessionId: `install-${Date.now()}-${++this.sessionSeq}`,
       srcDir: '',
       manifest: null,
-      pluginDir: '',
+      providerDir: '',
       skipAssets: [],
       stages: { validate: 'pending', copy: 'pending', deps: 'pending', assets: 'pending', register: 'pending' },
       sourceType: 'npm',
@@ -212,35 +223,35 @@ export class PluginInstaller {
     const located = locateManifestDir(extracted)
     if (!located) {
       rmSync(tmpDir, { recursive: true, force: true })
-      throw new Error('npm 包内未找到 manifest.json（不是有效的 TinkerDesk 插件包）')
+      throw new Error('npm 包内未找到 manifest.json（不是有效的 TinkerDesk 扩展包）')
     }
     const manifest = this.readManifest(located)
     this.validateManifest(manifest, located)
-    if (this.deps.hasPlugin(manifest.id)) {
+    if (this.deps.hasProvider(manifest.id)) {
       rmSync(tmpDir, { recursive: true, force: true })
-      throw new Error(`插件已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
+      throw new Error(`扩展已安装: ${manifest.id}（如需更新请先卸载或使用更新入口）`)
     }
     session.srcDir = located
-    session.pluginDir = located
+    session.providerDir = located
     session.manifest = manifest
     session.stages.validate = 'done'
     session.tmpDir = tmpDir
   }
 
-  /** 卸载插件（删除目录——Worker 由调用方先释放） */
+  /** 卸载扩展（删除目录——Worker 由调用方先释放） */
   uninstall(id: string): void {
-    const dir = join(this.deps.pluginsDir, id)
+    const dir = join(this.deps.providersDir, id)
     if (existsSync(dir)) rmSync(dir, { recursive: true, force: true })
   }
 
-  /** 读取已装插件 manifest（安装域自包含——配置页下载/就绪检查用——不依赖 manager） */
-  getManifestById(id: string): PluginManifest {
-    const file = join(this.deps.pluginsDir, id, 'manifest.json')
-    if (!existsSync(file)) throw new Error(`插件不存在: ${id}`)
-    return JSON.parse(readFileSync(file, 'utf-8')) as PluginManifest
+  /** 读取已装扩展 manifest（安装域自包含——配置页下载/就绪检查用——不依赖 manager） */
+  getManifestById(id: string): ProviderManifest {
+    const file = join(this.deps.providersDir, id, 'manifest.json')
+    if (!existsSync(file)) throw new Error(`扩展不存在: ${id}`)
+    return JSON.parse(readFileSync(file, 'utf-8')) as ProviderManifest
   }
 
-  /** 资源下载（按 id——读插件目录 manifest——配置页手动触发——depName 指定单个） */
+  /** 资源下载（按 id——读扩展目录 manifest——配置页手动触发——depName 指定单个） */
   async downloadAssetsById(
     id: string,
     onProgress?: (depName: string, received: number, total: number) => void,
@@ -253,7 +264,7 @@ export class PluginInstaller {
    *  普通文件资源按具体文件存在判定（同目录多模型不互相误判）；压缩包按目录非空） */
   getAssetStatus(id: string): Record<string, boolean> {
     const manifest = this.getManifestById(id)
-    const dir = join(this.deps.pluginsDir, id)
+    const dir = join(this.deps.providersDir, id)
     const deps = manifest.assetDeps ?? manifest.modelDeps ?? []
     const status: Record<string, boolean> = {}
     for (const dep of deps) {
@@ -274,14 +285,14 @@ export class PluginInstaller {
 
   /** 资源下载（唯一实现——配置页手动/安装阶段共用——depName 指定单个——skipNames 跳过指定——失败返回 error） */
   async downloadAssets(
-    manifest: PluginManifest,
+    manifest: ProviderManifest,
     onProgress?: (depName: string, received: number, total: number) => void,
     depName?: string,
     skipNames: string[] = [],
   ): Promise<{ name: string; ok: boolean; error?: string }[]> {
     const deps = (manifest.assetDeps ?? manifest.modelDeps) ?? []
-    if (deps.length === 0) throw new Error(`插件 ${manifest.id} 未声明资源依赖（assetDeps）`)
-    const dir = join(this.deps.pluginsDir, manifest.id)
+    if (deps.length === 0) throw new Error(`扩展 ${manifest.id} 未声明资源依赖（assetDeps）`)
+    const dir = join(this.deps.providersDir, manifest.id)
     const targets = depName ? deps.filter((d) => d.name === depName) : deps.filter((d) => !skipNames.includes(d.name))
     if (targets.length === 0) throw new Error(`未找到资源: ${depName}`)
     // 并行下载（每 dep 独立——Promise.all——单个失败不影响其他——结果各自记录）
@@ -326,29 +337,29 @@ export class PluginInstaller {
   private locateSource(src: string): string {
     const stat = statSync(src)
     if (stat.isDirectory()) {
-      if (!existsSync(join(src, 'manifest.json'))) throw new Error('所选目录不是有效插件（缺少 manifest.json）')
+      if (!existsSync(join(src, 'manifest.json'))) throw new Error('所选目录不是有效扩展（缺少 manifest.json）')
       return src
     }
     if (stat.isFile() && (src.toLowerCase().endsWith('.zip') || src.toLowerCase().endsWith('.tgz'))) {
-      const tmpDir = join(app.getPath('temp'), `tinkerdesk-plugin-install-${Date.now()}`)
+      const tmpDir = join(app.getPath('temp'), `tinkerdesk-provider-install-${Date.now()}`)
       mkdirSync(tmpDir, { recursive: true })
       execFileSync(tarBin(), ['-xf', src, '-C', tmpDir], { stdio: 'ignore' })
       const located = this.locateManifestDir(tmpDir)
       if (!located) {
         rmSync(tmpDir, { recursive: true, force: true })
-        throw new Error('zip 内未找到 manifest.json（插件包结构无效）')
+        throw new Error('zip 内未找到 manifest.json（扩展包结构无效）')
       }
       this.verifyHashes(located)
       return located
     }
-    throw new Error('请选择插件文件夹或 .zip 插件包')
+    throw new Error('请选择扩展文件夹或 .zip 扩展包')
   }
 
-  private readManifest(pluginDir: string): PluginManifest {
-    return JSON.parse(readFileSync(join(pluginDir, 'manifest.json'), 'utf-8')) as PluginManifest
+  private readManifest(providerDir: string): ProviderManifest {
+    return JSON.parse(readFileSync(join(providerDir, 'manifest.json'), 'utf-8')) as ProviderManifest
   }
 
-  private validateManifest(manifest: PluginManifest, pluginDir: string): void {
+  private validateManifest(manifest: ProviderManifest, providerDir: string): void {
     if (!manifest.id || !manifest.entry || !manifest.name) {
       throw new Error('manifest 缺少 id/entry/name')
     }
@@ -356,23 +367,25 @@ export class PluginInstaller {
       throw new Error(`不支持的 apiVersion: ${manifest.apiVersion}（当前支持 1）`)
     }
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(manifest.id)) {
-      throw new Error(`插件 id 非法（仅允许小写字母/数字/连字符）: ${manifest.id}`)
+      throw new Error(`扩展 id 非法（仅允许小写字母/数字/连字符）: ${manifest.id}`)
     }
-    if (manifest.id !== pluginDir.split(/[\\/]/).pop() && !existsSync(join(pluginDir, 'manifest.json'))) {
+    if (manifest.id !== providerDir.split(/[\\/]/).pop() && !existsSync(join(providerDir, 'manifest.json'))) {
       // 目录安装时 id 不必等于目录名（zip 解压目录可能带前缀）——仅校验合法性
     }
   }
 
-  private copyToPluginsDir(session: InstallSession): void {
-    const destDir = join(this.deps.pluginsDir, session.manifest!.id)
+  private copyToInstallDir(session: InstallSession): void {
+    // kind:tool 的工具包分流到 toolsDir（外置工具独立于扩展目录——ToolCenter 加载）
+    const base = session.manifest?.kind === 'tool' && this.deps.toolsDir ? this.deps.toolsDir : this.deps.providersDir
+    const destDir = join(base, session.manifest!.id)
     if (existsSync(destDir)) rmSync(destDir, { recursive: true, force: true })
-    cpSync(session.pluginDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
-    session.pluginDir = destDir
+    cpSync(session.providerDir, destDir, { recursive: true, filter: (src) => !src.includes('node_modules/.cache') })
+    session.providerDir = destDir
   }
 
   /** npm 依赖安装（有 dependencies 且缺 node_modules——异步——不阻塞） */
-  private async installNpmDeps(pluginDir: string): Promise<void> {
-    const pkgFile = join(pluginDir, 'package.json')
+  private async installNpmDeps(providerDir: string): Promise<void> {
+    const pkgFile = join(providerDir, 'package.json')
     if (!existsSync(pkgFile)) return
     let pkg: { dependencies?: Record<string, string> } | null = null
     try {
@@ -382,13 +395,13 @@ export class PluginInstaller {
     }
     const deps = pkg?.dependencies
     if (!deps || Object.keys(deps).length === 0) return
-    if (existsSync(join(pluginDir, 'node_modules'))) return
+    if (existsSync(join(providerDir, 'node_modules'))) return
     const cli = resolveNpmCli()
     const args = cli === 'npm'
-      ? ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]
-      : [cli, 'install', '--no-audit', '--no-fund', '--no-progress', '--prefix', pluginDir]
+      ? ['install', '--no-audit', '--no-fund', '--no-progress', '--prefix', providerDir]
+      : [cli, 'install', '--no-audit', '--no-fund', '--no-progress', '--prefix', providerDir]
     await new Promise<void>((resolvePromise, reject) => {
-      execFileAsync(process.execPath, args).then(() => resolvePromise()).catch((e) => reject(new Error(`npm 依赖安装失败（${(e as Error).message}）——插件未加载`)))
+      execFileAsync(process.execPath, args).then(() => resolvePromise()).catch((e) => reject(new Error(`npm 依赖安装失败（${(e as Error).message}）——扩展未加载`)))
     })
   }
 
@@ -415,16 +428,16 @@ export class PluginInstaller {
   }
 
   /** sha256sums.json 完整性校验（分发 zip） */
-  private verifyHashes(pluginDir: string): void {
-    const sumsFile = join(pluginDir, 'sha256sums.json')
+  private verifyHashes(providerDir: string): void {
+    const sumsFile = join(providerDir, 'sha256sums.json')
     if (!existsSync(sumsFile)) return
     const sums = JSON.parse(readFileSync(sumsFile, 'utf-8')) as Record<string, string>
     for (const [rel, expected] of Object.entries(sums)) {
-      const file = join(pluginDir, rel)
+      const file = join(providerDir, rel)
       if (!existsSync(file)) throw new Error(`校验失败: ${rel} 缺失`)
       const actual = createHash('sha256').update(readFileSync(file)).digest('hex')
       if (actual.toLowerCase() !== String(expected).toLowerCase()) {
-        throw new Error(`插件文件哈希不匹配（可能被篡改或传输损坏）: ${rel}`)
+        throw new Error(`扩展文件哈希不匹配（可能被篡改或传输损坏）: ${rel}`)
       }
     }
   }

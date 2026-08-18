@@ -1,5 +1,5 @@
 /**
- * process-utils.ts — 通用进程/下载工具（不依赖插件——任意模块可用）
+ * process-utils.ts — 通用进程/下载工具（不依赖扩展——任意模块可用）
  *
  * downloadFile: 流式 HTTP(S) 下载（带字节进度回调——异步不阻塞主进程）
  * execFileAsync: promisify(execFile)——外部命令异步执行（不阻塞主进程）
@@ -35,7 +35,7 @@ export async function downloadWithMirror(url: string, dest: string, onProgress?:
   } catch (e) {
     const mirror = mirrorUrl(url)
     if (mirror === url) throw e
-    console.warn(`[plugin] 直连下载失败（${(e as Error).message}）——回退镜像: ${mirror}`)
+    console.warn(`[provider] 直连下载失败（${(e as Error).message}）——回退镜像: ${mirror}`)
     await downloadFile(mirror, dest, onProgress)
   }
 }

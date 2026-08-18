@@ -1,18 +1,18 @@
 /**
- * plugin-store.ts — 插件配置持久化（config.json——启停状态 + 配置合一个文件）
+ * provider-store.ts — 扩展配置持久化（config.json——启停状态 + 配置合一个文件）
  *
- * 无状态静态函数（纯 IO）——PluginManager 调用——config.json 结构：
+ * 无状态静态函数（纯 IO）——ProviderManager 调用——config.json 结构：
  * { enabled: boolean, config: Record<string, unknown> }
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'fs'
 import { dirname, join } from 'path'
-import type { PluginConfigFile, PluginRecord } from './types'
+import type { ProviderConfigFile, ProviderRecord } from './types'
 
 /** 读取 config.json（不存在/损坏 → 默认 enabled=true + 空配置） */
-export function readConfigFile(configFile: string): PluginConfigFile {
+export function readConfigFile(configFile: string): ProviderConfigFile {
   try {
     if (!existsSync(configFile)) return { enabled: true, config: {} }
-    const raw = JSON.parse(readFileSync(configFile, 'utf-8')) as Partial<PluginConfigFile>
+    const raw = JSON.parse(readFileSync(configFile, 'utf-8')) as Partial<ProviderConfigFile>
     return {
       enabled: raw.enabled ?? true,
       config: raw.config ?? {},
@@ -23,7 +23,7 @@ export function readConfigFile(configFile: string): PluginConfigFile {
 }
 
 /** 原子写 config.json（tmp + rename——避免写坏；父目录自动创建） */
-export function writeConfigFile(configFile: string, data: PluginConfigFile): void {
+export function writeConfigFile(configFile: string, data: ProviderConfigFile): void {
   mkdirSync(dirname(configFile), { recursive: true })
   const tmp = `${configFile}.tmp`
   writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8')
@@ -31,7 +31,7 @@ export function writeConfigFile(configFile: string, data: PluginConfigFile): voi
 }
 
 /** 持久化启停状态到 config.json（与配置同文件） */
-export function persistEnabled(record: PluginRecord): void {
+export function persistEnabled(record: ProviderRecord): void {
   if (!record.ctx) return
   const configFile = join(record.ctx.configDir, 'config.json')
   const current = readConfigFile(configFile)

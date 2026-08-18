@@ -2,26 +2,26 @@
  * voice-provider-service.ts — 语音服务（系统固定接口的多 provider 抽象）
  *
  * 系统开放接口（固定契约）：
- *   voice.stt  → 插件实现 stt:transcribe（Float32Array 16kHz → {text}）
- *   voice.tts  → 插件实现 tts:speak（{text} → {audio data URL}）
+ *   voice.stt  → 扩展实现 stt:transcribe（Float32Array 16kHz → {text}）
+ *   voice.tts  → 扩展实现 tts:speak（{text} → {audio data URL}）
  *
- * 任何插件在 manifest.systemInterfaces 声明实现这些接口，即成为一个 provider
+ * 任何扩展在 manifest.systemInterfaces 声明实现这些接口，即成为一个 provider
  * （如 sherpa 本地、OmniVoice 克隆等可同时存在）。用户可在系统设置选择激活哪个。
  *
- * 录音（麦克风采集）是应用固有功能，不在插件职责内。
+ * 录音（麦克风采集）是应用固有功能，不在扩展职责内。
  */
 import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { PluginManager } from '../core/plugin/plugin-manager'
-import type { PluginManifest } from '../core/plugin/types'
+import { ProviderManager } from '../core/provider/provider-manager'
+import type { ProviderManifest } from '../core/provider/types'
 
 export interface VoiceProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number
-  /** 模型是否就绪（经插件 models:status 查询，失败视为未知） */
+  /** 模型是否就绪（经扩展 models:status 查询，失败视为未知） */
   ready?: boolean
 }
 
@@ -33,21 +33,21 @@ export interface VoiceConfig {
 export class VoiceProviderService {
   private readonly configFile: string
 
-  constructor(private readonly pluginManager: PluginManager) {
+  constructor(private readonly providerManager: ProviderManager) {
     this.configFile = join(app.getPath('userData'), 'voice-config.json')
   }
 
-  /** 收集语音接口的 provider（从 PluginManager 的接口 provider 注册表读取） */
+  /** 收集语音接口的 provider（从 ProviderManager 的接口 provider 注册表读取） */
   providers(): { stt: VoiceProviderInfo[]; tts: VoiceProviderInfo[] } {
-    const toInfo = (r: { manifest: PluginManifest }): VoiceProviderInfo => ({
-      pluginId: r.manifest.id,
+    const toInfo = (r: { manifest: ProviderManifest }): VoiceProviderInfo => ({
+      providerId: r.manifest.id,
       name: r.manifest.name,
       version: r.manifest.version,
       interfaceVersion: r.manifest.systemInterfaces?.find((i) => i.id.startsWith('voice.'))?.version ?? 1,
     })
     return {
-      stt: this.pluginManager.getProviders('voice.stt').map(toInfo),
-      tts: this.pluginManager.getProviders('voice.tts').map(toInfo),
+      stt: this.providerManager.getProviders('voice.stt').map(toInfo),
+      tts: this.providerManager.getProviders('voice.tts').map(toInfo),
     }
   }
 
@@ -56,12 +56,12 @@ export class VoiceProviderService {
     const stored = this.readStored()
     const { stt, tts } = this.providers()
     return {
-      sttProvider: stored.sttProvider && stt.some((p) => p.pluginId === stored.sttProvider)
+      sttProvider: stored.sttProvider && stt.some((p) => p.providerId === stored.sttProvider)
         ? stored.sttProvider
-        : (stt[0]?.pluginId ?? null),
-      ttsProvider: stored.ttsProvider && tts.some((p) => p.pluginId === stored.ttsProvider)
+        : (stt[0]?.providerId ?? null),
+      ttsProvider: stored.ttsProvider && tts.some((p) => p.providerId === stored.ttsProvider)
         ? stored.ttsProvider
-        : (tts[0]?.pluginId ?? null),
+        : (tts[0]?.providerId ?? null),
     }
   }
 
@@ -79,7 +79,7 @@ export class VoiceProviderService {
   async transcribe(samples: Float32Array): Promise<string> {
     const { sttProvider } = this.getConfig()
     if (!sttProvider) throw new Error('未配置 STT provider，请到 系统设置 → 语音设置 选择')
-    const result = await this.pluginManager.invokePlugin<{ text?: string }>(
+    const result = await this.providerManager.invokeProvider<{ text?: string }>(
       sttProvider,
       'stt:transcribe',
       { samples },
@@ -91,7 +91,7 @@ export class VoiceProviderService {
   async speak(text: string): Promise<string> {
     const { ttsProvider } = this.getConfig()
     if (!ttsProvider) throw new Error('未配置 TTS provider，请到 系统设置 → 语音设置 选择')
-    const result = await this.pluginManager.invokePlugin<{ audio?: string }>(
+    const result = await this.providerManager.invokeProvider<{ audio?: string }>(
       ttsProvider,
       'tts:speak',
       { text },
@@ -99,12 +99,12 @@ export class VoiceProviderService {
     return result?.audio ?? ''
   }
 
-  /** 查询 provider 就绪状态（统一以插件状态为准——registered=自检通过可用的最终状态——
-   *  与插件列表/配置页一致；不再用 Worker models:status 的 allReady（那是"全部模型齐"语义——
-   *  与插件自检的"当前配置就绪"不一致） */
-  async providerReady(pluginId: string): Promise<boolean> {
+  /** 查询 provider 就绪状态（统一以扩展状态为准——registered=自检通过可用的最终状态——
+   *  与扩展列表/配置页一致；不再用 Worker models:status 的 allReady（那是"全部模型齐"语义——
+   *  与扩展自检的"当前配置就绪"不一致） */
+  async providerReady(providerId: string): Promise<boolean> {
     try {
-      const status = await this.pluginManager.getStatus(pluginId)
+      const status = await this.providerManager.getStatus(providerId)
       return status.status === 'registered'
     } catch {
       return false

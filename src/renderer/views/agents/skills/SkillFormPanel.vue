@@ -148,7 +148,7 @@
             <div class="sfp__field-label">
               触发词
             </div>
-            <input :value="model.triggers" class="sfp__input" placeholder="逗号分隔，如: 装插件,安装插件" @input="set('triggers', ($event.target as HTMLInputElement).value)" />
+            <input :value="model.triggers" class="sfp__input" placeholder="逗号分隔，如: 装扩展,安装扩展" @input="set('triggers', ($event.target as HTMLInputElement).value)" />
           </div>
           <div class="sfp__field">
             <div class="sfp__field-label">

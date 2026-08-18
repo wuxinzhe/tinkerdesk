@@ -19,7 +19,7 @@ export interface WebSearchResponseData {
   }
 }
 
-/** 搜索 Provider 接口（内置实现 + 插件 provider 的本地形态） */
+/** 搜索 Provider 接口（内置实现 + 扩展 provider 的本地形态） */
 export interface SearchProvider {
   readonly id: string
   readonly name: string

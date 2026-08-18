@@ -2,7 +2,7 @@
   { "id": "f915c79a-f8fd-40d5-b6c8-31330fc8efed", "name": "software-development", "displayName": "开发", "description": "软件开发、编码、调试工具", "icon": "", "sortOrder": 1, "isActive": true },
   { "id": "9ce50929-751f-4a7b-8d11-9b1eec830747", "name": "autonomous-ai-agents", "displayName": "AI Agent", "description": "自主 AI Agent 系统", "icon": "", "sortOrder": 2, "isActive": true },
   { "id": "cat-tinkerdesk", "name": "tinkerdesk", "displayName": "TinkerDesk", "description": "TinkerDesk 平台与 Agent 系统", "icon": "", "sortOrder": 18, "isActive": true },
-  { "id": "cat-plugin", "name": "plugin", "displayName": "插件", "description": "插件相关技能", "icon": "", "sortOrder": 19, "isActive": true },
+  { "id": "cat-provider", "name": "provider", "displayName": "扩展", "description": "扩展相关技能", "icon": "", "sortOrder": 19, "isActive": true },
   { "id": "b3ae5589-835d-4267-83a8-fec4746fc780", "name": "data-science", "displayName": "数据科学", "description": "数据分析和机器学习", "icon": "", "sortOrder": 3, "isActive": true },
   { "id": "20f5ab23-ea09-4cdf-9a25-2d4ea0d7e73b", "name": "mlops", "displayName": "MLOps", "description": "模型训练、推理、部署", "icon": "", "sortOrder": 4, "isActive": true },
   { "id": "15e04049-c3e0-40cd-9880-774eb4060871", "name": "research", "displayName": "研究", "description": "论文搜索、文献综述、知识检索", "icon": "", "sortOrder": 5, "isActive": true },

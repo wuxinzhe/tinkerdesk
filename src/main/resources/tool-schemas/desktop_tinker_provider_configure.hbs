@@ -1,0 +1,14 @@
+{
+  "name": "desktop_tinker_provider_configure",
+  "description": "Read a provider's config schema and current values; pass values to save configuration. Use after installing a provider to auto-fill detected environment paths (e.g. python path, model dir) before enabling.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "string", "description": "Provider id (from provider_list)" },
+      "values": { "type": "object", "description": "Optional config values to save (omit to just read schema + current config)" }
+    },
+    "required": ["id"]
+  },
+  "toolType": "desktop",
+  "emoji": "⚙️"
+}

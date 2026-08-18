@@ -11,7 +11,7 @@ import { ToolResult } from '../../core/tool/tool-result'
 import type { PromptRenderer } from '../../core/prompt/renderer'
 import type { VisionProvider } from '../../service/vision-provider'
 
-/** 工具名（desktop 组——插件工具） */
+/** 工具名（desktop 组——扩展工具） */
 export const TOOL_NAME = 'desktop_tinker_vision_recognize'
 
 /** vision_recognize 工具 */

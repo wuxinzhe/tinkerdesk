@@ -6,7 +6,7 @@
 export type WebInterfaceId = 'web.search' | 'web.extract'
 
 export interface WebProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number
@@ -14,10 +14,10 @@ export interface WebProviderInfo {
 
 export interface WebProviderListVO {
   iface: WebInterfaceId
-  /** 插件 provider 列表（内置不在此——内置是工具内建兜底，前端固定展示） */
+  /** 扩展 provider 列表（内置不在此——内置是工具内建兜底，前端固定展示） */
   providers: WebProviderInfo[]
-  /** 当前激活插件 id（null = 内置） */
-  activePluginId: string | null
+  /** 当前激活扩展 id（null = 内置） */
+  activeProviderId: string | null
   /** 失败回退内置开关 */
   fallback: boolean
 }
@@ -31,7 +31,7 @@ export class WebProviderApi {
     }
   }
 
-  async set(payload: { iface: WebInterfaceId; pluginId?: string | null; fallback?: boolean }): Promise<WebProviderListVO | null> {
+  async set(payload: { iface: WebInterfaceId; providerId?: string | null; fallback?: boolean }): Promise<WebProviderListVO | null> {
     try {
       return await window.api.webProvider.set(payload)
     } catch {

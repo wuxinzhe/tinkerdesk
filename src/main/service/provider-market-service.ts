@@ -1,5 +1,5 @@
 /**
- * plugin-market-service.ts — 插件市场业务层（service）
+ * provider-market-service.ts — 扩展市场业务层（service）
  *
  * 职责：市场列表组装（合并去重/前缀过滤/官方标记/installed 状态）——
  * 数据来自 repository（npm-registry-repository）——结果结构定义在本文件——
@@ -9,8 +9,8 @@ import { getPackageDetail, searchNpm, type NpmPackage } from '../repository/npm-
 
 /* ── service 层类型（业务结构——controller/renderer 消费） ── */
 
-/** 市场插件条目（controller → renderer） */
-export interface MarketPluginItem {
+/** 市场扩展条目（controller → renderer） */
+export interface MarketProviderItem {
   name: string
   version: string
   description: string
@@ -25,12 +25,12 @@ export interface MarketPluginItem {
 
 /** 市场查询结果（列表 + 可用分类） */
 export interface MarketListResult {
-  items: MarketPluginItem[]
+  items: MarketProviderItem[]
   categories: string[]
 }
 
-/** 插件详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
-export interface MarketPluginDetail {
+/** 扩展详情（详情页展示——npm 包元数据 + 官方标记 + 已安装） */
+export interface MarketProviderDetail {
   name: string
   version: string
   description: string
@@ -45,7 +45,7 @@ export interface MarketPluginDetail {
 
 /** 市场查询参数 */
 export interface MarketQueryParams {
-  /** 本地已安装插件 id 列表（对比标记） */
+  /** 本地已安装扩展 id 列表（对比标记） */
   installedIds: string[]
   /** 分类筛选（npm search keywords:<分类>——真实 registry 查询） */
   category?: string
@@ -59,21 +59,21 @@ export interface MarketQueryParams {
 export const OFFICIAL_MAINTAINER = 'wuxinzhe'
 
 /** 市场生态前缀（只显示此前缀的包） */
-export const MARKET_PREFIX = 'tinkerdesk-plugin-'
+export const MARKET_PREFIX = 'tinkerdesk-provider-'
 
 /* ── 业务实现 ── */
 
-/** 生态开放查询（keywords:tinkerdesk-plugin + 可选分类/搜索词——真实 registry 查询） */
+/** 生态开放查询（keywords:tinkerdesk-provider + 可选分类/搜索词——真实 registry 查询） */
 async function queryEcosystem(category?: string, search?: string): Promise<NpmPackage[]> {
   // npm search 语法：空格 = AND——组合条件精确查询
-  const parts = ['keywords:tinkerdesk-plugin']
+  const parts = ['keywords:tinkerdesk-provider']
   if (category) parts.push(`keywords:${category}`)
   if (search && search.trim()) parts.push(search.trim())
   const res = await searchNpm({ text: parts.join(' ') })
   return (res.objects ?? []).map((o) => o.package)
 }
 
-/** 官方账户补充查询（索引延迟兜底——官方插件必现——带同样筛选条件） */
+/** 官方账户补充查询（索引延迟兜底——官方扩展必现——带同样筛选条件） */
 async function queryOfficial(category?: string, search?: string): Promise<NpmPackage[]> {
   const parts = [`maintainer:${OFFICIAL_MAINTAINER}`]
   if (category) parts.push(`keywords:${category}`)
@@ -82,11 +82,11 @@ async function queryOfficial(category?: string, search?: string): Promise<NpmPac
   return (res.objects ?? []).map((o) => o.package)
 }
 
-/** 市场分类词（生态标记 tinkerdesk-plugin 之外的能力分类——约定词表） */
+/** 市场分类词（生态标记 tinkerdesk-provider 之外的能力分类——约定词表） */
 export const MARKET_CATEGORIES = ['voice', 'tts', 'stt', 'vision', 'tool', 'model', 'video', 'image', 'agent']
 
-/** 插件市场列表（生态开放 + 官方标记 + installed 状态 + 分类——真实 npm 搜索） */
-export async function listMarketPlugins(params: MarketQueryParams): Promise<MarketListResult> {
+/** 扩展市场列表（生态开放 + 官方标记 + installed 状态 + 分类——真实 npm 搜索） */
+export async function listMarketProviders(params: MarketQueryParams): Promise<MarketListResult> {
   const [eco, official] = await Promise.all([
     queryEcosystem(params.category, params.search),
     queryOfficial(params.category, params.search),
@@ -115,13 +115,13 @@ export async function listMarketPlugins(params: MarketQueryParams): Promise<Mark
     categories: (p.keywords ?? []).filter((k) => MARKET_CATEGORIES.includes(k)),
     keywords: (p.keywords ?? []).filter((k) => k !== MARKET_PREFIX),
   }))
-  // 分类聚合（所有插件出现过的分类——去重——排序）
+  // 分类聚合（所有扩展出现过的分类——去重——排序）
   const categories = Array.from(new Set(items.flatMap((i) => i.categories))).sort()
   return { items, categories }
 }
 
-/** 插件详情（npm 包元数据 + 官方标记 + 已安装状态——非市场前缀包按未安装处理） */
-export async function getMarketPluginDetail(name: string, installedIds: string[]): Promise<MarketPluginDetail> {
+/** 扩展详情（npm 包元数据 + 官方标记 + 已安装状态——非市场前缀包按未安装处理） */
+export async function getMarketProviderDetail(name: string, installedIds: string[]): Promise<MarketProviderDetail> {
   const d = await getPackageDetail(name)
   const inEcosystem = d.name.startsWith(MARKET_PREFIX)
   // 版本号：顶层 version 缺失时用 dist-tags.latest 兜底

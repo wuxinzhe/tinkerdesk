@@ -6,7 +6,7 @@
 export type AudioToolInterfaceId = 'tool.tts' | 'tool.stt'
 
 export interface AudioToolProviderInfo {
-  pluginId: string
+  providerId: string
   name: string
   version: string
   interfaceVersion: number

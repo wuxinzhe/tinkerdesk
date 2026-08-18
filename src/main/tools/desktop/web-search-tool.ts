@@ -2,7 +2,7 @@
  * desktop/web-search-tool.ts — 网络搜索工具（壳）
  *
  * Execution core split into providers/search (built-in provider registry).
- * 壳职责：schema / 参数校验 / 插件 provider 优先 + 内置回退 / 结果序列化。
+ * 壳职责：schema / 参数校验 / 扩展 provider 优先 + 内置回退 / 结果序列化。
  *
  * 环境变量（内置 provider 用）：SHOWING_WEB_SEARCH_BACKEND / TAVILY_API_KEY 等——见 providers/search。
  */
@@ -61,16 +61,16 @@ export class WebSearchTool extends BaseTool {
         return ToolResult.sync(JSON.stringify({ success: false, error: '搜索词为空' }))
       }
 
-      // ── 插件 provider 优先（激活了插件则调用；未激活/失败回退内置） ──
+      // ── 扩展 provider 优先（激活了扩展则调用；未激活/失败回退内置） ──
       let responseData: WebSearchResponseData | null = null
       if (this.webProvider) {
         try {
-          const pluginRes = await this.webProvider.callPlugin<{ results?: Array<{ title?: string; url?: string; description?: string }> }>('web.search', { query, limit })
-          if (pluginRes?.results && pluginRes.results.length > 0) {
+          const providerRes = await this.webProvider.callProvider<{ results?: Array<{ title?: string; url?: string; description?: string }> }>('web.search', { query, limit })
+          if (providerRes?.results && providerRes.results.length > 0) {
             responseData = {
               success: true,
               data: {
-                web: pluginRes.results.map((r, i) => ({
+                web: providerRes.results.map((r, i) => ({
                   title: r.title ?? '',
                   url: r.url ?? '',
                   description: r.description ?? '',
@@ -81,9 +81,9 @@ export class WebSearchTool extends BaseTool {
           }
         } catch (e) {
           if (!this.webProvider.allowFallback()) {
-            return ToolResult.sync(JSON.stringify({ success: false, error: `搜索插件失败: ${errMessage(e)}` }))
+            return ToolResult.sync(JSON.stringify({ success: false, error: `搜索扩展失败: ${errMessage(e)}` }))
           }
-          console.warn('[web_search] 插件 provider 失败，回退内置:', errMessage(e))
+          console.warn('[web_search] 扩展 provider 失败，回退内置:', errMessage(e))
         }
       }
 

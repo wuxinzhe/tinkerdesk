@@ -1,11 +1,11 @@
 /**
- * voice-controller.ts — 语音服务 IPC（系统固定接口：录音是应用固有功能，STT/TTS 转发给插件 provider）
+ * voice-controller.ts — 语音服务 IPC（系统固定接口：录音是应用固有功能，STT/TTS 转发给扩展 provider）
  *
  * Channels:
  *   voice:providers      → { stt: [...], tts: [...] } available provider list
  *   voice:get-config     → { sttProvider, ttsProvider } currently active
  *   voice:set-provider   → save active { sttProvider?, ttsProvider? }
- *   voice:provider-ready → query provider model readiness { pluginId }
+ *   voice:provider-ready → query provider model readiness { providerId }
  *   voice:stt:transcribe → { samples: Float32Array } → { text } forward to active STT provider
  *   voice:tts:speak      → { text } → { audio } forward to active TTS provider
  */
@@ -32,7 +32,7 @@ export class VoiceController {
     handleTrusted('voice:set-provider', (_event, payload: Partial<VoiceConfig>) =>
       this.setProvider(payload),
     )
-    handleTrusted('voice:provider-ready', (_event, payload: { pluginId: string }) =>
+    handleTrusted('voice:provider-ready', (_event, payload: { providerId: string }) =>
       this.providerReady(payload),
     )
     handleTrusted('voice:stt:transcribe', (_event, payload: { samples: Float32Array }) =>
@@ -77,10 +77,10 @@ export class VoiceController {
   }
 
   /** 查询 provider 模型就绪状态 */
-  private async providerReady(payload: { pluginId: string }): Promise<ApiResult<boolean>> {
+  private async providerReady(payload: { providerId: string }): Promise<ApiResult<boolean>> {
     try {
-      if (!payload?.pluginId) return fail('pluginId 不能为空')
-      return ok(await this.voiceService.providerReady(payload.pluginId))
+      if (!payload?.providerId) return fail('providerId 不能为空')
+      return ok(await this.voiceService.providerReady(payload.providerId))
     } catch (e) {
       return fail((e as Error).message)
     }

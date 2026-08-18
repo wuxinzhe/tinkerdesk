@@ -27,7 +27,7 @@ import { ModelController } from './controller/model-controller'
 import { AccountController } from './controller/account-controller'
 import { MemoryController } from './controller/memory-controller'
 import { McpController } from './controller/mcp-controller'
-import { PluginController } from './controller/plugin-controller'
+import { ProviderController } from './controller/provider-controller'
 import { VoiceProviderService } from './service/voice-provider-service'
 import { VoiceController } from './controller/voice-controller'
 import { GeneralSettingsController } from './controller/general-settings-controller'
@@ -205,12 +205,12 @@ function createWindow() {
     new AccountController(desk.accountService).register()
     new MemoryController(desk.memoryStore).register()
 
-    // ── 插件系统：扫描加载 + IPC（插件不进应用包，用户自行下载到 plugins/） ──
-    desk.pluginManager.loadAll()
-    new PluginController(desk.pluginManager, desk.pluginManager.getInstaller(), () => mainWindow).register()
+    // ── 扩展系统：扫描加载 + IPC（扩展不进应用包，用户自行下载到 plugins/） ──
+    desk.providerManager.loadAll()
+    new ProviderController(desk.providerManager, desk.providerManager.getInstaller(), () => mainWindow).register()
 
-    // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给插件 provider ──
-    const voiceService = new VoiceProviderService(desk.pluginManager)
+    // ── 语音服务：系统固定接口（voice.stt/voice.tts）转发给扩展 provider ──
+    const voiceService = new VoiceProviderService(desk.providerManager)
     new VoiceController(voiceService).register()
 
     // ── 通用设置（快捷键等全局键值配置） ──
@@ -244,8 +244,8 @@ function createWindow() {
     registerUpdaterHandlers()
 
     createWindow()
-    // 插件事件转发目标（窗口就绪后注入）
-    desk.pluginManager.setEmitTarget(mainWindow?.webContents ?? null)
+    // 扩展事件转发目标（窗口就绪后注入）
+    desk.providerManager.setEmitTarget(mainWindow?.webContents ?? null)
     checkForUpdatesOnStartup()
   })
 

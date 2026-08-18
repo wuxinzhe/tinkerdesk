@@ -2,7 +2,7 @@
  * web-provider-controller.ts — Web 工具（搜索/抓取）provider 配置 IPC controller
  *
  * Called from the tool-management L3 settings page (tools with supportsProvider):
- *   web-provider:list  → plugin provider list for an interface + active config
+ *   web-provider:list  → provider list for an interface + active config
  *   web-provider:set   → set active provider / fallback toggle
  *
  * Layering: controller → WebProvider (tool-domain service layer).
@@ -20,18 +20,18 @@ export interface WebProviderListDTO {
 
 export interface WebProviderSetDTO {
   iface: WebInterfaceId
-  /** 激活插件 id（null/'' = 内置兜底） */
-  pluginId?: string | null
+  /** 激活扩展 id（null/'' = 内置兜底） */
+  providerId?: string | null
   /** 失败回退内置开关（可选） */
   fallback?: boolean
 }
 
 export interface WebProviderListVO {
   iface: WebInterfaceId
-  /** 插件 provider 列表（内置不在此——内置是工具内建兜底，前端固定展示） */
+  /** 扩展 provider 列表（内置不在此——内置是工具内建兜底，前端固定展示） */
   providers: WebProviderInfo[]
-  /** 当前激活插件 id（null = 内置） */
-  activePluginId: string | null
+  /** 当前激活扩展 id（null = 内置） */
+  activeProviderId: string | null
   /** 失败回退内置开关 */
   fallback: boolean
 }
@@ -54,7 +54,7 @@ export class WebProviderController {
     return ok({
       iface,
       providers: this.webProviderService.providers(iface),
-      activePluginId: this.webProviderService.getActivePlugin(iface),
+      activeProviderId: this.webProviderService.getActiveProvider(iface),
       fallback: config.fallback,
     })
   }
@@ -65,13 +65,13 @@ export class WebProviderController {
       return fail('iface 必须是 web.search 或 web.extract')
     }
     const patch: Partial<WebProviderConfig> = {}
-    if (payload.pluginId !== undefined) {
-      const pluginId = payload.pluginId || null
-      if (pluginId && !this.webProviderService.providers(iface).some((p) => p.pluginId === pluginId)) {
-        return fail(`插件 provider 不存在: ${pluginId}`)
+    if (payload.providerId !== undefined) {
+      const providerId = payload.providerId || null
+      if (providerId && !this.webProviderService.providers(iface).some((p) => p.providerId === providerId)) {
+        return fail(`扩展 provider 不存在: ${providerId}`)
       }
-      if (iface === 'web.search') patch.search = pluginId
-      else patch.extract = pluginId
+      if (iface === 'web.search') patch.search = providerId
+      else patch.extract = providerId
     }
     if (payload.fallback !== undefined) patch.fallback = payload.fallback
     this.webProviderService.setConfig(patch)

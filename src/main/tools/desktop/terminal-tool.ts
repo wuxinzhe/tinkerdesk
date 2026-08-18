@@ -79,7 +79,7 @@ export class TerminalTool extends BaseTool {
         ...baseProps,
       },
     })
-    // 继承静态分类/emoji（terminal 是 desktop 插件工具——处理 tinkerdesk 外部文件）
+    // 继承静态分类/emoji（terminal 是 desktop 扩展工具——处理 tinkerdesk 外部文件）
     schema.toolType = this.schema.toolType
     schema.emoji = this.schema.emoji
     return schema

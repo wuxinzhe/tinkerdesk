@@ -15,7 +15,7 @@ export class ToolSchema {
   toolType: ToolType = 'builtin'
   /** 展示用 emoji 图标，默认 ⚡ */
   emoji = '⚡'
-  /** 是否支持 provider 模式（插件可接入 + 工具管理页显示设置按钮）——默认 false */
+  /** 是否支持 provider 模式（扩展可接入 + 工具管理页显示设置按钮）——默认 false */
   supportsProvider = false
 
   constructor(name: string, description: string, parameters: Record<string, unknown> | null) {

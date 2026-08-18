@@ -2,8 +2,8 @@
 /**
  * VoiceSettingsPanel.vue — 语音提供商选择面板（STT/TTS provider——嵌入通用设置页）
  *
- * 系统固定接口的多 provider 抽象：插件声明 systemInterfaces（voice.stt/voice.tts）即成为 provider。
- * 模型下载与 provider 详细配置在「插件设置」——这里只选择当前激活的 STT / TTS provider。
+ * 系统固定接口的多 provider 抽象：扩展声明 systemInterfaces（voice.stt/voice.tts）即成为 provider。
+ * 模型下载与 provider 详细配置在「扩展设置」——这里只选择当前激活的 STT / TTS provider。
  *
  * 设计（Emil）：原生 select + 项目统一字段样式（bg-secondary/圆角6/自绘 chevron）——
  * hover 触屏门控、:active 按压缩放、:focus-visible 焦点环、160ms ease-out 过渡。
@@ -17,40 +17,40 @@ const readyMap = ref<Record<string, boolean>>({})
 
 /** 只显示就绪的 provider（未就绪不出现——用户补充：只显示一切就绪的选项） */
 const sttOptions = computed(() =>
-  providers.value.stt.filter((p) => readyMap.value[p.pluginId]).map((p) => ({ label: p.name, value: p.pluginId })),
+  providers.value.stt.filter((p) => readyMap.value[p.providerId]).map((p) => ({ label: p.name, value: p.providerId })),
 )
 const ttsOptions = computed(() =>
-  providers.value.tts.filter((p) => readyMap.value[p.pluginId]).map((p) => ({ label: p.name, value: p.pluginId })),
+  providers.value.tts.filter((p) => readyMap.value[p.providerId]).map((p) => ({ label: p.name, value: p.providerId })),
 )
 
 async function load(): Promise<void> {
   providers.value = await window.api.voice.providers()
   config.value = await window.api.voice.getConfig()
-  // 查询各 provider 就绪状态（统一插件状态——与插件列表一致；只读展示——下载/配置在插件设置）
+  // 查询各 provider 就绪状态（统一扩展状态——与扩展列表一致；只读展示——下载/配置在扩展设置）
   const map: Record<string, boolean> = {}
   for (const p of [...providers.value.stt, ...providers.value.tts]) {
     try {
-      map[p.pluginId] = await window.api.voice.providerReady(p.pluginId)
+      map[p.providerId] = await window.api.voice.providerReady(p.providerId)
     } catch {
-      map[p.pluginId] = false
+      map[p.providerId] = false
     }
   }
   readyMap.value = map
 }
 
 function selectStt(e: Event): void {
-  const pluginId = (e.target as HTMLSelectElement).value
-  if (!pluginId) return
+  const providerId = (e.target as HTMLSelectElement).value
+  if (!providerId) return
   // 保存返回完整配置——merge 只更新 stt（绝不覆盖 tts）
-  void window.api.voice.setProvider({ sttProvider: pluginId }).then((saved) => {
+  void window.api.voice.setProvider({ sttProvider: providerId }).then((saved) => {
     config.value = { ...config.value, ...saved }
   })
 }
 
 function selectTts(e: Event): void {
-  const pluginId = (e.target as HTMLSelectElement).value
-  if (!pluginId) return
-  void window.api.voice.setProvider({ ttsProvider: pluginId }).then((saved) => {
+  const providerId = (e.target as HTMLSelectElement).value
+  if (!providerId) return
+  void window.api.voice.setProvider({ ttsProvider: providerId }).then((saved) => {
     config.value = { ...config.value, ...saved }
   })
 }
@@ -64,7 +64,7 @@ onMounted(() => {
   <div class="voice-panel">
     <!-- 无 provider -->
     <div v-if="providers.stt.length === 0 && providers.tts.length === 0" class="voice-panel__empty">
-      未安装语音插件——到「插件设置」安装声明 voice.stt / voice.tts 接口的插件（如 speech-sherpa）
+      未安装语音扩展——到「扩展设置」安装声明 voice.stt / voice.tts 接口的扩展（如 speech-sherpa）
     </div>
 
     <div v-else class="voice-panel__rows">
@@ -90,7 +90,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="voice-panel__hint">模型下载与 provider 配置请到「插件设置」</div>
+      <div class="voice-panel__hint">模型下载与 provider 配置请到「扩展设置」</div>
     </div>
   </div>
 </template>

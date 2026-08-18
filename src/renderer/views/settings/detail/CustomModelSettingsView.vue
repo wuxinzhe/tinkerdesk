@@ -8,7 +8,7 @@
       title="模型设置"
       desc="管理 AI 模型提供商和默认模型"
     />
-    <!-- 页头动作：添加模型（参考插件设置按钮位置——页头右侧） -->
+    <!-- 页头动作：添加模型（参考扩展设置按钮位置——页头右侧） -->
     <div class="cms-page__header">
       <button class="page-action-btn" title="添加模型" @click="router.push('/workspace/settings/model/create')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -131,7 +131,7 @@ onMounted(async () => {
   margin: 12px 0 4px;
 }
 
-/* 页头动作按钮（参考插件设置安装按钮——accent 风格） */
+/* 页头动作按钮（参考扩展设置安装按钮——accent 风格） */
 .page-action-btn {
   display: inline-flex;
   align-items: center;

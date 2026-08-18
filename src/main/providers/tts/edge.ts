@@ -2,13 +2,13 @@
  * providers/tts/edge.ts — 内置 tool.tts provider：Microsoft Edge 在线神经语音
  *
  * node-edge-tts（Python edge-tts 的 JS 移植）——免费、无 API key、需联网。
- * 以「内置插件」形态注册（builtin-edge-tts）——出现在插件列表、可配置音色/语速。
+ * 以「内置扩展」形态注册（builtin-edge-tts）——出现在扩展列表、可配置音色/语速。
  */
 import { EdgeTTS } from 'node-edge-tts'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { readFileSync } from 'fs'
-import { deriveStatus, type PluginApi, type TinkerPlugin } from '../../core/plugin/types'
+import { deriveStatus, type ProviderApi, type TinkerProvider } from '../../core/provider/types'
 
 /** 默认中文女声（微软 Edge 神经语音） */
 export const DEFAULT_EDGE_VOICE = 'zh-CN-XiaoyiNeural'
@@ -48,7 +48,7 @@ export async function edgeTtsSpeak(
   return outputPath
 }
 
-/** 内置插件 manifest（id 以 builtin- 前缀标识——前端显示「内置」标记、不可卸载） */
+/** 内置扩展 manifest（id 以 builtin- 前缀标识——前端显示「内置」标记、不可卸载） */
 export const EDGE_TTS_MANIFEST = {
   id: 'builtin-edge-tts',
   name: 'Edge 在线语音',
@@ -65,8 +65,8 @@ export const EDGE_TTS_MANIFEST = {
   description: '微软 Edge 免费神经语音（默认中文 XiaoyiNeural，需联网，无 API key）',
 }
 
-/** 内置 Edge TTS 插件（voice.tts：tts:speak 系统朗读；tool.tts：tts:speak_file 工具） */
-export const edgeTtsPlugin: TinkerPlugin = {
+/** 内置 Edge TTS 扩展（voice.tts：tts:speak 系统朗读；tool.tts：tts:speak_file 工具） */
+export const edgeTtsProvider: TinkerProvider = {
   init(ctx) {
     // ── 系统朗读（voice.tts 契约）：{ text } → { audio data URL } ──
     ctx.registerIpc('tts:speak', async (payload: unknown) => {
