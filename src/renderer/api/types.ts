@@ -467,7 +467,6 @@ export interface ToolItem {
   name: string
   description: string
   disabled: boolean
-  toolType: string
   /** 是否支持 provider 模式（显示设置按钮 + L3 provider 设置入口） */
   supportsProvider?: boolean
   /** 工具不可用原因（check 失败——管理页 tps-tool-error 展示） */

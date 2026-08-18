@@ -71,7 +71,7 @@ export class ToolCenter implements ICenter {
     ) {
       const name = externalTool.getSchema()?.name ?? toolName
       if (!name) throw new Error(`工具包 ${manifest.id} 未声明工具名`)
-      this.toolManager.register({ meta: { name }, tool: externalTool })
+      this.toolManager.register({ meta: { name }, tool: externalTool, source: 'external' })
       console.log(`[tool-center] 已注册工具 ${name}（包 ${manifest.id}）`)
       return
     }
@@ -97,7 +97,7 @@ export class ToolCenter implements ICenter {
         }
       },
     }
-    this.toolManager.register({ meta: { name: toolName }, tool })
+    this.toolManager.register({ meta: { name: toolName }, tool, source: 'external' })
     console.log(`[tool-center] 已注册工具 ${toolName}（包 ${manifest.id}，旧格式）`)
   }
 

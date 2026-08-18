@@ -61,7 +61,8 @@ export class DefaultAgentMode implements IAgentMode {
 
   /** 默认（通用）模式：全量工具——具体列出全部注册工具名（含内置 + 外置安装） */
   getToolset(_profile?: string): string[] {
-    return this.toolManager.getAllToolNames()
+    // 通用模式只暴露框架内置工具集（builtin+desktop_tinker_*+client）——外置安装工具（external）仅 creator 可自由选配
+    return this.toolManager.getToolNamesOfSources(['builtin'])
   }
 
   getDefaultConfig(): AgentConfig {

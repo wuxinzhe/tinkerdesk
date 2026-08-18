@@ -31,5 +31,4 @@ export { TOOL_NAME as SCHEDULE_TIMER_TOOL_NAME, ScheduleTimerTool } from './sche
 export { TOOL_NAME as FILE_MUTATION_VERIFIER_TOOL_NAME, FileMutationVerifierTool } from './file-mutation-verifier-tool'
 export { TOOL_NAME as VISION_RECOGNIZE_TOOL_NAME, VisionRecognizeTool } from './vision-tool'
 // 核心类型 re-export（定义在 core/tool/types）
-export { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT } from '../../core/tool/types'
-export type { AgentToolMeta, AgentToolRegistration, IAgentTool, ToolFunction, ToolType } from '../../core/tool/types'
+export type { AgentToolMeta, AgentToolRegistration, IAgentTool, ToolFunction } from '../../core/tool/types'

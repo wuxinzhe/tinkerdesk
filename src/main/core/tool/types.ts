@@ -53,22 +53,12 @@ export interface ToolCheckResult {
 
 // ── 工具类型常量 ─────
 
-/** 内建工具：围绕 TinkerAgent 的核心工具（memory/todo/skill/session-search 等） */
-export const TOOL_TYPE_BUILTIN = 'builtin'
-/** 客户端工具：对外的普通工具（与内建走相同执行器 tool.execute） */
-export const TOOL_TYPE_CLIENT = 'client'
-/** 工具类型：builtin/client 走各自执行器（不再区分 desktop——全部内置） */
-/** 工具类型：builtin/desktop/client 走各自执行器 */
-export type ToolType = typeof TOOL_TYPE_BUILTIN | typeof TOOL_TYPE_CLIENT
-
 // ── 工具注册元信息（@AgentTool 注解） ────────────────────
 
 /** 工具元信息 */
 export interface AgentToolMeta {
   /** 工具名（全局唯一，不区分大小写） */
   name: string
-  /** 工具类型：server = 服务端执行；desktop/web/... = 客户端工具（注册到服务端） */
-  toolType?: ToolType
   /** 展示用 emoji（可选） */
   emoji?: string
 }
@@ -77,6 +67,8 @@ export interface AgentToolMeta {
 export interface AgentToolRegistration {
   meta: AgentToolMeta
   tool: IAgentTool
+  /** 注册来源：'builtin'（框架内置——bootstrap 传入）｜'external'（外置安装——ToolCenter.load 扫 tools/） */
+  source?: 'builtin' | 'external'
 }
 
 // ── ToolCenter 类型（外置工具包中心） ──

@@ -21,6 +21,7 @@ import type { IAgentMode } from '../core/mode/agent-mode'
 import type { ApiResponse } from './api-response'
 import { ok, fail } from './api-response'
 import type { ToolItemVO, ToolListQueryDTO, ToggleToolRequestDTO } from './types'
+import type { ToolSchema } from '../core/tool/tool-schema'
 
 /** 工具 controller */
 export class ToolController {
@@ -56,46 +57,36 @@ export class ToolController {
    */
   private listToolConfigs(payload: ToolListQueryDTO): ApiResponse<ToolItemVO[]> {
     const profile = payload?.profile ?? 'default'
-    const toolType = payload?.toolType
     const mode = this.resolveMode(profile)
     const modeId = mode.meta.id
     const disabled = this.toolManager.getDisabledTools(profile)
     const errors = this.toolManager.getToolErrors()
-    const allSchemas = this.toolManager.getAllSchemas().filter((s) => !toolType || s.toolType === toolType)
+    const allSchemas = this.toolManager.getAllSchemas()
 
     // butler：空工具集
     if (modeId === 'butler') {
       return ok([])
     }
 
+    const base = (s: ToolSchema, editable: boolean, authorized?: boolean): ToolItemVO => ({
+      name: s.name,
+      description: s.description ?? '',
+      disabled: disabled.includes(s.name),
+      supportsProvider: s.supportsProvider,
+      error: errors.get(s.name) ?? undefined,
+      editable,
+      authorized,
+    })
+
     // creator：授权集可编辑（显示全量可授权，勾选 = authorized）
     if (modeId === 'creator') {
       const authorized = this.agentToolService.getAuthorized(profile)
-      return ok(allSchemas.map((s) => ({
-        name: s.name,
-        description: s.description ?? '',
-        disabled: disabled.includes(s.name),
-        toolType: s.toolType,
-        supportsProvider: s.supportsProvider,
-        error: errors.get(s.name) ?? undefined,
-        editable: true,
-        authorized: authorized.includes(s.name),
-      })))
+      return ok(allSchemas.map((s) => base(s, true, authorized.includes(s.name))))
     }
 
     // default / minimal：mode 固定工具集，只读
     const toolset = new Set(mode.getToolset(profile) ?? [])
-    return ok(allSchemas
-      .filter((s) => toolset.has(s.name))
-      .map((s) => ({
-        name: s.name,
-        description: s.description ?? '',
-        disabled: disabled.includes(s.name),
-        toolType: s.toolType,
-        supportsProvider: s.supportsProvider,
-        error: errors.get(s.name) ?? undefined,
-        editable: false,
-      })))
+    return ok(allSchemas.filter((s) => toolset.has(s.name)).map((s) => base(s, false)))
   }
 
   /**
@@ -119,6 +110,6 @@ export class ToolController {
     } else if (payload.authorized === false && isAuthorized) {
       this.agentToolService.revoke(profile, toolName)
     }
-    return ok({ name: toolName, description: '', disabled: !payload.authorized, toolType: '' })
+    return ok({ name: toolName, description: '', disabled: !payload.authorized })
   }
 }

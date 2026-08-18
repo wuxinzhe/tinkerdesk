@@ -3,7 +3,7 @@
  *
  * ToolSchema: the tool object in OpenAI function calling.
  */
-import type { ToolFunction, ToolType } from './types'
+import type { ToolFunction } from './types'
 
 /** 工具 Schema 定义 */
 export class ToolSchema {
@@ -11,8 +11,6 @@ export class ToolSchema {
   readonly type = 'function'
   /** 工具函数定义（名称、描述、参数） */
   readonly function: ToolFunction
-  /** 工具类型分类：builtin = 内建；desktop = 客户端本地；client = 客户端工具 */
-  toolType: ToolType = 'builtin'
   /** 展示用 emoji 图标，默认 ⚡ */
   emoji = '⚡'
   /** 是否支持 provider 模式（扩展可接入 + 工具管理页显示设置按钮）——默认 false */
@@ -63,10 +61,6 @@ export class ToolSchema {
     const schema = new ToolSchema(name, description, parameters)
     if (json.emoji !== undefined) {
       schema.setEmoji(String(json.emoji))
-    }
-    // 工具类型分类（模板里已有 toolType 字段，如 "server"）
-    if (json.toolType !== undefined) {
-      schema.toolType = json.toolType as ToolType
     }
     // 支持 provider 模式（模板里可选声明）
     if (json.supportsProvider !== undefined) {

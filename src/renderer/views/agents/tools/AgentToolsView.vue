@@ -7,18 +7,6 @@
       title="工具配置"
       desc="启用/停用该 Agent 可用的工具"
     />
-    <!-- Tab 页签：按工具类型分类（始终显示——空分类也保留 Tab 切换） -->
-    <div class="tools-tabs">
-      <button
-        v-for="tab in toolTabs"
-        :key="tab.type"
-        class="tools-tab"
-        :class="{ 'tools-tab--active': activeToolType === tab.type }"
-        @click="switchTab(tab.type)"
-      >
-        {{ tab.label }}
-      </button>
-    </div>
     <div v-if="toolsLoading" class="tools-loading">
       加载中…
     </div>
@@ -33,10 +21,7 @@
         <div v-for="tool in toolsList" :key="tool.name" class="tool-row" :class="{ 'tool-row--unavailable': !!tool.error }">
           <div class="tool-row__info">
             <div class="tool-row__header">
-              <span class="tool-row__tag" :class="'tag-' + (tool.toolType || 'unknown')">
-                {{ toolTypeLabels[tool.toolType || ''] || '未知来源' }}
-              </span>
-              <div class="tool-row__name">
+                <div class="tool-row__name">
                 {{ parseDisplayName(tool.name) }}
               </div>
               <button
@@ -90,29 +75,13 @@ const detailProfile = computed(() => route.params.profile as string)
 const toolsList = ref<ToolItem[]>([])
 const toolsLoading = ref(false)
 
-/* ── Tab 页签（按工具类型分类查询） ── */
-const toolTabs = [
-  { type: 'builtin', label: '内建工具' },
-  { type: 'desktop', label: '扩展工具' },
-]
-const activeToolType = ref('builtin')
-
-const toolTypeLabels: Record<string, string> = {
-  builtin: '内建工具', desktop: '扩展工具', client: '客户端工具',
-}
-
-function switchTab(type: string): void {
-  if (activeToolType.value === type) return
-  activeToolType.value = type
-  void loadTools()
-}
 
 async function loadTools() {
   const profile = detailProfile.value
   if (!profile) return
   toolsLoading.value = true
   try {
-    const res = await toolsApi.list(profile, activeToolType.value)
+    const res = await toolsApi.list(profile)
     toolsList.value = res ?? []
   } catch {
     toolsList.value = []

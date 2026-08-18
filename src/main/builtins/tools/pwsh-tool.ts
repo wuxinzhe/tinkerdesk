@@ -43,7 +43,6 @@ export class PwshTool extends BaseTool {
       'A killed process settles as exit code 1 without a signal marker — treat a bare exit 1 after an interruption as termination, not command failure. ' +
       'Foreground (default): blocks until done, returns full output. Background (background=true): spawns a persistent process, returns session_id immediately; manage it with process/read_terminal/close_terminal.'
     const schema = new ToolSchema(TOOL_NAME, description, base.parameters)
-    schema.toolType = base.toolType
     schema.emoji = base.emoji
     return schema
   }

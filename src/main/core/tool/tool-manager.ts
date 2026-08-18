@@ -16,16 +16,15 @@ import type { ToolCall } from '../llm/types'
 import type { ToolContext } from '../loop/types'
 import { ToolResult } from './tool-result'
 import { ToolSchema } from './tool-schema'
-import type { AgentToolRegistration, IAgentTool, ToolType } from './types'
-import { TOOL_TYPE_BUILTIN, TOOL_TYPE_CLIENT } from './types'
+import type { AgentToolRegistration, IAgentTool } from './types'
 
 /** 工具管理器（统一工具注册中心） */
 export class ToolManager {
   /** 工具池：toolName → IAgentTool（仅可用工具，内建/桌面/客户端同构注册） */
   private readonly tools = new Map<string, IAgentTool>()
 
-  /** 工具类型：toolName → toolType（builtin / desktop / client） */
-  private readonly toolTypes = new Map<string, ToolType>()
+  /** 工具注册来源：toolName → 'builtin'（框架内置）| 'external'（外置安装） */
+  private readonly toolSources = new Map<string, string>()
   /** 不可用工具（check 失败——列表展示灰色 + 管理页错误原因）：toolName → { schema, reason } */
   private readonly unavailableTools = new Map<string, { schema: ToolSchema; reason: string }>()
 
@@ -73,14 +72,12 @@ export class ToolManager {
         // 保留展示信息（管理页列表显示灰色 + 错误原因）
         const schema = this.getEffectiveSchema(reg.tool)
         if (reg.meta.emoji) schema.setEmoji(reg.meta.emoji)
-        schema.toolType = reg.meta.toolType ?? TOOL_TYPE_BUILTIN
         this.unavailableTools.set(toolName, { schema, reason })
         continue
       }
       this.tools.set(toolName, reg.tool)
       this.toolEmojis.set(toolName, reg.meta.emoji ?? '⚡')
       // 工具类型分类（默认 builtin，注册时可覆盖）
-      this.toolTypes.set(toolName, reg.meta.toolType ?? TOOL_TYPE_BUILTIN)
 
       // 工具类自身可覆写 emoji（通过 schema.setEmoji）
       const schema = this.getEffectiveSchema(reg.tool)
@@ -106,7 +103,7 @@ export class ToolManager {
     }
     this.tools.set(toolName, reg.tool)
     this.toolEmojis.set(toolName, reg.meta.emoji ?? '⚡')
-    this.toolTypes.set(toolName, reg.meta.toolType ?? TOOL_TYPE_BUILTIN)
+    this.toolSources.set(toolName, reg.source ?? 'builtin')
     const schema = this.getEffectiveSchema(reg.tool)
     if (reg.meta.emoji) {
       schema.setEmoji(reg.meta.emoji)
@@ -119,7 +116,6 @@ export class ToolManager {
   unregister(toolName: string): void {
     this.tools.delete(toolName)
     this.toolEmojis.delete(toolName)
-    this.toolTypes.delete(toolName)
   }
 
   // ════════════════════════════════════════════════════════════
@@ -186,7 +182,14 @@ export class ToolManager {
 
   /** 全部已注册工具名（模式 getToolset 取全量用——含内置 + 外置安装） */
   getAllToolNames(): string[] {
-    return Array.from(this.tools.keys())
+    return [...this.tools.keys()]
+  }
+
+
+  /** 获取指定注册来源的工具名列表（缺省 = 内置 builtin——排除外置 external） */
+  getToolNamesOfSources(sources?: string[]): string[] {
+    const allow = sources ?? ['builtin']
+    return [...this.tools.keys()].filter((n) => allow.includes(this.toolSources.get(n) ?? 'builtin'))
   }
 
   /** 根据工具名获取完整 ToolSchema（未找到返回 null） */
@@ -195,43 +198,6 @@ export class ToolManager {
     return tool ? this.getEffectiveSchema(tool) : null
   }
 
-  /** 获取工具类型（builtin / desktop / client） */
-  getToolType(toolName: string): ToolType | null {
-    return this.toolTypes.get(toolName) ?? null
-  }
-
-  /** 获取全部工具类型映射（toolName → toolType） */
-  getAllToolTypes(): Record<string, ToolType> {
-    return Object.fromEntries(this.toolTypes)
-  }
-
-  /**
-   * 获取客户端工具 Schema（toolType = client，注册到服务端用）。
-   * 云端模式时，这些工具需要向 tinker-agent 服务端注册，
-   * 服务端 TinkerAgent 调用时派发回本地执行。
-   */
-  getClientToolSchemas(profile: string): ToolSchema[] {
-    const disabled = this.getDisabledSet(profile)
-    const result: ToolSchema[] = []
-    for (const [name, tool] of this.tools) {
-      if (this.toolTypes.get(name) !== TOOL_TYPE_CLIENT) continue
-      if (disabled.has(name)) continue
-      result.push(this.getEffectiveSchema(tool))
-    }
-    return result
-  }
-
-  /** 获取内建工具 Schema（toolType = builtin，本地 TinkerAgent 直接执行）。 */
-  getBuiltinToolSchemas(profile: string): ToolSchema[] {
-    const disabled = this.getDisabledSet(profile)
-    const result: ToolSchema[] = []
-    for (const [name, tool] of this.tools) {
-      if (this.toolTypes.get(name) !== TOOL_TYPE_BUILTIN) continue
-      if (disabled.has(name)) continue
-      result.push(this.getEffectiveSchema(tool))
-    }
-    return result
-  }
 
   // ════════════════════════════════════════════════════════════
   // per-agent 工具集白名单（按 AgentMode.getToolset 注入）
@@ -320,9 +286,7 @@ export class ToolManager {
       return ToolResult.sync(`错误：工具 ${toolName} 不存在或不可用`)
     }
 
-    const toolType = this.toolTypes.get(toolName)
-
-    // builtin / client：工具自身执行器
+    // 统一执行器（不再按 toolType 路由——全部走工具自身 execute）
     return tool.execute(ctx)
   }
 

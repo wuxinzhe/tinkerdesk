@@ -10,13 +10,11 @@
  * Lifecycle = one turn (turn state = instance fields); the object is
  * discarded after run() returns.
  */
-import { MessageFactory } from '../../service/message-service'
+import { withTransaction } from '../../repository/database'
 import { eventRecorder } from '../../service/event-recorder'
-import { getShortName } from '../../utils/tool-display'
+import { MessageFactory } from '../../service/message-service'
 import { ToolLoopGuardrail } from '../../service/tool-loop-guardrail-service'
-import { BusyModeRegistry } from './busy-mode-registry'
-import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT } from './types'
-import type { BusyModeStrategy, BusyLoopHost } from './types'
+import { getShortName } from '../../utils/tool-display'
 import {
   EVT_ACTION_TOOL_DONE,
   EVT_ACTION_TOOL_START,
@@ -33,15 +31,15 @@ import {
   ROLE_USER,
 } from '../constants'
 import { ERROR_CONTEXT_OVERFLOW, RES_EMPTY, RES_REASONING, RES_TEXT, RES_TOOL_CALLS, RES_TRUNCATED } from '../llm/llm-response'
-import type { ApiMessage, LlmChunk, LlmResponse, LlmRouterOptions, ModelConfig } from '../llm/types'
 import { repairMessageSequence } from '../llm/message-utils'
+import type { ApiMessage, LlmChunk, LlmResponse, LlmRouterOptions, ModelConfig } from '../llm/types'
 import { SCENE_CHAT, SCENE_SUMMARY, SCENE_TITLE } from '../llm/types'
 import type { ToolSchema } from '../tool/tool-schema'
+import { BusyModeRegistry } from './busy-mode-registry'
 import type { ConversationContext, SessionContext } from './context'
 import { buildConvCtx } from './context'
-import type { ConversationDeps, TinkerAgentResult } from './types'
-import { CONV_COMPLETED, RES_INTERRUPTED } from './types'
-import { withTransaction } from '../../repository/database'
+import type { BusyLoopHost, BusyModeStrategy, ConversationDeps, TinkerAgentResult } from './types'
+import { BUSY_MODE_INTERRUPT, BUSY_MODE_REDIRECT, CONV_COMPLETED, RES_INTERRUPTED } from './types'
 
 /** 对话轮次对象 */
 export class Conversation implements BusyLoopHost {
