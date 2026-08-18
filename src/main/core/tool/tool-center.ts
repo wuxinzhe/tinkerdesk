@@ -101,16 +101,24 @@ export class ToolCenter implements ICenter {
     console.log(`[tool-center] 已注册工具 ${toolName}（包 ${manifest.id}，旧格式）`)
   }
 
-  /** 可用性检查：entry 存在 + require 成功 + schema/execute 有效 */
+  /** 可用性检查：entry 存在 + require 成功 + implement IAgentTool（或兼容旧 {schema,execute}） */
   check(id: string): { ok: boolean; reason?: string } {
     const dir = join(this.toolsDir, id)
     if (!existsSync(join(dir, 'manifest.json'))) return { ok: false, reason: '未安装' }
     try {
       const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf-8')) as ToolPackageManifest
       if (!manifest.entry || !existsSync(join(dir, manifest.entry))) return { ok: false, reason: '入口文件缺失' }
-      const mod = require(join(dir, manifest.entry))
-      if (!mod.schema || typeof mod.execute !== 'function') return { ok: false, reason: '未导出 { schema, execute }' }
-      return { ok: true }
+      const mod = require(join(dir, manifest.entry)) as Record<string, unknown>
+      const externalTool = (mod.tool ?? mod.default) as import('./types').IAgentTool | undefined
+      // 优先：实现 IAgentTool（getSchema/execute 方法）
+      if (externalTool && typeof externalTool.getSchema === 'function' && typeof externalTool.execute === 'function') {
+        return { ok: true }
+      }
+      // 兼容旧格式 { schema, execute }
+      if ((mod.schema && typeof mod.execute === 'function')) {
+        return { ok: true }
+      }
+      return { ok: false, reason: 'entry 未实现 IAgentTool（需导出 getSchema/execute）' }
     } catch (e) {
       return { ok: false, reason: (e as Error).message }
     }
