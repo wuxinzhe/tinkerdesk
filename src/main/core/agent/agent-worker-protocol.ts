@@ -47,3 +47,4 @@ export type WorkerInboundMessage =
   | { type: 'agent:interrupt'; sessionId: string }
   | { type: 'agent:interruptNoPending'; sessionId: string }
   | { type: 'agent:clearAll'; sessionId: string }
+  | { type: 'agent:recover'; sessionId: string }

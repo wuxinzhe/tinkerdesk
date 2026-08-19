@@ -19,6 +19,13 @@ import type { WorkerOutboundMessage, WorkerUISenderEvent } from './agent-worker-
 /** worker 入口（electron-vite main 多入口独立打包——out/main/agent-worker.js） */
 const WORKER_ENTRY = join(__dirname, 'agent-worker.js')
 
+/** 会话空闲回收窗口（ms）：某会话 dispatch 后一段时间无新消息 → 释放其 worker 进程（默认 worker 常驻除外） */
+const IDLE_TIMEOUT_MS = 60_000
+/** 崩溃重启统计窗口（ms） */
+const RESTART_WINDOW_MS = 60_000
+/** 窗口内最大自动重启次数（超过则放弃，防循环崩溃死循环拉进程） */
+const RESTART_MAX = 5
+
 /** 会话一轮 AgentLoop 的完成结果（agent:chat 返回值用） */
 export interface DoneResult {
   conversationId?: string
@@ -34,6 +41,12 @@ export class AgentWorkerHost {
   private readonly senders = new Map<string, ElectronEventSender>()
   /** 会话 → 待完成的 AgentLoop 等待者队列（agent:chat 经 host.dispatch 后同步等待 worker agent:done/error 以返回 MessageVO） */
   private readonly pendingDone = new Map<string, Array<(r: DoneResult) => void>>()
+  /** 显式回收中的会话（disposeSession/destroy/shutdownAll kill 过的）——exit 事件据此判断"正常回收 vs 崩溃"，避免回收后误重启 */
+  private readonly intentionalDispose = new Set<string>()
+  /** 会话 → 空闲回收定时器（dispatch 时重置；默认 worker 常驻不设） */
+  private readonly idleTimers = new Map<string, NodeJS.Timeout>()
+  /** 会话 → 窗口内自动重启时间戳（防循环崩溃无限拉进程） */
+  private readonly restartTimes = new Map<string, number[]>()
 
   /** 拉起一个会话对应的 Agent 进程（重复 id 复用一个） */
   spawn(id: string): void {
@@ -53,10 +66,11 @@ export class AgentWorkerHost {
     proc.postMessage({ type: 'ping', sessionId: id } satisfies Record<string, unknown>)
   }
 
-  /** 向会话进程发消息（不在池中则先 spawn） */
+  /** 向会话进程发消息（不在池中则先 spawn）+ 重置该会话空闲回收定时器 */
   dispatch(id: string, msg: Record<string, unknown>): void {
     if (!this.workers.has(id)) this.spawn(id)
     this.workers.get(id)?.postMessage(msg)
+    this.resetIdleTimer(id)
   }
 
   /** 登记某会话的 worker 事件回流到某个 renderer（webContents id——由触发 IPC 的 event.sender 提供） */
@@ -94,23 +108,71 @@ export class AgentWorkerHost {
     resolve(r)
   }
 
-  /** 回收某个会话进程 */
-  destroy(id: string): void {
-    this.workers.get(id)?.kill()
-    this.workers.delete(id)
-    this.relays.delete(id)
-    this.senders.delete(id)
-    // 未决的完成等待者必须释放（否则 agent:chat 的 IPC 永久挂起）
-    this.resolveDone(id, { error: 'AgentWorker 进程已回收' })
+  /** 显式释放某会话进程（会话关闭/删除时调用）——默认 worker 常驻不回收 */
+  disposeSession(sessionId: string): void {
+    if (sessionId === 'default') return
+    this.reap(sessionId)
+    this.restartTimes.delete(sessionId)
   }
 
-  /** 全部回收（应用退出） */
+  /** 底层回收（标记显式 → kill → 清理各表；exit 事件据此判定"正常回收"不重启） */
+  private reap(id: string): void {
+    this.clearIdleTimer(id)
+    this.resolveDone(id, { error: 'AgentWorker 进程已回收' })
+    const proc = this.workers.get(id)
+    if (proc) {
+      this.intentionalDispose.add(id)
+      proc.kill()
+      this.workers.delete(id)
+    }
+    this.relays.delete(id)
+    this.senders.delete(id)
+  }
+
+  /** 回收某个会话进程（保留的通用底层入口；亦可用于显式释放任意会话） */
+  destroy(id: string): void {
+    this.reap(id)
+  }
+
+  /** 全部回收（应用退出——before-quit） */
   shutdownAll(): void {
-    for (const proc of this.workers.values()) proc.kill()
+    for (const id of this.workers.keys()) {
+      this.clearIdleTimer(id)
+      this.intentionalDispose.add(id)
+      this.workers.get(id)?.kill()
+    }
     this.workers.clear()
     this.relays.clear()
     this.senders.clear()
     this.pendingDone.clear()
+    this.restartTimes.clear()
+  }
+
+  /**
+   * 会话空闲回收：dispatch 后 IDLE_TIMEOUT_MS 无新消息 → 释放该会话 worker 进程（池回收）。
+   * 默认 worker（default）常驻不回收；chat 进行中（有待决完成等待）时顺延不回收。
+   */
+  private resetIdleTimer(id: string): void {
+    if (id === 'default') return
+    this.clearIdleTimer(id)
+    const timer = setTimeout(() => {
+      if ((this.pendingDone.get(id)?.length ?? 0) > 0) {
+        // 该会话还有一轮 chat 在跑——顺延一个窗口再判断
+        this.resetIdleTimer(id)
+        return
+      }
+      console.log(`[agent-worker] ${id} 空闲超时（${IDLE_TIMEOUT_MS / 1000}s 无消息），回收进程`)
+      this.disposeSession(id)
+    }, IDLE_TIMEOUT_MS)
+    this.idleTimers.set(id, timer)
+  }
+
+  private clearIdleTimer(id: string): void {
+    const timer = this.idleTimers.get(id)
+    if (timer) {
+      clearTimeout(timer)
+      this.idleTimers.delete(id)
+    }
   }
 
   get size(): number {
@@ -186,12 +248,47 @@ export class AgentWorkerHost {
   }
 
   private handleExit(id: string, code: number): void {
-    console.warn(`[agent-worker] ${id} exited code=${code}（若有活跃会话将自动重启）`)
+    this.clearIdleTimer(id)
     this.workers.delete(id)
-    this.relays.delete(id)
-    this.senders.delete(id)
     // 进程退出时未决等待者必须释放（否则 agent:chat 的 IPC 永久挂起）
     this.resolveDone(id, { error: `AgentWorker 进程退出 code=${code}` })
-    // M4: 崩溃自动重启 + UI 通知
+    if (this.intentionalDispose.delete(id)) {
+      // 显式回收（disposeSession/destroy/shutdownAll）——正常回收，不重启，清掉回流与重启记录
+      this.relays.delete(id)
+      this.senders.delete(id)
+      this.restartTimes.delete(id)
+      console.log(`[agent-worker] ${id} 已回收（显式释放）`)
+      return
+    }
+    // 非显式退出 = 意外崩溃 → 自动重启（保留 relay/sender 供恢复后继续回投 UI）
+    this.maybeRestart(id, code)
+  }
+
+  /** 崩溃自动重启（带窗口限频防循环崩溃）：限窗口内 RESTART_MAX 次，超限放弃并提示 */
+  private maybeRestart(id: string, code: number): void {
+    const now = Date.now()
+    const recent = (this.restartTimes.get(id) ?? []).filter((t) => now - t < RESTART_WINDOW_MS)
+    if (recent.length >= RESTART_MAX) {
+      this.restartTimes.delete(id)
+      console.error(`[agent-worker] ${id} 在 ${RESTART_WINDOW_MS / 1000}s 内已崩溃 ${RESTART_MAX} 次（code=${code}），放弃自动重启`)
+      this.pushSessionTip(id, '会话进程多次异常退出，已停止自动恢复，请查看日志后重试')
+      return
+    }
+    recent.push(now)
+    this.restartTimes.set(id, recent)
+    console.warn(`[agent-worker] ${id} 异常退出 code=${code}（${recent.length}/${RESTART_MAX} 窗口），自动重启…`)
+    // 重新拉起同 sessionId 的 worker（handleExit 已从 workers 移除旧进程）＋ 发恢复消息让新进程装配就绪
+    this.spawn(id)
+    this.dispatch(id, { type: 'agent:recover', sessionId: id })
+    this.pushSessionTip(id, '会话进程异常退出，已自动恢复')
+  }
+
+  /** 向该会话的 UI 回流目标推一条轻量提示（无回流目标则静默丢弃——不阻塞） */
+  private pushSessionTip(sessionId: string, message: string): void {
+    try {
+      this.getSender(sessionId)?.sendTips(sessionId, 'recover', message)
+    } catch {
+      // 窗口不可用/无回流目标——静默（恢复进程本身不受影响）
+    }
   }
 }

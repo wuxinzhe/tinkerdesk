@@ -169,6 +169,19 @@ port.on('message', (e: { data?: WorkerInboundMessage }) => {
       agents.delete(msg.sessionId)
       break
     }
+    case 'agent:recover': {
+      // 崩溃自动重启后主进程发来恢复消息——确保 DB + AgentLoop 运行时装配就绪（fresh 进程懒装配一次）
+      try {
+        getAssembly()
+        console.log(`[agent-worker] session=${msg.sessionId} 恢复成功（装配就绪）`)
+        send({ type: 'pong', sessionId: msg.sessionId })
+      } catch (e) {
+        const err = e instanceof Error ? e : new Error(String(e))
+        console.error(`[agent-worker] session=${msg.sessionId} 恢复失败: ${err.message}\n${err.stack ?? ''}`)
+        send({ type: 'agent:error', sessionId: msg.sessionId, message: `恢复失败: ${err.message}` })
+      }
+      break
+    }
     default: {
       // 未知类型——回 agent:error 便于主进程观测
       const raw = msg as { type?: string; sessionId?: string }

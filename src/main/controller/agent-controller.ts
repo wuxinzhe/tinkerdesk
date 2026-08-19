@@ -180,10 +180,11 @@ export class AgentController {
     return ok(null)
   }
 
-  /** 清理会话状态（clearAll）：转发到 worker 内 AgentLoop（clearAll + dispose），实例从 worker 侧移除 */
+  /** 清理会话状态（clearAll）：转发到 worker 内 AgentLoop（clearAll + dispose），实例从 worker 侧移除；随后显式释放该会话 worker 进程（池回收——clearAll 仅清内存态，立即 kill 无 DB 丢失） */
   private clearSessionState(_event: Electron.IpcMainInvokeEvent, payload: AgentClearAllRequestDTO): ApiResponse<null> {
     if (this.agentWorkerHost) {
       this.agentWorkerHost.dispatch(payload.sessionId, { type: 'agent:clearAll', sessionId: payload.sessionId })
+      this.agentWorkerHost.disposeSession(payload.sessionId)
     }
     return ok(null)
   }

@@ -188,6 +188,14 @@ function createWindow() {
     const agentWorkerHost = new AgentWorkerHost()
     desk.agentWorkerHost = agentWorkerHost
     agentWorkerHost.spawn('default')
+    // M4: 应用退出前清理所有 worker 进程（默认常驻 + 各会话进程——防残留 utilityProcess）
+    app.on('before-quit', () => {
+      try {
+        agentWorkerHost.shutdownAll()
+      } catch (e) {
+        console.error('[agent-worker] 退出清理 worker 失败', e)
+      }
+    })
     // usage 统计：残留缓冲兜底入库 + 启动定时批量 flush（不影响主链路）
     usageRecorder.init()
     new AgentController(desk.sessionService, desk.messageService, agentWorkerHost).register()
