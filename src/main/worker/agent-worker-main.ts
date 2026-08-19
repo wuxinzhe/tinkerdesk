@@ -110,12 +110,17 @@ async function handlePrompt(msg: { sessionId: string; profile: string; text: str
       agents.set(sessionId, agent)
     }
     const result = await agent.chat(ctx, text)
-    send({ type: 'agent:done', sessionId, conversationId: result.conversationId })
+    send({ type: 'agent:done', sessionId, conversationId: result.conversationId, finishReason: result.response.finishReason })
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     console.error(`[agent-worker] prompt 失败 sessionId=${sessionId} err=${err.message}\n${err.stack ?? ''}`)
-    send({ type: 'agent:error', sessionId, message: err.message })
+    send({ type: 'agent:error', sessionId, message: err.message + '\n' + (err.stack ?? '') })
   }
+}
+
+/** 取某会话的 Agent 实例（会话必经 agent:prompt 创建；仅操作类消息到达时可能没有实例——安全 no-op） */
+function agentFor(sessionId: string): TinkerAgent | undefined {
+  return agents.get(sessionId)
 }
 
 port.on('message', (e: { data?: WorkerInboundMessage }) => {
@@ -128,8 +133,44 @@ port.on('message', (e: { data?: WorkerInboundMessage }) => {
     case 'agent:prompt':
       void handlePrompt(msg)
       break
+    // ── 默认对话路径的会话操作：host 转发到本进程，由 worker 内 AgentLoop 的
+    //    TinkerAgent 实例（waitToolResult / ApprovalManager / SessionRuntime）挂起与恢复 ──
+    case 'agent:toolResult': {
+      agentFor(msg.sessionId)?.onToolResult(msg.sessionId, msg.toolCallId, msg.result)
+      break
+    }
+    case 'agent:approval': {
+      agentFor(msg.sessionId)?.onApproval(msg.sessionId, msg.toolCallId, msg.approved)
+      break
+    }
+    case 'agent:autoApprove': {
+      // 本进程一个会话一个 Agent —— 遍历所有实例放行对应 conversationId 的审批
+      for (const a of agents.values()) a.setAutoApprove(msg.conversationId)
+      break
+    }
+    case 'agent:revoke': {
+      agentFor(msg.sessionId)?.revoke(msg.sessionId, msg.messageId)
+      break
+    }
+    case 'agent:interrupt': {
+      agentFor(msg.sessionId)?.interrupt(msg.sessionId)
+      break
+    }
+    case 'agent:interruptNoPending': {
+      agentFor(msg.sessionId)?.interruptNoPending(msg.sessionId)
+      break
+    }
+    case 'agent:clearAll': {
+      const a = agentFor(msg.sessionId)
+      if (a) {
+        a.clearAll(msg.sessionId)
+        a.dispose()
+      }
+      agents.delete(msg.sessionId)
+      break
+    }
     default: {
-      // 未知类型（AgentWorkerHost 当前不发）——回 agent:error 便于主进程观测
+      // 未知类型——回 agent:error 便于主进程观测
       const raw = msg as { type?: string; sessionId?: string }
       send({ type: 'agent:error', sessionId: raw.sessionId ?? '', message: `unknown 消息类型: ${raw.type ?? '?'}` })
     }

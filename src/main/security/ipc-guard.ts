@@ -41,8 +41,21 @@ export function assertTrustedSender(event: IpcMainInvokeEvent): void {
   }
 }
 
+/** 是否有 main 进程 ipcMain（AgentWorker（utilityProcess）只导出 parentPort → false） */
+function hasIpcMain(): boolean {
+  return typeof ipcMain !== 'undefined' && typeof ipcMain.handle === 'function'
+}
+
 /** 带来源校验的 handle（替代 ipcMain.handle——所有通道统一走校验） */
 export function handleTrusted(channel: string, handler: (event: IpcMainInvokeEvent, ...args: any[]) => unknown): void {
+  // AgentWorker（utilityProcess）是纯 Node 上下文——electron 模块不导出 ipcMain。
+  // 装配链里内置 provider 的 init() 会经 ctx.registerIpc 走到这里注册 renderer 直连
+  // 的 IPC 通道，但该能力本就只存在于主进程（worker 侧能力经 parentPort 协议由主进程
+  // 转发调用，不暴露 ipcMain 通道）。worker 装配时跳过注册即可——行为与主进程零差异
+  // （主进程 ipcMain 恒在，正常 handle）。
+  if (!hasIpcMain()) {
+    return
+  }
   ipcMain.handle(channel, (event, ...args) => {
     assertTrustedSender(event)
     return handler(event, ...args)

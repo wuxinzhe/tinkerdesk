@@ -19,12 +19,21 @@ import type { WorkerOutboundMessage, WorkerUISenderEvent } from './agent-worker-
 /** worker 入口（electron-vite main 多入口独立打包——out/main/agent-worker.js） */
 const WORKER_ENTRY = join(__dirname, 'agent-worker.js')
 
+/** 会话一轮 AgentLoop 的完成结果（agent:chat 返回值用） */
+export interface DoneResult {
+  conversationId?: string
+  finishReason?: string
+  error?: string
+}
+
 export class AgentWorkerHost {
   private readonly workers = new Map<string, UtilityProcess>()
-  /** 会话 → 目标 renderer（webContents）id——agent-worker:send 触发时登记，worker 事件据此回投 */
+  /** 会话 → 目标 renderer（webContents）id——agent:chat 触发时登记，worker 事件据此回投 */
   private readonly relays = new Map<string, number>()
   /** 会话 → 复用的 ElectronEventSender（保留 token 攒批等发送器状态） */
   private readonly senders = new Map<string, ElectronEventSender>()
+  /** 会话 → 待完成的 AgentLoop 等待者队列（agent:chat 经 host.dispatch 后同步等待 worker agent:done/error 以返回 MessageVO） */
+  private readonly pendingDone = new Map<string, Array<(r: DoneResult) => void>>()
 
   /** 拉起一个会话对应的 Agent 进程（重复 id 复用一个） */
   spawn(id: string): void {
@@ -55,12 +64,44 @@ export class AgentWorkerHost {
     this.relays.set(sessionId, senderId)
   }
 
+  /**
+   * 等待某会话的下一轮 AgentLoop 完成（worker 回 agent:done / agent:error 时 resolve）。
+   * 用于 agent:chat：主进程 dispatch 后同步等待 worker 跑完整轮 LLM，再返回 MessageVO——
+   * 保持原内联路径"chat() 在 Agent 完成后才 resolve"的前端时序契约。
+   * 采用 FIFO 队列（每会话一轮一等待者）——并发多轮 chat 各自拿到自己的完成信号。
+   */
+  awaitDone(sessionId: string): Promise<DoneResult> {
+    return new Promise((resolve) => {
+      const list = this.pendingDone.get(sessionId) ?? []
+      list.push(resolve)
+      this.pendingDone.set(sessionId, list)
+    })
+  }
+
+  /** 向所有活动的 worker 进程广播一条消息（如 agent:autoApprove——主进程不知道哪个会话挂起该轮审批） */
+  broadcast(msg: Record<string, unknown>): void {
+    for (const proc of this.workers.values()) {
+      proc.postMessage(msg)
+    }
+  }
+
+  /** 完成一个会话最早的等待者（FIFO） */
+  private resolveDone(sessionId: string, r: DoneResult): void {
+    const list = this.pendingDone.get(sessionId)
+    if (!list || list.length === 0) return
+    const resolve = list.shift() as (r: DoneResult) => void
+    if (list.length === 0) this.pendingDone.delete(sessionId)
+    resolve(r)
+  }
+
   /** 回收某个会话进程 */
   destroy(id: string): void {
     this.workers.get(id)?.kill()
     this.workers.delete(id)
     this.relays.delete(id)
     this.senders.delete(id)
+    // 未决的完成等待者必须释放（否则 agent:chat 的 IPC 永久挂起）
+    this.resolveDone(id, { error: 'AgentWorker 进程已回收' })
   }
 
   /** 全部回收（应用退出） */
@@ -69,6 +110,7 @@ export class AgentWorkerHost {
     this.workers.clear()
     this.relays.clear()
     this.senders.clear()
+    this.pendingDone.clear()
   }
 
   get size(): number {
@@ -131,9 +173,12 @@ export class AgentWorkerHost {
         break
       case 'agent:done':
         console.log(`[agent-worker] ${_id} ✓ agent:done conv=${m.conversationId ?? '-'}`)
+        // 释放最早等待者（agent:chat 同步返回 MessageVO 用）
+        this.resolveDone(_id, { conversationId: m.conversationId, finishReason: m.finishReason })
         break
       case 'agent:error':
         console.error(`[agent-worker] ${_id} ✗ agent:error sessionId=${m.sessionId} msg=${m.message}`)
+        this.resolveDone(_id, { error: m.message })
         break
       default:
         break
@@ -145,6 +190,8 @@ export class AgentWorkerHost {
     this.workers.delete(id)
     this.relays.delete(id)
     this.senders.delete(id)
+    // 进程退出时未决等待者必须释放（否则 agent:chat 的 IPC 永久挂起）
+    this.resolveDone(id, { error: `AgentWorker 进程退出 code=${code}` })
     // M4: 崩溃自动重启 + UI 通知
   }
 }

@@ -28,10 +28,22 @@ export type WorkerOutboundMessage =
   | { type: 'ready' }
   | { type: 'pong'; sessionId?: string }
   | { type: 'agent:event'; payload: WorkerUISenderEvent }
-  | { type: 'agent:done'; sessionId: string; conversationId?: string }
+  | { type: 'agent:done'; sessionId: string; conversationId?: string; finishReason?: string }
   | { type: 'agent:error'; sessionId: string; message: string }
 
-/** main → worker 入站消息 */
+/**
+ * main → worker 入站消息。
+ * 默认对话路径（agent:chat → host.dispatch）：所有会话操作都经以下消息转发到 worker 进程，
+ * 由 worker 内 AgentLoop 对应的 TinkerAgent 实例（waitToolResult / ApprovalManager /
+ * SessionRuntime）处理挂起与恢复。
+ */
 export type WorkerInboundMessage =
   | { type: 'ping'; sessionId?: string }
   | { type: 'agent:prompt'; sessionId: string; profile: string; text: string }
+  | { type: 'agent:toolResult'; sessionId: string; toolCallId: string; result: string }
+  | { type: 'agent:approval'; sessionId: string; toolCallId: string; approved: boolean }
+  | { type: 'agent:autoApprove'; conversationId: string }
+  | { type: 'agent:revoke'; sessionId: string; messageId: string }
+  | { type: 'agent:interrupt'; sessionId: string }
+  | { type: 'agent:interruptNoPending'; sessionId: string }
+  | { type: 'agent:clearAll'; sessionId: string }
